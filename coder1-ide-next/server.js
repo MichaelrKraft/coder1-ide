@@ -1002,18 +1002,35 @@ function handleHealthCheck(req, res) {
   res.end(JSON.stringify(health));
 }
 
+// Helper function to parse cookies from request
+function parseCookies(req) {
+  const cookieHeader = req.headers.cookie || '';
+  return cookieHeader.split(';').reduce((cookies, cookie) => {
+    const [name, value] = cookie.trim().split('=');
+    if (name) cookies[name] = value;
+    return cookies;
+  }, {});
+}
+
 // Helper function for alpha validation
 function validateAlphaAccess(req, res) {
   if (!isAlphaMode) return true;
-  
+
+  // Check if user is authenticated (has auth-token cookie)
+  // Authenticated users bypass invite code requirement
+  const cookies = parseCookies(req);
+  if (cookies['auth-token']) {
+    return true; // Authenticated users can access without invite code
+  }
+
   const parsedUrl = parse(req.url, true);
-  const providedCode = req.headers['x-alpha-code'] || 
+  const providedCode = req.headers['x-alpha-code'] ||
                       parsedUrl.query.alphaCode ||
                       parsedUrl.query.invite;
-  
+
   if (providedCode !== alphaInviteCode) {
     res.writeHead(403, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ 
+    res.end(JSON.stringify({
       error: 'Invalid alpha invite code',
       message: 'This is a private alpha. Please contact the team for access.'
     }));

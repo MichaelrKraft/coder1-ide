@@ -79,8 +79,15 @@ export async function GET(request: NextRequest) {
     });
 
     // Create response with redirect to IDE
+    // Include invite code if alpha mode is enabled
+    const alphaCode = process.env.ALPHA_INVITE_CODE;
+    const isAlphaMode = process.env.ALPHA_MODE_ENABLED === 'true';
+    const redirectUrl = isAlphaMode && alphaCode
+      ? `/ide?invite=${alphaCode}`
+      : '/ide';
+
     const response = NextResponse.redirect(
-      new URL('/ide', baseUrl)
+      new URL(redirectUrl, baseUrl)
     );
 
     // Set auth cookies
