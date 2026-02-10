@@ -1098,6 +1098,7 @@ export default function AlphaLandingPage() {
             {/* Nav Links - Center */}
             <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
               <a href="#features" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Features</a>
+              <Link href="/teams" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Teams</Link>
               <a href="#johnny5" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Johnny5</a>
               <a href="#pricing" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Pricing</a>
             </div>
@@ -1122,6 +1123,25 @@ export default function AlphaLandingPage() {
             </button>
           </div>
         </div>
+
+        {/* Mobile Menu Drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-[#0A0A0A] border-t border-white/10 px-6 py-4">
+            <div className="flex flex-col gap-4">
+              <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Features</a>
+              <Link href="/teams" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Teams</Link>
+              <a href="#johnny5" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Johnny5</a>
+              <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Pricing</a>
+              <a
+                href="#alpha"
+                onClick={() => setMobileMenuOpen(false)}
+                className="mt-2 px-5 py-3 bg-coder1-cyan rounded-full text-base font-semibold text-black text-center hover:shadow-lg hover:shadow-coder1-cyan/30 transition-all"
+              >
+                Join Alpha
+              </a>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ===== HERO SECTION ===== */}
@@ -1775,8 +1795,8 @@ export default function AlphaLandingPage() {
 
               <PricingCard
                 tier="Team"
-                price="Custom"
-                period="contact us"
+                price="$24"
+                period="per user/month"
                 features={[
                   'Everything in Pro',
                   'Team collaboration',

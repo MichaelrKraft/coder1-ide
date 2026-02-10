@@ -141,6 +141,7 @@ export default function ChatTab() {
   const [johnny5Mode, setJohnny5Mode] = useState<Johnny5Mode | null>(null);
   const [memoryStatus, setMemoryStatus] = useState<'full' | 'partial' | 'minimal' | 'none' | null>(null);
   const [memoryBannerDismissed, setMemoryBannerDismissed] = useState(false);
+  const [limitedModeDismissed, setLimitedModeDismissed] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [observations, setObservations] = useState<TerminalEvent[]>([]);
   const [isDelegating, setIsDelegating] = useState(false);
@@ -712,19 +713,20 @@ export default function ChatTab() {
         </div>
       </div>
 
-      {/* Limited Mode Warning Banner */}
-      {johnny5Mode?.isLimitedMode && (
-        <div className="px-4 py-3 bg-yellow-500/10 border-b border-yellow-500/30">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="text-yellow-200 font-medium">Limited Mode Active</p>
-              <p className="text-yellow-300/80 mt-1">
-                Johnny5 can remember you and provide advice, but can't access external apps (Google Drive, Calendar, etc.).
-                To unlock full capabilities, run <code className="bg-yellow-900/30 px-1.5 py-0.5 rounded text-xs font-mono">coder1-bridge start</code>
-              </p>
-            </div>
+      {/* Limited Mode Warning Banner - Compact */}
+      {johnny5Mode?.isLimitedMode && !limitedModeDismissed && (
+        <div className="px-4 py-1.5 bg-yellow-500/10 border-b border-yellow-500/30 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 text-yellow-300">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Limited Mode — run <code className="bg-yellow-900/30 px-1 rounded font-mono">coder1-bridge start</code> for full access</span>
           </div>
+          <button
+            onClick={() => setLimitedModeDismissed(true)}
+            className="p-1 hover:bg-white/10 rounded text-yellow-400"
+            title="Dismiss"
+          >
+            ×
+          </button>
         </div>
       )}
 
