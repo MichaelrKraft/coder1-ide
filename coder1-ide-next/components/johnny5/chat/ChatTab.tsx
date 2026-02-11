@@ -25,6 +25,7 @@ import {
   MicOff,
 } from 'lucide-react';
 import UpgradePrompt, { QuotaMeter } from '../UpgradePrompt';
+import { useIDEStore } from '@/stores/useIDEStore';
 import { terminalObserver, type TerminalEvent } from '@/lib/terminal-observer';
 import { useTerminalSupervision, type SupervisionAlert } from '@/lib/hooks/useTerminalSupervision';
 
@@ -253,15 +254,18 @@ export default function ChatTab() {
         // Listen for status updates
         socket.on('johnny5:status', (status: any) => {
           setMoltbotStatus(status);
+          useIDEStore.getState().setConnectionStatus('ai', !!status?.connected);
         });
 
         // Listen for connection events
         socket.on('johnny5:moltbot-connected', () => {
           setMoltbotStatus({ ...moltbotStatus, connected: true, error: null } as any);
+          useIDEStore.getState().setConnectionStatus('ai', true);
         });
 
         socket.on('johnny5:moltbot-disconnected', ({ reason }: { reason: string }) => {
           setMoltbotStatus({ ...moltbotStatus, connected: false, error: reason } as any);
+          useIDEStore.getState().setConnectionStatus('ai', false);
         });
 
         // Listen for Johnny5 context ready for Claude sessions
