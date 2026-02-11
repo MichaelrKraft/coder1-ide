@@ -948,7 +948,10 @@ function IDEPageContent() {
 
       setLoadingFiles(prev => new Set(prev).add(path));
 
-      const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+      // Don't strip leading '/' for absolute paths (from bridge)
+      // Only strip for server-relative paths like '/src/App.tsx'
+      const isAbsoluteUserPath = path.startsWith('/Users/') || path.startsWith('/home/') || path.startsWith('/var/');
+      const cleanPath = (!isAbsoluteUserPath && path.startsWith('/')) ? path.substring(1) : path;
       const encodedPath = encodeURIComponent(cleanPath);
       const apiUrl = `/api/files/read/?path=${encodedPath}`;
       
