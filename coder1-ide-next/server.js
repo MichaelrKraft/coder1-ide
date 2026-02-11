@@ -3955,8 +3955,8 @@ app.prepare().then(() => {
     // Initialize Johnny5 Proactive Services
     // ========================================================================
     try {
-      const { getJohnny5Config } = require('./lib/johnny5-config.ts');
-      const config = getJohnny5Config();
+      const { loadConfig } = require('./lib/johnny5-config.ts');
+      const config = loadConfig();
 
       // Config validation
       const warnings = [];

@@ -14,7 +14,7 @@
 
 import { Telegraf } from 'telegraf';
 import { logger } from '@/lib/logger';
-import { getJohnny5Config, getTelegramBotToken } from '@/lib/johnny5-config';
+import { getJohnny5Config, getTelegramBotToken, saveConfig } from '@/lib/johnny5-config';
 import type { TelegramIntegration } from '@/lib/johnny5-config';
 
 // ============================================================================
@@ -261,6 +261,7 @@ class Johnny5TelegramBot {
     if (!this.bot) return;
 
     // Commands
+    this.bot.command('start', (ctx) => this.handleStart(ctx));
     this.bot.command('status', (ctx) => this.handleStatus(ctx));
     this.bot.command('tasks', (ctx) => this.handleTasks(ctx));
     this.bot.command('help', (ctx) => this.handleHelp(ctx));
@@ -307,6 +308,38 @@ class Johnny5TelegramBot {
     this.bot.on('text', (ctx) => {
       logger.debug(`[Johnny5/Telegram] Message from ${ctx.from?.username}: ${ctx.message.text}`);
     });
+  }
+
+  private async handleStart(ctx: any): Promise<void> {
+    const chatId = ctx.chat?.id?.toString();
+
+    // Save chatId for proactive notifications
+    if (chatId) {
+      const config = getJohnny5Config();
+      const existingChatId = config.integrations.telegram?.chatId;
+      if (existingChatId !== chatId) {
+        saveConfig({
+          integrations: {
+            ...config.integrations,
+            telegram: { ...config.integrations.telegram!, chatId },
+          },
+        });
+        logger.info(`[Johnny5/Telegram] Saved chatId: ${chatId}`);
+      }
+    }
+
+    const msg = [
+      '*Hey Mike!* Johnny5 is online and ready.',
+      '',
+      'I can send you proactive notifications and you can check on things from here.',
+      '',
+      '*Commands:*',
+      '/status - Check Johnny5 status',
+      '/tasks - View current tasks',
+      '/help - Full command list',
+    ].join('\n');
+
+    await ctx.reply(msg, { parse_mode: 'Markdown' });
   }
 
   private async handleStatus(ctx: any): Promise<void> {

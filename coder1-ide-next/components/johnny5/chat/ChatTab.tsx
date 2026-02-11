@@ -28,6 +28,7 @@ import UpgradePrompt, { QuotaMeter } from '../UpgradePrompt';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { terminalObserver, type TerminalEvent } from '@/lib/terminal-observer';
 import { useTerminalSupervision, type SupervisionAlert } from '@/lib/hooks/useTerminalSupervision';
+import { useBridgeConnectionState } from '@/lib/useBridgeConnectionState';
 
 // Typewriter effect component for Johnny5's welcome message
 function TypewriterText({
@@ -151,6 +152,9 @@ export default function ChatTab() {
   const [voiceListening, setVoiceListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const lastObservationRef = useRef<number>(0); // Rate limiting
+
+  // Bridge connection state for reliable mode updates
+  const { isConnected: bridgeConnected } = useBridgeConnectionState();
 
   // Terminal supervision
   const { alerts: supervisionAlerts, dismissAlert: dismissSupervisionAlert } = useTerminalSupervision({
@@ -280,11 +284,8 @@ export default function ChatTab() {
           }
         });
 
-        // Listen for bridge connection - immediately refresh mode to clear Limited Mode banner
-        socket.on('bridge:connected', () => {
-          console.log('[ChatTab] Bridge connected - refreshing Johnny5 mode');
-          fetchJohnny5Mode();
-        });
+        // NOTE: Bridge connection detection moved to useBridgeConnectionState hook (Feb 2026)
+        // The hook handles Socket.IO timing more reliably
       } catch (err) {
         console.error('Failed to setup socket for Johnny5:', err);
       }
@@ -298,7 +299,6 @@ export default function ChatTab() {
         socket.off('johnny5:moltbot-connected');
         socket.off('johnny5:moltbot-disconnected');
         socket.off('johnny5:claude-context-ready');
-        socket.off('bridge:connected');
       }
     };
   }, [setMoltbotStatus, fetchJohnny5Mode]);
@@ -313,6 +313,15 @@ export default function ChatTab() {
     window.addEventListener('johnny5:setup-complete', handleSetupComplete);
     return () => window.removeEventListener('johnny5:setup-complete', handleSetupComplete);
   }, [fetchJohnny5Mode]);
+
+  // FIX (Feb 2026): Refresh Johnny5 mode when bridge connection state changes
+  // Uses useBridgeConnectionState hook which handles Socket.IO timing reliably
+  useEffect(() => {
+    if (bridgeConnected) {
+      console.log('[ChatTab] Bridge connection detected via hook - refreshing mode');
+      fetchJohnny5Mode();
+    }
+  }, [bridgeConnected, fetchJohnny5Mode]);
 
   // Fresh session on every page load - no persisted messages
   // Each visit to Coder1 starts with a clean chat showing only the welcome message

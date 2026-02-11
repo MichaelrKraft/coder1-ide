@@ -70,6 +70,10 @@ export default function SetupWizard({
   });
   const [proactivityLevel, setProactivityLevel] = useState<'low' | 'medium' | 'high'>('medium');
 
+  // Telegram state
+  const [telegramToken, setTelegramToken] = useState('');
+  const [telegramBotUsername, setTelegramBotUsername] = useState('');
+
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
 
@@ -120,6 +124,7 @@ export default function SetupWizard({
           action: 'save-config',
           permissions,
           proactivityLevel,
+          ...(telegramToken ? { telegram: { botToken: telegramToken } } : {}),
         }),
       });
 
@@ -404,7 +409,12 @@ export default function SetupWizard({
 
             {/* Responsive: stack on mobile, side-by-side on larger screens */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-              <TelegramSetupCard />
+              <TelegramSetupCard
+                onConnected={(token, username) => {
+                  setTelegramToken(token);
+                  setTelegramBotUsername(username);
+                }}
+              />
               <WhatsAppSetupCard />
             </div>
 
