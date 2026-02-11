@@ -839,6 +839,16 @@ class MoltbotBridgeService extends EventEmitter {
     if (payload.state === 'delta' && payload.message) {
       const messageId = this.runIdToMessageId.get(runId);
       if (messageId) {
+        // Reset timeout on each streaming chunk so long responses don't time out
+        const pending = this.state.pendingMessages.get(messageId);
+        if (pending) {
+          clearTimeout(pending.timeout);
+          pending.timeout = setTimeout(() => {
+            this.state.pendingMessages.delete(messageId);
+            pending.reject(new Error(`Message timeout after ${this.MESSAGE_TIMEOUT_MS}ms`));
+          }, this.MESSAGE_TIMEOUT_MS);
+        }
+
         const resp = this.agentResponses.get(runId);
         if (resp) {
           // Delta contains the full accumulated content so far - use helper to safely extract text
