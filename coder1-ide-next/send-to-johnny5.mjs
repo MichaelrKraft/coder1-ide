@@ -1,7 +1,7 @@
 // Simple WebSocket client to send message to Johnny5 via ManusLive gateway
 import WebSocket from 'ws';
 
-const GATEWAY_URL = 'ws://localhost:18789';
+const GATEWAY_URL = 'ws://localhost:55413/dashboard';
 
 const TASK = `
 Hey Johnny5! I have a task for you to figure out and execute autonomously:
@@ -57,8 +57,8 @@ async function main() {
     try {
       const parsed = JSON.parse(raw);
       
-      // Handle connect challenge
-      if (parsed.type === 'event' && parsed.event === 'connect.challenge') {
+      // Handle connect challenge (ManusLive sends type: 'evt', not 'event')
+      if ((parsed.type === 'event' || parsed.type === 'evt') && parsed.event === 'connect.challenge') {
         console.log('Responding to auth challenge...');
         const authResponse = {
           type: 'req',
@@ -79,8 +79,8 @@ async function main() {
         ws.send(JSON.stringify(authResponse));
       }
       
-      // Auth success
-      if (parsed.type === 'res' && parsed.id === '1' && parsed.ok) {
+      // Auth success (ManusLive returns 'result', not 'ok')
+      if (parsed.type === 'res' && parsed.id === '1' && (parsed.ok || parsed.result)) {
         console.log('Authenticated! Sending task...');
         authenticated = true;
         
@@ -101,7 +101,7 @@ async function main() {
       }
       
       // Handle chat events with content
-      if (parsed.type === 'event' && parsed.event === 'chat') {
+      if ((parsed.type === 'event' || parsed.type === 'evt') && parsed.event === 'chat') {
         if (parsed.payload?.state === 'delta' && parsed.payload?.message) {
           // Streaming response
           const content = parsed.payload.message;
@@ -124,7 +124,7 @@ async function main() {
       }
       
       // Handle agent events
-      if (parsed.type === 'event' && parsed.event === 'agent') {
+      if ((parsed.type === 'event' || parsed.type === 'evt') && parsed.event === 'agent') {
         if (parsed.payload?.type === 'delta' && parsed.payload?.delta?.text) {
           process.stdout.write(parsed.payload.delta.text);
         }

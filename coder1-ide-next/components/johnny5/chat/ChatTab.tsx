@@ -21,6 +21,8 @@ import {
   AlertTriangle,
   ArrowUpRight,
   Square,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 import UpgradePrompt, { QuotaMeter } from '../UpgradePrompt';
 import { terminalObserver, type TerminalEvent } from '@/lib/terminal-observer';
@@ -145,6 +147,8 @@ export default function ChatTab() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [observations, setObservations] = useState<TerminalEvent[]>([]);
   const [isDelegating, setIsDelegating] = useState(false);
+  const [voiceListening, setVoiceListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const lastObservationRef = useRef<number>(0); // Rate limiting
 
   // Terminal supervision
@@ -205,34 +209,35 @@ export default function ChatTab() {
     return members.find(m => m.id === activeCrewMember) || null;
   }, [activeCrewMember]);
 
-  // Fetch Johnny5 mode on mount
-  useEffect(() => {
-    const fetchJohnny5Mode = async () => {
-      try {
-        const response = await fetch('/api/johnny5/mode');
-        if (response.ok) {
-          const mode = await response.json() as Johnny5Mode;
-          setJohnny5Mode(mode);
-        }
-      } catch (err) {
-        console.warn('Failed to fetch Johnny5 mode:', err);
-        // Fallback to gemini mode if fetch fails
-        setJohnny5Mode({
-          mode: 'gemini',
-          capabilities: ['Memory', 'Reasoning'],
-          hasMCP: false,
-          provider: 'Gemini 2.5 Flash',
-          isLimitedMode: true,
-        });
+  // Fetch Johnny5 mode - extracted as callback so it can be called from socket events
+  const fetchJohnny5Mode = useCallback(async () => {
+    try {
+      const response = await fetch('/api/johnny5/mode');
+      if (response.ok) {
+        const mode = await response.json() as Johnny5Mode;
+        setJohnny5Mode(mode);
       }
-    };
+    } catch (err) {
+      console.warn('Failed to fetch Johnny5 mode:', err);
+      // Fallback to gemini mode if fetch fails
+      setJohnny5Mode({
+        mode: 'gemini',
+        capabilities: ['Memory', 'Reasoning'],
+        hasMCP: false,
+        provider: 'Gemini 2.5 Flash',
+        isLimitedMode: true,
+      });
+    }
+  }, []);
 
+  // Fetch Johnny5 mode on mount and poll periodically
+  useEffect(() => {
     fetchJohnny5Mode();
 
     // Poll mode every 30s so the Limited Mode banner clears when bridge connects after page load
     const interval = setInterval(fetchJohnny5Mode, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchJohnny5Mode]);
 
   // Subscribe to Moltbot status updates via Socket.IO
   useEffect(() => {
@@ -270,6 +275,12 @@ export default function ChatTab() {
             }]);
           }
         });
+
+        // Listen for bridge connection - immediately refresh mode to clear Limited Mode banner
+        socket.on('bridge:connected', () => {
+          console.log('[ChatTab] Bridge connected - refreshing Johnny5 mode');
+          fetchJohnny5Mode();
+        });
       } catch (err) {
         console.error('Failed to setup socket for Johnny5:', err);
       }
@@ -283,9 +294,10 @@ export default function ChatTab() {
         socket.off('johnny5:moltbot-connected');
         socket.off('johnny5:moltbot-disconnected');
         socket.off('johnny5:claude-context-ready');
+        socket.off('bridge:connected');
       }
     };
-  }, [setMoltbotStatus]);
+  }, [setMoltbotStatus, fetchJohnny5Mode]);
 
   // Fresh session on every page load - no persisted messages
   // Each visit to Coder1 starts with a clean chat showing only the welcome message
@@ -423,6 +435,54 @@ export default function ChatTab() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
+    }
+  };
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal && event.results[i][0]) {
+            transcript += event.results[i][0].transcript;
+          }
+        }
+        if (transcript.trim()) {
+          setInputValue(prev => prev ? prev + ' ' + transcript.trim() : transcript.trim());
+        }
+      };
+
+      recognition.onend = () => setVoiceListening(false);
+      recognition.onerror = () => setVoiceListening(false);
+
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  const toggleVoiceRecognition = async () => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+
+    if (voiceListening) {
+      recognition.stop();
+      setVoiceListening(false);
+    } else {
+      try {
+        if (navigator.mediaDevices?.getUserMedia) {
+          await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
+        recognition.start();
+        setVoiceListening(true);
+      } catch {
+        setVoiceListening(false);
+      }
     }
   };
 
@@ -1028,29 +1088,44 @@ export default function ChatTab() {
               onKeyDown={handleKeyDown}
               placeholder={isLoading ? "Press Esc to stop..." : activeCrewInfo ? `Ask the ${activeCrewInfo.name}...` : "Message Johnny5..."}
               rows={1}
-              className="w-full px-4 py-3 pr-12 rounded-xl bg-bg-tertiary border border-border-default focus:border-coder1-cyan/50 focus:ring-1 focus:ring-coder1-cyan/20 text-sm text-text-primary placeholder-text-muted resize-none transition-all outline-none"
+              className={`w-full px-4 py-3 ${isLoading ? 'pr-12' : 'pr-20'} rounded-xl bg-bg-tertiary border border-border-default focus:border-coder1-cyan/50 focus:ring-1 focus:ring-coder1-cyan/20 text-sm text-text-primary placeholder-text-muted resize-none transition-all outline-none`}
               disabled={false}
             />
             {isLoading ? (
               <button
                 onClick={handleStop}
-                className="absolute right-2 bottom-2 p-2 rounded-lg transition-all bg-red-500/80 text-white hover:bg-red-500"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all bg-red-500/80 text-white hover:bg-red-500"
                 title="Stop generating (Esc)"
               >
-                <Square className="w-4 h-4" />
+                <Square className="w-3.5 h-3.5" />
               </button>
             ) : (
-              <button
-                onClick={handleSend}
-                disabled={!inputValue.trim()}
-                className={`absolute right-2 bottom-2 p-2 rounded-lg transition-all ${
-                  inputValue.trim()
-                    ? 'bg-coder1-cyan text-bg-primary hover:bg-coder1-cyan/80'
-                    : 'bg-bg-secondary text-text-muted'
-                }`}
-              >
-                <Send className="w-4 h-4" />
-              </button>
+              <>
+                {recognitionRef.current && (
+                  <button
+                    onClick={toggleVoiceRecognition}
+                    className={`absolute right-9 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
+                      voiceListening
+                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                        : 'text-text-muted hover:text-text-primary hover:bg-bg-secondary'
+                    }`}
+                    title={voiceListening ? 'Stop listening' : 'Voice input'}
+                  >
+                    {voiceListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                  </button>
+                )}
+                <button
+                  onClick={handleSend}
+                  disabled={!inputValue.trim()}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
+                    inputValue.trim()
+                      ? 'bg-coder1-cyan text-bg-primary hover:bg-coder1-cyan/80'
+                      : 'bg-bg-secondary text-text-muted'
+                  }`}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </>
             )}
           </div>
         </div>

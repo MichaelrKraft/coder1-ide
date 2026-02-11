@@ -3571,12 +3571,27 @@ export const Button: React.FC<ButtonProps> = ({
                 const isSkill = template.category === 'SKILLS' || template.categorySlug === 'skills';
 
                 if (isMCP) {
-                    // Check if it's already installed based on installCommand
-                    if (template.installCommand === 'Already installed') {
+                    // Third-party MCPs that don't have direct npm packages - show Copy Command
+                    const thirdPartyMCPs = [
+                        'davila7-github-integration', 'davila7-postgresql-mcp',
+                        'davila7-stripe-integration', 'davila7-aws-integration',
+                        'docker-integration', 'redis-integration', 'mongodb-integration',
+                        'slack-integration', 'elasticsearch-integration',
+                        'browser-use-mcp'  // Package doesn't exist on npm
+                    ];
+
+                    if (thirdPartyMCPs.includes(template.id)) {
+                        // Third-party: show Copy Command button
+                        installButton = `<button class="quick-install coder1-btn" onclick="quickInstall(event, '${template.id}')">
+                            <i class="fas fa-copy"></i> Copy Command
+                        </button>`;
+                    } else if (template.installCommand === 'Already installed') {
+                        // Already installed MCPs
                         installButton = `<button class="quick-install coder1-btn btn-success" disabled>
                             <i class="fas fa-check"></i> Installed
                         </button>`;
                     } else {
+                        // Official MCPs: Install to ~/.mcp.json
                         installButton = `<button class="quick-install coder1-btn" onclick="quickInstallMCP(event, '${template.id}')">
                             <i class="fas fa-download"></i> Install
                         </button>`;

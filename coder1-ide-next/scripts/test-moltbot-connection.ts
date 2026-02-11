@@ -6,7 +6,7 @@
  * Run with: npx tsx scripts/test-moltbot-connection.ts
  *
  * Environment variables required:
- * - MOLTBOT_GATEWAY_URL: WebSocket URL (e.g., ws://192.168.1.100:18789)
+ * - MOLTBOT_GATEWAY_URL: WebSocket URL (e.g., ws://192.168.1.100:55413)
  * - MOLTBOT_AUTH_TOKEN: Authentication token from ManusLive
  */
 
@@ -37,7 +37,7 @@ async function runTests() {
   log('========================================\n', 'cyan');
 
   // Check environment variables
-  const gatewayUrl = process.env.MOLTBOT_GATEWAY_URL || 'ws://localhost:18789';
+  const gatewayUrl = process.env.MOLTBOT_GATEWAY_URL || 'ws://localhost:55413';
   const authToken = process.env.MOLTBOT_AUTH_TOKEN || '';
 
   log('Environment Configuration:', 'blue');

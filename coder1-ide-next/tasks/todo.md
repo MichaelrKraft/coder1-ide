@@ -922,3 +922,117 @@ A complete team collaboration system for Coder1 IDE across 6 phases:
 - Any authenticated user can create teams (no subscription required for alpha)
 - TeamPanel shows a clear warning when sync is unavailable
 - Editor sets expectations by calling itself "Code Viewer"
+
+---
+
+# Johnny5 Autonomous Activation (Feb 10, 2026)
+
+## Status: COMPLETE
+
+## Steps
+
+- [x] **Step 1**: Change port 18789 → 55413 in config + 7 code files
+- [x] **Step 2**: Rebuild better-sqlite3 native module for Node v24 (from source with node-gyp)
+- [x] **Step 3**: Fix Claude CLI PATH in daemon wrapper script
+- [x] **Step 4**: Restart Johnny5 daemon via launchctl — RUNNING on port 55413
+- [x] **Step 5**: Enable gateway token auth + Moltbot env vars (both gateway-level and protocol-level auth)
+- [x] **Step 6**: Fix double-connect bug in server.js (removed early setTimeout connect)
+- [x] **Step 7**: Restart Coder1 IDE server + verification — CONNECTED
+
+## Additional Fixes Discovered During Implementation
+
+- [x] Fixed bridge to connect to `/dashboard` path (not root `/`) for MoltbotProtocol auth
+- [x] Added DASHBOARD_AUTH_TOKEN to ManusLive .env for protocol-level auth
+- [x] Updated ManusLive .env GATEWAY_PORT from 18789 to 55413
+- [x] Removed expired OpenAI API key from ManusLive .env (was blocking startup with 1000+ embedding failures)
+- [x] Used node-gyp rebuild from source (npm rebuild downloaded cached prebuilt for wrong Node version)
+- [x] Fixed send-to-johnny5.mjs: `type: 'event'` → also check `'evt'`, `parsed.ok` → also check `parsed.result`
+
+## Verification Checklist
+
+| # | Check | Result |
+|---|-------|--------|
+| 1 | Native module rebuilt (no MODULE_VERSION errors) | ✅ PASS |
+| 2 | Daemon running (`lsof -i :55413`) | ✅ PASS — PID 52465 |
+| 3 | Health check (`curl localhost:55413/health`) | ✅ `{"status":"ok","connectedDashboards":1}` |
+| 4 | Daemon logs clean | ✅ 7 tools registered, Telegram connected |
+| 5 | Coder1 connected (no double-connect) | ✅ Single connection, auth SUCCESS |
+| 6 | Cron active | ✅ 2 jobs (Morning Brief 9am, Trend Check 5x/day) |
+| 7 | End-to-end chat test | ✅ Message sent → runId ack → agent events → chat.done |
+| 8 | Telegram connected | ✅ @Johnny5001_bot online |
+
+## Resolved: ManusLive ANTHROPIC_API_KEY → Max Subscription
+
+The expired `ANTHROPIC_API_KEY` in `~/manuslive/manuslive/.env` was causing Claude CLI to fail. Since `useCliBackend: true` in the config, ManusLive uses Claude Code CLI (not direct API). The CLI picks up `ANTHROPIC_API_KEY` from env if set — overriding the Max subscription OAuth stored in the macOS keychain (`Claude Code-credentials`).
+
+**Fix applied**: Removed `ANTHROPIC_API_KEY` from `.env` so the CLI falls back to Max subscription auth. Verified end-to-end: sent "Say only: Johnny5 is alive!" → received "Johnny5 is alive!" with $0 cost.
+
+## Review
+
+### Files Modified (10)
+
+| File | Change |
+|------|--------|
+| `~/.manuslive/config.json` | Port 18789→55413, auth mode none→token with token array |
+| `~/manuslive/manuslive/.env` | GATEWAY_PORT→55413, added DASHBOARD_AUTH_TOKEN, removed expired OPENAI_API_KEY |
+| `~/manuslive/manuslive/node_modules/better-sqlite3/build/Release/better_sqlite3.node` | Rebuilt from source for Node v24 (MODULE_VERSION 137) |
+| `~/.coder1/bin/johnny5-start.sh` | Added PATH export for Claude CLI (/usr/local/bin, ~/.local/bin) |
+| `coder1-ide-next/.env.local` | MOLTBOT_ENABLED=true, gateway URL, auth token |
+| `coder1-ide-next/server.js` | Removed early double-connect block (lines 211-228) |
+| `coder1-ide-next/services/johnny5/moltbot-bridge.ts` | Port→55413, connect to /dashboard path |
+| `coder1-ide-next/bridge-cli/src/johnny5-daemon.js` | Port→55413 (3 occurrences) |
+| `coder1-ide-next/app/api/johnny5/connect/route.ts` | DEFAULT_JOHNNY5_PORT→55413 |
+| `coder1-ide-next/send-to-johnny5.mjs` | Port→55413, /dashboard path, type evt/event, result/ok |
+| `coder1-ide-next/scripts/test-moltbot-connection.ts` | Port→55413 |
+
+### Architecture (Verified Working)
+
+```
+Coder1 IDE (Next.js, localhost:3001)
+    │ Socket.IO
+    ▼
+server.js
+    ├── Moltbot Bridge (WebSocket client)
+    │       │ ws://localhost:55413/dashboard
+    │       │ Auth: connect.challenge → token handshake
+    │       ▼
+    │   ManusLive Gateway (~/manuslive/manuslive, PID 52465)
+    │       ├── 7 Tools: shell, files, search, browser, map, memory, reminder
+    │       ├── Telegram: @Johnny5001_bot (owner: 8521203942)
+    │       ├── Memory: SQLite at ~/.manuslive/memory.sqlite
+    │       └── Claude Code CLI: /Users/michaelkraft/.local/bin/claude
+    │
+    └── Cron Service (2 jobs active)
+            ├── Daily Morning Brief — 0 9 * * *
+            └── Trend Monitor Check — 0 9,11,13,15,17 * * 1-5
+```
+
+### Key Bugs Found & Fixed
+
+1. **better-sqlite3 prebuilt cache**: `npm rebuild` downloads prebuilt binaries from GitHub and caches them. Even after running it, the binary remained compiled for Node v20. Fix: `node-gyp rebuild --release` from source with explicit `/opt/homebrew/bin/node`.
+
+2. **Two-layer auth (prod vs dev difference)**: ManusLive has gateway-level auth on root `/` path (checks `Authorization: Bearer` header) AND protocol-level auth on `/dashboard` path (connect.challenge handshake). The bridge must connect to `/dashboard` and send token in the handshake, not as a URL param.
+
+3. **Protocol event type**: ManusLive sends `type: 'evt'` while older Moltbot implementations used `type: 'event'`. The bridge correctly handles both. The test script (send-to-johnny5.mjs) was only checking `'event'` — fixed.
+
+4. **Double-connect in server.js**: Two separate `moltbotBridge.connect()` calls — an early one with 2s setTimeout and a later one after Socket.IO setup. The early one fired before event listeners were configured, causing a disconnect/reconnect cycle. Removed the early one.
+
+5. **Expired OpenAI API key**: ManusLive's `memory.initialize()` awaited during startup, making 1000+ failed embedding API calls. Each call timed out, blocking the gateway from ever starting. Removed the expired key.
+
+---
+
+# Johnny5 Autonomous Mode Activation (Feb 10, 2026)
+
+## Problem
+Johnny5 tells users he's running in "interactive assistant mode" and can't operate autonomously. This is because his system prompt only describes interactive/conversational behavior — it never mentions his daemon lifecycle, CronService, ReminderTool, or proactive capabilities.
+
+## Root Cause
+`AgentRuntime.ts:getDefaultSystemPrompt()` defines Johnny5 purely as a chat assistant. The infrastructure for autonomous operation exists (CronService, ReminderTool, launchd daemon) but Johnny5 doesn't know about it.
+
+## Implementation Steps
+
+- [x] Step 1: Add "Autonomous Capabilities" section to system prompt in `AgentRuntime.ts`
+- [x] Step 2: Update `~/.manuslive/workspace/TOOLS.md` to reflect autonomous features
+- [x] Step 3: Rebuild ManusLive dist
+- [x] Step 4: Restart Johnny5 daemon to pick up changes
+- [ ] Step 5: Verify Johnny5 reports autonomous capabilities (user test)

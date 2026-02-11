@@ -718,6 +718,16 @@ export function removeTeamMember(teamId: string, userId: string): void {
   `).run(teamId, userId);
 }
 
+export function deleteTeam(teamId: string): void {
+  const db = getAuthDatabase();
+
+  // Delete in order: knowledge facts, invitations, members, then team
+  db.prepare('DELETE FROM team_knowledge_facts WHERE team_id = ?').run(teamId);
+  db.prepare('DELETE FROM team_invitations WHERE team_id = ?').run(teamId);
+  db.prepare('DELETE FROM team_members WHERE team_id = ?').run(teamId);
+  db.prepare('DELETE FROM teams WHERE id = ?').run(teamId);
+}
+
 export function getTeamMembers(teamId: string): (User & { role: string })[] {
   const db = getAuthDatabase();
 

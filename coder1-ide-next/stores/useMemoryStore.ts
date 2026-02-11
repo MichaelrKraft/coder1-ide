@@ -38,9 +38,9 @@ interface MemoryStore extends MemoryStats {
 export const useMemoryStore = create<MemoryStore>()(
   persist(
     (set, get) => ({
-      // Initial state - 30-day premium trial enabled (Nov 3, 2025)
+      // Initial state - 15-day premium trial enabled (Feb 9, 2025 - Alpha launch)
       isPremium: true,
-      trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      trialEndsAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
       totalPatterns: 0,
       successRate: 0,
       timeSavedMinutes: 0,

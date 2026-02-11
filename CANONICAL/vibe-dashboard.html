@@ -3674,7 +3674,7 @@
         <!-- Minimal Top Navigation -->
         <div class="header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; height: 60px; background: rgba(0, 0, 0, 0.5); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
             <div class="header-left">
-                <a href="http://localhost:3001/ide" class="back-to-ide">
+                <a href="/ide" class="back-to-ide">
                     ← Back to IDE
                 </a>
             </div>
@@ -5528,7 +5528,8 @@ Execute as a single Task with multiple sub-agents working in parallel.`;
             setupWebSocket() {
                 // Connect to real-time updates (when backend is ready)
                 try {
-                    const ws = new WebSocket(`ws://localhost:3001/api/vibe-analytics/live`);
+                    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const ws = new WebSocket(`${wsProtocol}//${window.location.host}/api/vibe-analytics/live`);
                     
                     ws.onmessage = (event) => {
                         const data = JSON.parse(event.data);

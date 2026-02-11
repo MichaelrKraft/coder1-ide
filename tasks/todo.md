@@ -1,35 +1,73 @@
-# Task: Fix Bridge CLI Interactive Session Timeout
+# Teams Page Integration & Pricing Update
 
-## Goal
-The Claude CLI interactive session in the bridge times out after 60 minutes of inactivity because the timeout timer is a one-shot timer that never resets on user activity. Fix it so the timer resets whenever the user sends input.
+## Tasks
 
-## Root Cause
-In `bridge-cli/src/claude-executor.js`:
-- Line 379: `const interactiveTimeoutMs = this.maxTimeout * 5` → 720,000 × 5 = 3,600,000ms = 60 minutes
-- Line 380: `setTimeout(...)` fires once and is never reset
-- Line 442-448: `writeToSession()` writes input to PTY but doesn't reset the timer
-- Result: Timer starts when session begins, fires 60 minutes later regardless of activity
+### Phase 1: Add Teams Navigation Button
+- [x] Add Teams link to `/app/alpha/page.tsx` desktop navigation
+- [x] Add Teams link to `/app/alpha-v2/page.tsx` desktop navigation
+- [x] Add Teams link to `/app/alpha-v3/page.tsx` desktop navigation
+(Note: Mobile menus not implemented in alpha pages - only desktop navigation updated)
 
-## Plan
+### Phase 2: Update Pricing on Alpha Pages
+- [x] Update pricing tiers in `/app/alpha/page.tsx` (Team tier → $24/user/month)
+- [x] Update pricing tiers in `/app/alpha-v2/page.tsx` (Team tier → $24/user/month)
+- [x] Update pricing tiers in `/app/alpha-v3/page.tsx` (Team tier → $24/user/month)
 
-- [x] 1. Refactor the one-shot `setTimeout` into a resettable inactivity timer in `executeInteractive()`
-- [x] 2. Reset the timer in `writeToSession()` whenever user sends input
-- [x] 3. Verify no other code paths need updating (resizeSession, killSession also updated)
+### Phase 3: Update Pricing on Teams Page
+- [x] Update pricing tiers in `/app/teams/page.tsx` (Free, Pro, Team at $24/user/month)
+
+### Phase 4: Testing & Verification
+- [x] Test Teams navigation on all alpha pages
+- [x] Verify pricing displays correctly on all pages
+- [x] Test navigation functionality (Teams button → /teams page)
+- [x] Verify no breaking changes
 
 ## Review
 
-**Date**: 2026-02-07
+### Changes Made
 
-**Files modified (1):**
-- `bridge-cli/src/claude-executor.js` — Changed session storage from raw PTY process to `{ ptyProcess, resetInactivityTimer }` object. Timer now resets on both user input (`writeToSession`) and PTY output (`onData`). Updated `resizeSession` and `killSession` to use new structure.
+**1. Teams Navigation Button**
+- Added Teams link to header navigation on all 3 alpha pages (alpha, alpha-v2, alpha-v3)
+- Position: Between "Features" and "Johnny5" in the navigation bar
+- Uses Next.js Link component for proper routing to `/teams` page
+- Styling matches existing navigation items
 
-**What changed:**
-- `activeSessions` entries changed from `ptyProcess` → `{ ptyProcess, resetInactivityTimer }`
-- One-shot `setTimeout` replaced with a `resetInactivityTimer()` function that clears and restarts the timer
-- `writeToSession()` calls `resetInactivityTimer()` on every user input
-- `ptyProcess.onData()` calls `resetInactivityTimer()` when Claude responds (output = active session)
-- `resizeSession()` and `killSession()` updated to access `session.ptyProcess`
-- Timer still cleaned up on exit via `clearTimeout(inactivityTimer)`
+**2. Alpha Pages Pricing Update**
+- Updated Team tier pricing from "Custom / contact us" to "$24 per user/month"
+- Tier structure maintained: Free Forever ($0), Pro ($29), Team ($24/user)
+- All feature lists and CTAs preserved
 
-**Before**: Session starts → 60-minute timer starts → fires regardless of activity → session killed
-**After**: Session starts → 60-minute timer starts → resets every time user types or Claude responds → only fires after 60 minutes of true inactivity
+**3. Teams Page Pricing Update**
+- Restructured pricing to match alpha pages:
+  - Free: $0/month (try team features, up to 2 members)
+  - Pro: $29/user/month (for individuals and small teams, up to 5 members)
+  - Team: $24/user/month (full team collaboration, unlimited members) - marked as "Most Popular"
+- Removed old "Team Starter ($15)" and "Enterprise (Custom)" tiers
+
+### Files Modified
+
+1. `/app/alpha/page.tsx` - Line 1100: Added Teams link, Lines 1777-1780: Updated pricing
+2. `/app/alpha-v2/page.tsx` - Line 828: Added Teams link, Lines 1505-1508: Updated pricing  
+3. `/app/alpha-v3/page.tsx` - Line 828: Added Teams link, Lines 1503-1506: Updated pricing
+4. `/app/teams/page.tsx` - Lines 586-636: Restructured all 3 pricing tiers
+
+### Verification Results
+
+✅ Teams button visible in navigation on all alpha pages
+✅ Teams button successfully navigates to `/teams` page
+✅ Pricing displays correctly: Free ($0), Pro ($29), Team ($24/user)
+✅ Teams page pricing matches alpha pages structure
+✅ No breaking changes to existing functionality
+✅ Server running successfully on port 3001
+
+### Technical Notes
+
+- Alpha pages use inline navigation (no mobile menu implementation found)
+- All changes were minimal - only added navigation links and updated pricing text
+- Next.js Link component already imported in all alpha page files
+- No structural changes to existing layouts or components
+- Hot module reload working - changes reflected immediately
+
+## Summary
+
+Successfully integrated Teams navigation and updated pricing across all landing pages with minimal code changes. The Teams page is now accessible from the main navigation, and pricing is consistent across all pages showing Free, Pro, and Team tiers with Team at $24/user/month.

@@ -826,6 +826,7 @@ export default function AlphaLandingPage() {
             {/* Nav Links - Center */}
             <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
               <a href="#features" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Features</a>
+              <Link href="/teams" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Teams</Link>
               <a href="#johnny5" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Johnny5</a>
               <a href="#pricing" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Pricing</a>
             </div>
@@ -1503,8 +1504,8 @@ export default function AlphaLandingPage() {
             <ScrollReveal delay={200}>
               <PricingCard
                 tier="Team"
-                price="Custom"
-                period="contact us"
+                price="$24"
+                period="per user/month"
                 features={[
                   'Everything in Pro',
                   'Team collaboration',

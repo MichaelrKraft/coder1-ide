@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain, Key, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain, Key, AlertCircle, CheckCircle, ExternalLink, LogOut, Calendar, Mail, CreditCard } from 'lucide-react';
 import { clientMemoryPreferences } from '@/lib/memory-preferences-client';
 import { useAPIKeyStatus } from '@/hooks/useAPIKeyStatus';
 import { APIKeyStorage, APIProvider } from '@/lib/api-key-storage';
@@ -14,7 +15,17 @@ interface SettingsModalProps {
   onFontSizeChange?: (size: number) => void;
 }
 
-type SettingsTab = 'general' | 'editor' | 'terminal' | 'ai' | 'memory';
+type SettingsTab = 'general' | 'editor' | 'terminal' | 'ai' | 'memory' | 'account';
+
+interface UserData {
+  id: string;
+  email: string;
+  username: string;
+  subscriptionTier: string;
+  subscriptionStatus: string;
+  emailVerified: boolean;
+  createdAt: string;
+}
 
 interface Settings {
   // General
@@ -98,11 +109,14 @@ const defaultSettings: Settings = {
 };
 
 export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeChange }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<SettingsTab>('account');
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [hasChanges, setHasChanges] = useState(false);
   const [showAPIKeySetup, setShowAPIKeySetup] = useState(false);
-  
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+
   const apiKeyStatus = useAPIKeyStatus();
 
   // Load settings on mount
@@ -111,7 +125,7 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
       // Load general settings from localStorage
       const savedSettings = localStorage.getItem('coder1-settings');
       let loadedSettings = defaultSettings;
-      
+
       if (savedSettings) {
         const parsed = JSON.parse(savedSettings);
         loadedSettings = { ...defaultSettings, ...parsed };
@@ -123,7 +137,7 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
       try {
         // First try migration from localStorage
         await clientMemoryPreferences.migrateFromLocalStorage();
-        
+
         const memoryPrefs = await clientMemoryPreferences.getPreferences();
         loadedSettings = {
           ...loadedSettings,
@@ -145,6 +159,30 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
     loadSettings();
   }, [fontSize]);
 
+  // Fetch user data when modal opens
+  useEffect(() => {
+    if (isOpen && !userData) {
+      const fetchUserData = async () => {
+        try {
+          const response = await fetch('/api/v2/auth/me', {
+            credentials: 'include',
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setUserData(data.user);
+          }
+        } catch (error) {
+          console.error('Failed to fetch user data:', error);
+        } finally {
+          setIsLoadingUser(false);
+        }
+      };
+
+      fetchUserData();
+    }
+  }, [isOpen, userData]);
+
   // Update settings
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -161,12 +199,12 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
     // Save general settings to localStorage
     localStorage.setItem('coder1-settings', JSON.stringify(settings));
     setHasChanges(false);
-    
+
     // Apply settings that need immediate effect
     if (onFontSizeChange) {
       onFontSizeChange(settings.fontSize);
     }
-    
+
     try {
       // Save memory preferences to SQLite database
       await clientMemoryPreferences.savePreferences({
@@ -178,7 +216,7 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
         notificationSound: settings.memoryNotificationSound,
         templateType: settings.memoryTemplateCustomization as any,
       });
-      
+
       // Show success message
       const toast = document.createElement('div');
       toast.className = 'fixed bottom-4 right-4 bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-2 rounded z-50';
@@ -187,7 +225,7 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
       setTimeout(() => document.body.removeChild(toast), 3000);
     } catch (error) {
       console.error('Failed to save memory preferences:', error);
-      
+
       // Show error message
       const toast = document.createElement('div');
       toast.className = 'fixed bottom-4 right-4 bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-2 rounded z-50';
@@ -195,6 +233,39 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
       document.body.appendChild(toast);
       setTimeout(() => document.body.removeChild(toast), 3000);
     }
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/v2/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        // Clear local storage
+        localStorage.clear();
+
+        // Close modal
+        onClose();
+
+        // Redirect to login page
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+      alert('Failed to logout. Please try again.');
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   if (!isOpen) return null;
@@ -205,6 +276,7 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
     { id: 'terminal' as SettingsTab, label: 'Terminal', icon: Terminal },
     { id: 'ai' as SettingsTab, label: 'AI/LLMs', icon: Bot },
     { id: 'memory' as SettingsTab, label: 'Memory', icon: Brain },
+    { id: 'account' as SettingsTab, label: 'Account', icon: User },
   ];
 
   return (
@@ -940,6 +1012,193 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'account' && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-4">Account Information</h3>
+
+                {isLoadingUser ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-coder1-cyan"></div>
+                  </div>
+                ) : userData ? (
+                  <div className="space-y-6">
+                    {/* User Profile Card */}
+                    <div className="p-6 bg-bg-tertiary rounded-lg border border-border-default">
+                      <div className="flex items-start gap-4">
+                        <div
+                          className="w-16 h-16 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(0, 217, 255, 0.3) 0%, rgba(251, 146, 60, 0.3) 100%)',
+                            border: '2px solid rgba(0, 217, 255, 0.5)',
+                            color: '#00D9FF',
+                            boxShadow: '0 0 20px rgba(0, 217, 255, 0.4)',
+                          }}
+                        >
+                          {userData.username.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xl font-semibold text-text-primary mb-1">
+                            {userData.username}
+                          </h4>
+                          <p className="text-sm text-text-muted mb-3 break-all">
+                            {userData.email}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="px-3 py-1 bg-coder1-cyan/20 border border-coder1-cyan/40 rounded-md text-sm font-medium text-coder1-cyan">
+                              {userData.subscriptionTier}
+                            </span>
+                            {userData.emailVerified && (
+                              <span className="px-3 py-1 bg-green-500/20 border border-green-500/40 rounded-md text-sm font-medium text-green-400">
+                                ✓ Email Verified
+                              </span>
+                            )}
+                            <span className={`px-3 py-1 rounded-md text-sm font-medium ${
+                              userData.subscriptionStatus === 'active'
+                                ? 'bg-green-500/20 border border-green-500/40 text-green-400'
+                                : 'bg-yellow-500/20 border border-yellow-500/40 text-yellow-400'
+                            }`}>
+                              {userData.subscriptionStatus}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Account Details */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Account Details
+                      </h4>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        {/* User ID */}
+                        <div className="p-3 bg-bg-tertiary rounded border border-border-default">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-xs text-text-muted mb-1">User ID</div>
+                              <div className="text-sm text-text-primary font-mono">{userData.id}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Email */}
+                        <div className="p-3 bg-bg-tertiary rounded border border-border-default">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs text-text-muted mb-1 flex items-center gap-2">
+                                <Mail className="w-3 h-3" />
+                                Email Address
+                              </div>
+                              <div className="text-sm text-text-primary break-all">{userData.email}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Account Created */}
+                        <div className="p-3 bg-bg-tertiary rounded border border-border-default">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-xs text-text-muted mb-1 flex items-center gap-2">
+                                <Calendar className="w-3 h-3" />
+                                Account Created
+                              </div>
+                              <div className="text-sm text-text-primary">{formatDate(userData.createdAt)}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Subscription */}
+                        <div className="p-3 bg-bg-tertiary rounded border border-border-default">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-xs text-text-muted mb-1 flex items-center gap-2">
+                                <CreditCard className="w-3 h-3" />
+                                Subscription
+                              </div>
+                              <div className="text-sm text-text-primary capitalize">{userData.subscriptionTier}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-border-default" />
+
+                    {/* Security Section */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                        <Key className="w-4 h-4" />
+                        Security
+                      </h4>
+
+                      <button
+                        onClick={async () => {
+                          if (!userData?.email) return;
+
+                          try {
+                            const response = await fetch('/api/v2/auth/reset-password', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ email: userData.email }),
+                            });
+
+                            const data = await response.json();
+
+                            if (response.ok) {
+                              alert('Password reset email sent! Check your inbox.');
+                            } else {
+                              alert(data.error || 'Failed to send reset email');
+                            }
+                          } catch (error) {
+                            alert('An error occurred. Please try again.');
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-transparent hover:bg-cyan-500/10 border border-border-default hover:border-cyan-500/40 rounded text-text-muted hover:text-cyan-400 text-sm transition-all"
+                      >
+                        <Key className="w-3.5 h-3.5" />
+                        Change Password
+                      </button>
+
+                      <p className="text-xs text-text-muted">
+                        Click to receive a password reset email
+                      </p>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-border-default" />
+
+                    {/* Account Actions */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-text-muted flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        Account Actions
+                      </h4>
+
+                      <button
+                        onClick={handleLogout}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-transparent hover:bg-red-500/10 border border-border-default hover:border-red-500/40 rounded text-text-muted hover:text-red-400 text-sm transition-all"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        Logout
+                      </button>
+
+                      <p className="text-xs text-text-muted text-center">
+                        You will be redirected to the login page
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <p className="text-sm text-yellow-300">
+                      Unable to load account information. Please try refreshing the page.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
