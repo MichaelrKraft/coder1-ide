@@ -161,10 +161,10 @@ const MenuBar = React.memo(function MenuBar({
       { label: 'GLM 4.6 Setup Guide', action: () => setGlmSetupModalOpen(true), shortcut: '' },
       { separator: true },
       { label: 'About Coder1', action: onShowAbout || (() => alert('Coder1 IDE v2.0.0\nBuilt for Claude Code and vibe coders')), shortcut: '' },
-      { label: 'Documentation', action: () => window.dispatchEvent(new CustomEvent('openDocumentationPanel')), shortcut: '' },
+      { label: 'Documentation', action: () => window.open('/documentation', '_self'), shortcut: '' },
       { separator: true },
       { label: 'Keyboard Shortcuts', action: onShowKeyboardShortcuts || (() => console.log('Shortcuts')), shortcut: 'Ctrl+K Ctrl+S' },
-      { label: 'Report Issue', action: () => window.open('https://github.com/michaelkraft/autonomous_vibe_interface/issues', '_blank') }
+      { label: 'Report Issue', action: () => window.open('https://github.com/MichaelrKraft/coder1-ide/issues', '_blank') }
     ]
   };
 

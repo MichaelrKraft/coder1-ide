@@ -97,7 +97,7 @@ class MoltbotBridgeService extends EventEmitter {
   private runIdToMessageId = new Map<string, string>(); // Track runId -> messageId for async responses
   private agentResponses = new Map<string, { content: string; sessionKey: string }>(); // Accumulate streamed content
   private readonly PING_INTERVAL_MS = 30000; // 30 seconds
-  private readonly MESSAGE_TIMEOUT_MS = 60000; // 60 seconds
+  private readonly MESSAGE_TIMEOUT_MS = parseInt(process.env.JOHNNY5_MESSAGE_TIMEOUT || '180000', 10); // 3 minutes default (Claude can be slow)
 
   /**
    * Safely extract text content from various payload formats.

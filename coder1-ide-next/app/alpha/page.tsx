@@ -167,11 +167,17 @@ function ScrollReveal({
   className?: string;
   delay?: number;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Handle hydration
   useEffect(() => {
-    if (!ref.current) return;
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !ref.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -187,7 +193,16 @@ function ScrollReveal({
 
     observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [delay]);
+  }, [mounted, delay]);
+
+  // Server render: show content without animation classes
+  if (!mounted) {
+    return (
+      <div className={className}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -887,8 +902,8 @@ function LiveTerminalDemo() {
 export default function AlphaLandingPage() {
   const [scrollY, setScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [github, setGithub] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
@@ -906,7 +921,7 @@ export default function AlphaLandingPage() {
       const response = await fetch('/api/alpha/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, github, source: 'alpha_landing' })
+        body: JSON.stringify({ fullName, email, source: 'alpha_landing' })
       });
 
       if (response.ok) {
@@ -914,7 +929,8 @@ export default function AlphaLandingPage() {
       } else {
         const data = await response.json();
         if (response.status === 409) {
-          alert('This email is already on our waitlist!');
+          // Existing user - redirect to IDE
+          window.location.href = '/ide';
         } else {
           alert(data.error || 'Something went wrong');
         }
@@ -953,7 +969,7 @@ export default function AlphaLandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[#0A0A0A] text-white overflow-x-hidden" suppressHydrationWarning>
       <style jsx global>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
@@ -1324,6 +1340,11 @@ export default function AlphaLandingPage() {
               </ScrollReveal>
             ))}
           </div>
+
+          {/* Summary text */}
+          <p className="text-center text-lg text-white/60 mt-12">
+            It makes Claude Code more Powerful and user-friendly at the same time.
+          </p>
         </div>
       </section>
 
@@ -1373,13 +1394,13 @@ export default function AlphaLandingPage() {
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-coder1-purple/10 border border-coder1-purple/20 rounded-full mb-6">
                 <Bot className="w-5 h-5 text-coder1-purple" />
-                <span className="text-coder1-cyan text-base font-medium">Your AI Employee</span>
+                <span className="text-coder1-cyan text-base font-medium">Inspired by ClawdBot</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
                 Meet <span className="text-shimmer">Johnny5</span>
               </h2>
               <p className="text-lg text-white/50 max-w-2xl mx-auto">
-                The autonomous agent that works while you sleep
+                Your autonomous assistant that works while you sleep
               </p>
             </div>
           </ScrollReveal>
@@ -1393,13 +1414,13 @@ export default function AlphaLandingPage() {
               },
               {
                 icon: MessageCircle,
-                title: 'WhatsApp Communication',
-                desc: 'Message Johnny5 directly via WhatsApp. Get updates, ask questions, and give instructions from anywhere - no IDE required.'
+                title: 'WhatsApp and Telegram',
+                desc: 'Message Johnny5 directly via WhatsApp or Telegram. Get updates, ask questions, and give instructions from anywhere.'
               },
               {
                 icon: Infinity,
                 title: '8,000+ MCP Integrations',
-                desc: 'Connect to thousands of tools and services. Johnny5 works autonomously around the clock with access to your entire stack.'
+                desc: 'Unlike ClawdBot, Johnny5 has direct access to 8,000 of Zapier\'s MCPs and can work autonomously around the clock.'
               },
               {
                 icon: TrendingUp,
@@ -1478,7 +1499,7 @@ export default function AlphaLandingPage() {
                     </tr>
                     <tr>
                       <td className="py-4 px-4 text-white/50 border-b border-white/5">Communication</td>
-                      <td className="py-4 px-6 text-center font-medium bg-coder1-cyan/5 border-x border-coder1-cyan/20">WhatsApp / IDE</td>
+                      <td className="py-4 px-6 text-center font-medium bg-coder1-cyan/5 border-x border-coder1-cyan/20">WhatsApp/Telegram/IDE</td>
                       <td className="py-4 px-6 text-center text-white/40 border-b border-white/5">WhatsApp / Telegram</td>
                     </tr>
                     <tr>
@@ -1497,13 +1518,26 @@ export default function AlphaLandingPage() {
             </div>
           </ScrollReveal>
 
-          {/* Live terminal demo */}
+          {/* Johnny5 Video Demo */}
           <div className="mt-12">
             <ScrollReveal>
               <div className="text-center mb-8">
-                <p className="text-white/40 text-4xl uppercase tracking-widest font-bold">DEMO</p>
+                <p className="text-white text-4xl uppercase tracking-widest font-bold">DEMO</p>
               </div>
-              <LiveTerminalDemo />
+              <div className="max-w-3xl mx-auto rounded-xl overflow-hidden border-2 border-cyan-400/50 shadow-[0_0_40px_rgba(0,255,255,0.3)]">
+                <video
+                  className="w-full"
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  poster="/videos/johnny5-demo-poster.jpg"
+                >
+                  <source src="/videos/johnny5-demo.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
             </ScrollReveal>
           </div>
         </div>
@@ -1806,6 +1840,7 @@ export default function AlphaLandingPage() {
                   'Custom integrations'
                 ]}
                 cta="Contact Sales"
+                subtext="3 users minimum."
                 onClick={() => window.location.href = 'mailto:alpha@coder1.ai?subject=Coder1 Team Plan Inquiry'}
               />
           </div>
@@ -1933,6 +1968,17 @@ export default function AlphaLandingPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4 mb-8">
               <input
+                type="text"
+                name="fullName"
+                id="alpha-fullname"
+                aria-label="Full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Full name"
+                required
+                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-coder1-cyan/50 transition-colors"
+              />
+              <input
                 type="email"
                 name="email"
                 id="alpha-email"
@@ -1943,16 +1989,6 @@ export default function AlphaLandingPage() {
                 required
                 className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-coder1-cyan/50 transition-colors"
               />
-              <input
-                type="text"
-                name="github"
-                id="alpha-github"
-                aria-label="GitHub username"
-                value={github}
-                onChange={(e) => setGithub(e.target.value)}
-                placeholder="GitHub username (optional)"
-                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-coder1-cyan/50 transition-colors"
-              />
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -1961,6 +1997,16 @@ export default function AlphaLandingPage() {
                 {isSubmitting ? 'Joining...' : 'Request Alpha Access'}
               </button>
             </form>
+
+            {/* Already have access link */}
+            <div className="text-center mb-8">
+              <Link
+                href="/ide"
+                className="text-white/50 hover:text-coder1-cyan transition-colors text-sm inline-flex items-center gap-2"
+              >
+                Already have access? <span className="text-coder1-cyan">Go to IDE →</span>
+              </Link>
+            </div>
 
             <div className="flex flex-wrap justify-center gap-4 md:gap-6">
               <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
