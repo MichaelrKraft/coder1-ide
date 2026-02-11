@@ -340,7 +340,26 @@ class BridgeClient extends EventEmitter {
       this.socket.on('config:update', (data) => {
         this.handleConfigUpdate(data);
       });
-      
+
+      // Handle Time Capsule creation requests
+      this.socket.on('time_capsule:create', async (data) => {
+        const { repoPath, commitSha, capsuleData, capsuleId } = data;
+        logger.info('Time Capsule creation requested', { commitSha, capsuleId });
+        try {
+          const { writeTimeCapsule } = require('./time-capsule-handler');
+          const result = await writeTimeCapsule(repoPath, commitSha, capsuleData);
+          this.socket.emit('time_capsule:result', { capsuleId, ...result });
+          logger.info('Time Capsule result', { capsuleId, success: result.success });
+        } catch (error) {
+          logger.error('Time Capsule handler error', { capsuleId, error: error.message });
+          this.socket.emit('time_capsule:result', {
+            capsuleId,
+            success: false,
+            error: error.message,
+          });
+        }
+      });
+
       // Connection error
       this.socket.on('connect_error', (error) => {
         this.error('Connection error:', error.message);

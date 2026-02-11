@@ -69,6 +69,81 @@ import { useTeamActivityToasts } from "@/lib/hooks/useTeamActivityToasts";
 import { useTeamStore } from "@/stores/useTeamStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 
+/**
+ * Detect file paths in Claude Code terminal output
+ * Conservative matching to avoid false positives
+ *
+ * Claude Code CLI outputs file operations in various formats:
+ * - "⎿ Loaded autonomous_vibe_interface/package.json" (relative paths with Loaded prefix)
+ * - "⎿ Loadedautonomous_vibe_interface/package.json" (collapsed format, no space)
+ * - "/absolute/path/to/file.tsx" (absolute paths in some contexts)
+ * - "autonomous_vibe_interface/package.json):..." (path followed by colon/paren)
+ */
+const detectClaudeFilePaths = (output: string): string | null => {
+  // Strip ANSI escape codes first (keep basic structure)
+  const cleanOutput = output.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+
+  // Skip small chunks (not likely to contain file paths)
+  if (cleanOutput.length < 10) return null;
+
+  // Skip user input lines (prompt) and error messages (our own output)
+  // These contain file paths but aren't Claude Code tool output
+  if (cleanOutput.includes('❯') || cleanOutput.includes('❌') || cleanOutput.includes('That file got shy')) return null;
+
+  // Supported file extensions
+  const extensions = 'tsx?|jsx?|json|md|css|scss|html|py|go|rs|java|rb|sh|yml|yaml|toml|xml|sql|vue|svelte';
+
+  // Pattern 1: "Loaded" followed by path (Claude Code's main format for reading files)
+  // Handles both "Loaded path" and "Loadedpath" (collapsed format)
+  const loadedPattern = new RegExp(`Loaded\\s*([a-zA-Z0-9._\\-/]+\\.(${extensions}))`, 'i');
+
+  // Pattern 2: Claude Code tool actions: "Read /path", "Write /path", "Edit /path", "Wrote /path", "Created /path"
+  const actionPattern = new RegExp(`(?:Read|Write|Wrote|Edit|Created|Modified)\\s+(\/[a-zA-Z0-9._\\-/]+\\.(${extensions}))`, 'i');
+
+  // Pattern 3: Absolute paths starting with / (standalone)
+  const absolutePattern = new RegExp(`(?:^|[\\s⎿])(\/[a-zA-Z0-9._\\-/]+\\.(${extensions}))(?:[):\\s,]|$)`, 'i');
+
+  // Pattern 4: Relative paths that look like project paths (word/word/file.ext)
+  // Must have at least one directory separator to avoid matching random words
+  const relativePattern = new RegExp(`(?:^|[\\s⎿])([a-zA-Z0-9_\\-]+\/[a-zA-Z0-9._\\-/]+\\.(${extensions}))(?:[):\\s,]|$)`, 'i');
+
+  // Try each pattern in order of specificity
+  const patterns = [
+    { name: 'loadedPattern', regex: loadedPattern },
+    { name: 'actionPattern', regex: actionPattern },
+    { name: 'absolutePattern', regex: absolutePattern },
+    { name: 'relativePattern', regex: relativePattern }
+  ];
+
+  for (const { name, regex } of patterns) {
+    const match = cleanOutput.match(regex);
+    if (match && match[1]) {
+      let filePath = match[1];
+
+      // Debug: Log what each pattern matched
+      console.log(`[AUTO-OPEN DEBUG] ${name} matched: "${filePath}" from: "${cleanOutput.substring(0, 100)}..."`);
+
+      // Filter out false positives
+      if (filePath.includes('node_modules') ||
+          filePath.includes('.git/') ||
+          filePath.includes('://') ||
+          filePath.length > 200 ||
+          filePath.includes('(') ||
+          filePath.includes(')')) {
+        console.log(`[AUTO-OPEN DEBUG] Filtered out: ${filePath}`);
+        continue;
+      }
+
+      // Return the path as-is - the bridge/API will handle resolution
+      // The bridge has access to the user's filesystem and knows the working directory
+      console.log(`[AUTO-OPEN DEBUG] Returning path: ${filePath}`);
+      return filePath;
+    }
+  }
+
+  return null;
+};
+
 function IDEPageContent() {
   // Feature flags
   const FOCUS_MODE_ENABLED = true; // ✅ ENABLED: Focus mode feature is now active
@@ -928,11 +1003,7 @@ function IDEPageContent() {
     setTerminalReady(ready);
   };
 
-  // File operations
-  const handleFileSelect = (path: string) => {
-    handleOpenFileFromPath(path);
-  };
-
+  // File operations - handleOpenFileFromPath must be defined BEFORE handleFileSelect to avoid TDZ
   const handleOpenFileFromPath = useCallback(async (path: string, line?: number) => {
     try {
       setFileErrors(prev => {
@@ -1011,6 +1082,95 @@ function IDEPageContent() {
       });
     }
   }, [files]);
+
+  // Simple wrapper for file selection (handleOpenFileFromPath defined above)
+  const handleFileSelect = (path: string) => {
+    handleOpenFileFromPath(path);
+  };
+
+  // 🔧 FIX (Feb 2026): Clear stale activeFile when Explorer navigates to different directory
+  const handleExplorerRootChange = useCallback((newRoot: string) => {
+    if (activeFile && !activeFile.startsWith(newRoot)) {
+      console.log('[IDE] Explorer root changed to:', newRoot, '- clearing stale activeFile:', activeFile);
+      setActiveFile(null);
+    }
+  }, [activeFile]);
+
+  // 🔧 AUTO-OPEN (Feb 2026): Open files in Monaco when Claude Code works on them
+  // Uses existing terminalOutput event from Terminal.tsx - no changes to terminal code
+  const lastFileOpenTimeRef = useRef(0);
+  const terminalBufferRef = useRef('');
+  const terminalBufferTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const COOLDOWN_MS = 500; // Rate limit: max one file open per 500ms
+    const BUFFER_FLUSH_MS = 100; // Flush buffer after 100ms of no new data
+    const DEBUG_AUTO_OPEN = true; // Set to false after debugging
+
+    const processBuffer = (bufferedOutput: string) => {
+      const detectedPath = detectClaudeFilePaths(bufferedOutput);
+
+      if (!detectedPath) return;
+
+      // Skip if same as current file
+      if (detectedPath === activeFile) {
+        if (DEBUG_AUTO_OPEN) console.log('[AUTO-OPEN DEBUG] Skipping - same as active file:', detectedPath);
+        return;
+      }
+
+      // Rate limit to prevent rapid switching
+      const now = Date.now();
+      if (now - lastFileOpenTimeRef.current < COOLDOWN_MS) {
+        if (DEBUG_AUTO_OPEN) console.log('[AUTO-OPEN DEBUG] Skipping - rate limited');
+        return;
+      }
+      lastFileOpenTimeRef.current = now;
+
+      console.log('[AUTO-OPEN] Opening file:', detectedPath);
+      handleOpenFileFromPath(detectedPath);
+    };
+
+    const handleTerminalOutput = (event: CustomEvent<{ output: string }>) => {
+      const { output } = event.detail;
+
+      // Append to buffer (handles chunked terminal output where a single line
+      // like "Loaded autonomous_vibe_interface/CLAUDE.md" arrives in multiple chunks)
+      terminalBufferRef.current += output;
+
+      // Reset flush timer
+      if (terminalBufferTimerRef.current) {
+        clearTimeout(terminalBufferTimerRef.current);
+      }
+
+      // Flush buffer after a short delay (all chunks for a line should arrive within 100ms)
+      terminalBufferTimerRef.current = setTimeout(() => {
+        const buffered = terminalBufferRef.current;
+        terminalBufferRef.current = '';
+
+        if (DEBUG_AUTO_OPEN && buffered.length > 20) {
+          const cleanOutput = buffered.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim();
+          if (cleanOutput.includes('/') && (cleanOutput.includes('Loaded') || cleanOutput.includes('Read') || cleanOutput.includes('Write') || cleanOutput.includes('Edit'))) {
+            console.log('[AUTO-OPEN DEBUG] Buffered output:', cleanOutput.substring(0, 300));
+          }
+        }
+
+        // Process each line in the buffer separately (output may contain multiple lines)
+        const lines = buffered.split('\n');
+        for (const line of lines) {
+          if (line.length > 10) {
+            processBuffer(line);
+          }
+        }
+      }, BUFFER_FLUSH_MS);
+    };
+
+    window.addEventListener('terminalOutput', handleTerminalOutput as EventListener);
+    return () => {
+      window.removeEventListener('terminalOutput', handleTerminalOutput as EventListener);
+      if (terminalBufferTimerRef.current) {
+        clearTimeout(terminalBufferTimerRef.current);
+      }
+    };
+  }, [activeFile, handleOpenFileFromPath]);
 
   const handleFileChange = (path: string, content: string) => {
     setFiles((prev) => ({ ...prev, [path]: content }));
@@ -1740,6 +1900,7 @@ function IDEPageContent() {
                         onFileSelect={handleFileSelect}
                         activeFile={activeFile}
                         refreshTrigger={fileTreeRefresh}
+                        onRootChange={handleExplorerRootChange}
                       />
                     ) : null
                   }

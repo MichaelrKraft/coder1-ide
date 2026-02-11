@@ -62,45 +62,45 @@ const BLOCKED_FILES = [
 
 /**
  * Build hierarchical file tree
+ * Returns ABSOLUTE paths to ensure bridge compatibility
  */
-async function buildFileTree(dirPath: string, relativePath: string = '', depth: number = 0): Promise<any[]> {
+async function buildFileTree(dirPath: string, depth: number = 0): Promise<any[]> {
     const children = [];
     const MAX_DEPTH = 10; // Allow deep navigation for user projects (was 2, too restrictive)
-  
+
     try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    
+
         for (const entry of entries) {
             const fullPath = path.join(dirPath, entry.name);
-            const relativeFilePath = path.join(relativePath, entry.name);
-      
+
             if (entry.isDirectory()) {
-                // Skip excluded directories  
+                // Skip excluded directories
                 if (EXCLUDED_DIRS.includes(entry.name)) {
                     continue;
                 }
-        
+
                 // Only recurse if we haven't hit max depth
-                const subTree = depth < MAX_DEPTH ? await buildFileTree(fullPath, relativeFilePath, depth + 1) : [];
+                const subTree = depth < MAX_DEPTH ? await buildFileTree(fullPath, depth + 1) : [];
                 children.push({
                     name: entry.name,
-                    path: relativeFilePath,
+                    path: fullPath,  // ABSOLUTE path for bridge compatibility
                     type: 'directory',
                     children: subTree
                 });
-        
+
             } else if (entry.isFile()) {
                 // Skip blocked/sensitive files
                 if (BLOCKED_FILES.some(blocked => entry.name === blocked || entry.name.includes(blocked))) {
                     continue;
                 }
-                
+
                 // Check if file extension is supported
                 const ext = path.extname(entry.name).toLowerCase();
                 if (SUPPORTED_EXTENSIONS.includes(ext) || entry.name.startsWith('.')) {
                     children.push({
                         name: entry.name,
-                        path: relativeFilePath,
+                        path: fullPath,  // ABSOLUTE path for bridge compatibility
                         type: 'file'
                     });
                 }
@@ -109,7 +109,7 @@ async function buildFileTree(dirPath: string, relativePath: string = '', depth: 
     } catch (error) {
         // logger?.error(`Error building file tree for ${dirPath}:`, error);
     }
-  
+
     // Sort children: directories first, then files, alphabetically
     children.sort((a, b) => {
         if (a.type !== b.type) {
@@ -117,7 +117,7 @@ async function buildFileTree(dirPath: string, relativePath: string = '', depth: 
         }
         return a.name.localeCompare(b.name);
     });
-  
+
     return children;
 }
 
@@ -203,7 +203,7 @@ async function fileTreeHandler({ req, user }: { req: NextRequest; user?: any }):
             success: true,
             tree: {
                 name: path.basename(projectRoot),
-                path: '/',
+                path: projectRoot,  // ABSOLUTE path for bridge compatibility
                 type: 'directory',
                 children: tree
             },

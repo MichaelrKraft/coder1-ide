@@ -14,9 +14,10 @@ interface SafeFileExplorerProps {
   onFileSelect: (path: string) => void;
   activeFile: string | null;
   refreshTrigger?: number;
+  onRootChange?: (newRoot: string) => void;
 }
 
-export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrigger }: SafeFileExplorerProps) {
+export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrigger, onRootChange }: SafeFileExplorerProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
   const [fileTree, setFileTree] = useState<FileNode | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +59,8 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
         
         setFileTree(convertTreeTypes(data.tree));
         setCurrentRoot(data.currentRoot);
-        
+        onRootChange?.(data.currentRoot);
+
         // Save to localStorage
         if (data.currentRoot) {
           localStorage.setItem('fileExplorerDirectory', data.currentRoot);

@@ -48,6 +48,11 @@ import SessionMetricsBar from './SessionMetricsBar';
 import TerminalTokenStats from './TerminalTokenStats';
 import { useAutoCheckpoint } from '@/lib/hooks/useAutoCheckpoint';
 
+// Time Capsule: Dynamic import to avoid bundle impact when feature is disabled
+const TimeCapsulePrompt = features().timeCapsules
+  ? dynamic(() => import('@/components/time-capsules/TimeCapsulePrompt'), { ssr: false })
+  : null;
+
 // Defensive filtering for status lines - Layer 3 protection
 const cleanStatusLines = (data: string): string => {
   if (!data) return data;
@@ -258,6 +263,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [audioAlertsEnabled, setAudioAlertsEnabled] = useState(false);
   const [recognition, setRecognition] = useState<any | null>(null);
   const [claudeActive, setClaudeActive] = useState(false);
+  // Time Capsule: Commit data for the save prompt (feature-gated)
+  const [timeCapsuleCommit, setTimeCapsuleCommit] = useState<{
+    sessionId: string;
+    sha: string;
+    branch: string;
+    message: string;
+    duration: number;
+  } | null>(null);
   const claudeActivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const claudeActivityStartedRef = useRef(false); // ⚡ Prevent repeated setState during same response (Feb 2, 2025)
   const lastDataRef = useRef<{data: string, timestamp: number} | null>(null);
@@ -4231,6 +4244,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     socketHandlersRef.current.claudeSessionComplete = claudeSessionCompleteHandler;
     socket.on('claude:sessionComplete', claudeSessionCompleteHandler);
 
+    // Time Capsule: Listen for commit detection during active Claude sessions
+    if (features().timeCapsules) {
+      const timeCapsuleHandler = (data: { sessionId: string; sha: string; branch: string; message: string; duration: number }) => {
+        setTimeCapsuleCommit(data);
+      };
+      if ((socketHandlersRef.current as any).timeCapsuleCommit) {
+        socket.off('time_capsule:commit_detected', (socketHandlersRef.current as any).timeCapsuleCommit);
+      }
+      (socketHandlersRef.current as any).timeCapsuleCommit = timeCapsuleHandler;
+      socket.on('time_capsule:commit_detected', timeCapsuleHandler);
+    }
+
     // ⚡ PERFORMANCE FIX (Feb 2, 2025): Convert to named handler with socketHandlersRef storage
     const claudeErrorHandler = ({ message }: { message: string }) => {
       if (term) {
@@ -4242,6 +4267,34 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
     socketHandlersRef.current.claudeError = claudeErrorHandler;
     socket.on('claude:error', claudeErrorHandler);
+
+    // 🔧 FIX (Feb 11, 2026): Sync terminal dimensions when Claude enters interactive mode
+    // Root cause: Claude PTY starts with default 120x30 before actual size is communicated
+    // Solution: Send resize immediately when interactive session starts
+    const claudeModeChangedHandler = (data: { sessionId: string; mode: string }) => {
+      // Only handle events for this terminal session
+      if (data.sessionId !== sessionIdForVoiceRef.current) return;
+
+      // When Claude enters interactive mode, immediately sync terminal dimensions
+      if (data.mode === 'interactive' && fitAddonRef.current && xtermRef.current) {
+        // Small delay to ensure bridge PTY is ready to receive resize
+        setTimeout(() => {
+          if (fitAddonRef.current && xtermRef.current) {
+            fitAddonRef.current.fit();
+            const { cols, rows } = xtermRef.current;
+            if (cols > 0 && rows > 0) {
+              socket.emit('terminal:resize', { id: data.sessionId, cols, rows });
+              console.log(`[Terminal] Synced dimensions for Claude interactive: ${cols}x${rows}`);
+            }
+          }
+        }, 100);
+      }
+    };
+    if ((socketHandlersRef.current as any).claudeModeChanged) {
+      socket.off('claude:mode:changed', (socketHandlersRef.current as any).claudeModeChanged);
+    }
+    (socketHandlersRef.current as any).claudeModeChanged = claudeModeChangedHandler;
+    socket.on('claude:mode:changed', claudeModeChangedHandler);
 
     // Handle AI Team progress updates
     // ⚡ PERFORMANCE FIX (Feb 2, 2025): Convert to named handler with socketHandlersRef storage
@@ -5519,8 +5572,38 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         </div>
       </div>
 
+      {/* Time Capsule Prompt - Feature-gated inline notification */}
+      {features().timeCapsules && TimeCapsulePrompt && timeCapsuleCommit && (
+        <TimeCapsulePrompt
+          commitSha={timeCapsuleCommit.sha}
+          commitMessage={timeCapsuleCommit.message}
+          sessionDuration={timeCapsuleCommit.duration}
+          onSave={async () => {
+            try {
+              const resp = await fetch('/api/time-capsules', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  repository_path: timeCapsuleCommit.branch || 'unknown',
+                  commit_sha: timeCapsuleCommit.sha,
+                  commit_message: timeCapsuleCommit.message,
+                  commit_branch: timeCapsuleCommit.branch,
+                  duration_seconds: Math.round(timeCapsuleCommit.duration / 1000),
+                  agent_name: 'Claude Code',
+                }),
+              });
+              if (!resp.ok) throw new Error('Failed to save');
+            } catch (err) {
+              console.error('[Time Capsule] Save failed:', err);
+              throw err;
+            }
+          }}
+          onDismiss={() => setTimeCapsuleCommit(null)}
+        />
+      )}
+
       {/* Terminal Content - Let xterm.js handle scrolling */}
-      <div 
+      <div
         className="flex-1 relative overflow-auto"
         style={{
           backgroundColor: '#0a0a0a'
