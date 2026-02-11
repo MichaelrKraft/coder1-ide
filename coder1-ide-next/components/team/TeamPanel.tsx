@@ -271,7 +271,11 @@ export default function TeamPanel() {
         {/* Row 2: Action buttons */}
         <div className="flex items-center gap-2">
           <button
-            onClick={handleSyncNow}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSyncNow();
+            }}
             className="flex items-center gap-1 px-2 py-1 text-xs text-coder1-cyan hover:bg-coder1-cyan/10 rounded transition-colors"
             title="Sync team knowledge - Push your Johnny5 insights to the team and pull insights from team members"
           >
@@ -279,7 +283,11 @@ export default function TeamPanel() {
             Sync
           </button>
           <button
-            onClick={handleDeleteTeam}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteTeam();
+            }}
             className="flex items-center gap-1 px-2 py-1 text-xs text-red-400 hover:bg-red-400/10 rounded transition-colors"
             title="Delete Team"
           >
@@ -368,7 +376,11 @@ export default function TeamPanel() {
                     <span className="text-text-muted">{f.contributor_count}x confirmed</span>
                   )}
                   <button
-                    onClick={() => handleDeleteFact(f.id)}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteFact(f.id);
+                    }}
                     className="text-text-muted/40 hover:text-red-400 transition-colors p-0.5"
                     title="Remove fact"
                   >
