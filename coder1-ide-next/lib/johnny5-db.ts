@@ -23,14 +23,16 @@ import { randomUUID, createHash } from 'crypto';
 import { DATA_DIR, JOHNNY5_DB_PATH, BACKUP_DIR as BACKUP_PATH, ensureDataDir } from './data-paths';
 
 // Try to load sqlite-vec for vector search (optional, graceful degradation)
+// Note: The module must be loaded into the SQLite database via sqliteVecModule.load(db)
+// after the database connection is established in initializeDbSync()
+let sqliteVecModule: any = null;
 let sqliteVecLoaded = false;
 let vectorTableCreated = false; // Track if vector table was actually created
 try {
   // sqlite-vec provides vector similarity search
   // If it fails to load, we fall back to keyword-only search
-  const sqliteVec = require('sqlite-vec');
-  sqliteVecLoaded = true;
-  console.log('[Johnny5 DB] sqlite-vec extension loaded successfully');
+  sqliteVecModule = require('sqlite-vec');
+  console.log('[Johnny5 DB] sqlite-vec module found, will load into database');
 } catch (err) {
   console.warn('[Johnny5 DB] sqlite-vec not available, falling back to keyword-only search');
 }
@@ -215,6 +217,20 @@ function initializeDbSync(): void {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.pragma('busy_timeout = 5000');
+
+  // Load sqlite-vec extension if available
+  // This must happen BEFORE creating tables that use vec0
+  if (sqliteVecModule) {
+    try {
+      sqliteVecModule.load(db);
+      sqliteVecLoaded = true;
+      console.log('[Johnny5 DB] sqlite-vec extension loaded into database successfully');
+    } catch (err) {
+      sqliteVecLoaded = false;
+      console.warn('[Johnny5 DB] Failed to load sqlite-vec extension into database:', err);
+      console.log('[Johnny5 DB] Falling back to keyword-only search');
+    }
+  }
 
   // Create tables
   createTables(db);
