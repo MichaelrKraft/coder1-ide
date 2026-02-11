@@ -303,6 +303,17 @@ export default function ChatTab() {
     };
   }, [setMoltbotStatus, fetchJohnny5Mode]);
 
+  // Listen for setup wizard completion to refresh mode and clear Limited Mode banner
+  useEffect(() => {
+    const handleSetupComplete = () => {
+      console.log('[ChatTab] Setup wizard complete - refreshing Johnny5 mode');
+      fetchJohnny5Mode();
+    };
+
+    window.addEventListener('johnny5:setup-complete', handleSetupComplete);
+    return () => window.removeEventListener('johnny5:setup-complete', handleSetupComplete);
+  }, [fetchJohnny5Mode]);
+
   // Fresh session on every page load - no persisted messages
   // Each visit to Coder1 starts with a clean chat showing only the welcome message
   useEffect(() => {

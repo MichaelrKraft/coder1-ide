@@ -413,11 +413,15 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
               setSetupStatus({ ...setupStatus, isComplete: true });
               setShowSetupWizard(false);
               setActiveTab('chat');
+              // Emit event to refresh Johnny5 mode in ChatTab (clears Limited Mode banner)
+              window.dispatchEvent(new CustomEvent('johnny5:setup-complete'));
             }}
             onSkip={() => {
               setSetupStatus({ ...setupStatus, isComplete: true });
               setShowSetupWizard(false);
               setActiveTab('chat');
+              // Emit event to refresh Johnny5 mode in ChatTab
+              window.dispatchEvent(new CustomEvent('johnny5:setup-complete'));
             }}
           />
         )}
