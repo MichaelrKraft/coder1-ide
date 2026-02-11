@@ -14,6 +14,7 @@ import {
   loadConfig,
   setPermissions,
   setProactivityLevel,
+  setTelegramIntegration,
   markSetupComplete,
   getConfigSummary,
   Johnny5Permissions,
@@ -30,6 +31,7 @@ interface SaveConfigRequest {
   action: 'save-config';
   permissions: Johnny5Permissions;
   proactivityLevel: 'low' | 'medium' | 'high';
+  telegram?: { botToken: string };
 }
 
 type SetupRequest = SaveConfigRequest;
@@ -85,6 +87,14 @@ export async function POST(request: NextRequest) {
 
       // Save proactivity level
       setProactivityLevel(body.proactivityLevel);
+
+      // Save Telegram integration if provided
+      if (body.telegram?.botToken) {
+        setTelegramIntegration({
+          enabled: true,
+          botToken: body.telegram.botToken,
+        });
+      }
 
       // Mark setup as complete
       markSetupComplete();

@@ -547,6 +547,9 @@ export function getConfigSummary(): {
   };
 }
 
+// Alias for backward compatibility (several services import this name)
+export const getJohnny5Config = loadConfig;
+
 // ============================================================================
 // Export singleton logger for Johnny5
 // ============================================================================
