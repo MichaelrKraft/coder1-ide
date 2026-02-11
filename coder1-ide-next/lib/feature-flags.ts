@@ -11,6 +11,7 @@ export interface FeatureFlags {
   errorDoctor: boolean;
   sessionSummary: boolean;
   voiceCommands: boolean;
+  timeCapsules: boolean;
 }
 
 // Get feature flags from environment or use defaults
@@ -25,6 +26,7 @@ export const getFeatureFlags = (): FeatureFlags => {
     errorDoctor: process.env.NEXT_PUBLIC_ERROR_DOCTOR === 'true' || true,
     sessionSummary: process.env.NEXT_PUBLIC_SESSION_SUMMARY === 'true' || true,
     voiceCommands: process.env.NEXT_PUBLIC_VOICE_COMMANDS === 'true' || false,
+    timeCapsules: process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' || false,
   };
 };
 

@@ -138,6 +138,7 @@ type ChatResponse = ChatSuccessResponse | ChatErrorResponse | QuotaExceededRespo
 
 const MAX_MESSAGE_LENGTH = 50000;
 const MAX_HISTORY_MESSAGES = 50;
+const MAX_CLI_PROMPT_LENGTH = 50000; // ~12.5k tokens, conservative limit for Claude CLI
 
 // ============================================================================
 // Error Response Helpers
@@ -149,6 +150,46 @@ function errorResponse(
   status: number = 400
 ): NextResponse<ChatErrorResponse> {
   return NextResponse.json({ success: false, error, code }, { status });
+}
+
+/**
+ * Truncate prompt for CLI to prevent "Prompt too long" errors.
+ * Priority: user message > terminal context (recent) > memory context > history
+ */
+function truncateForCLI(
+  userMessage: string,
+  contextParts: string[],
+  maxLength: number
+): string {
+  // Reserve space for user message + system prefix
+  const systemPrefix = '[SYSTEM] You are Johnny5, a helpful AI assistant. Be concise and helpful.\n\n';
+  const reserved = systemPrefix.length + userMessage.length + 500; // 500 buffer
+  let budget = maxLength - reserved;
+
+  if (budget <= 0) {
+    // If even the message is too long, just return it (rare edge case)
+    return userMessage;
+  }
+
+  const included: string[] = [];
+
+  // Add context parts (most recent first - terminal context is usually last)
+  for (let i = contextParts.length - 1; i >= 0 && budget > 0; i--) {
+    const part = contextParts[i];
+    if (part.length <= budget) {
+      included.unshift(part);
+      budget -= part.length;
+    } else if (budget > 500) {
+      // Truncate this part to fit remaining budget
+      included.unshift(part.slice(0, budget - 50) + '\n... [truncated]');
+      budget = 0;
+    }
+  }
+
+  if (included.length > 0) {
+    return `${included.join('\n\n')}\n\n---\n\n**User Query:**\n${userMessage}`;
+  }
+  return userMessage;
 }
 
 // ============================================================================
@@ -502,7 +543,30 @@ export async function POST(
           moltbotMessage = `## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\`\n\n---\n\n**User Query:**\n${message}`;
         }
 
-        const moltbotResponse = await moltbotBridge!.sendMessage('dashboard:main', moltbotMessage);
+        // 🔧 FIX (Feb 2026): Truncate Moltbot message to prevent "Prompt too long" errors
+        // This path has an early return and bypasses the truncation logic below
+        const MAX_MOLTBOT_MESSAGE_LENGTH = 15000; // ~3.75k tokens
+        let truncatedMoltbotMessage = moltbotMessage;
+        if (moltbotMessage.length > MAX_MOLTBOT_MESSAGE_LENGTH) {
+          console.log(`[Johnny5/Moltbot] Message too long (${moltbotMessage.length} chars), truncating...`);
+          const userQueryMarker = '\n\n---\n\n**User Query:**\n';
+          const idx = moltbotMessage.lastIndexOf(userQueryMarker);
+          if (idx > 0) {
+            const userQuery = moltbotMessage.slice(idx);
+            const maxContextLength = MAX_MOLTBOT_MESSAGE_LENGTH - userQuery.length - 100;
+            if (maxContextLength > 500) {
+              truncatedMoltbotMessage = moltbotMessage.slice(0, maxContextLength) + '\n... [context truncated]' + userQuery;
+            } else {
+              // User query too long, just truncate everything
+              truncatedMoltbotMessage = moltbotMessage.slice(0, MAX_MOLTBOT_MESSAGE_LENGTH);
+            }
+          } else {
+            truncatedMoltbotMessage = moltbotMessage.slice(0, MAX_MOLTBOT_MESSAGE_LENGTH);
+          }
+          console.log(`[Johnny5/Moltbot] Truncated to ${truncatedMoltbotMessage.length} chars`);
+        }
+
+        const moltbotResponse = await moltbotBridge!.sendMessage('dashboard:main', truncatedMoltbotMessage);
         return NextResponse.json({
           success: true,
           data: {
@@ -777,6 +841,27 @@ export async function POST(
       enhancedMessage = `${contextParts.join('\n\n')}\n\n---\n\n**User Query:**\n${message}`;
     }
 
+    // Truncate enhanced message if too long for CLI (applies to ALL paths including Bridge)
+    // NOTE: Bridge adds ~2KB system prompt + conversation history on top of this
+    // Claude CLI has a strict prompt limit, so we need to be conservative here
+    const MAX_ENHANCED_MESSAGE_LENGTH = 15000; // ~3.75k tokens, leaves room for Bridge additions
+    let finalMessage = enhancedMessage;
+    if (enhancedMessage.length > MAX_ENHANCED_MESSAGE_LENGTH) {
+      console.log(`[Johnny5] Enhanced message too long (${enhancedMessage.length} chars), truncating...`);
+      // Keep the user message, truncate context
+      const userQueryMarker = '\n\n---\n\n**User Query:**\n';
+      const userQueryIndex = enhancedMessage.lastIndexOf(userQueryMarker);
+      if (userQueryIndex > 0) {
+        const userQuery = enhancedMessage.slice(userQueryIndex);
+        const maxContextLength = MAX_ENHANCED_MESSAGE_LENGTH - userQuery.length - 100;
+        const truncatedContext = enhancedMessage.slice(0, maxContextLength) + '\n... [context truncated]';
+        finalMessage = truncatedContext + userQuery;
+      } else {
+        finalMessage = enhancedMessage.slice(0, MAX_ENHANCED_MESSAGE_LENGTH);
+      }
+      console.log(`[Johnny5] Truncated to ${finalMessage.length} chars`);
+    }
+
     let result: { success: boolean; response: string; error?: string; errorCode?: string };
     let modeUsed: 'bridge' | 'gemini' = 'bridge';
 
@@ -800,7 +885,7 @@ export async function POST(
       // Use Bridge for coding queries (benefits from project context)
       console.log('[Johnny5] Using Bridge mode (coding query)');
       reasoningSteps.push('Generating response via Claude Code CLI...');
-      result = await johnny5Service.sendPrompt(enhancedMessage, conversationHistory);
+      result = await johnny5Service.sendPrompt(finalMessage, conversationHistory);
     } else {
       // Use Gemini for:
       // 1. Personal/memory queries (even when Bridge is connected)
@@ -843,7 +928,7 @@ export async function POST(
           // Add current message
           {
             role: 'user',
-            parts: [{ text: enhancedMessage }],
+            parts: [{ text: finalMessage }],
           },
         ];
 
@@ -905,10 +990,17 @@ export async function POST(
           }
 
           // Build a simple prompt with context embedded
-          let fullPrompt = '[SYSTEM] You are Johnny5, a helpful AI assistant. Be concise and helpful. Use any memory context provided to give relevant responses.\n\n';
+          // finalMessage is already truncated earlier, but apply additional CLI-specific truncation if needed
+          let cliPrompt = finalMessage;
+          const estimatedLength = finalMessage.length + 500; // +500 for system prefix
+          if (estimatedLength > MAX_CLI_PROMPT_LENGTH) {
+            console.log(`[Johnny5] CLI prompt still too long after pre-truncation (${estimatedLength} chars), applying CLI-specific truncation...`);
+            cliPrompt = truncateForCLI(message, contextParts, MAX_CLI_PROMPT_LENGTH);
+            console.log(`[Johnny5] CLI-specific truncated to ${cliPrompt.length} chars`);
+          }
 
-          // Add memory context if available
-          fullPrompt += enhancedMessage;
+          let fullPrompt = '[SYSTEM] You are Johnny5, a helpful AI assistant. Be concise and helpful. Use any memory context provided to give relevant responses.\n\n';
+          fullPrompt += cliPrompt;
 
           try {
             // Call claude CLI with simple --print flag only
@@ -1006,7 +1098,7 @@ export async function POST(
                   role: m.role,
                   content: m.content,
                 })),
-                { role: 'user', content: enhancedMessage },
+                { role: 'user', content: finalMessage },
               ],
             }),
           });

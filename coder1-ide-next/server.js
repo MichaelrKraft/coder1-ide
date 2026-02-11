@@ -2317,6 +2317,29 @@ app.prepare().then(() => {
                 io.to(`team:${teamId}`).emit('team:codeEvent', fullEvent);
               }
             }
+
+            // Time Capsule: Detect commits during active Claude sessions
+            if (process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' && gitEvents.length > 0) {
+              const claudeSession = claudeCodeSessions.get(sessionId);
+              if (claudeSession && claudeSession.inClaudeSession) {
+                for (const event of gitEvents) {
+                  if (event.type === 'commit') {
+                    const duration = claudeSession.sessionStartTime
+                      ? Date.now() - claudeSession.sessionStartTime.getTime()
+                      : 0;
+                    socket.emit('time_capsule:commit_detected', {
+                      sessionId,
+                      sha: event.sha,
+                      branch: event.branch,
+                      message: event.message,
+                      claudeSessionStart: claudeSession.sessionStartTime,
+                      duration,
+                    });
+                    console.log(`[Time Capsule] Commit detected during Claude session: ${event.sha}`);
+                  }
+                }
+              }
+            }
           });
           session.dataHandlerSetup = true;
         }

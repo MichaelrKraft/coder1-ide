@@ -166,6 +166,7 @@ Only mention code/git status if the user explicitly asks about it.
 
   /**
    * Build full prompt including system prompt and conversation history
+   * 🔧 FIX (Feb 2026): Added size validation and truncation to prevent "Prompt too long" CLI errors
    */
   private async buildFullPrompt(
     message: string,
@@ -176,16 +177,51 @@ Only mention code/git status if the user explicitly asks about it.
     // Format for Claude Code CLI
     let prompt = `[System Context]\n${systemPrompt}\n\n`;
 
+    // Add conversation history (truncate if too long)
     if (history.length > 0) {
       prompt += `[Conversation History]\n`;
-      history.forEach((msg) => {
+      // Only include last 5 messages to keep history manageable
+      const recentHistory = history.slice(-5);
+      recentHistory.forEach((msg) => {
         const speaker = msg.role === 'user' ? 'User' : 'Johnny5';
-        prompt += `${speaker}: ${msg.content}\n`;
+        // Truncate individual messages if too long
+        const content = msg.content.length > 2000
+          ? msg.content.slice(0, 2000) + '... [truncated]'
+          : msg.content;
+        prompt += `${speaker}: ${content}\n`;
       });
       prompt += '\n';
     }
 
     prompt += `[Current Message]\nUser: ${message}\n\nJohnny5:`;
+
+    // Final safety check: Claude CLI has a strict prompt size limit
+    const MAX_PROMPT_SIZE = 25000; // ~6k tokens, conservative limit for CLI
+    if (prompt.length > MAX_PROMPT_SIZE) {
+      console.warn(`[Johnny5BridgeService] Prompt too long (${prompt.length} chars), truncating...`);
+      // Keep system context and current message, truncate middle
+      const systemEnd = prompt.indexOf('[Conversation History]');
+      const currentStart = prompt.lastIndexOf('[Current Message]');
+
+      if (systemEnd > 0 && currentStart > systemEnd) {
+        const systemPart = prompt.slice(0, systemEnd);
+        const currentPart = prompt.slice(currentStart);
+        const available = MAX_PROMPT_SIZE - systemPart.length - currentPart.length - 100;
+
+        if (available > 500) {
+          const historyPart = prompt.slice(systemEnd, currentStart);
+          const truncatedHistory = historyPart.slice(0, available) + '\n... [history truncated]\n\n';
+          prompt = systemPart + truncatedHistory + currentPart;
+        } else {
+          // Not enough room for history, just use system + current
+          prompt = systemPart + currentPart;
+        }
+      } else {
+        // Fallback: just truncate from the end
+        prompt = prompt.slice(0, MAX_PROMPT_SIZE - 50) + '\n... [truncated]\n\nJohnny5:';
+      }
+      console.log(`[Johnny5BridgeService] Truncated to ${prompt.length} chars`);
+    }
 
     return prompt;
   }

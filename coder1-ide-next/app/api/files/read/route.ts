@@ -85,12 +85,20 @@ async function fileReadHandler({ req, user }: { req: NextRequest; user?: any }):
         if (useBridge && bridgeManager.hasBridgeForUser(userId)) {
             // Route through bridge to user's local machine
             try {
-                console.log(`🌉 [Bridge] Routing file read request through bridge: ${filePath}`);
+                // Claude Code CLI outputs relative paths from HOME (e.g., "autonomous_vibe_interface/CLAUDE.md")
+                // Resolve these to absolute paths so the bridge can find them
+                let bridgeFilePath = filePath;
+                if (!filePath.startsWith('/') && process.env.HOME) {
+                    bridgeFilePath = path.join(process.env.HOME, filePath);
+                    console.log(`🔧 [Files] Resolved relative path "${filePath}" → "${bridgeFilePath}"`);
+                }
+
+                console.log(`🌉 [Bridge] Routing file read request through bridge: ${bridgeFilePath}`);
 
                 const result = await bridgeManager.requestFileOperation(
                     userId,
                     'read',
-                    filePath,
+                    bridgeFilePath,
                     {}
                 );
 

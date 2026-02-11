@@ -20,18 +20,37 @@ class FileHandler {
     try {
       const resolvedPath = this.resolvePath(filePath);
       this.validatePath(resolvedPath);
-      
+
       this.log(`Reading file: ${resolvedPath}`);
-      
+
       const encoding = options.encoding || 'utf8';
-      const content = await fs.readFile(resolvedPath, encoding);
-      
-      return {
-        path: resolvedPath,
-        content,
-        size: Buffer.byteLength(content, encoding),
-        encoding
-      };
+
+      try {
+        const content = await fs.readFile(resolvedPath, encoding);
+        return {
+          path: resolvedPath,
+          content,
+          size: Buffer.byteLength(content, encoding),
+          encoding
+        };
+      } catch (readError) {
+        // If file not found and path was relative, try resolving from HOME
+        // This handles Claude Code outputting paths relative to ~ (e.g., "autonomous_vibe_interface/CLAUDE.md")
+        if (readError.code === 'ENOENT' && !path.isAbsolute(filePath)) {
+          const homePath = path.resolve(process.env.HOME || '', filePath);
+          if (homePath !== resolvedPath) {
+            this.log(`File not found at ${resolvedPath}, trying HOME: ${homePath}`);
+            const content = await fs.readFile(homePath, encoding);
+            return {
+              path: homePath,
+              content,
+              size: Buffer.byteLength(content, encoding),
+              encoding
+            };
+          }
+        }
+        throw readError;
+      }
     } catch (error) {
       this.error(`Failed to read file ${filePath}:`, error.message);
       throw error;

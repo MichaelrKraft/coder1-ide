@@ -125,6 +125,7 @@ export class DatabaseMigrationManager {
       'oauth-schema.sql',                     // OAuth authentication
       'auth-schema.sql',                      // Additional auth tables
       'bridge-schema.sql',                    // Bridge pairing persistence
+      'time-capsules-schema.sql',             // Time Capsules: AI session -> Git commit linking
     ];
 
     let appliedCount = 0;

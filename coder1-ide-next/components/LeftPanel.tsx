@@ -10,9 +10,10 @@ interface LeftPanelProps {
   onFileSelect: (path: string) => void;
   activeFile: string | null;
   refreshTrigger?: number;
+  onRootChange?: (newRoot: string) => void;
 }
 
-export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger }: LeftPanelProps) {
+export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, onRootChange }: LeftPanelProps) {
   const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'search'>('explorer');
   
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
@@ -123,7 +124,7 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger }: 
       {/* Tab Content - Takes remaining space but leaves room for Discover */}
       <div className="flex-1 min-h-0 relative z-10">
         {activeTab === 'explorer' && (
-          <SafeFileExplorer onFileSelect={onFileSelect} activeFile={activeFile} refreshTrigger={refreshTrigger} />
+          <SafeFileExplorer onFileSelect={onFileSelect} activeFile={activeFile} refreshTrigger={refreshTrigger} onRootChange={onRootChange} />
         )}
         {activeTab === 'sessions' && (
           <SessionsPanel isVisible={true} />
