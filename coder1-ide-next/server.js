@@ -208,24 +208,10 @@ try {
   moltbotBridge = getMoltbotBridge();
   console.log('✅ Moltbot Bridge service loaded');
 
-  // Auto-connect to Moltbot gateway on server start if enabled
-  const moltbotEnabled = process.env.MOLTBOT_ENABLED === 'true';
-  const moltbotGatewayUrl = process.env.MOLTBOT_GATEWAY_URL;
-  if (moltbotEnabled && moltbotGatewayUrl) {
-    console.log(`🔌 Moltbot auto-connect enabled, will connect to ${moltbotGatewayUrl}`);
-    // Delayed connection to allow server to fully start
-    setTimeout(async () => {
-      try {
-        await moltbotBridge.connect(moltbotGatewayUrl);
-        console.log('✅ Moltbot Bridge connected to gateway');
-      } catch (err) {
-        console.warn('⚠️ Moltbot auto-connect failed:', err.message);
-        console.warn('   Bridge will retry automatically with exponential backoff');
-      }
-    }, 2000);
-  } else if (!moltbotEnabled) {
+  if (process.env.MOLTBOT_ENABLED !== 'true') {
     console.log('ℹ️ Moltbot integration disabled (set MOLTBOT_ENABLED=true to enable)');
   }
+  // NOTE: Actual connection happens later (line ~1844) AFTER Socket.IO event listeners are configured
 } catch (error) {
   console.warn('⚠️ Moltbot Bridge not available:', error.message);
   moltbotBridge = null;

@@ -633,7 +633,7 @@ class SmartPRDGenerator {
     }
 
     launchCoder1() {
-        window.open('http://localhost:3001/ide', '_blank');
+        window.open('/ide', '_blank');
     }
 
     showToast(message, type = 'info') {

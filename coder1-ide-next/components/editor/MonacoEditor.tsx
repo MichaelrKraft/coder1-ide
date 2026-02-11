@@ -4,8 +4,9 @@ import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic';
 import type * as monaco from 'monaco-editor';
 import { WelcomeScreen } from './WelcomeScreen';
-import { useCollaborativeEditor } from '@/lib/hooks/useCollaborativeEditor';
-import { getUserColor } from '@/lib/collab-user-colors';
+// TODO: Re-enable collaborative editing after fixing y-monaco module resolution
+// import { useCollaborativeEditor } from '@/lib/hooks/useCollaborativeEditor';
+// import { getUserColor } from '@/lib/collab-user-colors';
 
 // Dynamically import HeroSection to avoid SSR issues
 // Using a wrapper to prevent removeChild errors during unmount
@@ -351,20 +352,25 @@ export default function MonacoEditor({
     return `editor-${heroSectionDismissed ? 'dismissed' : 'active'}`;
   }, [heroSectionDismissed]);
 
+  // TODO: Re-enable collaborative editing after fixing y-monaco module resolution
   // Collaborative editing hook
-  const collabUserColor = useMemo(() => userId ? getUserColor(userId) : '#00D9FF', [userId]);
-  const { isConnected: collabConnected, isSyncing: collabSyncing, connectedUsers, error: collabError } = useCollaborativeEditor({
-    fileId: file || null,
-    editorRef,
-    monacoRef,
-    teamId: teamId || null,
-    userId: userId || 'local-user',
-    userName: userName || 'You',
-    userColor: collabUserColor,
-    isFileLoading,
-    enabled: collaborationEnabled && !!file,
-    collabActiveRef,
-  });
+  // const collabUserColor = useMemo(() => userId ? getUserColor(userId) : '#00D9FF', [userId]);
+  // const { isConnected: collabConnected, isSyncing: collabSyncing, connectedUsers, error: collabError } = useCollaborativeEditor({
+  //   fileId: file || null,
+  //   editorRef,
+  //   monacoRef,
+  //   teamId: teamId || null,
+  //   userId: userId || 'local-user',
+  //   userName: userName || 'You',
+  //   userColor: collabUserColor,
+  //   isFileLoading,
+  //   enabled: collaborationEnabled && !!file,
+  //   collabActiveRef,
+  // });
+
+  // Temporary placeholder values while collab editing is disabled
+  const connectedUsers = [];
+  const collabSyncing = false;
 
   // Show welcome screen or hero section if no file is open and no value provided
   if (!file && value === undefined) {

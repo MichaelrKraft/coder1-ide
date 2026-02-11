@@ -75,7 +75,7 @@ export interface MoltbotBridgeEvents {
 // ============================================================================
 
 const DEFAULT_CONFIG: MoltbotConfig = {
-  gatewayUrl: process.env.MOLTBOT_GATEWAY_URL || 'ws://localhost:18789',
+  gatewayUrl: process.env.MOLTBOT_GATEWAY_URL || 'ws://localhost:55413',
   enabled: true,
   reconnectInterval: parseInt(process.env.MOLTBOT_RECONNECT_INTERVAL || '5000', 10),
   maxRetries: parseInt(process.env.MOLTBOT_MAX_RETRIES || '10', 10),
@@ -183,7 +183,9 @@ class MoltbotBridgeService extends EventEmitter {
       }, this.state.config.connectionTimeout);
 
       try {
-        this.ws = new WS(url);
+        // Connect to /dashboard path for Moltbot protocol (auth via connect handshake)
+        const dashboardUrl = url.replace(/\/?$/, '/dashboard');
+        this.ws = new WS(dashboardUrl);
 
         this.ws.on('open', () => {
           clearTimeout(timeoutId);

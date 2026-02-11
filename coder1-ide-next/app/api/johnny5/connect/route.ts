@@ -28,7 +28,7 @@ const JOHNNY5_CONFIG = join(homedir(), '.johnny5', 'config.json');
 const JOHNNY5_DB = join(homedir(), '.johnny5', 'memory.sqlite');
 
 // Default Johnny5 gateway port
-const DEFAULT_JOHNNY5_PORT = 18789;
+const DEFAULT_JOHNNY5_PORT = 55413;
 
 /**
  * Connection status response interface

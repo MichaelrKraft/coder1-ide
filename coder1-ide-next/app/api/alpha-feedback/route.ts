@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { Resend } from 'resend';
 
 interface FeedbackSubmission {
   id: string;
@@ -103,6 +104,85 @@ export async function POST(request: NextRequest) {
     const allFeedback = loadFeedback();
     allFeedback.push(newFeedback);
     saveFeedback(allFeedback);
+
+    // Send email notification if configured
+    if (process.env.RESEND_API_KEY && process.env.FEEDBACK_EMAIL_TO) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+
+        const emailType = type === 'bug' ? '🐛 Bug Report' :
+                         type === 'feature' ? '💡 Feature Request' :
+                         '💬 General Feedback';
+
+        await resend.emails.send({
+          from: process.env.FEEDBACK_EMAIL_FROM || 'Coder1 Feedback <feedback@resend.dev>',
+          to: process.env.FEEDBACK_EMAIL_TO,
+          subject: `[Coder1 Alpha] ${emailType}`,
+          html: `
+            <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #00D9FF 0%, #FB923C 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 24px;">New Alpha Feedback</h1>
+              </div>
+
+              <div style="background: #1a1a1a; padding: 30px; border-radius: 0 0 8px 8px;">
+                <div style="background: #2a2a2a; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                  <p style="color: #00D9FF; font-weight: bold; margin: 0 0 5px 0; font-size: 14px;">TYPE</p>
+                  <p style="color: white; margin: 0; font-size: 16px;">${emailType}</p>
+                </div>
+
+                <div style="background: #2a2a2a; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                  <p style="color: #00D9FF; font-weight: bold; margin: 0 0 10px 0; font-size: 14px;">MESSAGE</p>
+                  <p style="color: #e0e0e0; margin: 0; line-height: 1.6; white-space: pre-wrap;">${message}</p>
+                </div>
+
+                ${email ? `
+                <div style="background: #2a2a2a; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                  <p style="color: #00D9FF; font-weight: bold; margin: 0 0 5px 0; font-size: 14px;">USER EMAIL</p>
+                  <p style="color: white; margin: 0;">${email}</p>
+                </div>
+                ` : ''}
+
+                <div style="background: #2a2a2a; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                  <p style="color: #00D9FF; font-weight: bold; margin: 0 0 10px 0; font-size: 14px;">CONTEXT</p>
+                  <table style="width: 100%; color: #e0e0e0; font-size: 13px;">
+                    <tr>
+                      <td style="padding: 5px 0; color: #999;">URL:</td>
+                      <td style="padding: 5px 0;">${context?.url || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 5px 0; color: #999;">Screen:</td>
+                      <td style="padding: 5px 0;">${context?.screenSize || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 5px 0; color: #999;">Time:</td>
+                      <td style="padding: 5px 0;">${new Date(newFeedback.submittedAt).toLocaleString()}</td>
+                    </tr>
+                    ${context?.sessionId ? `
+                    <tr>
+                      <td style="padding: 5px 0; color: #999;">Session:</td>
+                      <td style="padding: 5px 0;">${context.sessionId}</td>
+                    </tr>
+                    ` : ''}
+                  </table>
+                </div>
+
+                <div style="background: #2a2a2a; padding: 15px; border-radius: 6px;">
+                  <p style="color: #999; font-size: 12px; margin: 0;">
+                    Feedback ID: ${newFeedback.id}<br>
+                    View all feedback: <a href="http://localhost:3001/api/alpha-feedback" style="color: #00D9FF;">http://localhost:3001/api/alpha-feedback</a>
+                  </p>
+                </div>
+              </div>
+            </div>
+          `,
+        });
+
+        console.log('✅ Feedback email sent successfully');
+      } catch (emailError) {
+        console.error('❌ Failed to send feedback email:', emailError);
+        // Don't fail the request if email fails
+      }
+    }
 
     // Log to console for immediate visibility during alpha
     console.log('\n========================================');

@@ -243,14 +243,14 @@ function isLoaded() {
  */
 function isRunning() {
   try {
-    // Check if port 18789 is listening
-    const lsofResult = execSync('lsof -i :18789 -sTCP:LISTEN -t 2>/dev/null', {
+    // Check if port 55413 is listening
+    const lsofResult = execSync('lsof -i :55413 -sTCP:LISTEN -t 2>/dev/null', {
       encoding: 'utf-8',
     }).trim();
 
     if (lsofResult) {
       const pid = parseInt(lsofResult.split('\n')[0], 10);
-      return { running: true, pid, port: 18789 };
+      return { running: true, pid, port: 55413 };
     }
   } catch (e) {
     // lsof failed or no process found
@@ -325,7 +325,7 @@ To fix: Set JOHNNY5_PATH environment variable to your Johnny5 installation direc
     const runStatus = isRunning();
     if (runStatus.running) {
       console.log(`\x1b[32m✅ Johnny5 daemon installed and running (PID: ${runStatus.pid})\x1b[0m`);
-      console.log(`\x1b[90m   Gateway: http://localhost:18789\x1b[0m`);
+      console.log(`\x1b[90m   Gateway: http://localhost:55413\x1b[0m`);
       console.log(`\x1b[90m   Logs: johnny5 daemon logs\x1b[0m`);
       return {
         success: true,

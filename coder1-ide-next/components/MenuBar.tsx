@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, SettingsIcon, Info, HelpCircle, Keyboard, AlertCircle } from '@/lib/icons';
 import { glows } from '@/lib/design-tokens';
 import { SetupInstructionsModal } from './bridge/SetupInstructionsModal';
@@ -92,6 +93,7 @@ const MenuBar = React.memo(function MenuBar({
   onCut,
   onPaste,
 }: MenuBarProps) {
+  const router = useRouter();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [setupModalOpen, setSetupModalOpen] = useState(false);
@@ -190,19 +192,20 @@ const MenuBar = React.memo(function MenuBar({
           setAlphaTesterNumber(parseInt(testerNum, 10));
         }
       };
-      
+
       // Load immediately
       loadBadge();
-      
+
       // Also reload when tour completes
       window.addEventListener('tour:completed', loadBadge);
-      
+
       return () => {
         window.removeEventListener('tour:completed', loadBadge);
       };
     }
   }, []);
 
+  // Fetch user data on mount
   const handleMenuClick = (menuName: string) => {
     setActiveMenu(activeMenu === menuName ? null : menuName);
     setIsMenuOpen(false); // Close right menu when opening left menu
@@ -315,33 +318,6 @@ const MenuBar = React.memo(function MenuBar({
             )}
           </div>
         ))}
-        
-        {/* Settings Gear Icon - positioned after Help menu */}
-        <div className="relative ml-4">
-          <button
-            onClick={() => {
-              if (onShowSettings) {
-                onShowSettings();
-                setActiveMenu(null);
-              }
-            }}
-            className="p-1.5 text-text-secondary hover:text-text-primary rounded transition-all duration-200 hover:bg-bg-tertiary"
-            style={{
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'rotate(180deg) scale(1.1)';
-              e.currentTarget.style.color = '#FB923C';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
-              e.currentTarget.style.color = '';
-            }}
-            title="Settings - Configure IDE preferences and appearance"
-          >
-            <SettingsIcon className="w-5 h-5" />
-          </button>
-        </div>
 
         </div>
       </div>
@@ -582,8 +558,31 @@ const MenuBar = React.memo(function MenuBar({
           </div>
         )}
         </div>
+
+        {/* Settings Gear Icon - positioned after Menu button */}
+        <button
+          onClick={() => {
+            if (onShowSettings) {
+              onShowSettings();
+              setActiveMenu(null);
+              setIsMenuOpen(false);
+            }
+          }}
+          className="p-2 text-text-secondary hover:text-text-primary rounded transition-all duration-200"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'rotate(180deg) scale(1.1)';
+            e.currentTarget.style.color = '#FB923C';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
+            e.currentTarget.style.color = '';
+          }}
+          title="Settings - Configure IDE preferences and appearance"
+        >
+          <SettingsIcon className="w-5 h-5" />
+        </button>
       </div>
-      
+
       {/* Bridge Setup Instructions Modal */}
       <SetupInstructionsModal 
         isOpen={setupModalOpen} 
