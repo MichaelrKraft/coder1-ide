@@ -99,10 +99,10 @@ export default function AlphaFeedbackButton() {
 
   return (
     <>
-      {/* Floating Button - Black with glowing orange border */}
+      {/* Floating Button - Black with glowing orange border - Shifted left to make room for Team button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-2 right-4 z-40 flex items-center gap-1.5 px-2.5 py-1.5 bg-black text-orange-400 text-xs font-medium rounded-md border border-orange-500/60 hover:border-orange-400 hover:text-orange-300 transition-all duration-200"
+        className="fixed bottom-8 right-24 z-40 flex items-center gap-1.5 px-2.5 py-1.5 bg-black text-orange-400 text-xs font-medium rounded-md border border-orange-500/60 hover:border-orange-400 hover:text-orange-300 transition-all duration-200"
         style={{
           boxShadow: '0 0 8px rgba(249, 115, 22, 0.4), 0 0 2px rgba(249, 115, 22, 0.2)',
         }}

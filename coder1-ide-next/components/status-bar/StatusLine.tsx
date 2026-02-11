@@ -121,18 +121,15 @@ export default function StatusLine() {
   };
   
   return (
-    <div className="h-6 bg-bg-tertiary border-t border-border-default flex items-center justify-between px-4 text-xs select-none">
-      {/* Spacer */}
-      <div />
-      
-      {/* Alpha Status Indicator and Time Display */}
+    <div className="h-6 bg-bg-tertiary border-t border-border-default flex items-center justify-end px-4 pr-20 text-xs select-none">
+      {/* Alpha Status Indicator and Time Display - Right side with padding for Team button */}
       <div className="flex items-center gap-3 text-text-muted">
         {/* Alpha Status */}
         <div className="flex items-center gap-1 text-orange-400/60" title="Enhanced StatusLine features temporarily disabled during alpha">
           <Brain className="w-3 h-3" />
           <span>Alpha</span>
         </div>
-        
+
         {/* Time Display */}
         <div className="flex items-center gap-1">
           <Clock className="w-3 h-3" />

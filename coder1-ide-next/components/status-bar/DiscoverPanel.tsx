@@ -564,8 +564,8 @@ export default function DiscoverPanel() {
         </div>
 
         {/* AI Plugins - Prominent Feature (moved above Search) */}
-        <div className="px-4 py-3 border-b border-border-default">
-          <div className="p-4 border-2 border-orange-500 rounded-lg bg-gradient-to-br from-orange-500/10 to-coder1-cyan/5">
+        <div className="px-4 py-2 border-b border-border-default">
+          <div className="px-4 py-2.5 border-2 border-orange-500 rounded-lg bg-gradient-to-br from-orange-500/10 to-coder1-cyan/5">
             <a
               href="/templates-hub.html"
               target="_blank"

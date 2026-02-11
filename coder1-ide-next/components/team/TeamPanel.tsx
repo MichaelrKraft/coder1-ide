@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Cloud, UserPlus, RefreshCw, Trash2, Copy, Check, GitBranch } from 'lucide-react';
+import { Cloud, UserPlus, RefreshCw, Trash2, Copy, Check, GitBranch, X } from 'lucide-react';
 import { useTeamStore } from '@/stores/useTeamStore';
 
 interface TeamMember {
@@ -177,6 +177,24 @@ export default function TeamPanel() {
     }
   };
 
+  const handleDeleteTeam = async () => {
+    if (!syncTeam) return;
+    if (!window.confirm(`Delete team "${syncTeam.name}"? This cannot be undone.`)) return;
+
+    try {
+      const res = await fetch(`/api/team/${syncTeam.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        // Clear local state
+        useTeamStore.getState().setSyncTeam(null);
+        setMembers([]);
+        setFacts([]);
+      }
+    } catch (err) {
+      console.error('Failed to delete team:', err);
+    }
+  };
+
   const handleDeleteFact = async (factId: string) => {
     if (!syncTeam) return;
     if (!window.confirm('Remove this fact from team knowledge?')) return;
@@ -233,8 +251,9 @@ export default function TeamPanel() {
   return (
     <div className="p-4 space-y-4">
       {/* Header — right padding for slide-out close button */}
-      <div className="flex items-center justify-between pr-6">
-        <div className="flex items-center gap-2 text-text-primary">
+      <div className="space-y-2">
+        {/* Row 1: Team name and selector */}
+        <div className="flex items-center gap-2 text-text-primary pr-8">
           <Cloud className="w-5 h-5 text-coder1-cyan" />
           <h3 className="font-semibold">{syncTeam.name}</h3>
           {teams.length > 1 && (
@@ -249,14 +268,25 @@ export default function TeamPanel() {
             </select>
           )}
         </div>
-        <button
-          onClick={handleSyncNow}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-coder1-cyan hover:bg-coder1-cyan/10 rounded transition-colors"
-          title="Sync Now"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
-          Sync
-        </button>
+        {/* Row 2: Action buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSyncNow}
+            className="flex items-center gap-1 px-2 py-1 text-xs text-coder1-cyan hover:bg-coder1-cyan/10 rounded transition-colors"
+            title="Sync team knowledge - Push your Johnny5 insights to the team and pull insights from team members"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
+            Sync
+          </button>
+          <button
+            onClick={handleDeleteTeam}
+            className="flex items-center gap-1 px-2 py-1 text-xs text-red-400 hover:bg-red-400/10 rounded transition-colors"
+            title="Delete Team"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete
+          </button>
+        </div>
       </div>
 
       {/* Sync Status */}
