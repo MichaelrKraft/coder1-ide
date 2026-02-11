@@ -509,14 +509,14 @@ export default function TerminalContainer({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Tab Bar */}
-      <div className="flex border-b border-border-default bg-bg-secondary">
+      {/* Tab Bar - Compact tabs style */}
+      <div className="flex items-end gap-1 px-2 pt-2 bg-bg-primary border-b border-border-default">
         {/* Main Terminal Tab */}
         <button
-          className={`px-4 py-2 text-sm transition-all duration-200 flex items-center gap-2 ${
+          className={`px-3 py-1.5 text-xs transition-all duration-200 flex items-center gap-1.5 rounded-t-md border border-b-0 ${
             (!agentTabsEnabled && activeTab === 'main') || (agentTabsEnabled && activeSessionId === 'main')
-              ? 'bg-bg-primary text-text-primary border-b-2 border-coder1-cyan'
-              : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+              ? 'bg-bg-secondary text-text-primary border-border-default border-b-bg-secondary -mb-px'
+              : 'bg-bg-tertiary/50 text-text-secondary hover:text-text-primary hover:bg-bg-tertiary border-transparent'
           }`}
           onClick={() => {
             if (agentTabsEnabled) {
@@ -527,31 +527,24 @@ export default function TerminalContainer({
           }}
           title="Main Terminal - Your active development environment"
         >
-          <span className="text-xs">📟</span>
+          <span className="text-[10px]">📟</span>
           <span>Main Terminal</span>
         </button>
 
         {/* Sandbox Terminal Tab (only shown when sandbox exists) */}
         {sandboxSession && (
           <div
-            className={`flex items-center gap-2 text-sm transition-all duration-200 relative ${
+            className={`flex items-center text-xs transition-all duration-200 rounded-t-md border border-b-0 ${
               (() => {
                 const isActive = (!agentTabsEnabled && activeTab === 'sandbox') || (agentTabsEnabled && activeSessionId === 'sandbox');
-                console.log('🏖️ UI DEBUG: Sandbox tab rendering');
-                console.log('  - agentTabsEnabled:', agentTabsEnabled);
-                console.log('  - activeTab:', activeTab);
-                console.log('  - activeSessionId:', activeSessionId);
-                console.log('  - Condition 1 (!agentTabsEnabled && activeTab === "sandbox"):', !agentTabsEnabled && activeTab === 'sandbox');
-                console.log('  - Condition 2 (agentTabsEnabled && activeSessionId === "sandbox"):', agentTabsEnabled && activeSessionId === 'sandbox');
-                console.log('  - Final isActive:', isActive);
-                return isActive 
-                  ? 'bg-bg-primary text-text-primary border-b-2 border-orange-400'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary';
+                return isActive
+                  ? 'bg-bg-secondary text-text-primary border-border-default border-b-bg-secondary -mb-px'
+                  : 'bg-bg-tertiary/50 text-text-secondary hover:text-text-primary hover:bg-bg-tertiary border-transparent';
               })()
             }`}
           >
             <button
-              className="px-4 py-2 flex items-center gap-2 flex-1"
+              className="px-3 py-1.5 flex items-center gap-1.5"
               onClick={() => {
                 if (agentTabsEnabled) {
                   setActiveSessionId('sandbox');
@@ -562,23 +555,23 @@ export default function TerminalContainer({
               title={`Checkpoint Sandbox - ${sandboxSession.name}`}
             >
               <FolderOpen className="w-3 h-3 text-orange-400" />
-              <span className="truncate max-w-40">
-                {sandboxSession.checkpointData?.timestamp 
+              <span className="truncate max-w-32">
+                {sandboxSession.checkpointData?.timestamp
                   ? formatCheckpointDate(sandboxSession.checkpointData.timestamp)
-                  : 'Sandbox Terminal'}
+                  : 'Sandbox'}
               </span>
             </button>
-            
-            {/* Close button - separate from main tab button */}
+
+            {/* Close button */}
             <button
-              className="p-1.5 mr-2 rounded text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+              className="p-1 mr-1 rounded text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 closeSandbox();
               }}
               title="Close sandbox"
             >
-              <X className="w-3 h-3" />
+              <X className="w-2.5 h-2.5" />
             </button>
           </div>
         )}
@@ -588,55 +581,52 @@ export default function TerminalContainer({
           const roleStyle = getAgentRoleStyle(agent.role);
           const IconComponent = roleStyle.icon;
           const isActive = activeSessionId === agent.id;
-          
+
           return (
             <div
               key={agent.id}
-              className={`flex items-center gap-2 text-sm transition-all duration-200 relative ${
+              className={`flex items-center text-xs transition-all duration-200 rounded-t-md border border-b-0 ${
                 isActive
-                  ? `bg-bg-primary text-text-primary border-b-2 ${roleStyle.borderColor}`
-                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+                  ? 'bg-bg-secondary text-text-primary border-border-default border-b-bg-secondary -mb-px'
+                  : 'bg-bg-tertiary/50 text-text-secondary hover:text-text-primary hover:bg-bg-tertiary border-transparent'
               }`}
             >
               <button
-                className="px-4 py-2 flex items-center gap-2 flex-1"
+                className="px-3 py-1.5 flex items-center gap-1.5"
                 onClick={() => setActiveSessionId(agent.id)}
                 title={`${agent.role} Agent - ${agent.currentTask}`}
               >
                 <IconComponent className={`w-3 h-3 text-${roleStyle.color}`} />
-                <span className="truncate max-w-32">{agent.name}</span>
+                <span className="truncate max-w-24">{agent.name}</span>
                 {agent.status === 'working' && (
-                  <div className={`w-2 h-2 rounded-full bg-${roleStyle.color} animate-pulse`} />
+                  <div className={`w-1.5 h-1.5 rounded-full bg-${roleStyle.color} animate-pulse`} />
                 )}
               </button>
-              
+
               {/* Close button */}
               <button
-                className="p-1.5 mr-2 rounded text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                className="p-1 mr-1 rounded text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   closeAgentSession(agent.id);
                 }}
                 title="Close agent"
               >
-                <X className="w-3 h-3" />
+                <X className="w-2.5 h-2.5" />
               </button>
             </div>
           );
         })}
 
-        {/* New Claude Tab Button */}
+        {/* New Claude Tab Button - Compact + icon style */}
         <button
-          className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-all duration-200 flex items-center gap-2 border-l border-border-default"
+          className="px-2 py-1.5 text-xs text-text-muted hover:text-coder1-cyan transition-all duration-200 flex items-center gap-1"
           onClick={createNewClaudeTab}
           title="Open a new Claude CLI session"
         >
-          <span className="text-xs">➕</span>
+          <span className="text-[10px]">+</span>
           <span>New Claude Tab</span>
         </button>
-
-        {/* Tab bar spacer */}
-        <div className="flex-1 bg-bg-secondary"></div>
       </div>
 
       {/* Terminal Content */}

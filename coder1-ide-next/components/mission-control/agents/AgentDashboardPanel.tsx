@@ -272,7 +272,7 @@ export default function AgentDashboardPanel() {
         <p className="text-text-secondary">Choose how to spawn AI agents for your project</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* AI Team Card */}
         <div
           className={`bg-bg-secondary border rounded-lg p-6 cursor-pointer transition-all hover:border-coder1-cyan/50 hover:shadow-glow-cyan ${
