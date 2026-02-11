@@ -286,9 +286,10 @@ export default function TeamPanel() {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              e.preventDefault();
               handleDeleteTeam();
             }}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-red-400 hover:bg-red-400/10 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-xs text-red-400 hover:bg-red-400/10 rounded transition-colors cursor-pointer"
             title="Delete Team"
           >
             <Trash2 className="w-3.5 h-3.5" />
