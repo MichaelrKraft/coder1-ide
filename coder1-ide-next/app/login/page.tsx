@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/lib/hooks/useAuth';
+import MatrixBackground from '@/components/MatrixBackground';
 
 // ================================================================================
 // Login Page — Single page with Sign In / Sign Up toggle
@@ -127,24 +128,29 @@ function LoginPageContent() {
   // Show loading while checking auth
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a0f' }}>
-        <div className="text-[#00D9FF] text-lg">Loading...</div>
-      </div>
+      <MatrixBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-[#00D9FF] text-lg">Loading...</div>
+        </div>
+      </MatrixBackground>
     );
   }
 
   // If already authenticated and waiting for redirect
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a0f' }}>
-        <div className="text-[#00D9FF] text-lg">Redirecting...</div>
-      </div>
+      <MatrixBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-[#00D9FF] text-lg">Redirecting...</div>
+        </div>
+      </MatrixBackground>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0a0a0f' }}>
-      <div className="w-full max-w-[400px] space-y-6">
+    <MatrixBackground>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="w-full max-w-[400px] space-y-6">
         {/* Logo */}
         <div className="text-center">
           <Image
@@ -422,7 +428,8 @@ function LoginPageContent() {
           </a> */}
         </div>
       </div>
-    </div>
+      </div>
+    </MatrixBackground>
   );
 }
 
@@ -430,9 +437,11 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a0f' }}>
-          <div style={{ color: '#00D9FF' }}>Loading...</div>
-        </div>
+        <MatrixBackground>
+          <div className="min-h-screen flex items-center justify-center">
+            <div style={{ color: '#00D9FF' }}>Loading...</div>
+          </div>
+        </MatrixBackground>
       }
     >
       <LoginPageContent />

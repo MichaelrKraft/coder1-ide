@@ -184,14 +184,30 @@ export default function TeamPanel() {
     try {
       const res = await fetch(`/api/team/${syncTeam.id}`, { method: 'DELETE' });
       const data = await res.json();
+
+      if (!res.ok) {
+        // Handle specific error cases
+        if (res.status === 401) {
+          alert('Please log in to delete the team.');
+        } else if (res.status === 403) {
+          alert('You do not have permission to delete this team.');
+        } else {
+          alert(`Failed to delete team: ${data.error || 'Unknown error'}`);
+        }
+        return;
+      }
+
       if (data.success) {
         // Clear local state
         useTeamStore.getState().setSyncTeam(null);
         setMembers([]);
         setFacts([]);
+      } else {
+        alert(`Failed to delete team: ${data.error || 'Unknown error'}`);
       }
     } catch (err) {
       console.error('Failed to delete team:', err);
+      alert('Failed to delete team. Please try again.');
     }
   };
 

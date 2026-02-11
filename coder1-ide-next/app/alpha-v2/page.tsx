@@ -167,11 +167,17 @@ function ScrollReveal({
   className?: string;
   delay?: number;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Handle hydration
   useEffect(() => {
-    if (!ref.current) return;
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !ref.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -187,7 +193,16 @@ function ScrollReveal({
 
     observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [delay]);
+  }, [mounted, delay]);
+
+  // Server render: show content without animation classes
+  if (!mounted) {
+    return (
+      <div className={className}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div

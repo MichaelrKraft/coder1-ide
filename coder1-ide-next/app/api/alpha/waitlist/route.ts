@@ -34,7 +34,8 @@ function isValidEmail(email: string): boolean {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, name, redditUsername, source } = body;
+    const { email, fullName, name, redditUsername, source } = body;
+    const displayName = fullName || name; // Support both fullName (new) and name (legacy)
 
     // Validation
     if (!email || !isValidEmail(email)) {
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       
       const result = stmt.run(
         email.toLowerCase().trim(),
-        name || null,
+        displayName || null,
         redditUsername || null,
         source || 'website',
         ipAddress,

@@ -1112,16 +1112,27 @@ function IDEPageContent() {
   }, [FOCUS_MODE_ENABLED, explorerVisible]);
 
   const handleZoomIn = useCallback(() => {
-    setFontSize(prev => Math.min(prev + 2, 30));
+    console.log('[Zoom] Zoom In triggered, current fontSize will increase');
+    setFontSize(prev => {
+      const newSize = Math.min(prev + 2, 30);
+      console.log(`[Zoom] fontSize: ${prev} -> ${newSize}`);
+      return newSize;
+    });
     menuActionsRef.current?.zoomIn();
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setFontSize(prev => Math.max(prev - 2, 10));
+    console.log('[Zoom] Zoom Out triggered, current fontSize will decrease');
+    setFontSize(prev => {
+      const newSize = Math.max(prev - 2, 10);
+      console.log(`[Zoom] fontSize: ${prev} -> ${newSize}`);
+      return newSize;
+    });
     menuActionsRef.current?.zoomOut();
   }, []);
 
   const handleResetZoom = useCallback(() => {
+    console.log('[Zoom] Reset Zoom triggered, fontSize -> 14');
     setFontSize(14);
     menuActionsRef.current?.resetZoom();
   }, []);

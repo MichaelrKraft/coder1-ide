@@ -33,7 +33,7 @@ export default function AlphaSuccessPage() {
         </a>
 
         <p className="mt-8 text-gray-400 text-sm">
-          Need help? Email us at <a href="mailto:alpha@coder1.app" className="text-cyan-400 hover:underline">alpha@coder1.app</a>
+          Need help? Email us at <a href="mailto:support@callspot.ai" className="text-cyan-400 hover:underline">support@callspot.ai</a>
         </p>
       </div>
     </div>
