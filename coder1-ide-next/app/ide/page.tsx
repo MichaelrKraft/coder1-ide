@@ -9,6 +9,7 @@ import InteractiveTour from "@/components/InteractiveTour";
 import SettingsModal from "@/components/SettingsModal";
 import KeyboardShortcutsModal from "@/components/KeyboardShortcutsModal";
 import TeamPanel from "@/components/team/TeamPanel";
+import FloatingTeamButton from "@/components/team/FloatingTeamButton";
 import { MenuActionsService, FileInfo } from '@/lib/services/menu-actions';
 import type { editor } from 'monaco-editor';
 import { filterThinkingAnimations } from '@/lib/checkpoint-utils';
@@ -1952,6 +1953,9 @@ function IDEPageContent() {
                 </div>
               </div>
             )}
+
+            {/* Floating Team Button */}
+            <FloatingTeamButton />
 
             {/* Keyboard Shortcuts Modal */}
             <KeyboardShortcutsModal

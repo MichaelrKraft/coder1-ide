@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Eye, GitBranch, FileText, Brain, AlertTriangle, Zap, Link, Unlink, Users, Cloud } from 'lucide-react';
+import { Eye, GitBranch, FileText, Brain, AlertTriangle, Zap, Link, Unlink, Users } from 'lucide-react';
 import StatusBarActions from './StatusBarActions';
 import DiscoverPanel from './DiscoverPanel';
 import CostDisplay from '../terminal/CostDisplay';
@@ -17,7 +17,6 @@ import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { usePollingHealthStore } from '@/stores/usePollingHealthStore';
-import { useTeamStore } from '@/stores/useTeamStore';
 import { useBridgeSessionData, formatTokenCount } from '@/lib/useBridgeSessionData';
 import { useBridgeConnectionState } from '@/lib/useBridgeConnectionState';
 import { logger } from '@/lib/logger';
@@ -68,8 +67,6 @@ export default function StatusBarCore({
   
   // Context Folders state management removed - moved to terminal memory panel
   
-  // Team Knowledge Sync state
-  const { syncTeam, syncStatus, onlineMembers } = useTeamStore();
 
   const actuallyConnected = isConnected || connections.terminal;
   const supervisionActive = supervision.isActive;
@@ -189,30 +186,6 @@ export default function StatusBarCore({
             </div>
           )}
 
-          {/* Team Knowledge Sync Indicator */}
-          {syncTeam && (
-            <div
-              className="flex items-center gap-1.5 text-coder1-cyan/80 hover:text-coder1-cyan cursor-pointer transition-colors"
-              title={`Team: ${syncTeam.name}\nSync: ${syncStatus.isConnected ? 'Connected' : 'Disconnected'}\nLast sync: ${syncStatus.lastPushAt || 'Never'}`}
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('openTeamPanel'));
-              }}
-            >
-              <Cloud className="w-3.5 h-3.5" />
-              <span className="font-medium text-xs">{syncTeam.name}</span>
-              {syncStatus.isSyncing ? (
-                <span className="w-1.5 h-1.5 rounded-full bg-coder1-cyan animate-pulse" />
-              ) : syncStatus.isConnected ? (
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              ) : (
-                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-              )}
-              {onlineMembers.length > 0 && (
-                <span className="text-green-400 text-[10px]">({onlineMembers.length} online)</span>
-              )}
-            </div>
-          )}
-
           {/* Agent Team Indicator */}
           {activeTeam && (activeTeam.status === 'executing' || activeTeam.status === 'planning' || activeTeam.status === 'spawning') && (
             <div
@@ -266,15 +239,7 @@ export default function StatusBarCore({
             </div>
           )}
 
-          {/* Connection Status */}
-          {actuallyConnected && (
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-400"></span>
-              <span className="text-green-400">Connected</span>
-            </div>
-          )}
-
-          {/* Context memory statistics moved to terminal header memory panel */}
+          {/* Connection status removed to reduce clutter - Team button now in corner */}
         </div>
       </div>
 
