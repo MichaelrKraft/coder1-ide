@@ -48,6 +48,7 @@ import {
 } from '@/services/memory';
 import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
 import { classifyQuery, type ClassificationResult } from '@/services/query-classifier';
+import { isLivingFilesEnabled, loadLivingFilesContext, appendToLivingFile } from '@/lib/living-files';
 
 // Log memory feature status on module load
 console.log('[Johnny5] Memory features status:', {
@@ -138,7 +139,7 @@ type ChatResponse = ChatSuccessResponse | ChatErrorResponse | QuotaExceededRespo
 
 const MAX_MESSAGE_LENGTH = 50000;
 const MAX_HISTORY_MESSAGES = 50;
-const MAX_CLI_PROMPT_LENGTH = 50000; // ~12.5k tokens, conservative limit for Claude CLI
+const MAX_CLI_PROMPT_LENGTH = 25000; // ~6.25k tokens, conservative limit for Claude CLI
 
 // ============================================================================
 // Error Response Helpers
@@ -291,6 +292,20 @@ You are Johnny5 - inspired by Short Circuit's curious, enthusiastic robot ("No d
 ## Memory & Context
 CRITICAL: When you see memory context, facts, or profile information in the message, you MUST use it. If the user asks "what do you know about me?" - tell them everything from the context. You DO have memory. You DO remember them. Never say you don't store information - you DO.`;
 
+  // Living Files Context — inject when feature flag is enabled
+  let livingFilesSection = '';
+  if (isLivingFilesEnabled()) {
+    try {
+      const livingContext = loadLivingFilesContext();
+      if (livingContext) {
+        livingFilesSection = '\n\n' + livingContext;
+        console.log('[Johnny5] Living files context loaded:', livingContext.length, 'chars');
+      }
+    } catch (err) {
+      console.warn('[Johnny5] Failed to load living files context:', err);
+    }
+  }
+
   let capabilitiesSection = '';
 
   if (mode.mode === 'moltbot') {
@@ -378,7 +393,7 @@ Be the assistant you'd actually want to talk to. Concise when needed, thorough w
 
 Please acknowledge.`;
 
-  return basePersonality + capabilitiesSection + closingSection;
+  return basePersonality + livingFilesSection + capabilitiesSection + closingSection;
 }
 
 // ============================================================================
@@ -544,8 +559,9 @@ export async function POST(
         }
 
         // 🔧 FIX (Feb 2026): Truncate Moltbot message to prevent "Prompt too long" errors
-        // This path has an early return and bypasses the truncation logic below
-        const MAX_MOLTBOT_MESSAGE_LENGTH = 15000; // ~3.75k tokens
+        // Two fixes: (1) aggressive truncation, (2) unique session key to prevent history accumulation
+        const MAX_MOLTBOT_MESSAGE_LENGTH = 5000; // ~1.25k tokens - aggressive to leave room for ManusLive overhead
+        console.log(`[Johnny5/Moltbot] Message size: ${moltbotMessage.length} chars, limit: ${MAX_MOLTBOT_MESSAGE_LENGTH}`);
         let truncatedMoltbotMessage = moltbotMessage;
         if (moltbotMessage.length > MAX_MOLTBOT_MESSAGE_LENGTH) {
           console.log(`[Johnny5/Moltbot] Message too long (${moltbotMessage.length} chars), truncating...`);
@@ -557,7 +573,6 @@ export async function POST(
             if (maxContextLength > 500) {
               truncatedMoltbotMessage = moltbotMessage.slice(0, maxContextLength) + '\n... [context truncated]' + userQuery;
             } else {
-              // User query too long, just truncate everything
               truncatedMoltbotMessage = moltbotMessage.slice(0, MAX_MOLTBOT_MESSAGE_LENGTH);
             }
           } else {
@@ -566,7 +581,18 @@ export async function POST(
           console.log(`[Johnny5/Moltbot] Truncated to ${truncatedMoltbotMessage.length} chars`);
         }
 
-        const moltbotResponse = await moltbotBridge!.sendMessage('dashboard:main', truncatedMoltbotMessage);
+        // Use unique session key per message to prevent ManusLive from accumulating history
+        const moltbotSessionKey = `dashboard:${Date.now()}`;
+        console.log(`[Johnny5/Moltbot] Sending to session: ${moltbotSessionKey}, final size: ${truncatedMoltbotMessage.length} chars`);
+        const moltbotResponse = await moltbotBridge!.sendMessage(moltbotSessionKey, truncatedMoltbotMessage);
+
+        // Detect CLI error responses that Moltbot returns as "successful" text
+        const responseText = moltbotResponse.text || '';
+        if (responseText.includes('Prompt is too long') || responseText.includes('Claude CLI exited with code')) {
+          console.warn('[Johnny5/Moltbot] Response contains CLI error, falling through to Bridge/Gemini:', responseText.slice(0, 200));
+          throw new Error('Moltbot returned CLI error: ' + responseText.slice(0, 100));
+        }
+
         return NextResponse.json({
           success: true,
           data: {
@@ -744,8 +770,14 @@ export async function POST(
       }
     }
 
-    // 6.6. Enhanced Memory Intelligence - facts and patterns (NEW)
+    // 6.6. Enhanced Memory Intelligence - facts and patterns
+    // When living files are enabled, context is already loaded via loadLivingFilesContext()
+    // in the system prompt — skip the old memory builder to avoid duplicate context
     let factsAndPatternsContext = '';
+    if (isLivingFilesEnabled()) {
+      console.log('[Johnny5] Living files enabled — skipping legacy buildMemoryContext()');
+      reasoningSteps.push('Using living files context (skipped legacy memory)');
+    } else {
     try {
       const intelligentMemory = await buildMemoryContext({
         userMessage: message,
@@ -768,6 +800,7 @@ export async function POST(
       console.warn('[Johnny5] Memory intelligence failed:', intelligenceError);
       // Continue without enhanced memory
     }
+    } // end else (legacy memory path)
 
     // 6.7. Compute memory status based on what actually happened
     if (!enableMemoryInjection) {
@@ -844,7 +877,7 @@ export async function POST(
     // Truncate enhanced message if too long for CLI (applies to ALL paths including Bridge)
     // NOTE: Bridge adds ~2KB system prompt + conversation history on top of this
     // Claude CLI has a strict prompt limit, so we need to be conservative here
-    const MAX_ENHANCED_MESSAGE_LENGTH = 15000; // ~3.75k tokens, leaves room for Bridge additions
+    const MAX_ENHANCED_MESSAGE_LENGTH = 8000; // ~2k tokens, leaves room for Bridge additions
     let finalMessage = enhancedMessage;
     if (enhancedMessage.length > MAX_ENHANCED_MESSAGE_LENGTH) {
       console.log(`[Johnny5] Enhanced message too long (${enhancedMessage.length} chars), truncating...`);
@@ -1024,7 +1057,7 @@ export async function POST(
             const cliResponse = await new Promise<string>((resolve, reject) => {
               const child = spawnAsync('claude', ['--print'], {
                 env: cliEnv,
-                cwd: homeDir,
+                cwd: '/tmp',
                 stdio: ['pipe', 'pipe', 'pipe'],
               });
 
@@ -1179,6 +1212,17 @@ export async function POST(
     } catch (saveError) {
       console.error('[Johnny5] Failed to save assistant message:', saveError);
       assistantMessageId = `temp-${Date.now()}`;
+    }
+
+    // 10.5. Post-response: update living files with conversation summary
+    if (isLivingFilesEnabled()) {
+      try {
+        const timestamp = new Date().toISOString().split('T')[0];
+        const memoryEntry = `\n### ${timestamp}\n- User asked: ${message.slice(0, 100)}${message.length > 100 ? '...' : ''}\n- Topic: ${session.id || 'general'}\n`;
+        appendToLivingFile('MEMORY.md', memoryEntry);
+      } catch (err) {
+        console.warn('[Johnny5] Failed to update MEMORY.md:', err);
+      }
     }
 
     // 11. Update session statistics

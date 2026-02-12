@@ -95,6 +95,16 @@ export const SUMMARIES_DIR = join(DATA_DIR, 'summaries');
  */
 export const EXPORTS_DIR = join(DATA_DIR, 'exports');
 
+/**
+ * Path to living files directory (Johnny5's 9 .md files)
+ */
+export const LIVING_FILES_DIR = join(DATA_DIR, 'living-files');
+
+/**
+ * Path to living files version history
+ */
+export const LIVING_FILES_HISTORY_DIR = join(DATA_DIR, 'living-files', '.history');
+
 // ============================================================================
 // Utility Functions
 // ============================================================================
@@ -105,7 +115,7 @@ export const EXPORTS_DIR = join(DATA_DIR, 'exports');
  * IMPORTANT: Call this before any file operations to ensure directories exist
  */
 export function ensureDataDir(): void {
-  const directories = [DATA_DIR, BACKUP_DIR, SUMMARIES_DIR, EXPORTS_DIR];
+  const directories = [DATA_DIR, BACKUP_DIR, SUMMARIES_DIR, EXPORTS_DIR, LIVING_FILES_DIR, LIVING_FILES_HISTORY_DIR];
 
   for (const dir of directories) {
     if (!existsSync(dir)) {
@@ -155,4 +165,5 @@ console.log(`[Data Paths] Initialized:`);
 console.log(`  DATA_DIR=${DATA_DIR}`);
 console.log(`  JOHNNY5_DB_PATH=${JOHNNY5_DB_PATH}`);
 console.log(`  NODE_ENV=${process.env.NODE_ENV || 'undefined'}`);
+console.log(`  LIVING_FILES_DIR=${LIVING_FILES_DIR}`);
 console.log(`  isPersistent=${isDataPersistent()}`);

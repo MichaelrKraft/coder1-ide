@@ -1,4 +1,8 @@
 /**
+ * @deprecated This module is replaced by lib/living-files.ts when JOHNNY5_LIVING_FILES=true.
+ * Living files provide the same functionality (USER.md, MEMORY.md) in a more structured way.
+ * This file will be removed after living files are fully verified in production.
+ *
  * ManusLive Memory Integration Module
  *
  * This module provides read access to ManusLive's memory files (MEMORY.md and USER.md),

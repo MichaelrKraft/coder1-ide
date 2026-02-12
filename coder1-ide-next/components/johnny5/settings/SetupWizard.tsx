@@ -28,7 +28,7 @@ interface SetupWizardProps {
   className?: string;
 }
 
-type WizardStep = 'welcome' | 'bridge' | 'messaging' | 'integrations' | 'permissions' | 'complete';
+type WizardStep = 'welcome' | 'bridge' | 'aboutYou' | 'messaging' | 'integrations' | 'permissions' | 'complete';
 
 interface Permissions {
   readFiles: boolean;
@@ -40,13 +40,14 @@ interface Permissions {
 /**
  * SetupWizard Component
  *
- * 6-step setup flow for Johnny5:
+ * 7-step setup flow for Johnny5:
  * 1. Welcome - Introduction
  * 2. Bridge - Connect via Coder1 Bridge (uses Claude Code CLI)
- * 3. Messaging - Telegram & WhatsApp setup (optional)
- * 4. Integrations - Zapier MCP setup (optional)
- * 5. Permissions - Set permissions and proactivity
- * 6. Complete - Quick start tips
+ * 3. About You - Tell Johnny5 about yourself (skippable)
+ * 4. Messaging - Telegram & WhatsApp setup (optional)
+ * 5. Integrations - Zapier MCP setup (optional)
+ * 6. Permissions - Set permissions and proactivity
+ * 7. Complete - Quick start tips
  */
 export default function SetupWizard({
   onComplete,
@@ -74,10 +75,16 @@ export default function SetupWizard({
   const [telegramToken, setTelegramToken] = useState('');
   const [telegramBotUsername, setTelegramBotUsername] = useState('');
 
+  // About You state (optional, skippable)
+  const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState('');
+  const [userBuilding, setUserBuilding] = useState('');
+  const [userWorkStyle, setUserWorkStyle] = useState('');
+
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
 
-  const steps: WizardStep[] = ['welcome', 'bridge', 'messaging', 'integrations', 'permissions', 'complete'];
+  const steps: WizardStep[] = ['welcome', 'bridge', 'aboutYou', 'messaging', 'integrations', 'permissions', 'complete'];
   const currentStepIndex = steps.indexOf(currentStep);
 
   // Check Bridge connection status
@@ -125,6 +132,15 @@ export default function SetupWizard({
           permissions,
           proactivityLevel,
           ...(telegramToken ? { telegram: { botToken: telegramToken } } : {}),
+          // User profile for living files
+          ...(userName || userRole || userBuilding || userWorkStyle ? {
+            userProfile: {
+              name: userName || undefined,
+              role: userRole || undefined,
+              building: userBuilding || undefined,
+              workStyle: userWorkStyle || undefined,
+            }
+          } : {}),
         }),
       });
 
@@ -138,7 +154,7 @@ export default function SetupWizard({
     } finally {
       setIsSaving(false);
     }
-  }, [permissions, proactivityLevel]);
+  }, [permissions, proactivityLevel, telegramToken, userName, userRole, userBuilding, userWorkStyle]);
 
   // Navigate to next step
   const goNext = async () => {
@@ -389,6 +405,71 @@ export default function SetupWizard({
                 </p>
               </div>
             </div>
+          </div>
+        );
+
+      case 'aboutYou':
+        return (
+          <div className="space-y-5">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-coder1-cyan/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <FileText className="w-6 h-6 text-coder1-cyan" />
+              </div>
+              <h3 className="text-lg font-semibold text-text-primary">Tell Me About You</h3>
+              <p className="text-xs text-text-secondary mt-1">
+                Help Johnny5 personalize your experience. All fields are optional.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-text-secondary block mb-1">Your Name</label>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="e.g., Mike"
+                  className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-coder1-cyan"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-text-secondary block mb-1">Your Role</label>
+                <input
+                  type="text"
+                  value={userRole}
+                  onChange={(e) => setUserRole(e.target.value)}
+                  placeholder="e.g., Full-stack developer, Founder, Designer"
+                  className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-coder1-cyan"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-text-secondary block mb-1">What are you building?</label>
+                <input
+                  type="text"
+                  value={userBuilding}
+                  onChange={(e) => setUserBuilding(e.target.value)}
+                  placeholder="e.g., A SaaS platform for..."
+                  className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-coder1-cyan"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-text-secondary block mb-1">How do you prefer to work?</label>
+                <input
+                  type="text"
+                  value={userWorkStyle}
+                  onChange={(e) => setUserWorkStyle(e.target.value)}
+                  placeholder="e.g., Plan first then execute, iterate quickly, pair program"
+                  className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-coder1-cyan"
+                />
+              </div>
+            </div>
+
+            <p className="text-[10px] text-text-muted text-center mt-2">
+              You can skip this — Johnny5 will learn about you through conversation.
+            </p>
           </div>
         );
 
@@ -705,6 +786,8 @@ export default function SetupWizard({
           <span className="flex-1" />
           <span className="w-8 text-center">Bridge</span>
           <span className="flex-1" />
+          <span className="w-12 text-center">About You</span>
+          <span className="flex-1" />
           <span className="w-12 text-center">Messaging</span>
           <span className="flex-1" />
           <span className="w-14 text-center">Integrations</span>
@@ -760,23 +843,33 @@ export default function SetupWizard({
             <ChevronRight className="w-4 h-4" />
           </button>
         ) : (
-          <button
-            onClick={goNext}
-            disabled={!canProceed() || isSaving}
-            className="flex items-center gap-1 px-6 py-2.5 rounded-lg bg-coder1-cyan hover:bg-coder1-cyan/90 text-black font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                Continue
-                <ChevronRight className="w-4 h-4" />
-              </>
+          <div className="flex items-center gap-3">
+            {currentStep === 'aboutYou' && (
+              <button
+                onClick={goNext}
+                className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+              >
+                Skip for now
+              </button>
             )}
-          </button>
+            <button
+              onClick={goNext}
+              disabled={!canProceed() || isSaving}
+              className="flex items-center gap-1 px-6 py-2.5 rounded-lg bg-coder1-cyan hover:bg-coder1-cyan/90 text-black font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ChevronRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
         )}
       </div>
     </div>

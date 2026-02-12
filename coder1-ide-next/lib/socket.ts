@@ -275,6 +275,31 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
         });
       }
 
+      // Johnny5 Heartbeat & Notification events → dispatch as CustomEvents for UI
+      newSocket.on('johnny5:heartbeat', (data: any) => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('johnny5:heartbeat', { detail: data }));
+        }
+      });
+
+      newSocket.on('johnny5:opportunity', (data: any) => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('johnny5:opportunity', { detail: data }));
+        }
+      });
+
+      newSocket.on('johnny5:action', (data: any) => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('johnny5:action', { detail: data }));
+        }
+      });
+
+      newSocket.on('johnny5:notification', (data: any) => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('johnny5:notification', { detail: data }));
+        }
+      });
+
       // Assign to module variable after setup
       socket = newSocket;
     }

@@ -1,9 +1,92 @@
-# Time Capsules - Git-Native AI Session Audit Trail (Feb 11, 2026)
+# Phase 4: In-App Notifications (Feb 11, 2026)
+
+## Status: COMPLETE
+
+## Plan
+
+- [x] Task 1: Create `components/johnny5/NotificationCenter.tsx` — standalone notification panel for heartbeat, opportunity, action events
+- [x] Task 2: Add Johnny5 socket event listeners to `lib/socket.ts` that dispatch CustomEvents to the window
+- [x] Task 3: Add `<NotificationCenter />` to StatusBarCore right section
+
+## Review
+
+### Changes Made
+
+**1. Created `/components/johnny5/NotificationCenter.tsx`** (new file)
+- Standalone bell icon + dropdown notification panel
+- Manages own state (notifications array, open/closed, unread count)
+- Persists notifications to localStorage (key: `johnny5_notifications`, max 50)
+- Listens for `johnny5:heartbeat`, `johnny5:opportunity`, `johnny5:action` CustomEvents
+- Heartbeat notifications only appear for health issues (not every pulse)
+- Supports action buttons that dispatch `johnny5:sendToTerminal` commands
+- Time-ago display, dismiss individual, clear all, mark all read on open
+
+**2. Modified `/lib/socket.ts`** (4 new socket listeners)
+- Added `johnny5:heartbeat`, `johnny5:opportunity`, `johnny5:action`, `johnny5:notification` listeners
+- Each listener dispatches a matching CustomEvent on `window` for UI components to consume
+- Placed after existing socket listeners, before `socket = newSocket` assignment
+
+**3. Modified `/components/status-bar/StatusBarCore.tsx`** (2 small additions)
+- Added `import NotificationCenter` at top
+- Added `<NotificationCenter />` in the right section of the status bar, before the Service Health Indicator
+
+---
+
+# Living Files Context Injection in Johnny5 Chat Route (Feb 11, 2026)
 
 ## Status: COMPLETE
 
 ## Summary
+Integrated living files context injection into the Johnny5 chat route, gated behind the `JOHNNY5_LIVING_FILES` feature flag. When enabled, living files (SOUL.md, USER.md, MEMORY.md, IDENTITY.md, AGENTS.md, etc.) are loaded and injected into the system prompt as additional context. After each response, a conversation summary is appended to MEMORY.md.
+
+## Todo
+- [x] Add imports for `isLivingFilesEnabled`, `loadLivingFilesContext`, `appendToLivingFile` from `@/lib/living-files`
+- [x] Add `livingFilesSection` construction in `generateJohnny5SystemPrompt` (after `basePersonality`, before `capabilitiesSection`)
+- [x] Modify return statement to include `livingFilesSection` in the prompt chain
+- [x] Add post-response MEMORY.md update after assistant message is saved to DB
+
+## Review
+- **File modified**: `app/api/johnny5/chat/route.ts` (1 file, 4 surgical changes)
+- **Feature flag**: `JOHNNY5_LIVING_FILES=true` in `.env.local` enables the feature; defaults to `false` (no-op)
+- **System prompt order**: `basePersonality + livingFilesSection + capabilitiesSection + closingSection`
+- **Living files context is additive** — it supplements existing memory context (memoryContext, factsAndPatternsContext), does not replace it
+- **Post-response update**: Appends a date-stamped summary of each user question to MEMORY.md
+- **Error handling**: All living files operations are wrapped in try/catch so failures never break the chat route
+- **No refactoring** — only added new code, existing code paths are completely unchanged when flag is off
+
+---
+
+# Time Capsules - Git-Native AI Session Audit Trail (Feb 11, 2026)
+
+## Status: COMPLETE (V1 + Data Gap Fix)
+
+## Summary
 Implemented Time Capsules — structured snapshots of AI coding sessions permanently linked to Git commits. When a user commits during an active Claude Code session, a prompt appears offering to save the session context as a "Time Capsule" stored in both SQLite and a Git metadata branch (`refs/coder1/time-capsules`).
+
+## V1.1 Data Gap Fix (Feb 11, 2026)
+
+Browser testing revealed the save handler only sent git metadata — transcript, user_id, repository_path, session_start_time were all NULL, and the bridge was never triggered. Fixed all gaps:
+
+### Issues Fixed
+| # | Issue | Fix |
+|---|-------|-----|
+| 1 | `repository_path` stored branch name | Now sends actual filesystem path from `session.workingDir` or `workingDirectory` store |
+| 2 | Bridge never triggered after save | Save handler now emits `time_capsule:create` via socket; server forwards to bridge |
+| 3 | `transcript` always NULL | Now sends `terminalHistory` from `useTerminalStore` (capped at 1MB client-side) |
+| 4 | `session_start_time` always NULL | Now sends `claudeSessionStart` from server emit payload |
+| 5 | `user_id` always NULL | Now sends `authUser?.id` from `useAuthStore` |
+
+### Changes Made (2 files, ~45 lines)
+**server.js (3 changes)**:
+- Stored `this.workingDir = finalWorkingDir` on TerminalSession (line 805)
+- Added `repoPath: session?.workingDir || process.cwd()` to commit_detected emit (line 2339)
+- Added bridge forwarding handler: `socket.on('time_capsule:create')` → `bridge.socket.emit()` (lines 2350-2361)
+
+**Terminal.tsx (4 changes)**:
+- Added imports: `useAuthStore`, `useTerminalStore` (lines 37-38)
+- Added hooks: `authUser`, `terminalHistory`, `workingDirectory` (lines 227-229)
+- Expanded `timeCapsuleCommit` state type with `claudeSessionStart` and `repoPath` (lines 279-280)
+- Replaced save handler with full data: repo path, transcript, session_start_time, user_id, bridge trigger (lines 5590-5631)
 
 ## Key Design Decisions
 - **Feature-flagged**: `NEXT_PUBLIC_TIME_CAPSULES=true` required; off by default
@@ -58,6 +141,15 @@ npx tsc --noEmit 2>&1 | grep -E "time-capsule|TimeCapsule"  # (empty = clean)
 git log refs/coder1/time-capsules
 git show refs/coder1/time-capsules:capsules/<sha>.json
 ```
+
+### API Test Results (Feb 11, 2026)
+- [x] POST `/api/time-capsules` with all fields → 201 Created (all fields populated)
+- [x] GET `/api/time-capsules?repoPath=/Users/michaelkraft/autonomous_vibe_interface&limit=5` → 200 OK, returns capsule with all fields:
+  - `repository_path`, `commit_sha`, `commit_message`, `commit_branch` ✅
+  - `transcript`, `user_id`, `session_start_time`, `duration_seconds` ✅ (previously NULL — now fixed)
+  - `agent_name` = "Claude Code" ✅
+  - NULL fields (expected V2): `team_id`, `agent_version`, `files_read`, `files_written`, `capsule_git_path`
+- [ ] E2E: Make commit during Claude session → prompt appears → Save → DB + bridge write (requires bridge connected)
 
 ---
 
@@ -1278,6 +1370,32 @@ Make the server fallback tree API return **absolute paths** (matching bridge beh
 
 ---
 
+# Fix Johnny5 "Prompt Too Long" - Moltbot Path (Feb 11, 2026)
+
+## Status: IN PROGRESS
+
+## Problem (Reopened)
+Previous fix at lines 546-567 added truncation at 15000 chars but error persists. No agent ever verified the fix actually executes (no server logs checked).
+
+## Root Cause (Revised)
+Two issues compounding:
+1. **Session history accumulation**: Hardcoded `sessionKey: 'dashboard:main'` means ManusLive accumulates ALL conversation history in one session. Even 15000-char messages pile up.
+2. **15000 chars too generous**: ManusLive adds its own system prompt + session history before calling Claude CLI, easily exceeding the limit.
+
+## Fix Applied
+1. Reduced `MAX_MOLTBOT_MESSAGE_LENGTH` from 15000 → **5000** chars (~1.25k tokens)
+2. Changed session key from `'dashboard:main'` → `dashboard:${Date.now()}` (unique per message, no history accumulation)
+3. Added always-fire diagnostic log: `[Johnny5/Moltbot] Message size: X chars, limit: 5000`
+
+## Verification
+- [x] Code changes applied to `app/api/johnny5/chat/route.ts` (lines 546-571)
+- [ ] Start dev server: `npm run dev`
+- [ ] Check server logs show: `[Johnny5/Moltbot] Message size: X chars`
+- [ ] Ask Johnny5 a question after terminal activity → no "Prompt too long" error
+- [ ] If still failing: reduce limit to 3000, then try nuclear option (raw message only)
+
+---
+
 # Fix Johnny5 "Prompt Too Long" CLI Error (Feb 11, 2026)
 
 ## Status: COMPLETE
@@ -1368,6 +1486,68 @@ Check browser console for:
 - [x] Bridge HOME fallback added for relative path resolution
 - [ ] Test: Ask Claude Code to read a file, verify it auto-opens in Monaco
 - [ ] Test: Verify rate limiting works (rapid reads don't cause flickering)
+
+---
+
+# Living Files Module (Feb 11, 2026)
+
+## Status: COMPLETE
+
+## Summary
+Created `/lib/living-files.ts` — the core module for Johnny5's living files architecture. 9 real .md files on disk that Johnny5 reads for context and writes to for learning.
+
+## Files Created (1)
+| File | Lines | Purpose |
+|------|-------|---------|
+| `lib/living-files.ts` | ~470 | Living files module: types, templates, CRUD, sanitization, versioning |
+
+## What's Included
+- `isLivingFilesEnabled()` — feature flag via `JOHNNY5_LIVING_FILES` env var
+- `LIVING_FILES` const array — 9 file configs with writeMode and description
+- `ensureLivingFilesDir()` — creates directories
+- `initializeLivingFiles(userData?)` — writes default templates for missing files, seeds USER.md
+- `loadLivingFile(filename)` — reads single file, returns null if missing
+- `loadLivingFiles()` — loads all 9 into Record<string, string>
+- `loadLivingFilesContext()` — formats all files for system prompt injection, truncates MEMORY.md at 6000 chars
+- `writeLivingFile(filename, content, mode)` — validates writeMode, sanitizes dangerous patterns, creates version snapshot, prunes to 20 snapshots
+- `appendToLivingFile(filename, entry)` — convenience wrapper for append operations
+- `getWriteMode(filename)` — lookup helper
+- Full default template content for all 9 files
+- Content sanitizer strips shebang, rm -rf, sudo, eval(), exec()
+
+## TypeScript Verification
+- `npx tsc --noEmit --skipLibCheck` — zero errors from living-files.ts
+- Imports `LIVING_FILES_DIR` and `LIVING_FILES_HISTORY_DIR` from data-paths.ts (already added by other agent)
+
+---
+
+# Living Files Architecture — OpenClaw-Style Rebuild (Feb 11, 2026)
+
+## Status: COMPLETE (All 5 Phases)
+
+### Files Created (4 new)
+| File | Lines | Purpose |
+|------|-------|---------|
+| `lib/living-files.ts` | 662 | Core: 9 file defs, load/write/init/append, write protection, snapshots |
+| `scripts/migrate-to-living-files.ts` | 105 | Migration from ManusLive → living files |
+| `services/johnny5/heartbeat-service.ts` | 308 | HeartbeatService: 30s pulse, 5min deep check, quiet hours |
+| `components/johnny5/NotificationCenter.tsx` | ~250 | Bell icon dropdown, localStorage, CustomEvent listeners |
+
+### Files Modified (8)
+| File | Change |
+|------|--------|
+| `lib/data-paths.ts` | +LIVING_FILES_DIR, +LIVING_FILES_HISTORY_DIR |
+| `app/api/johnny5/chat/route.ts` | Living files context + MEMORY.md post-response + legacy skip |
+| `SetupWizard.tsx` | New 'aboutYou' step (skippable), 7-step flow |
+| `setup/route.ts` | Accept userProfile, call initializeLivingFiles() |
+| `opportunity-engine.ts` | +'heartbeat' EventSource |
+| `server.js` | Heartbeat init behind flag |
+| `lib/socket.ts` | 4 new Socket.IO→CustomEvent listeners |
+| `StatusBarCore.tsx` | +NotificationCenter |
+
+### Feature Flag: `JOHNNY5_LIVING_FILES=true/false` (default: false)
+### Branch: `feature/living-files`
+### Rollback: `git checkout master` or set flag to false
 
 ---
 

@@ -19,6 +19,7 @@ import {
   getConfigSummary,
   Johnny5Permissions,
 } from '@/lib/johnny5-config';
+import { isLivingFilesEnabled, initializeLivingFiles } from '@/lib/living-files';
 
 // Force dynamic rendering - setup state changes
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,12 @@ interface SaveConfigRequest {
   permissions: Johnny5Permissions;
   proactivityLevel: 'low' | 'medium' | 'high';
   telegram?: { botToken: string };
+  userProfile?: {
+    name?: string;
+    role?: string;
+    building?: string;
+    workStyle?: string;
+  };
 }
 
 type SetupRequest = SaveConfigRequest;
@@ -98,6 +105,17 @@ export async function POST(request: NextRequest) {
 
       // Mark setup as complete
       markSetupComplete();
+
+      // Initialize living files if feature flag is enabled
+      if (isLivingFilesEnabled()) {
+        try {
+          initializeLivingFiles(body.userProfile);
+          console.log('[Johnny5 Setup] Living files initialized');
+        } catch (lfError) {
+          console.warn('[Johnny5 Setup] Living files initialization failed:', lfError);
+          // Non-fatal — setup still completes
+        }
+      }
 
       return NextResponse.json({
         success: true,

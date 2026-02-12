@@ -20,6 +20,7 @@ import { usePollingHealthStore } from '@/stores/usePollingHealthStore';
 import { useBridgeSessionData, formatTokenCount } from '@/lib/useBridgeSessionData';
 import { useBridgeConnectionState } from '@/lib/useBridgeConnectionState';
 import { logger } from '@/lib/logger';
+import NotificationCenter from '@/components/johnny5/NotificationCenter';
 import type { IDEFile } from '@/types';
 
 interface StatusBarCoreProps {
@@ -227,6 +228,9 @@ export default function StatusBarCore({
 
         {/* Right section - Status info */}
         <div className="flex items-center gap-4 text-sm text-text-muted flex-1 justify-end">
+
+          {/* Johnny5 Notification Center */}
+          <NotificationCenter />
 
           {/* Service Health Indicator */}
           {pollingHasIssues && (

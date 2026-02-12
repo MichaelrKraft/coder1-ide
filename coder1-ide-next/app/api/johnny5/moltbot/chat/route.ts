@@ -203,6 +203,15 @@ export async function POST(
 
     console.log(`[Moltbot Chat] Response received: ${response.text.substring(0, 100)}...`);
 
+    // 4.5 Detect CLI error text returned as "successful" response — trigger frontend fallback
+    if (response.text.includes('Prompt is too long') || response.text.includes('CLI exited with code')) {
+      console.warn('[Moltbot Chat] Response contains CLI error, triggering fallback:', response.text.slice(0, 200));
+      return NextResponse.json(
+        { success: false, error: 'Moltbot CLI error', code: 'MOLTBOT_DISABLED', timestamp: new Date() },
+        { status: 503 }
+      );
+    }
+
     // 5. Return success response
     return NextResponse.json({
       success: true,

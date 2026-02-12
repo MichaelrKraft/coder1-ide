@@ -34,6 +34,8 @@ import { features } from '@/lib/feature-flags';
 import { useUIStore } from '@/stores/useUIStore';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useTerminalStore } from '@/stores/useTerminalStore';
 import { parseClaudeTokenUsage } from '@/lib/claude-token-parser';
 import { filterThinkingAnimations, extractClaudeCommands } from '@/lib/checkpoint-utils';
 import { getCompanionClient } from '@/lib/companion-client';
@@ -221,6 +223,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // ✅ READ MODEL FROM ZUSTAND STORE - This ensures real-time updates when model is changed
   const selectedClaudeModel = useModelStore(state => state.selectedModel);
 
+  // Time Capsule: Auth and terminal state for enriched capsule data
+  const authUser = useAuthStore((state) => state.user);
+  const terminalHistory = useTerminalStore((state) => state.history);
+  const workingDirectory = useTerminalStore((state) => state.workingDirectory);
+
   // MCP Manager hooks
   const { isOpen: isMCPOverlayOpen, toggle: toggleMCPOverlay, close: closeMCPOverlay } = useMCPOverlay();
   const { servers: mcpServers } = useMCPServers();
@@ -270,6 +277,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     branch: string;
     message: string;
     duration: number;
+    claudeSessionStart?: string;
+    repoPath?: string;
   } | null>(null);
   const claudeActivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const claudeActivityStartedRef = useRef(false); // ⚡ Prevent repeated setState during same response (Feb 2, 2025)
@@ -4246,7 +4255,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
     // Time Capsule: Listen for commit detection during active Claude sessions
     if (features().timeCapsules) {
-      const timeCapsuleHandler = (data: { sessionId: string; sha: string; branch: string; message: string; duration: number }) => {
+      const timeCapsuleHandler = (data: { sessionId: string; sha: string; branch: string; message: string; duration: number; claudeSessionStart?: string; repoPath?: string }) => {
         setTimeCapsuleCommit(data);
       };
       if ((socketHandlersRef.current as any).timeCapsuleCommit) {
@@ -5580,19 +5589,42 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           sessionDuration={timeCapsuleCommit.duration}
           onSave={async () => {
             try {
+              // Truncate transcript client-side (1MB limit)
+              const MAX_TRANSCRIPT = 1024 * 1024;
+              let transcript = terminalHistory || '';
+              if (transcript.length > MAX_TRANSCRIPT) {
+                transcript = transcript.slice(-MAX_TRANSCRIPT);
+              }
+
+              const repoPath = timeCapsuleCommit.repoPath || workingDirectory || 'unknown';
+
               const resp = await fetch('/api/time-capsules', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  repository_path: timeCapsuleCommit.branch || 'unknown',
+                  repository_path: repoPath,
                   commit_sha: timeCapsuleCommit.sha,
                   commit_message: timeCapsuleCommit.message,
                   commit_branch: timeCapsuleCommit.branch,
                   duration_seconds: Math.round(timeCapsuleCommit.duration / 1000),
+                  session_start_time: timeCapsuleCommit.claudeSessionStart,
                   agent_name: 'Claude Code',
+                  user_id: authUser?.id || null,
+                  transcript,
                 }),
               });
               if (!resp.ok) throw new Error('Failed to save');
+
+              // Trigger bridge to write capsule to git metadata branch
+              const capsuleData = await resp.json();
+              if (capsuleData.success && capsuleData.capsule && socketRef.current) {
+                socketRef.current.emit('time_capsule:create', {
+                  repoPath,
+                  commitSha: timeCapsuleCommit.sha,
+                  capsuleId: capsuleData.capsule.id,
+                  capsuleData: capsuleData.capsule,
+                });
+              }
             } catch (err) {
               console.error('[Time Capsule] Save failed:', err);
               throw err;
