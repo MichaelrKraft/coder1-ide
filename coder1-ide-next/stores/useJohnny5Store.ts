@@ -29,6 +29,7 @@ import {
   MoltbotConnectionStatus,
   CrewMemberStatus,
   CrewActivityEntry,
+  Johnny5ChatMessage,
 } from '@/types';
 
 // ================================================================================
@@ -91,6 +92,10 @@ interface Johnny5Store {
   crewStatus: Record<string, CrewMemberStatus>;
   crewActivityFeed: CrewActivityEntry[];
   showCrewPanel: boolean;
+
+  // Chat state
+  chatMessages: Johnny5ChatMessage[];
+  chatSessionId: string | null;
 
   // ================================================================================
   // View Actions
@@ -179,6 +184,16 @@ interface Johnny5Store {
   updateSettings: (settings: Partial<Johnny5Settings>) => void;
   setSetupStatus: (status: Johnny5SetupStatus) => void;
   completeSetupStep: (step: string) => void;
+
+  // ================================================================================
+  // Chat Actions
+  // ================================================================================
+
+  addChatMessage: (message: Johnny5ChatMessage) => void;
+  updateChatMessage: (id: string, updates: Partial<Johnny5ChatMessage>) => void;
+  clearChat: () => void;
+  setChatSessionId: (sessionId: string | null) => void;
+  markWelcomeAnimationPlayed: () => void;
 
   // ================================================================================
   // Moltbot Actions
@@ -318,6 +333,16 @@ const initialState = {
   crewStatus: {} as Record<string, CrewMemberStatus>,
   crewActivityFeed: [] as CrewActivityEntry[],
   showCrewPanel: false,
+
+  // Chat state
+  chatMessages: [{
+    id: 'welcome',
+    role: 'assistant' as const,
+    content: "Hi, I'm Johnny5, your always on AI assistant and I'm ready to make your life easier. What can I do for you?",
+    timestamp: new Date(),
+    animationPlayed: false,
+  }] as Johnny5ChatMessage[],
+  chatSessionId: null as string | null,
 };
 
 // ================================================================================
@@ -605,6 +630,51 @@ export const useJohnny5Store = create<Johnny5Store>()(
           }),
           false,
           'completeSetupStep'
+        ),
+
+        // ================================================================================
+        // Chat Actions
+        // ================================================================================
+
+        addChatMessage: (message) => set(
+          (state) => ({
+            chatMessages: [...state.chatMessages, message]
+          }),
+          false,
+          'addChatMessage'
+        ),
+
+        updateChatMessage: (id, updates) => set(
+          (state) => ({
+            chatMessages: state.chatMessages.map(msg =>
+              msg.id === id ? { ...msg, ...updates } : msg
+            )
+          }),
+          false,
+          'updateChatMessage'
+        ),
+
+        clearChat: () => set({
+          chatMessages: [{
+            id: `welcome-${Date.now()}`,
+            role: 'assistant' as const,
+            content: "Hi, I'm Johnny5, your always on AI assistant and I'm ready to make your life easier. What can I do for you?",
+            timestamp: new Date(),
+            animationPlayed: false,
+          }],
+          chatSessionId: `session-${Date.now()}`,
+        }, false, 'clearChat'),
+
+        setChatSessionId: (sessionId) => set({ chatSessionId: sessionId }, false, 'setChatSessionId'),
+
+        markWelcomeAnimationPlayed: () => set(
+          (state) => ({
+            chatMessages: state.chatMessages.map(msg =>
+              msg.id.startsWith('welcome') ? { ...msg, animationPlayed: true } : msg
+            )
+          }),
+          false,
+          'markWelcomeAnimationPlayed'
         ),
 
         // ================================================================================

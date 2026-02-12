@@ -19,6 +19,7 @@ import {
   type Session,
   type Message
 } from '@/lib/johnny5-db';
+import { SessionTracker } from '@/services/johnny5/session-tracker';
 
 // Force dynamic rendering - session data changes during active sessions
 export const dynamic = 'force-dynamic';
@@ -115,6 +116,9 @@ export async function GET(
     const includeMessages = searchParams.get('includeMessages') !== 'false';
     const messageLimit = parseInt(searchParams.get('messageLimit') || '100', 10);
 
+    // Use SessionTracker service to get full session detail with metadata
+    const sessionDetail = await SessionTracker.getSessionDetail(sessionId);
+
     let messages: Message[] = [];
     if (includeMessages) {
       messages = await getMessages(sessionId, messageLimit);
@@ -123,7 +127,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       data: {
-        session: toSessionDetail(session, messages),
+        session: sessionDetail || toSessionDetail(session, messages),
         messages: messages.map(toAPIMessage)
       },
       timestamp: new Date()

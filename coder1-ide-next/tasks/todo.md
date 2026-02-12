@@ -1,33 +1,35 @@
-# Johnny5 Living Files — Preamble + MEMORY.md Cleanup
+# Fix ENOENT Errors from Auto-Open Feature
+
+## Problem
+The auto-open feature in `page.tsx` detects file paths in Claude CLI terminal output and auto-opens them in Monaco. However, Claude CLI's TUI uses ANSI cursor positioning, and when those codes are stripped, garbled text gets matched as file paths by the regex. Examples:
+- `autonomou_vibe_interface` (missing 's' in autonomous)
+- `Readautonomous_vibe_inteface` ("Read" concatenated, missing 'r' in interface)
+- `tem-schema.sql` (truncated from `team-schema.sql`)
+
+These garbled paths fail with ENOENT and the error gets pumped into the terminal, annoying the user.
+
+## Root Cause
+`detectClaudeFilePaths()` uses `relativePattern` which is too permissive — it matches any `word/word/file.ext` pattern, including garbled ANSI-stripped text.
 
 ## Tasks
-- [x] 1. Add structured preamble to system prompt in route.ts (line 321)
-- [x] 2. Deduplicate corrupted MEMORY.md (106KB → 6.4KB)
-- [x] 3. TypeScript compile check — passes (only pre-existing test-helpers.ts errors)
-- [x] 4. Review section
+- [x] 1. Add `silent` parameter to `handleOpenFileFromPath` to suppress terminal error output
+- [x] 2. Pass `silent: true` when calling from auto-open (line 1131)
+- [x] 3. Add basic path validation in `detectClaudeFilePaths` to reject obviously garbled paths
+- [ ] 4. Review section
 
 ## Review
 
 ### What changed (Feb 12, 2026)
 
-**Problem**: Johnny5 was hallucinating non-existent files ("rules.md", "proactivegoals.md", "projectcontext.md") and telling users that files needed to be created, APIs needed to be built, and a heartbeat scheduler needed to be set up — all of which already existed. Root cause: the system prompt dumped living file content as raw `## FILENAME` blocks with no framing or instructions.
+**File modified: `app/ide/page.tsx`** — 4 edits:
 
-**Files modified (2):**
-
-1. `app/api/johnny5/chat/route.ts` (line 321) — Added a structured preamble before living file content injection. Includes:
-   - Table listing all 9 files with their mode (readonly/auto-updated/writable/auto-generated) and purpose
-   - Explanation of how file updates work (platform handles writes, not Johnny5)
-   - Explicit list of what infrastructure is already running (heartbeat, memory search, file persistence)
-   - 5 rules preventing hallucination of non-existent files and ensuring active use of USER.md facts
-
-2. `~/.coder1/living-files/MEMORY.md` — Deduplicated corrupted file:
-   - Before: 106KB, 1062 lines, only 56 unique (same 2 lines repeated ~500x each)
-   - After: 6.4KB, 166 lines — 3 unique knowledge entries + 39 conversation summaries preserved
-   - All legitimate dated entries (`### 2026-02-12 / User asked: ...`) kept in order
+1. **`handleOpenFileFromPath` signature** (line ~1007) — Added `silent?: boolean` third parameter
+2. **Catch block** (line ~1068-1094) — When `silent=true`: logs failure quietly, does NOT set `fileErrors` state, does NOT set `activeFile`, does NOT emit error to terminal
+3. **Auto-open caller** (line ~1131) — Passes `silent: true` so garbled path failures are invisible to user
+4. **`detectClaudeFilePaths` filter** (line ~135) — Added regex guard that rejects paths where the first segment starts with an action word concatenated with another word (e.g., `Readautonomous...`), catching the most common ANSI-stripping corruption pattern
 
 **Net effect:**
-- Johnny5 now knows it has 9 files, what each one does, and how updates work
-- Johnny5 will not ask users to create files/APIs/schedulers that already exist
-- Johnny5 will actively reference USER.md facts in conversation
-- MEMORY.md is clean and under the 6000-char truncation limit
-- No behavior changes to existing chat flow — preamble is additive context only
+- Garbled paths from Claude CLI TUI output no longer produce visible ENOENT errors in the terminal
+- Auto-open still works for correctly detected paths
+- User-initiated file opens (clicks, etc.) still show errors as before
+- No changes to terminal, server, or bridge code

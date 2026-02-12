@@ -10,6 +10,30 @@
  */
 
 // ================================================================================
+// Chat Types
+// ================================================================================
+
+export interface Johnny5ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  status?: 'sending' | 'sent' | 'error';
+  toolCalls?: Johnny5ChatToolCall[];
+  thinking?: string;
+  reasoningSteps?: string[];
+  animationPlayed?: boolean;
+}
+
+export interface Johnny5ChatToolCall {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+  output?: string;
+  status: 'pending' | 'running' | 'complete' | 'error';
+}
+
+// ================================================================================
 // Core Johnny5 Types
 // ================================================================================
 
