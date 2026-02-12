@@ -49,7 +49,7 @@ interface ModelDefinition {
 
 const CLAUDE_MODELS: Record<TaskComplexity, ModelDefinition> = {
   simple: {
-    id: 'claude-3-haiku-20240307',
+    id: 'claude-haiku-3-5-20241022',
     name: 'Claude Haiku',
     maxTokens: 4096,
     tier: 'haiku',
@@ -70,19 +70,19 @@ const CLAUDE_MODELS: Record<TaskComplexity, ModelDefinition> = {
 
 const GEMINI_FALLBACKS: Record<TaskComplexity, ModelDefinition> = {
   simple: {
-    id: 'gemini-2.0-flash',
+    id: 'gemini-2.5-flash-lite',
     name: 'Gemini Flash',
     maxTokens: 4096,
     tier: 'haiku',
   },
   standard: {
-    id: 'gemini-2.0-pro',
+    id: 'gemini-2.5-flash',
     name: 'Gemini Pro',
     maxTokens: 8192,
     tier: 'sonnet',
   },
   complex: {
-    id: 'gemini-2.0-pro',
+    id: 'gemini-2.5-flash',
     name: 'Gemini Pro',
     maxTokens: 16384,
     tier: 'max',

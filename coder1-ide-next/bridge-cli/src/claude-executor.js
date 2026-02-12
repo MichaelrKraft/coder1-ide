@@ -525,7 +525,11 @@ class ClaudeExecutor extends EventEmitter {
 
       // Spawn via /bin/sh -c to pass the pre-escaped command directly to the shell.
       // stdin is ignored to prevent Claude CLI from hanging on auth prompts.
+      // FIX (Feb 2026): Use /tmp as CWD to prevent Claude CLI from auto-loading
+      // CLAUDE.md files from the user's home directory, which inflates prompt size
+      // and causes "Prompt is too long" errors for one-shot commands.
       const claudeProcess = spawn('/bin/sh', ['-c', shellCommand], {
+        cwd: '/tmp',
         env: {
           ...process.env,
           CODER1_BRIDGE: 'true',

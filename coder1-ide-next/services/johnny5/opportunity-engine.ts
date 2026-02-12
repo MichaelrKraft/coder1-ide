@@ -31,7 +31,7 @@ import type { PendingConfirmation } from './telegram-bot';
 // Types
 // ============================================================================
 
-export type EventSource = 'zapier' | 'telegram' | 'cron' | 'trend' | 'conversation';
+export type EventSource = 'zapier' | 'telegram' | 'cron' | 'trend' | 'conversation' | 'heartbeat';
 
 export interface ExternalEvent {
   source: EventSource;

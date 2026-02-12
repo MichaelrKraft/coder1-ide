@@ -1,4 +1,8 @@
 /**
+ * @deprecated This module is replaced by lib/living-files.ts when JOHNNY5_LIVING_FILES=true.
+ * Living files provide unified context via loadLivingFilesContext() without needing this builder.
+ * This file will be removed after living files are fully verified in production.
+ *
  * Memory Context Builder for Johnny5
  *
  * Builds the memory context that gets injected into Johnny5's system prompt.

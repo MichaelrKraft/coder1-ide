@@ -85,3 +85,4 @@ user-workspaces/*
 !user-workspaces/default/styles.css
 !user-workspaces/default/app.js
 .tar.gz
+public/videos/

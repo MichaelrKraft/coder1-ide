@@ -525,11 +525,19 @@ const MAX_ACTIVITY_BUFFER = 30;
 const sessionTeamMapping = new Map(); // sessionId -> { teamId, userId, username }
 
 function detectGitEvent(sessionId, rawData) {
-  const clean = rawData.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+  // 🔧 FIX (Feb 11, 2026): Claude CLI uses cursor-right sequences (\e[1C, \e[3C)
+  // instead of spaces between words. Replace them with equivalent spaces BEFORE
+  // stripping other ANSI sequences, so word boundaries are preserved.
+  let clean = rawData.replace(/\x1b\[(\d+)C/g, (_, n) => ' '.repeat(parseInt(n, 10)));
+  clean = clean.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+
   const prev = gitOutputBuffer.get(sessionId) || '';
   const combined = prev + clean;
-  const lines = combined.split('\n');
-  gitOutputBuffer.set(sessionId, lines.pop() || '');
+  // 🔧 FIX (Feb 11, 2026): Claude CLI uses \r for line breaks in its TUI output.
+  // Split on \r, \n, or \r\n so commit lines are properly separated.
+  const lines = combined.split(/\r?\n|\r/);
+  const remainder = lines.pop() || '';
+  gitOutputBuffer.set(sessionId, remainder);
 
   const events = [];
   for (const line of lines) {
@@ -537,7 +545,8 @@ function detectGitEvent(sessionId, rawData) {
     if (!trimmed) continue;
 
     // Git commit: "[main abc1234] commit message"
-    const commitMatch = trimmed.match(/^\[([\w\-\/\.]+)\s+([a-f0-9]{7,})\]\s*(.*)/);
+    // Removed ^ anchor — Claude CLI wraps output in box-drawing chars and other prefixes.
+    const commitMatch = trimmed.match(/\[([\w\-\/\.]+)\s+([a-f0-9]{7,})\]\s*(.*)/);
     if (commitMatch) {
       events.push({ type: 'commit', branch: commitMatch[1], sha: commitMatch[2], message: commitMatch[3] });
       continue;
@@ -802,7 +811,8 @@ class TerminalSession {
       
       // Ensure working directory exists
       const finalWorkingDir = fs.existsSync(workingDir) ? workingDir : process.cwd();
-      
+      this.workingDir = finalWorkingDir; // Store for Time Capsule repo path
+
       console.log(`[Terminal] Creating PTY session ${id} with shell: ${shell}, cwd: ${finalWorkingDir}`);
       
       // Ensure PATH includes common locations for Claude CLI
@@ -1561,6 +1571,40 @@ app.prepare().then(() => {
           id: data.sessionId,
           data: data.data
         });
+
+        // 🔧 FIX (Feb 11, 2026): Run git event detection on bridge claude:output
+        // This is the ACTUAL path for bridge Claude CLI output (not command:output).
+        // Without this, commits made by Claude CLI via bridge are never detected.
+        if (data.data && data.sessionId) {
+          const gitEvents = detectGitEvent(data.sessionId, data.data);
+
+          if (process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' && gitEvents.length > 0) {
+            const claudeSession = claudeCodeSessions.get(data.sessionId);
+            if (claudeSession && claudeSession.inClaudeSession) {
+              for (const event of gitEvents) {
+                if (event.type === 'commit') {
+                  const duration = claudeSession.sessionStartTime
+                    ? Date.now() - claudeSession.sessionStartTime.getTime()
+                    : 0;
+                  const session = terminalSessions.get(data.sessionId);
+                  const terminalSocket = terminalSessionSockets.get(data.sessionId);
+                  if (terminalSocket) {
+                    terminalSocket.emit('time_capsule:commit_detected', {
+                      sessionId: data.sessionId,
+                      sha: event.sha,
+                      branch: event.branch,
+                      message: event.message,
+                      claudeSessionStart: claudeSession.sessionStartTime,
+                      duration,
+                      repoPath: session?.workingDir || process.cwd(),
+                    });
+                  }
+                  console.log(`[Time Capsule] Commit detected during Claude session (bridge claude:output): ${event.sha}`);
+                }
+              }
+            }
+          }
+        }
       });
       
       // Handle command completion from bridge
@@ -1598,6 +1642,12 @@ app.prepare().then(() => {
             startTime: Date.now()
           });
           console.log(`📍 Tracking interactive session for terminal: ${sessionId}`);
+
+          // 🔧 FIX (Feb 11, 2026): Also track in claudeCodeSessions for Time Capsule detection
+          // On server restart/reconnect, bridge re-sends this event but claudeCodeSessions
+          // is empty. Without this, Time Capsule commit detection never triggers because
+          // all input routes to bridge (bypassing startClaudeCodeSession in command processing).
+          startClaudeCodeSession(sessionId);
 
           // Notify the frontend that Claude is now in interactive mode
           io.emit('claude:mode:changed', {
@@ -1637,6 +1687,8 @@ app.prepare().then(() => {
         for (const [sessionId, sessionData] of interactiveClaudeSessions.entries()) {
           if (sessionData.commandId === commandId) {
             interactiveClaudeSessions.delete(sessionId);
+            // 🔧 FIX (Feb 11, 2026): Also end Claude session tracking for Time Capsule
+            endClaudeCodeSession(sessionId);
             console.log(`🧹 Cleaned up interactive session for terminal: ${sessionId}`);
 
             // Notify the frontend that Claude is no longer in interactive mode
@@ -1690,7 +1742,7 @@ app.prepare().then(() => {
             console.error('Failed to track response tokens:', error);
           }
         })();
-        
+
         // Forward to terminal session
         // 🔧 FIX (Dec 15, 2025): Use terminalSessionSockets map instead of socket ID lookup
         // data.sessionId is an app-level ID like "term_abc123", NOT a Socket.IO socket ID
@@ -1702,6 +1754,40 @@ app.prepare().then(() => {
           });
         } else {
           console.warn(`⚠️ No socket found for session ${data.sessionId} - bridge output lost`);
+        }
+
+        // 🔧 FIX (Feb 11, 2026): Run git event detection on bridge output
+        // Bridge output bypasses PTY onData handler, so detectGitEvent was never called
+        // for commits made by Claude CLI running via the bridge.
+        if (data.data && data.sessionId) {
+          const gitEvents = detectGitEvent(data.sessionId, data.data);
+
+          // Time Capsule: Detect commits during active Claude sessions (bridge path)
+          if (process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' && gitEvents.length > 0) {
+            const claudeSession = claudeCodeSessions.get(data.sessionId);
+            if (claudeSession && claudeSession.inClaudeSession) {
+              for (const event of gitEvents) {
+                if (event.type === 'commit') {
+                  const duration = claudeSession.sessionStartTime
+                    ? Date.now() - claudeSession.sessionStartTime.getTime()
+                    : 0;
+                  const session = terminalSessions.get(data.sessionId);
+                  if (terminalSocket) {
+                    terminalSocket.emit('time_capsule:commit_detected', {
+                      sessionId: data.sessionId,
+                      sha: event.sha,
+                      branch: event.branch,
+                      message: event.message,
+                      claudeSessionStart: claudeSession.sessionStartTime,
+                      duration,
+                      repoPath: session?.workingDir || process.cwd(),
+                    });
+                  }
+                  console.log(`[Time Capsule] Commit detected during Claude session (bridge): ${event.sha}`);
+                }
+              }
+            }
+          }
         }
       });
 
@@ -2327,6 +2413,7 @@ app.prepare().then(() => {
                     const duration = claudeSession.sessionStartTime
                       ? Date.now() - claudeSession.sessionStartTime.getTime()
                       : 0;
+                    const session = terminalSessions.get(sessionId);
                     socket.emit('time_capsule:commit_detected', {
                       sessionId,
                       sha: event.sha,
@@ -2334,6 +2421,7 @@ app.prepare().then(() => {
                       message: event.message,
                       claudeSessionStart: claudeSession.sessionStartTime,
                       duration,
+                      repoPath: session?.workingDir || process.cwd(),
                     });
                     console.log(`[Time Capsule] Commit detected during Claude session: ${event.sha}`);
                   }
@@ -2343,7 +2431,20 @@ app.prepare().then(() => {
           });
           session.dataHandlerSetup = true;
         }
-        
+
+        // Time Capsule: Forward create request to bridge for git storage
+        if (process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true') {
+          socket.on('time_capsule:create', (data) => {
+            const bridge = bridgeManager?.findAnyConnectedBridge?.();
+            if (bridge?.socket?.connected) {
+              bridge.socket.emit('time_capsule:create', data);
+              console.log(`[Time Capsule] Forwarded to bridge for git storage: ${data.commitSha}`);
+            } else {
+              console.log(`[Time Capsule] No bridge connected, capsule saved to DB only`);
+            }
+          });
+        }
+
         // Clean up socket reference when it disconnects
         socket.on('disconnect', () => {
           // 🔧 FIX (Oct 24, 2025): Use sessionId from closure (always available)
@@ -3972,6 +4073,55 @@ app.prepare().then(() => {
 
     } catch (error) {
       console.warn('⚠️ Johnny5 Cron Service not available:', error.message);
+    }
+
+    // ========================================================================
+    // Initialize Johnny5 Heartbeat Service (Living Files)
+    // ========================================================================
+    if (process.env.JOHNNY5_LIVING_FILES === 'true') {
+      try {
+        const { getHeartbeatService } = require('./services/johnny5/heartbeat-service.ts');
+        const heartbeat = getHeartbeatService({
+          pulseIntervalMs: 30000,    // 30s pulse
+          deepCheckIntervalMs: 300000, // 5min deep check
+          onPulse: (status) => {
+            // Emit heartbeat pulse to all connected clients
+            io.emit('johnny5:heartbeat', {
+              type: 'pulse',
+              isAlive: status.isAlive,
+              health: status.health,
+              userPresence: status.userPresence,
+              timestamp: new Date().toISOString(),
+            });
+          },
+          onOpportunity: async (event) => {
+            // Feed heartbeat opportunities to the Opportunity Engine
+            try {
+              const { opportunityEngine } = require('./services/johnny5/opportunity-engine.ts');
+              await opportunityEngine.ingest({
+                source: 'heartbeat',
+                type: event.type,
+                data: event.data,
+                timestamp: new Date(),
+              });
+            } catch (oeErr) {
+              console.warn('[Heartbeat] Opportunity engine not available:', oeErr.message);
+            }
+          },
+        });
+
+        heartbeat.start();
+        console.log('💓 Johnny5 Heartbeat Service started (living files enabled)');
+
+        // Track user presence — update on a simple interval checking connected count
+        setInterval(() => {
+          const connectedCount = io.engine?.clientsCount || 0;
+          heartbeat.updateUserPresence(connectedCount > 0, connectedCount);
+        }, 10000); // Check every 10s
+
+      } catch (heartbeatError) {
+        console.warn('⚠️ Johnny5 Heartbeat Service not available:', heartbeatError.message);
+      }
     }
 
     // ========================================================================

@@ -11,6 +11,18 @@
 
 **Next.js IDE Location**: `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/`
 
+## Safety Rules
+
+Always ask before killing processes, restarting servers, or terminating running services. Never assume it's safe to stop something without user confirmation.
+
+## Communication Style
+
+When I ask questions or give a numbered list of tasks, answer them directly and in order. Do not skip ahead to writing code or creating fix plans unless explicitly asked.
+
+## Project Structure
+
+This project uses TypeScript primarily. The main deployment target is Render. Key config files live in the `web/` directory, not the repo root — always check `web/` first for build configs, install scripts, and environment files.
+
 ## Quick Start
 
 ```bash
@@ -97,8 +109,13 @@ node src/index.js start --server http://localhost:3001
 ```
 
 ### Git Workflow
+
+Before committing or pushing to GitHub, always run `git status` and `git log --oneline -3` to check if changes were already committed by another agent or process.
+
 ```bash
 cd /Users/michaelkraft/autonomous_vibe_interface
+git status
+git log --oneline -3
 git add [files]
 git commit -m "[message]"
 git push origin master
@@ -115,6 +132,10 @@ PORT=3001
 NODE_ENV=development
 ENABLE_SUPERVISION=true
 ```
+
+## Debugging
+
+When debugging, confirm which environment (local dev vs production/Render) the issue is in before searching for files or making changes. Ask if unclear.
 
 ## Troubleshooting
 
