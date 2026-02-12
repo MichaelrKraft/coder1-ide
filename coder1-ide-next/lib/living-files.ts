@@ -550,6 +550,30 @@ export function loadLivingFilesContext(): string {
 }
 
 /**
+ * Format living files from a Bridge cache payload into a context string.
+ * Same output format as loadLivingFilesContext(), but from an in-memory map
+ * (used when files are loaded via Bridge from user's machine instead of local disk).
+ */
+export function formatLivingFilesFromCache(files: Record<string, string>): string {
+  const sections: string[] = [];
+
+  for (const file of LIVING_FILES) {
+    let content = files[file.filename];
+    if (!content) continue;
+
+    // Truncate MEMORY.md to keep most recent entries
+    if (file.filename === 'MEMORY.md' && content.length > MEMORY_TRUNCATION_LIMIT) {
+      content = '...(earlier entries truncated)...\n' + content.slice(-MEMORY_TRUNCATION_LIMIT);
+    }
+
+    const sectionName = file.filename.replace(/\.md$/, '');
+    sections.push(`## ${sectionName}\n${content}`);
+  }
+
+  return sections.join('\n\n');
+}
+
+/**
  * Write content to a living file with validation, sanitization, and versioning.
  *
  * - Validates the write is allowed by the file's writeMode

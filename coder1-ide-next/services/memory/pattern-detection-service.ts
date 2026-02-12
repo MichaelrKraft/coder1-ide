@@ -111,17 +111,18 @@ function getGeminiClient(): GoogleGenerativeAI | null {
 /**
  * Get recent facts from database for pattern analysis
  */
-async function getRecentFacts(limit: number = 50): Promise<string> {
+async function getRecentFacts(limit: number = 50, userId: string): Promise<string> {
   const db = getDb();
 
   const stmt = db.prepare(`
     SELECT fact_type, fact_key, fact_value, confidence, reference_count
     FROM extracted_facts
+    WHERE user_id = ?
     ORDER BY created_at DESC
     LIMIT ?
   `);
 
-  const facts = stmt.all(limit) as Array<{
+  const facts = stmt.all(userId, limit) as Array<{
     fact_type: string;
     fact_key: string;
     fact_value: string;
@@ -174,7 +175,7 @@ async function getRecentSessionSummaries(limit: number = 10): Promise<string> {
 /**
  * Detect patterns from accumulated data using AI
  */
-export async function detectPatterns(): Promise<PatternDetectionResult[]> {
+export async function detectPatterns(userId: string): Promise<PatternDetectionResult[]> {
   const genAI = getGeminiClient();
   if (!genAI) {
     return [];
@@ -182,7 +183,7 @@ export async function detectPatterns(): Promise<PatternDetectionResult[]> {
 
   try {
     const [factsText, sessionsText] = await Promise.all([
-      getRecentFacts(50),
+      getRecentFacts(50, userId),
       getRecentSessionSummaries(10),
     ]);
 
@@ -230,7 +231,7 @@ export async function detectPatterns(): Promise<PatternDetectionResult[]> {
 /**
  * Save detected patterns to database
  */
-export async function savePatterns(patterns: PatternDetectionResult[]): Promise<void> {
+export async function savePatterns(patterns: PatternDetectionResult[], userId: string): Promise<void> {
   if (patterns.length === 0) return;
 
   const db = getDb();
@@ -238,11 +239,11 @@ export async function savePatterns(patterns: PatternDetectionResult[]): Promise<
 
   const upsertStmt = db.prepare(`
     INSERT INTO learned_patterns (
-      id, pattern_type, pattern_description, evidence_count,
+      id, user_id, pattern_type, pattern_description, evidence_count,
       first_observed, last_observed, confidence, actionable, suggested_action
     )
-    VALUES (?, ?, ?, 1, ?, ?, ?, 1, ?)
-    ON CONFLICT(pattern_type, pattern_description) DO UPDATE SET
+    VALUES (?, ?, ?, ?, 1, ?, ?, ?, 1, ?)
+    ON CONFLICT(user_id, pattern_type, pattern_description) DO UPDATE SET
       evidence_count = evidence_count + 1,
       last_observed = excluded.last_observed,
       confidence = MIN(1.0, confidence + 0.05),
@@ -253,6 +254,7 @@ export async function savePatterns(patterns: PatternDetectionResult[]): Promise<
     for (const pattern of patternsToSave) {
       upsertStmt.run(
         randomUUID(),
+        userId,
         pattern.type,
         pattern.description,
         now,
@@ -276,19 +278,20 @@ export async function savePatterns(patterns: PatternDetectionResult[]): Promise<
  */
 export async function getHighConfidencePatterns(
   minConfidence: number = 0.7,
-  limit: number = 5
+  limit: number = 5,
+  userId: string
 ): Promise<LearnedPattern[]> {
   const db = getDb();
 
   const stmt = db.prepare(`
     SELECT *
     FROM learned_patterns
-    WHERE confidence >= ? AND actionable = 1
+    WHERE confidence >= ? AND actionable = 1 AND user_id = ?
     ORDER BY confidence DESC, evidence_count DESC
     LIMIT ?
   `);
 
-  return stmt.all(minConfidence, limit) as LearnedPattern[];
+  return stmt.all(minConfidence, userId, limit) as LearnedPattern[];
 }
 
 /**
@@ -296,25 +299,26 @@ export async function getHighConfidencePatterns(
  */
 export async function getPatternsByType(
   patternType: LearnedPattern['pattern_type'],
-  limit: number = 10
+  limit: number = 10,
+  userId: string
 ): Promise<LearnedPattern[]> {
   const db = getDb();
 
   const stmt = db.prepare(`
     SELECT *
     FROM learned_patterns
-    WHERE pattern_type = ?
+    WHERE pattern_type = ? AND user_id = ?
     ORDER BY confidence DESC, evidence_count DESC
     LIMIT ?
   `);
 
-  return stmt.all(patternType, limit) as LearnedPattern[];
+  return stmt.all(patternType, userId, limit) as LearnedPattern[];
 }
 
 /**
  * Record that a pattern was applied (for tracking effectiveness)
  */
-export async function recordPatternApplication(patternId: string): Promise<void> {
+export async function recordPatternApplication(patternId: string, userId: string): Promise<void> {
   const db = getDb();
   const now = new Date().toISOString();
 
@@ -322,10 +326,10 @@ export async function recordPatternApplication(patternId: string): Promise<void>
     UPDATE learned_patterns
     SET evidence_count = evidence_count + 1,
         last_observed = ?
-    WHERE id = ?
+    WHERE id = ? AND user_id = ?
   `);
 
-  stmt.run(now, patternId);
+  stmt.run(now, patternId, userId);
 }
 
 /**
@@ -333,7 +337,8 @@ export async function recordPatternApplication(patternId: string): Promise<void>
  */
 export async function decayStalePatterns(
   olderThanDays: number = 30,
-  decayAmount: number = 0.1
+  decayAmount: number = 0.1,
+  userId: string
 ): Promise<number> {
   const db = getDb();
   const cutoffDate = new Date();
@@ -342,10 +347,10 @@ export async function decayStalePatterns(
   const stmt = db.prepare(`
     UPDATE learned_patterns
     SET confidence = MAX(0.3, confidence - ?)
-    WHERE last_observed < ?
+    WHERE last_observed < ? AND user_id = ?
   `);
 
-  const result = stmt.run(decayAmount, cutoffDate.toISOString());
+  const result = stmt.run(decayAmount, cutoffDate.toISOString(), userId);
   console.log(`[PatternDetection] Decayed confidence for ${result.changes} stale patterns`);
   return result.changes;
 }
@@ -354,16 +359,17 @@ export async function decayStalePatterns(
  * Delete patterns with very low confidence
  */
 export async function cleanupLowConfidencePatterns(
-  maxConfidence: number = 0.35
+  maxConfidence: number = 0.35,
+  userId: string
 ): Promise<number> {
   const db = getDb();
 
   const stmt = db.prepare(`
     DELETE FROM learned_patterns
-    WHERE confidence < ?
+    WHERE confidence < ? AND user_id = ?
   `);
 
-  const result = stmt.run(maxConfidence);
+  const result = stmt.run(maxConfidence, userId);
   console.log(`[PatternDetection] Removed ${result.changes} low-confidence patterns`);
   return result.changes;
 }
@@ -372,7 +378,7 @@ export async function cleanupLowConfidencePatterns(
  * Run full pattern detection and update cycle
  * Call this periodically (e.g., after every 10 conversations or daily)
  */
-export async function runPatternDetectionCycle(): Promise<{
+export async function runPatternDetectionCycle(userId: string): Promise<{
   detected: number;
   saved: number;
   decayed: number;
@@ -380,11 +386,11 @@ export async function runPatternDetectionCycle(): Promise<{
 }> {
   console.log('[PatternDetection] Starting detection cycle...');
 
-  const patterns = await detectPatterns();
-  await savePatterns(patterns);
+  const patterns = await detectPatterns(userId);
+  await savePatterns(patterns, userId);
 
-  const decayed = await decayStalePatterns(30, 0.1);
-  const cleaned = await cleanupLowConfidencePatterns(0.35);
+  const decayed = await decayStalePatterns(30, 0.1, userId);
+  const cleaned = await cleanupLowConfidencePatterns(0.35, userId);
 
   const result = {
     detected: patterns.length,

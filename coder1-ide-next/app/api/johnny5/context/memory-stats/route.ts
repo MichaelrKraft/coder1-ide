@@ -7,9 +7,10 @@
  * chunk counts, last indexed time, and embedding model info.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getMemoryStats } from '@/lib/johnny5-db';
 import { isWatcherRunning } from '@/services/memory';
+import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -21,9 +22,21 @@ interface APIResponse<T> {
   timestamp: Date;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const stats = await getMemoryStats();
+    let userId = 'default';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      }
+    }
+
+    const stats = await getMemoryStats(userId);
     const watcherRunning = isWatcherRunning();
 
     return NextResponse.json({

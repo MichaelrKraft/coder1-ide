@@ -13,6 +13,7 @@ import {
   createGeminiProvider,
   type SearchResponse,
 } from '@/services/memory';
+import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -46,6 +47,18 @@ function getEmbeddingProvider() {
 
 export async function POST(request: NextRequest) {
   try {
+    let userId = 'default';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      }
+    }
+
     const body: SearchRequest = await request.json();
     const { query, topK = 10, maxTokens = 4000, minScore = 0.1 } = body;
 
@@ -77,6 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Perform search (hybrid if embedding available, keyword-only otherwise)
     const searchResponse: SearchResponse = await searchMemory(query.trim(), queryEmbedding, {
+      userId,
       topK,
       maxTokens,
       minScore,

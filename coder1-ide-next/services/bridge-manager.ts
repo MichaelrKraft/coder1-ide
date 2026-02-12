@@ -6,6 +6,7 @@
 import { Socket } from 'socket.io';
 import { randomBytes } from 'crypto';
 import { EventEmitter } from 'events';
+import { queuePendingLivingFileWrite, getPendingLivingFileWrites, deletePendingLivingFileWrite } from '../lib/johnny5-db';
 
 interface BridgeConnection {
   id: string;
@@ -60,12 +61,26 @@ interface PendingFileRequest {
   path: string;
 }
 
+interface LivingFilesCacheEntry {
+  files: Record<string, string>;
+  loadedAt: number;
+}
+
+interface PendingLivingFilesSync {
+  resolve: (files: Record<string, string>) => void;
+  reject: (error: Error) => void;
+  timeout: NodeJS.Timeout;
+}
+
 export class BridgeManager extends EventEmitter {
   private bridges: Map<string, BridgeConnection> = new Map();
   private userBridges: Map<string, Set<string>> = new Map();
   private pairingCodes: Map<string, PairingCode> = new Map();
   private pendingCommands: Map<string, PendingCommand> = new Map();
   private pendingFileRequests: Map<string, PendingFileRequest> = new Map();
+  private livingFilesCache: Map<string, LivingFilesCacheEntry> = new Map();
+  private writeQueues: Map<string, Promise<void>> = new Map();
+  private pendingLivingFilesSync: Map<string, PendingLivingFilesSync> = new Map();
 
   // Configuration
   private readonly PAIRING_CODE_LENGTH = 6;
@@ -76,6 +91,8 @@ export class BridgeManager extends EventEmitter {
   private readonly DEFAULT_COMMAND_TIMEOUT = 120 * 1000; // 120 seconds
   private readonly DEFAULT_FILE_TIMEOUT = 30 * 1000; // 30 seconds for file operations
   private readonly MAX_COMMANDS_PER_BRIDGE = 5;
+  private readonly LIVING_FILES_CACHE_TTL = 60 * 1000; // 60 seconds
+  private readonly LIVING_FILES_SYNC_TIMEOUT = 10 * 1000; // 10 seconds
   
   constructor() {
     super();
@@ -262,6 +279,43 @@ export class BridgeManager extends EventEmitter {
       });
     });
 
+    // Living files sync from bridge (on connect or on-demand refresh)
+    socket.on('livingfiles:sync', (data: { files: Record<string, string> }) => {
+      const bridge = this.bridges.get(bridgeId);
+      if (bridge) {
+        const userId = bridge.userId;
+        this.livingFilesCache.set(userId, {
+          files: data.files,
+          loadedAt: Date.now(),
+        });
+        console.log(`[BridgeManager] Living files cached for user ${userId} (${Object.keys(data.files).length} files)`);
+
+        // Resolve any pending sync requests
+        const pending = this.pendingLivingFilesSync.get(userId);
+        if (pending) {
+          clearTimeout(pending.timeout);
+          this.pendingLivingFilesSync.delete(userId);
+          pending.resolve(data.files);
+        }
+
+        // Flush any pending writes for this user
+        this.flushPendingWrites(userId, bridgeId);
+      }
+    });
+
+    // Living files write acknowledgment from bridge
+    socket.on('livingfiles:write-ack', (data: { filename: string; success: boolean; error?: string }) => {
+      const bridge = this.bridges.get(bridgeId);
+      if (bridge && !data.success) {
+        // Write failed on bridge side — invalidate cache to force re-fetch
+        const cached = this.livingFilesCache.get(bridge.userId);
+        if (cached) {
+          cached.loadedAt = 0;
+        }
+        console.error(`[BridgeManager] Living file write failed: ${data.filename} - ${data.error}`);
+      }
+    });
+
     // Errors
     socket.on('error', (error) => {
       console.error(`[BridgeManager] Bridge ${bridgeId} error:`, error);
@@ -373,22 +427,13 @@ export class BridgeManager extends EventEmitter {
     path: string,
     options?: any
   ): Promise<any> {
-    // Try user-specific bridge first, then fall back to any connected bridge
-    let bridgeId = this.findAvailableBridge(userId);
-    let bridge = bridgeId ? this.bridges.get(bridgeId) : null;
-
-    // Fallback: find any connected bridge (for alpha testing)
-    if (!bridge) {
-      const fallbackBridge = this.findAnyConnectedBridge();
-      if (fallbackBridge) {
-        bridgeId = fallbackBridge.id;
-        bridge = this.bridges.get(bridgeId);
-        console.log(`[BridgeManager] Using fallback bridge ${bridgeId} for file operation`);
-      }
-    }
+    // P0 fix: Only use bridge for the specific user — never fall back to another
+    // user's bridge for file operations (prevents reading wrong user's files)
+    const bridgeId = this.findAvailableBridge(userId);
+    const bridge = bridgeId ? this.bridges.get(bridgeId) : null;
 
     if (!bridge) {
-      throw new Error('No bridge connected. Please connect Coder1 Bridge CLI.');
+      throw new Error('No bridge connected for your account. Please connect Coder1 Bridge CLI.');
     }
 
     const requestId = `file_${Date.now()}_${randomBytes(4).toString('hex')}`;
@@ -426,11 +471,7 @@ export class BridgeManager extends EventEmitter {
    */
   hasBridgeForUser(userId: string): boolean {
     const userBridgeIds = this.userBridges.get(userId);
-    if (userBridgeIds && userBridgeIds.size > 0) {
-      return true;
-    }
-    // Fallback: check if any bridge is connected
-    return this.bridges.size > 0;
+    return !!(userBridgeIds && userBridgeIds.size > 0);
   }
 
   /**
@@ -532,9 +573,17 @@ export class BridgeManager extends EventEmitter {
       }
     });
 
+    // Clean up pending living files sync requests (keep cache for stale-while-revalidate)
+    const pendingSync = this.pendingLivingFilesSync.get(bridge.userId);
+    if (pendingSync) {
+      clearTimeout(pendingSync.timeout);
+      this.pendingLivingFilesSync.delete(bridge.userId);
+      pendingSync.reject(new Error('Bridge disconnected'));
+    }
+
     // Remove bridge
     this.bridges.delete(bridgeId);
-    
+
     console.log(`[BridgeManager] Unregistered bridge ${bridgeId}`);
     this.emit('bridge:disconnected', { bridgeId, userId: bridge.userId });
   }
@@ -663,6 +712,140 @@ export class BridgeManager extends EventEmitter {
       platform: firstBridge.platform,
       version: firstBridge.version
     };
+  }
+
+  // ============================================================================
+  // Living Files Methods
+  // ============================================================================
+
+  /**
+   * Get cached living files for a user.
+   * Returns cached files if fresh (<60s), otherwise requests a refresh from the bridge.
+   * Falls back to stale cache if bridge is unavailable.
+   */
+  async getLivingFilesContext(userId: string): Promise<Record<string, string> | null> {
+    const cached = this.livingFilesCache.get(userId);
+
+    // Return fresh cache
+    if (cached && (Date.now() - cached.loadedAt) < this.LIVING_FILES_CACHE_TTL) {
+      return cached.files;
+    }
+
+    // Try to refresh from bridge
+    const bridgeId = this.findAvailableBridge(userId);
+    if (!bridgeId) {
+      return cached?.files || null; // Stale cache or null
+    }
+
+    const bridge = this.bridges.get(bridgeId);
+    if (!bridge || !bridge.socket.connected) {
+      return cached?.files || null;
+    }
+
+    // Request fresh files and wait for livingfiles:sync response
+    return new Promise<Record<string, string> | null>((resolve) => {
+      const timeout = setTimeout(() => {
+        this.pendingLivingFilesSync.delete(userId);
+        console.warn(`[BridgeManager] Living files sync timeout for user ${userId}`);
+        resolve(cached?.files || null);
+      }, this.LIVING_FILES_SYNC_TIMEOUT);
+
+      this.pendingLivingFilesSync.set(userId, {
+        resolve: (files) => resolve(files),
+        reject: () => resolve(cached?.files || null),
+        timeout,
+      });
+
+      bridge.socket.emit('livingfiles:request');
+    });
+  }
+
+  /**
+   * Write to a living file on the user's machine via bridge.
+   * Uses per-user write queue for serialization (prevents concurrent MEMORY.md races).
+   * If no bridge is connected, queues the write to DB for later flush.
+   */
+  async writeLivingFile(
+    userId: string,
+    filename: string,
+    content: string,
+    mode: 'write' | 'append'
+  ): Promise<void> {
+    // Serialize writes per user
+    const current = this.writeQueues.get(userId) || Promise.resolve();
+    const next = current.then(
+      () => this.doWriteLivingFile(userId, filename, content, mode),
+      () => this.doWriteLivingFile(userId, filename, content, mode)
+    );
+    this.writeQueues.set(userId, next);
+    return next;
+  }
+
+  /**
+   * Internal: perform a single living file write
+   */
+  private async doWriteLivingFile(
+    userId: string,
+    filename: string,
+    content: string,
+    mode: 'write' | 'append'
+  ): Promise<void> {
+    const bridgeId = this.findAvailableBridge(userId);
+    const bridge = bridgeId ? this.bridges.get(bridgeId) : null;
+
+    if (!bridge || !bridge.socket.connected) {
+      // No bridge connected — queue to DB for later flush
+      queuePendingLivingFileWrite(userId, filename, content, mode);
+      console.log(`[BridgeManager] Queued pending living file write: ${filename} for user ${userId}`);
+      return;
+    }
+
+    // Optimistically update cache before sending to bridge
+    const cached = this.livingFilesCache.get(userId);
+    if (cached) {
+      if (mode === 'write') {
+        cached.files[filename] = content;
+      } else if (mode === 'append') {
+        const existing = cached.files[filename] || '';
+        cached.files[filename] = existing.endsWith('\n')
+          ? existing + '\n' + content
+          : existing + '\n\n' + content;
+      }
+      cached.loadedAt = Date.now();
+    }
+
+    // Send write to bridge
+    bridge.socket.emit('livingfiles:write', { filename, content, mode });
+  }
+
+  /**
+   * Flush pending living file writes from DB to a newly connected bridge.
+   * Called when livingfiles:sync is received (bridge just connected and synced).
+   */
+  private async flushPendingWrites(userId: string, bridgeId: string): Promise<void> {
+    try {
+      const pending = getPendingLivingFileWrites(userId);
+      if (pending.length === 0) return;
+
+      const bridge = this.bridges.get(bridgeId);
+      if (!bridge || !bridge.socket.connected) return;
+
+      console.log(`[BridgeManager] Flushing ${pending.length} pending living file writes for user ${userId}`);
+
+      for (const write of pending) {
+        bridge.socket.emit('livingfiles:write', {
+          filename: write.filename,
+          content: write.content,
+          mode: write.mode,
+        });
+        // Delete after send — accepts small risk of duplicate on reconnect vs data loss
+        deletePendingLivingFileWrite(write.id);
+      }
+
+      console.log(`[BridgeManager] Flushed ${pending.length} pending writes for user ${userId}`);
+    } catch (error) {
+      console.error(`[BridgeManager] Failed to flush pending writes for user ${userId}:`, error);
+    }
   }
 
   /**

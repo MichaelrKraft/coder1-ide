@@ -120,6 +120,7 @@ export interface UsageStats {
 
 export interface MemoryChunk {
   id: string;
+  user_id: string;
   source_type: 'manuslive_memory' | 'manuslive_user' | 'session';
   source_id: string;
   content: string;
@@ -470,6 +471,84 @@ function createTables(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_crew_history_member ON crew_history(crew_member);
     CREATE INDEX IF NOT EXISTS idx_crew_history_created ON crew_history(created_at);
   `);
+
+  // =========================================================================
+  // Per-User Scoping Migration
+  // =========================================================================
+  // Add user_id columns to memory tables for multi-tenant isolation
+  const migrationSteps: string[] = [
+    // Step 1: Add user_id columns (idempotent via try/catch)
+    `ALTER TABLE memory_chunks ADD COLUMN user_id TEXT DEFAULT 'default'`,
+    `ALTER TABLE extracted_facts ADD COLUMN user_id TEXT DEFAULT 'default'`,
+    `ALTER TABLE learned_patterns ADD COLUMN user_id TEXT DEFAULT 'default'`,
+  ];
+
+  for (const sql of migrationSteps) {
+    try {
+      database.exec(sql);
+      console.log(`[Johnny5 DB] Migration applied: ${sql.substring(0, 60)}...`);
+    } catch (err: unknown) {
+      // "duplicate column name" is expected on subsequent runs
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('duplicate column')) {
+        console.error(`[Johnny5 DB] Migration error: ${msg}`);
+      }
+    }
+  }
+
+  // Step 2: Backfill NULL values before creating indexes
+  try {
+    database.exec(`
+      UPDATE memory_chunks SET user_id = 'default' WHERE user_id IS NULL;
+      UPDATE extracted_facts SET user_id = 'default' WHERE user_id IS NULL;
+      UPDATE learned_patterns SET user_id = 'default' WHERE user_id IS NULL;
+    `);
+  } catch (err) {
+    console.error('[Johnny5 DB] NULL backfill error:', err);
+  }
+
+  // Step 3: Basic user_id indexes
+  try {
+    database.exec(`
+      CREATE INDEX IF NOT EXISTS idx_memory_chunks_user ON memory_chunks(user_id);
+      CREATE INDEX IF NOT EXISTS idx_extracted_facts_user ON extracted_facts(user_id);
+      CREATE INDEX IF NOT EXISTS idx_learned_patterns_user ON learned_patterns(user_id);
+    `);
+  } catch (err) {
+    console.error('[Johnny5 DB] User index creation error:', err);
+  }
+
+  // Step 4: Drop and recreate unique indexes to include user_id
+  try {
+    database.exec(`
+      DROP INDEX IF EXISTS idx_facts_key_unique;
+      CREATE UNIQUE INDEX idx_facts_key_unique ON extracted_facts(user_id, fact_key);
+
+      DROP INDEX IF EXISTS idx_patterns_type_desc_unique;
+      CREATE UNIQUE INDEX idx_patterns_type_desc_unique ON learned_patterns(user_id, pattern_type, pattern_description);
+
+      DROP INDEX IF EXISTS idx_chunks_source_hash;
+      CREATE UNIQUE INDEX idx_chunks_source_hash ON memory_chunks(user_id, source_id, content_hash);
+    `);
+  } catch (err) {
+    console.error('[Johnny5 DB] Unique index recreation error:', err);
+  }
+
+  // Step 5: Pending living file writes table
+  try {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS pending_living_file_writes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        content TEXT NOT NULL,
+        mode TEXT NOT NULL DEFAULT 'append',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  } catch (err) {
+    console.error('[Johnny5 DB] pending_living_file_writes table error:', err);
+  }
 
   // Create vector table if sqlite-vec is available
   if (sqliteVecLoaded) {
@@ -1028,10 +1107,10 @@ export async function getTodayUsage(): Promise<UsageStats> {
 /**
  * Get the user profile
  */
-export async function getProfile(): Promise<UserProfile | null> {
+export async function getProfile(userId: string): Promise<UserProfile | null> {
   const database = getDb();
-  const stmt = database.prepare("SELECT * FROM user_profile WHERE id = 'default'");
-  const row = stmt.get() as {
+  const stmt = database.prepare("SELECT * FROM user_profile WHERE id = ?");
+  const row = stmt.get(userId) as {
     id: string;
     api_key_hash: string | null;
     roles: string | null;
@@ -1065,12 +1144,12 @@ export async function getProfile(): Promise<UserProfile | null> {
 /**
  * Save user profile (upsert)
  */
-export async function saveProfile(profile: Partial<UserProfile>): Promise<void> {
+export async function saveProfile(profile: Partial<UserProfile>, userId: string): Promise<void> {
   const database = getDb();
   const now = new Date().toISOString();
 
   // Check if profile exists
-  const existing = await getProfile();
+  const existing = await getProfile(userId);
 
   if (existing) {
     // Update existing profile
@@ -1111,16 +1190,17 @@ export async function saveProfile(profile: Partial<UserProfile>): Promise<void> 
     }
 
     const stmt = database.prepare(`
-      UPDATE user_profile SET ${updates.join(', ')} WHERE id = 'default'
+      UPDATE user_profile SET ${updates.join(', ')} WHERE id = ?
     `);
-    stmt.run(...values);
+    stmt.run(...values, userId);
   } else {
     // Insert new profile
     const stmt = database.prepare(`
       INSERT INTO user_profile (id, api_key_hash, roles, platforms, projects, goals, preferences, proactivity_level, permissions, created_at, updated_at)
-      VALUES ('default', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
+      userId,
       profile.api_key_hash ?? null,
       JSON.stringify(profile.roles ?? []),
       JSON.stringify(profile.platforms ?? []),
@@ -1352,10 +1432,10 @@ export interface UnifiedJohnny5Context {
  * }
  * ```
  */
-export async function getUnifiedContext(forceRefresh = false): Promise<UnifiedJohnny5Context> {
+export async function getUnifiedContext(forceRefresh: boolean, userId: string): Promise<UnifiedJohnny5Context> {
   // Fetch all data sources in parallel
   const [localProfile, manusLiveContext] = await Promise.all([
-    getProfile(),
+    getProfile(userId),
     getUnifiedManusLiveContext(forceRefresh),
   ]);
 
@@ -1532,9 +1612,9 @@ export function refreshManusLiveMemory(): void {
  *
  * Returns true if either ManusLive is installed or local profile exists
  */
-export async function hasUnifiedMemory(): Promise<boolean> {
+export async function hasUnifiedMemory(userId: string): Promise<boolean> {
   const [localProfile, isInstalled] = await Promise.all([
-    getProfile(),
+    getProfile(userId),
     Promise.resolve(isManusLiveInstalled()),
   ]);
 
@@ -1559,6 +1639,7 @@ export { BACKUP_PATH };
  */
 export async function upsertMemoryChunk(chunk: {
   id: string;
+  user_id: string;
   source_type: 'manuslive_memory' | 'manuslive_user' | 'session';
   source_id: string;
   content: string;
@@ -1573,9 +1654,9 @@ export async function upsertMemoryChunk(chunk: {
   const now = new Date().toISOString();
 
   const stmt = database.prepare(`
-    INSERT INTO memory_chunks (id, source_type, source_id, content, content_hash, start_line, end_line, token_count, heading, section_type, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(source_id, content_hash) DO UPDATE SET
+    INSERT INTO memory_chunks (id, user_id, source_type, source_id, content, content_hash, start_line, end_line, token_count, heading, section_type, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id, source_id, content_hash) DO UPDATE SET
       content = excluded.content,
       start_line = excluded.start_line,
       end_line = excluded.end_line,
@@ -1587,6 +1668,7 @@ export async function upsertMemoryChunk(chunk: {
 
   stmt.run(
     chunk.id,
+    chunk.user_id,
     chunk.source_type,
     chunk.source_id,
     chunk.content,
@@ -1602,6 +1684,7 @@ export async function upsertMemoryChunk(chunk: {
 
   return {
     id: chunk.id,
+    user_id: chunk.user_id,
     source_type: chunk.source_type,
     source_id: chunk.source_id,
     content: chunk.content,
@@ -1619,38 +1702,38 @@ export async function upsertMemoryChunk(chunk: {
 /**
  * Get a memory chunk by ID
  */
-export async function getMemoryChunk(id: string): Promise<MemoryChunk | null> {
+export async function getMemoryChunk(id: string, userId: string): Promise<MemoryChunk | null> {
   const database = getDb();
-  const stmt = database.prepare('SELECT * FROM memory_chunks WHERE id = ?');
-  return stmt.get(id) as MemoryChunk | null;
+  const stmt = database.prepare('SELECT * FROM memory_chunks WHERE id = ? AND user_id = ?');
+  return stmt.get(id, userId) as MemoryChunk | null;
 }
 
 /**
  * Get all chunks for a source
  */
-export async function getChunksBySource(sourceType: string, sourceId: string): Promise<MemoryChunk[]> {
+export async function getChunksBySource(sourceType: string, sourceId: string, userId: string): Promise<MemoryChunk[]> {
   const database = getDb();
-  const stmt = database.prepare('SELECT * FROM memory_chunks WHERE source_type = ? AND source_id = ?');
-  return stmt.all(sourceType, sourceId) as MemoryChunk[];
+  const stmt = database.prepare('SELECT * FROM memory_chunks WHERE source_type = ? AND source_id = ? AND user_id = ?');
+  return stmt.all(sourceType, sourceId, userId) as MemoryChunk[];
 }
 
 /**
  * Delete chunks by source
  */
-export async function deleteChunksBySource(sourceType: string, sourceId: string): Promise<number> {
+export async function deleteChunksBySource(sourceType: string, sourceId: string, userId: string): Promise<number> {
   const database = getDb();
-  const stmt = database.prepare('DELETE FROM memory_chunks WHERE source_type = ? AND source_id = ?');
-  const result = stmt.run(sourceType, sourceId);
+  const stmt = database.prepare('DELETE FROM memory_chunks WHERE source_type = ? AND source_id = ? AND user_id = ?');
+  const result = stmt.run(sourceType, sourceId, userId);
   return result.changes;
 }
 
 /**
  * Delete a specific chunk
  */
-export async function deleteMemoryChunk(id: string): Promise<boolean> {
+export async function deleteMemoryChunk(id: string, userId: string): Promise<boolean> {
   const database = getDb();
-  const stmt = database.prepare('DELETE FROM memory_chunks WHERE id = ?');
-  const result = stmt.run(id);
+  const stmt = database.prepare('DELETE FROM memory_chunks WHERE id = ? AND user_id = ?');
+  const result = stmt.run(id, userId);
   return result.changes > 0;
 }
 
@@ -1692,7 +1775,7 @@ function sanitizeFTS5Query(query: string): string {
 /**
  * Keyword search using FTS5
  */
-export async function searchMemoryKeyword(query: string, limit: number = 10): Promise<MemorySearchResult[]> {
+export async function searchMemoryKeyword(query: string, limit: number, userId: string): Promise<MemorySearchResult[]> {
   const database = getDb();
 
   // Sanitize query for FTS5
@@ -1704,7 +1787,7 @@ export async function searchMemoryKeyword(query: string, limit: number = 10): Pr
 
   console.log('[Johnny5 DB] FTS5 query:', sanitizedQuery);
 
-  // FTS5 search with BM25 ranking
+  // FTS5 search with BM25 ranking, filtered by user_id
   const stmt = database.prepare(`
     SELECT
       mc.id as chunk_id,
@@ -1718,13 +1801,13 @@ export async function searchMemoryKeyword(query: string, limit: number = 10): Pr
       bm25(memory_fts) as combined_score
     FROM memory_fts
     JOIN memory_chunks mc ON memory_fts.rowid = mc.rowid
-    WHERE memory_fts MATCH ?
+    WHERE memory_fts MATCH ? AND mc.user_id = ?
     ORDER BY bm25(memory_fts)
     LIMIT ?
   `);
 
   try {
-    return stmt.all(sanitizedQuery, limit) as MemorySearchResult[];
+    return stmt.all(sanitizedQuery, userId, limit) as MemorySearchResult[];
   } catch (err) {
     console.error('[Johnny5 DB] FTS search error:', err, 'Query:', sanitizedQuery);
     return [];
@@ -1759,7 +1842,8 @@ export async function storeEmbedding(chunkId: string, embedding: number[]): Prom
  */
 export async function searchMemoryVector(
   queryEmbedding: number[],
-  limit: number = 10
+  limit: number,
+  userId: string
 ): Promise<MemorySearchResult[]> {
   if (!sqliteVecLoaded) {
     console.warn('[Johnny5 DB] Vector search not available, use keyword search instead');
@@ -1768,6 +1852,9 @@ export async function searchMemoryVector(
 
   const database = getDb();
   try {
+    // Over-fetch by 5x because vec0 MATCH+LIMIT applies before the user_id join filter.
+    // We fetch more results, then filter by user_id in the JOIN, and take the final limit.
+    const overFetchLimit = limit * 5;
     const stmt = database.prepare(`
       SELECT
         mc.id as chunk_id,
@@ -1781,11 +1868,11 @@ export async function searchMemoryVector(
         me.distance as combined_score
       FROM memory_embeddings me
       JOIN memory_chunks mc ON me.chunk_id = mc.id
-      WHERE me.embedding MATCH ?
+      WHERE me.embedding MATCH ? AND mc.user_id = ?
       ORDER BY me.distance
       LIMIT ?
     `);
-    return stmt.all(JSON.stringify(queryEmbedding), limit) as MemorySearchResult[];
+    return stmt.all(JSON.stringify(queryEmbedding), userId, overFetchLimit).slice(0, limit) as MemorySearchResult[];
   } catch (err) {
     console.error('[Johnny5 DB] Vector search error:', err);
     return [];
@@ -1795,20 +1882,20 @@ export async function searchMemoryVector(
 /**
  * Get memory stats
  */
-export async function getMemoryStats(): Promise<MemoryStats> {
+export async function getMemoryStats(userId: string): Promise<MemoryStats> {
   const database = getDb();
 
-  const totalStmt = database.prepare('SELECT COUNT(*) as count FROM memory_chunks');
-  const total = (totalStmt.get() as { count: number }).count;
+  const totalStmt = database.prepare('SELECT COUNT(*) as count FROM memory_chunks WHERE user_id = ?');
+  const total = (totalStmt.get(userId) as { count: number }).count;
 
-  const manusStmt = database.prepare("SELECT COUNT(*) as count FROM memory_chunks WHERE source_type LIKE 'manuslive%'");
-  const manuslive = (manusStmt.get() as { count: number }).count;
+  const manusStmt = database.prepare("SELECT COUNT(*) as count FROM memory_chunks WHERE source_type LIKE 'manuslive%' AND user_id = ?");
+  const manuslive = (manusStmt.get(userId) as { count: number }).count;
 
-  const sessionStmt = database.prepare("SELECT COUNT(*) as count FROM memory_chunks WHERE source_type = 'session'");
-  const sessions = (sessionStmt.get() as { count: number }).count;
+  const sessionStmt = database.prepare("SELECT COUNT(*) as count FROM memory_chunks WHERE source_type = 'session' AND user_id = ?");
+  const sessions = (sessionStmt.get(userId) as { count: number }).count;
 
-  const lastStmt = database.prepare('SELECT MAX(updated_at) as last FROM memory_chunks');
-  const last = (lastStmt.get() as { last: string | null }).last;
+  const lastStmt = database.prepare('SELECT MAX(updated_at) as last FROM memory_chunks WHERE user_id = ?');
+  const last = (lastStmt.get(userId) as { last: string | null }).last;
 
   const modelStmt = database.prepare('SELECT model_name FROM embedding_metadata WHERE id = ?');
   const model = modelStmt.get('current') as { model_name: string } | undefined;
@@ -1850,21 +1937,84 @@ export async function getEmbeddingMetadata(): Promise<EmbeddingMetadata | null> 
 /**
  * Clear all memory chunks (for reindexing)
  */
-export async function clearAllMemoryChunks(): Promise<number> {
+export async function clearAllMemoryChunks(userId: string): Promise<number> {
   const database = getDb();
-  const stmt = database.prepare('DELETE FROM memory_chunks');
-  const result = stmt.run();
+  const stmt = database.prepare('DELETE FROM memory_chunks WHERE user_id = ?');
+  const result = stmt.run(userId);
 
-  // Also clear embeddings if available
+  // Also clear embeddings for this user's chunks
   if (sqliteVecLoaded) {
     try {
-      database.exec('DELETE FROM memory_embeddings');
+      // Delete embeddings whose chunk_id belonged to this user's deleted chunks
+      // Since chunks are already deleted, we can't join — but the cascade handles it
+      // via the chunk_id foreign key relationship. For safety, clean up orphans.
+      database.prepare(`
+        DELETE FROM memory_embeddings
+        WHERE chunk_id NOT IN (SELECT id FROM memory_chunks)
+      `).run();
     } catch (err) {
       console.warn('[Johnny5 DB] Failed to clear embeddings:', err);
     }
   }
 
   return result.changes;
+}
+
+// ============================================================================
+// Pending Living File Writes (for offline Bridge support)
+// ============================================================================
+
+/**
+ * Queue a living file write for when Bridge reconnects
+ */
+export function queuePendingLivingFileWrite(
+  userId: string,
+  filename: string,
+  content: string,
+  mode: 'append' | 'write'
+): void {
+  const database = getDb();
+  const stmt = database.prepare(`
+    INSERT INTO pending_living_file_writes (user_id, filename, content, mode)
+    VALUES (?, ?, ?, ?)
+  `);
+  stmt.run(userId, filename, content, mode);
+}
+
+/**
+ * Get pending writes for a user, ordered by creation time (oldest first)
+ */
+export function getPendingLivingFileWrites(userId: string): Array<{
+  id: number;
+  user_id: string;
+  filename: string;
+  content: string;
+  mode: string;
+  created_at: string;
+}> {
+  const database = getDb();
+  const stmt = database.prepare(`
+    SELECT * FROM pending_living_file_writes
+    WHERE user_id = ?
+    ORDER BY created_at ASC
+  `);
+  return stmt.all(userId) as Array<{
+    id: number;
+    user_id: string;
+    filename: string;
+    content: string;
+    mode: string;
+    created_at: string;
+  }>;
+}
+
+/**
+ * Delete a single pending write after successful delivery
+ */
+export function deletePendingLivingFileWrite(id: number): void {
+  const database = getDb();
+  const stmt = database.prepare('DELETE FROM pending_living_file_writes WHERE id = ?');
+  stmt.run(id);
 }
 
 // Re-export ManusLive types for convenience
