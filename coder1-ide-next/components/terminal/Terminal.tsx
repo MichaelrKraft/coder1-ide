@@ -47,7 +47,6 @@ import { devLog, devWarn, perfLog } from '@/lib/dev-logger'; // Performance: dis
 // import EnhancedStatusline from '@/components/statusline/EnhancedStatusline'; // Temporarily disabled for debugging
 import StagedComposer from './StagedComposer';
 import SessionMetricsBar from './SessionMetricsBar';
-import TerminalTokenStats from './TerminalTokenStats';
 import { useAutoCheckpoint } from '@/lib/hooks/useAutoCheckpoint';
 
 // Time Capsule: Dynamic import to avoid bundle impact when feature is disabled
@@ -5820,17 +5819,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       )}
 
       {/* Terminal Footer Section - Contains metrics and status */}
-      <div className="flex flex-col">
-        {/* Token Usage Statistics - At bottom of terminal */}
-        <TerminalTokenStats />
-        
-        {/* Enhanced Status Line - Professional Claude Code statusline (disabled) */}
-        {/* <EnhancedStatusline
-          terminalRef={terminalRef}
-          settingsButtonRef={settingsButtonRef}
-          xtermRef={xtermRef}
-        /> */}
-      </div>
+      {/* Token stats and enhanced statusline removed — token parser
+          can't reliably extract data from Claude CLI's ANSI TUI output */}
 
       {/* Status Line - Fixed positioning without covering content */}
       {(() => {
