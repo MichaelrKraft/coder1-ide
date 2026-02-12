@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Johnny5APIResponse } from '@/types/johnny5';
 import { initializeDb, getProfile, saveProfile } from '@/lib/johnny5-db';
-import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+import { extractUserId } from '@/lib/auth/extract-user-id';
 
 /**
  * User Profile for capability matching
@@ -76,17 +76,7 @@ export async function GET(request: NextRequest) {
   try {
     await initializeDb();
 
-    let userId = 'default';
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      const token = extractTokenFromHeader(authHeader);
-      if (token) {
-        const decoded = verifyAccessToken(token);
-        if (decoded) {
-          userId = decoded.userId;
-        }
-      }
-    }
+    const userId = extractUserId(request);
 
     const dbProfile = await getProfile(userId);
     const profile = dbProfileToApiProfile(dbProfile) || getDefaultProfile();
@@ -121,17 +111,7 @@ export async function POST(request: NextRequest) {
   try {
     await initializeDb();
 
-    let userId = 'default';
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      const token = extractTokenFromHeader(authHeader);
-      if (token) {
-        const decoded = verifyAccessToken(token);
-        if (decoded) {
-          userId = decoded.userId;
-        }
-      }
-    }
+    const userId = extractUserId(request);
 
     const body = await request.json();
 
@@ -201,17 +181,7 @@ export async function PATCH(request: NextRequest) {
   try {
     await initializeDb();
 
-    let userId = 'default';
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      const token = extractTokenFromHeader(authHeader);
-      if (token) {
-        const decoded = verifyAccessToken(token);
-        if (decoded) {
-          userId = decoded.userId;
-        }
-      }
-    }
+    const userId = extractUserId(request);
 
     const body = await request.json();
 

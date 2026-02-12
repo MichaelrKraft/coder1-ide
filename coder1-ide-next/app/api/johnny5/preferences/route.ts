@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProfile, saveProfile } from '@/lib/johnny5-db';
-import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+import { extractUserId } from '@/lib/auth/extract-user-id';
 
 /**
  * GET /api/johnny5/preferences
@@ -9,17 +9,7 @@ import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
  */
 export async function GET(request: NextRequest) {
   try {
-    let userId = 'default';
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      const token = extractTokenFromHeader(authHeader);
-      if (token) {
-        const decoded = verifyAccessToken(token);
-        if (decoded) {
-          userId = decoded.userId;
-        }
-      }
-    }
+    const userId = extractUserId(request);
 
     const profile = await getProfile(userId);
 
@@ -70,17 +60,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    let userId = 'default';
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      const token = extractTokenFromHeader(authHeader);
-      if (token) {
-        const decoded = verifyAccessToken(token);
-        if (decoded) {
-          userId = decoded.userId;
-        }
-      }
-    }
+    const userId = extractUserId(request);
 
     const body = await request.json();
 
@@ -153,17 +133,7 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    let userId = 'default';
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      const token = extractTokenFromHeader(authHeader);
-      if (token) {
-        const decoded = verifyAccessToken(token);
-        if (decoded) {
-          userId = decoded.userId;
-        }
-      }
-    }
+    const userId = extractUserId(request);
 
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');

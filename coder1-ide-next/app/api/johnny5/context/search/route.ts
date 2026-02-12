@@ -13,7 +13,7 @@ import {
   createGeminiProvider,
   type SearchResponse,
 } from '@/services/memory';
-import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+import { extractUserId } from '@/lib/auth/extract-user-id';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -47,17 +47,7 @@ function getEmbeddingProvider() {
 
 export async function POST(request: NextRequest) {
   try {
-    let userId = 'default';
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      const token = extractTokenFromHeader(authHeader);
-      if (token) {
-        const decoded = verifyAccessToken(token);
-        if (decoded) {
-          userId = decoded.userId;
-        }
-      }
-    }
+    const userId = extractUserId(request);
 
     const body: SearchRequest = await request.json();
     const { query, topK = 10, maxTokens = 4000, minScore = 0.1 } = body;
