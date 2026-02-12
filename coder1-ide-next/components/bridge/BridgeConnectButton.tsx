@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 export function BridgeConnectButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,6 +10,7 @@ export function BridgeConnectButton() {
   const [bridgeConnected, setBridgeConnected] = useState(false);
   const [showProTips, setShowProTips] = useState(false);
   const [copiedCommand, setCopiedCommand] = useState<string>('');
+  const authUser = useAuthStore((s) => s.user);
 
   const checkBridgeConnection = useCallback((userId: string) => {
     const interval = setInterval(async () => {
@@ -38,8 +40,8 @@ export function BridgeConnectButton() {
     console.log('🌉 generatePairingCode called');
     setIsLoading(true);
     try {
-      // Generate a user ID (in production, use actual user auth)
-      const userId = localStorage.getItem('userId') || `user_${Date.now()}`;
+      // Use authenticated user ID if available, fall back to localStorage for dev mode
+      const userId = authUser?.id || localStorage.getItem('userId') || `user_${Date.now()}`;
       if (!localStorage.getItem('userId')) {
         localStorage.setItem('userId', userId);
       }

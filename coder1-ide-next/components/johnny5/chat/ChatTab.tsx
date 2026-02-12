@@ -583,7 +583,10 @@ export default function ChatTab() {
         console.log('[ChatTab] Moltbot disabled, retrying with main chat endpoint');
         response = await fetch('/api/johnny5/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+          },
           body: JSON.stringify({
             message: userMessage.content,
             sessionId: sessionId,
