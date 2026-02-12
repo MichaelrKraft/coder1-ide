@@ -341,7 +341,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [lastError, setLastError] = useState<string | null>(null);
   const [errorDoctorActive, setErrorDoctorActive] = useState(true);
   const socketRef = useRef<any>(null); // Will be Socket instance after async init
-  
+  const lastResizeDimsRef = useRef<{ cols: number; rows: number }>({ cols: 0, rows: 0 });
+  const resizeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // 🔧 FIX PART 3 (Nov 23, 2025): Buffer agent terminal data until xterm is ready
   // CRITICAL: Agent terminals start hidden (display:none), xterm can't initialize
   // BUT data starts flowing immediately from backend Claude CLI
@@ -1890,14 +1892,21 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               const beforeBuffer = term.buffer?.active;
               const wasAtBottom = beforeBuffer ? beforeBuffer.viewportY === beforeBuffer.baseY : false;
 
-              setTimeout(() => {
+              // Debounce: only emit after resizes settle (prevents spamming Claude CLI TUI)
+              if (resizeDebounceRef.current) {
+                clearTimeout(resizeDebounceRef.current);
+              }
+
+              resizeDebounceRef.current = setTimeout(() => {
                 try {
                   fitAddonRef.current?.fit();
 
-                  // Notify server of new dimensions so PTY stays in sync
+                  // Only emit if dimensions actually changed
                   if (xtermRef.current && socketRef.current?.connected && sessionId) {
                     const { cols, rows } = xtermRef.current;
-                    if (cols > 0 && rows > 0) {
+                    const last = lastResizeDimsRef.current;
+                    if (cols > 0 && rows > 0 && (cols !== last.cols || rows !== last.rows)) {
+                      lastResizeDimsRef.current = { cols, rows };
                       socketRef.current.emit('terminal:resize', { id: sessionId, cols, rows });
                     }
                   }
@@ -1912,15 +1921,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
                   // If we were at bottom before resize, ensure we stay at bottom
                   if (wasAtBottom) {
-                    // Small delay to let DOM settle
                     setTimeout(() => {
                       term.scrollToBottom();
                     }, 50);
                   }
                 } catch (err) {
-                  // Defensive: catch any ReferenceError from stale closures during HMR
+                  // Defensive: catch stale closure errors during HMR
                 }
-              }, 10);
+              }, 150);
             } catch (error) {
               // Silently handle resize errors
             }
