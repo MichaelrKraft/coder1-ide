@@ -61,7 +61,7 @@ export default function SessionDetail({ sessionId, onClose, onStartReplay }: Ses
           throw new Error('Failed to load session details');
         }
         const data = await response.json();
-        setSession(data.data);
+        setSession(data.data.session);
       } catch (err) {
         // For now, use mock data since API may not exist yet
         setSession(getMockSessionDetail(sessionId));

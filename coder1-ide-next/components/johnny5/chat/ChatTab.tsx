@@ -77,17 +77,11 @@ import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import crewData from '@/data/crew-members.json';
 import { getSocket } from '@/lib/socket';
 
-// Message interface
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-  status?: 'sending' | 'sent' | 'error';
-  toolCalls?: ToolCall[];
-  thinking?: string;
-  reasoningSteps?: string[];
-}
+import { Johnny5ChatMessage, Johnny5ChatToolCall } from '@/types';
+
+// Local aliases for compatibility
+type ChatMessage = Johnny5ChatMessage;
+type ToolCall = Johnny5ChatToolCall;
 
 interface Johnny5Mode {
   mode: 'moltbot' | 'bridge' | 'gemini';
@@ -95,14 +89,6 @@ interface Johnny5Mode {
   hasMCP: boolean;
   provider: string;
   isLimitedMode: boolean;
-}
-
-interface ToolCall {
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-  output?: string;
-  status: 'pending' | 'running' | 'complete' | 'error';
 }
 
 interface QuotaInfo {
@@ -127,14 +113,24 @@ interface QuotaExceeded {
  * This is the conversational AI assistant experience - not just a dashboard.
  */
 export default function ChatTab() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: "Hi, I'm Johnny5, your always on AI assistant and I'm ready to make your life easier. What can I do for you?",
-      timestamp: new Date(),
-    },
-  ]);
+  // Chat messages and session ID live in the store so they persist across tab switches
+  const {
+    chatMessages,
+    chatSessionId,
+    addChatMessage,
+    updateChatMessage: updateChatMsg,
+    clearChat,
+    setChatSessionId,
+    markWelcomeAnimationPlayed,
+    moltbotStatus,
+    setMoltbotStatus,
+    activeCrewMember,
+  } = useJohnny5Store();
+
+  // Aliases for compatibility with existing code
+  const messages = chatMessages;
+  const sessionId = chatSessionId;
+
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -146,7 +142,6 @@ export default function ChatTab() {
   const [memoryStatus, setMemoryStatus] = useState<'full' | 'partial' | 'minimal' | 'none' | null>(null);
   const [memoryBannerDismissed, setMemoryBannerDismissed] = useState(false);
   const [limitedModeDismissed, setLimitedModeDismissed] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [observations, setObservations] = useState<TerminalEvent[]>([]);
   const [isDelegating, setIsDelegating] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
@@ -163,12 +158,12 @@ export default function ChatTab() {
     onAlert: (alert: SupervisionAlert) => {
       // Add critical/warning supervision alerts as system messages in chat
       if (alert.severity !== 'info') {
-        setMessages(prev => [...prev, {
+        addChatMessage({
           id: `sup-${alert.id}`,
           role: 'system' as const,
           content: `[Supervision] ${alert.message}${alert.details ? '\n' + alert.details : ''}`,
           timestamp: new Date(alert.timestamp),
-        }]);
+        });
       }
     },
   });
@@ -203,9 +198,6 @@ export default function ChatTab() {
       inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 150)}px`;
     }
   }, [inputValue]);
-
-  // Store state
-  const { moltbotStatus, setMoltbotStatus, activeCrewMember } = useJohnny5Store();
 
   // Resolve active crew member details for prompt injection
   const activeCrewInfo = useMemo(() => {
@@ -275,12 +267,12 @@ export default function ChatTab() {
         // Listen for Johnny5 context ready for Claude sessions
         socket.on('johnny5:claude-context-ready', (data: { sessionId: string; context: string; factCount: number }) => {
           if (data.factCount > 0) {
-            setMessages(prev => [...prev, {
+            addChatMessage({
               id: `ctx-${Date.now()}`,
               role: 'system' as const,
               content: `Context shared with Claude Code session (${data.factCount} facts available)`,
               timestamp: new Date(),
-            }]);
+            });
           }
         });
 
@@ -323,14 +315,14 @@ export default function ChatTab() {
     }
   }, [bridgeConnected, fetchJohnny5Mode]);
 
-  // Fresh session on every page load - no persisted messages
-  // Each visit to Coder1 starts with a clean chat showing only the welcome message
+  // Initialize session ID only if not already set (store persists across tab switches)
   useEffect(() => {
-    // Generate a new session ID for this fresh session
-    const newSessionId = `session-${Date.now()}`;
-    setSessionId(newSessionId);
-    console.log('[ChatTab] Starting fresh session:', newSessionId);
-  }, []);
+    if (!chatSessionId) {
+      const newSessionId = `session-${Date.now()}`;
+      setChatSessionId(newSessionId);
+      console.log('[ChatTab] Starting fresh session:', newSessionId);
+    }
+  }, [chatSessionId, setChatSessionId]);
 
   // Subscribe to terminal events for observation
   useEffect(() => {
@@ -346,12 +338,12 @@ export default function ChatTab() {
       if (event.type === 'command') return;
 
       // Add observation as a system message
-      setMessages(prev => [...prev, {
+      addChatMessage({
         id: `obs-${now}`,
         role: 'system' as const,
         content: event.summary,
         timestamp: new Date(event.timestamp),
-      }]);
+      });
 
       // Store observation for context
       setObservations(prev => [...prev.slice(-10), event]); // Keep last 10
@@ -415,19 +407,19 @@ export default function ChatTab() {
           socket.off('johnny5:delegate-result', handler);
 
           if (result.success) {
-            setMessages(prev => [...prev, {
+            addChatMessage({
               id: `delegate-${Date.now()}`,
               role: 'system' as const,
               content: `Task delegated to Claude Code (${result.method}): "${task}"`,
               timestamp: new Date(),
-            }]);
+            });
           } else {
-            setMessages(prev => [...prev, {
+            addChatMessage({
               id: `delegate-err-${Date.now()}`,
               role: 'system' as const,
               content: `Failed to delegate: ${result.error || 'Unknown error'}. Is Claude Code running in the terminal?`,
               timestamp: new Date(),
-            }]);
+            });
           }
           resolve();
         };
@@ -443,12 +435,12 @@ export default function ChatTab() {
       await resultPromise;
     } catch (err) {
       console.error('[ChatTab] Delegation error:', err);
-      setMessages(prev => [...prev, {
+      addChatMessage({
         id: `delegate-err-${Date.now()}`,
         role: 'system' as const,
         content: 'Failed to delegate task. Check terminal connection.',
         timestamp: new Date(),
-      }]);
+      });
     } finally {
       setIsDelegating(false);
     }
@@ -530,7 +522,7 @@ export default function ChatTab() {
       status: 'sending',
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    addChatMessage(userMessage);
     setInputValue('');
     setIsLoading(true);
     setIsTyping(true);
@@ -606,11 +598,7 @@ export default function ChatTab() {
           upgradeUrl: data.upgradeUrl,
         });
         // Update user message status to error
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === userMessage.id ? { ...msg, status: 'error' } : msg
-          )
-        );
+        updateChatMsg(userMessage.id, { status: 'error' });
         setIsLoading(false);
         setIsTyping(false);
         return; // Don't throw, just show the upgrade prompt
@@ -639,11 +627,7 @@ export default function ChatTab() {
       }
 
       // Update user message status
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === userMessage.id ? { ...msg, status: 'sent' } : msg
-        )
-      );
+      updateChatMsg(userMessage.id, { status: 'sent' });
 
       // Update quota from response if available
       if (data.data?.quota) {
@@ -661,7 +645,7 @@ export default function ChatTab() {
       // Track session ID from response
       const responseSessionId = data.data?.sessionId || data.sessionId;
       if (responseSessionId) {
-        setSessionId(responseSessionId);
+        setChatSessionId(responseSessionId);
       }
 
       // Add assistant response
@@ -675,38 +659,27 @@ export default function ChatTab() {
         reasoningSteps: data.data?.reasoningSteps,
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      addChatMessage(assistantMessage);
     } catch (error) {
       // User cancelled the request — not an error
       if (error instanceof DOMException && error.name === 'AbortError') {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === userMessage.id ? { ...msg, status: 'sent' } : msg
-          )
-        );
+        updateChatMsg(userMessage.id, { status: 'sent' });
         return;
       }
 
       console.error('Chat error:', error);
 
       // Update user message with error
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === userMessage.id ? { ...msg, status: 'error' } : msg
-        )
-      );
+      updateChatMsg(userMessage.id, { status: 'error' });
 
       // Add error message with the specific error text
       const errorText = error instanceof Error ? error.message : "Sorry, I encountered an error. Please try again or check your API connection.";
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `error-${Date.now()}`,
-          role: 'assistant',
-          content: errorText,
-          timestamp: new Date(),
-        },
-      ]);
+      addChatMessage({
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: errorText,
+        timestamp: new Date(),
+      });
     } finally {
       setIsLoading(false);
       setIsTyping(false);
@@ -735,18 +708,9 @@ export default function ChatTab() {
     setIsLoading(false);
     setIsTyping(false);
 
-    const newSessionId = `session-${Date.now()}`;
-    setMessages([
-      {
-        id: 'welcome-new',
-        role: 'assistant',
-        content: "Hi, I'm Johnny5, your always on AI assistant and I'm ready to make your life easier. What can I do for you?",
-        timestamp: new Date(),
-      },
-    ]);
+    clearChat(); // Resets messages to welcome + generates new sessionId
     setMemoryBannerDismissed(false);
     setMemoryStatus(null);
-    setSessionId(newSessionId);
     setObservations([]);
   };
 
@@ -981,8 +945,8 @@ export default function ChatTab() {
 
                 {/* Message text */}
                 <div className="whitespace-pre-wrap">
-                  {message.id === 'welcome' ? (
-                    <TypewriterText text={message.content} speed={25} />
+                  {message.id.startsWith('welcome') && !message.animationPlayed ? (
+                    <TypewriterText text={message.content} speed={25} onComplete={() => markWelcomeAnimationPlayed()} />
                   ) : (
                     message.content
                   )}
