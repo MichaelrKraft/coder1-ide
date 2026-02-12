@@ -134,6 +134,17 @@ const detectClaudeFilePaths = (output: string): string | null => {
         continue;
       }
 
+      // Filter out garbled paths from ANSI-stripped TUI output
+      // Claude CLI's TUI uses cursor positioning; stripping ANSI codes can concatenate
+      // unrelated text, producing paths like "Readautonomous_vibe_inteface/..."
+      const firstSegment = filePath.split('/')[0];
+      // Reject if first segment looks like an action word concatenated with a path
+      if (/^(Read|Write|Wrote|Edit|Created|Modified|Loaded)[A-Z]/i.test(firstSegment) &&
+          firstSegment.length > 10) {
+        console.log(`[AUTO-OPEN DEBUG] Filtered garbled path (concatenated action): ${filePath}`);
+        continue;
+      }
+
       // Return the path as-is - the bridge/API will handle resolution
       // The bridge has access to the user's filesystem and knows the working directory
       console.log(`[AUTO-OPEN DEBUG] Returning path: ${filePath}`);
@@ -1004,7 +1015,7 @@ function IDEPageContent() {
   };
 
   // File operations - handleOpenFileFromPath must be defined BEFORE handleFileSelect to avoid TDZ
-  const handleOpenFileFromPath = useCallback(async (path: string, line?: number) => {
+  const handleOpenFileFromPath = useCallback(async (path: string, line?: number, silent?: boolean) => {
     try {
       setFileErrors(prev => {
         const newErrors = { ...prev };
@@ -1056,22 +1067,30 @@ function IDEPageContent() {
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('📁 Failed to open file:', error);
+
+      // For silent (auto-detected) paths, just log — don't set error state or active file
+      if (silent) {
+        console.log('[AUTO-OPEN] Silent failure for:', path, errorMessage);
+      } else {
+        console.error('📁 Failed to open file:', error);
+
+        // Set error state for this file
+        setFileErrors(prev => ({ ...prev, [path]: errorMessage }));
+
+        // Still set as active file to show error state in editor
+        setActiveFile(path);
+      }
       
-      // Set error state for this file
-      setFileErrors(prev => ({ ...prev, [path]: errorMessage }));
-      
-      // Still set as active file to show error state in editor
-      setActiveFile(path);
-      
-      // Show error in terminal if available
-      const globalSocket = (window as any).terminalSocket;
-      const globalSessionId = (window as any).terminalSessionId;
-      if (globalSocket && globalSessionId) {
-        globalSocket.emit('terminal:input', {
-          sessionId: globalSessionId,
-          data: `\n❌ That file got shy! ${path}: ${errorMessage}\n`
-        });
+      // Show error in terminal if available (skip for auto-detected paths to avoid noise)
+      if (!silent) {
+        const globalSocket = (window as any).terminalSocket;
+        const globalSessionId = (window as any).terminalSessionId;
+        if (globalSocket && globalSessionId) {
+          globalSocket.emit('terminal:input', {
+            sessionId: globalSessionId,
+            data: `\n❌ That file got shy! ${path}: ${errorMessage}\n`
+          });
+        }
       }
     } finally {
       // Clear loading state
@@ -1126,7 +1145,7 @@ function IDEPageContent() {
       lastFileOpenTimeRef.current = now;
 
       console.log('[AUTO-OPEN] Opening file:', detectedPath);
-      handleOpenFileFromPath(detectedPath);
+      handleOpenFileFromPath(detectedPath, undefined, true);
     };
 
     const handleTerminalOutput = (event: CustomEvent<{ output: string }>) => {
