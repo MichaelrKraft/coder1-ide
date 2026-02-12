@@ -1891,30 +1891,34 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               const wasAtBottom = beforeBuffer ? beforeBuffer.viewportY === beforeBuffer.baseY : false;
 
               setTimeout(() => {
-                fitAddonRef.current?.fit();
+                try {
+                  fitAddonRef.current?.fit();
 
-                // Notify server of new dimensions so PTY stays in sync
-                if (xtermRef.current && socket?.connected && sessionId) {
-                  const { cols, rows } = xtermRef.current;
-                  if (cols > 0 && rows > 0) {
-                    socket.emit('terminal:resize', { id: sessionId, cols, rows });
+                  // Notify server of new dimensions so PTY stays in sync
+                  if (xtermRef.current && socketRef.current?.connected && sessionId) {
+                    const { cols, rows } = xtermRef.current;
+                    if (cols > 0 && rows > 0) {
+                      socketRef.current.emit('terminal:resize', { id: sessionId, cols, rows });
+                    }
                   }
-                }
 
-                // Check state after resize
-                const afterBuffer = term.buffer?.active;
+                  // Check state after resize
+                  const afterBuffer = term.buffer?.active;
 
-                // If resize broke the viewport sync and we were at bottom, fix it
-                if (wasAtBottom && afterBuffer && afterBuffer.viewportY !== afterBuffer.baseY) {
-                  term.scrollLines(afterBuffer.baseY - afterBuffer.viewportY);
-                }
+                  // If resize broke the viewport sync and we were at bottom, fix it
+                  if (wasAtBottom && afterBuffer && afterBuffer.viewportY !== afterBuffer.baseY) {
+                    term.scrollLines(afterBuffer.baseY - afterBuffer.viewportY);
+                  }
 
-                // If we were at bottom before resize, ensure we stay at bottom
-                if (wasAtBottom) {
-                  // Small delay to let DOM settle
-                  setTimeout(() => {
-                    term.scrollToBottom();
-                  }, 50);
+                  // If we were at bottom before resize, ensure we stay at bottom
+                  if (wasAtBottom) {
+                    // Small delay to let DOM settle
+                    setTimeout(() => {
+                      term.scrollToBottom();
+                    }, 50);
+                  }
+                } catch (err) {
+                  // Defensive: catch any ReferenceError from stale closures during HMR
                 }
               }, 10);
             } catch (error) {
