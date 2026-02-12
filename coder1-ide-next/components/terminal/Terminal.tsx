@@ -1892,15 +1892,23 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
               setTimeout(() => {
                 fitAddonRef.current?.fit();
-                
+
+                // Notify server of new dimensions so PTY stays in sync
+                if (xtermRef.current && socket?.connected && sessionId) {
+                  const { cols, rows } = xtermRef.current;
+                  if (cols > 0 && rows > 0) {
+                    socket.emit('terminal:resize', { id: sessionId, cols, rows });
+                  }
+                }
+
                 // Check state after resize
                 const afterBuffer = term.buffer?.active;
-                
+
                 // If resize broke the viewport sync and we were at bottom, fix it
                 if (wasAtBottom && afterBuffer && afterBuffer.viewportY !== afterBuffer.baseY) {
                   term.scrollLines(afterBuffer.baseY - afterBuffer.viewportY);
                 }
-                
+
                 // If we were at bottom before resize, ensure we stay at bottom
                 if (wasAtBottom) {
                   // Small delay to let DOM settle
@@ -3259,7 +3267,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // because the buffered initial emit might have been lost on the failed transport.
       if (sessionId) {
         setRestorationState('restoring'); // Show loading overlay
-        socket.emit('terminal:create', { id: sessionId });
+        const dims = xtermRef.current ? { cols: xtermRef.current.cols, rows: xtermRef.current.rows } : {};
+        socket.emit('terminal:create', { id: sessionId, ...dims });
         focusOnConnect();
       }
     };
@@ -3402,7 +3411,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // ADDED: Re-establish terminal session after reconnection
         if (sessionId && sessionId !== 'undefined' && sessionId !== 'null') {
           setRestorationState('restoring'); // Transition to restoration phase
-          socket.emit('terminal:create', { id: sessionId });
+          const dims = xtermRef.current ? { cols: xtermRef.current.cols, rows: xtermRef.current.rows } : {};
+          socket.emit('terminal:create', { id: sessionId, ...dims });
         }
       }
     };
@@ -3562,12 +3572,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // Critical fix: Don't send undefined or null as the session ID
     // Let the server generate one if we don't have a valid ID
+    const dims = xtermRef.current ? { cols: xtermRef.current.cols, rows: xtermRef.current.rows } : {};
     if (sessionId && sessionId !== 'undefined' && sessionId !== 'null') {
-      socket.emit('terminal:create', { id: sessionId });
+      socket.emit('terminal:create', { id: sessionId, ...dims });
       devLog('✅ [CLIENT] terminal:create emitted with session ID');
     } else {
       devLog('⚠️ No valid session ID, letting server generate one');
-      socket.emit('terminal:create', {}); // Let server generate ID
+      socket.emit('terminal:create', { ...dims }); // Let server generate ID
       devLog('✅ [CLIENT] terminal:create emitted (server will generate ID)');
     }
 
@@ -4121,8 +4132,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // Focus terminal after successful connection
         focusOnConnect();
         
-        // Send initial resize
+        // Send initial resize — fit first so dims reflect actual container size
         if (fitAddonRef.current && xtermRef.current) {
+          fitAddonRef.current.fit();
           const { cols, rows } = xtermRef.current;
           socket.emit('terminal:resize', { id: sessionId, cols, rows });
         }
@@ -4192,7 +4204,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               if (typeof window !== 'undefined') {
                 (window as any).terminalSessionId = data.sessionId;
               }
-              socket.emit('terminal:create', { id: data.sessionId });
+              const restoreDims = xtermRef.current ? { cols: xtermRef.current.cols, rows: xtermRef.current.rows } : {};
+              socket.emit('terminal:create', { id: data.sessionId, ...restoreDims });
               term.writeln('✅ Session restored.\r\n');
             }
           })

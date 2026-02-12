@@ -1,16 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getExistingFacts, getRelevantFacts } from '@/services/memory/fact-extraction-service';
+import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 
 export async function GET(request: NextRequest) {
   try {
+    let userId = 'default';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      }
+    }
+
     const { searchParams } = new URL(request.url);
     const task = searchParams.get('task') || '';
 
     // Get all high-confidence facts about the user
-    const allFacts = await getExistingFacts(undefined, 30);
+    const allFacts = await getExistingFacts(undefined, 30, userId);
 
     // Get task-relevant facts if a task description is provided
-    const relevantFacts = task ? await getRelevantFacts(task, 10) : [];
+    const relevantFacts = task ? await getRelevantFacts(task, 10, userId) : [];
 
     // Build context string
     const sections: string[] = [];

@@ -48,7 +48,8 @@ import {
 } from '@/services/memory';
 import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
 import { classifyQuery, type ClassificationResult } from '@/services/query-classifier';
-import { isLivingFilesEnabled, loadLivingFilesContext, appendToLivingFile } from '@/lib/living-files';
+import { isLivingFilesEnabled, loadLivingFilesContext, appendToLivingFile, formatLivingFilesFromCache } from '@/lib/living-files';
+import { bridgeManager } from '@/services/bridge-manager';
 
 // Log memory feature status on module load
 console.log('[Johnny5] Memory features status:', {
@@ -267,7 +268,7 @@ function getSoulMd(): string | null {
 /**
  * Generate system prompt based on available capabilities
  */
-function generateJohnny5SystemPrompt(mode: Johnny5Mode): string {
+async function generateJohnny5SystemPrompt(mode: Johnny5Mode, userId: string): Promise<string> {
   // Load SOUL.md or fall back to hardcoded personality
   const soulMd = getSoulMd();
   const basePersonality = soulMd || `# Johnny5 - Who You Are
@@ -293,13 +294,31 @@ You are Johnny5 - inspired by Short Circuit's curious, enthusiastic robot ("No d
 CRITICAL: When you see memory context, facts, or profile information in the message, you MUST use it. If the user asks "what do you know about me?" - tell them everything from the context. You DO have memory. You DO remember them. Never say you don't store information - you DO.`;
 
   // Living Files Context — inject when feature flag is enabled
+  // Try Bridge cache first (user's machine files), fall back to local disk
   let livingFilesSection = '';
   if (isLivingFilesEnabled()) {
     try {
-      const livingContext = loadLivingFilesContext();
+      let livingContext: string | null = null;
+
+      // Try Bridge cache first (authenticated user's machine files)
+      if (userId !== 'default' && bridgeManager?.hasBridgeForUser(userId)) {
+        const cached = await bridgeManager.getLivingFilesContext(userId);
+        if (cached) {
+          livingContext = formatLivingFilesFromCache(cached);
+          console.log('[Johnny5] Living files loaded via Bridge cache:', livingContext.length, 'chars');
+        }
+      }
+
+      // Fallback: local disk (dev mode or no Bridge)
+      if (!livingContext) {
+        livingContext = loadLivingFilesContext();
+        if (livingContext) {
+          console.log('[Johnny5] Living files loaded from local disk:', livingContext.length, 'chars');
+        }
+      }
+
       if (livingContext) {
         livingFilesSection = '\n\n' + livingContext;
-        console.log('[Johnny5] Living files context loaded:', livingContext.length, 'chars');
       }
     } catch (err) {
       console.warn('[Johnny5] Failed to load living files context:', err);
@@ -444,37 +463,42 @@ export async function POST(
 
     // 2. Check user authentication and quota
     const authHeader = request.headers.get('Authorization');
-    const token = extractTokenFromHeader(authHeader ?? undefined);
-    let userId: string | null = null;
+    let userId = 'default'; // Default for unauthenticated/dev mode
 
-    if (token) {
+    if (authHeader) {
+      // Auth attempted — must succeed or reject (never silently degrade to 'default')
+      const token = extractTokenFromHeader(authHeader);
+      if (!token) {
+        return errorResponse('Invalid authorization header format', 'UNAUTHORIZED', 401);
+      }
       const decoded = verifyAccessToken(token);
-      if (decoded) {
-        userId = decoded.userId;
+      if (!decoded) {
+        return errorResponse('Token expired or invalid. Please re-authenticate.', 'UNAUTHORIZED', 401);
+      }
+      userId = decoded.userId;
 
-        // Check Johnny5 quota for authenticated users
-        const quota = getJohnny5Quota(userId);
-        if (quota && !quota.isProSubscriber && quota.messageCount >= quota.limit) {
-          // User has exceeded their quota - return upgrade prompt
-          const upgradeUrl = quota.tierType === 'gemini_trial'
-            ? 'https://claude.ai/download' // Get Claude Code Pro/Max
-            : '/upgrade?plan=pro'; // Get Coder1 Pro
+      // Check Johnny5 quota for authenticated users
+      const quota = getJohnny5Quota(userId);
+      if (quota && !quota.isProSubscriber && quota.messageCount >= quota.limit) {
+        const upgradeUrl = quota.tierType === 'gemini_trial'
+          ? 'https://claude.ai/download'
+          : '/upgrade?plan=pro';
 
-          return NextResponse.json({
-            success: false,
-            error: quota.tierType === 'gemini_trial'
-              ? 'You\'ve used all 50 trial messages! Connect Claude Code Pro/Max to continue.'
-              : 'You\'ve used 100 free messages this month. Upgrade to Coder1 Pro for unlimited access.',
-            code: 'QUOTA_EXCEEDED',
-            type: 'upgrade_required',
-            tierType: quota.tierType,
-            messageCount: quota.messageCount,
-            limit: quota.limit,
-            upgradeUrl,
-          } as QuotaExceededResponse, { status: 402 });
-        }
+        return NextResponse.json({
+          success: false,
+          error: quota.tierType === 'gemini_trial'
+            ? 'You\'ve used all 50 trial messages! Connect Claude Code Pro/Max to continue.'
+            : 'You\'ve used 100 free messages this month. Upgrade to Coder1 Pro for unlimited access.',
+          code: 'QUOTA_EXCEEDED',
+          type: 'upgrade_required',
+          tierType: quota.tierType,
+          messageCount: quota.messageCount,
+          limit: quota.limit,
+          upgradeUrl,
+        } as QuotaExceededResponse, { status: 402 });
       }
     }
+    // No authHeader = dev/anonymous mode → userId stays 'default'
 
     // 3. Check Moltbot first (preferred), then Bridge, then GLM fallback
     const moltbotBridge = getMoltbotBridge();
@@ -519,6 +543,7 @@ export async function POST(
             }
 
             const searchResult = await searchMemory(message, queryEmbedding, {
+              userId,
               topK: 5,
               maxTokens: 2000,
               minScore: 0.05,  // Lower threshold for keyword-only search
@@ -626,7 +651,7 @@ export async function POST(
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
     // If Bridge is connected, user has Claude Pro/Max - update their tier
-    if (bridgeConnected && userId) {
+    if (bridgeConnected && userId !== 'default') {
       try {
         // Bridge connection requires Claude Pro/Max subscription
         updateClaudeSubscriptionTier(userId, 'pro');
@@ -734,6 +759,7 @@ export async function POST(
         // Search memory for relevant context
         // Use lower minScore for keyword-only search (no vector search available)
         const searchResult = await searchMemory(message, queryEmbedding, {
+          userId,
           topK: 5,
           maxTokens: 2000,
           minScore: 0.05,  // Lower threshold for keyword-only search
@@ -780,6 +806,7 @@ export async function POST(
     } else {
     try {
       const intelligentMemory = await buildMemoryContext({
+        userId,
         userMessage: message,
         maxFacts: 8,
         maxPatterns: 4,
@@ -805,6 +832,9 @@ export async function POST(
     // 6.7. Compute memory status based on what actually happened
     if (!enableMemoryInjection) {
       memoryStatus = 'none';
+    } else if (isLivingFilesEnabled()) {
+      // Living files provide rich context via system prompt — always 'full' when enabled
+      memoryStatus = 'full';
     } else if (searchType.includes('hybrid') || searchType.includes('vector')) {
       memoryStatus = 'full';
     } else if (searchType === 'keyword' || searchType === 'fts') {
@@ -933,7 +963,7 @@ export async function POST(
       try {
         // Detect Johnny5's active mode and available capabilities
         const johnny5Mode = detectJohnny5Mode(moltbotConnected, bridgeConnected);
-        const systemPrompt = generateJohnny5SystemPrompt(johnny5Mode);
+        const systemPrompt = await generateJohnny5SystemPrompt(johnny5Mode, userId);
 
         console.log('[Johnny5] Active mode:', {
           mode: johnny5Mode.mode,
@@ -1219,7 +1249,14 @@ export async function POST(
       try {
         const timestamp = new Date().toISOString().split('T')[0];
         const memoryEntry = `\n### ${timestamp}\n- User asked: ${message.slice(0, 100)}${message.length > 100 ? '...' : ''}\n- Topic: ${session.id || 'general'}\n`;
-        appendToLivingFile('MEMORY.md', memoryEntry);
+
+        // Write via Bridge for authenticated users (files live on their machine)
+        if (userId !== 'default' && bridgeManager?.hasBridgeForUser(userId)) {
+          await bridgeManager.writeLivingFile(userId, 'MEMORY.md', memoryEntry, 'append');
+        } else {
+          // Dev mode fallback: write to local disk
+          appendToLivingFile('MEMORY.md', memoryEntry);
+        }
       } catch (err) {
         console.warn('[Johnny5] Failed to update MEMORY.md:', err);
       }
@@ -1271,7 +1308,7 @@ export async function POST(
     }
 
     // 12.6. Increment Johnny5 message counter for authenticated users
-    if (userId) {
+    if (userId !== 'default') {
       try {
         const newCount = incrementJohnny5MessageCount(userId);
         console.log(`[Johnny5] Message count incremented for user ${userId}: ${newCount}`);
@@ -1284,6 +1321,8 @@ export async function POST(
     // 12.5. After-Chat Memory Intelligence (NEW)
     // Run fact extraction asynchronously - don't block the response
     // This enables Johnny5 to learn from every conversation
+    // CRITICAL: Capture userId in closure for async extraction
+    const capturedUserId = userId;
     setImmediate(async () => {
       try {
         // Build conversation history for extraction
@@ -1297,22 +1336,21 @@ export async function POST(
         ];
 
         // Get existing facts to avoid duplicates
-        const existingFacts = await getExistingFacts(session.id, 30);
+        const existingFacts = await getExistingFacts(session.id, 30, capturedUserId);
 
         // Extract new facts from this conversation
         const newFacts = await extractFactsFromConversation(fullHistory, existingFacts);
 
         if (newFacts.length > 0) {
-          await saveFacts(session.id, newFacts);
+          await saveFacts(session.id, newFacts, undefined, capturedUserId);
           console.log(`[Johnny5] After-chat extraction: saved ${newFacts.length} new facts`);
         }
 
         // Run pattern detection every 10 conversations (approximately)
-        // Check if this is roughly a 10th conversation
         const messageCount = history.length + 2;
         if (messageCount > 0 && messageCount % 20 === 0) {
           console.log('[Johnny5] Running pattern detection cycle...');
-          const patternResult = await runPatternDetectionCycle();
+          const patternResult = await runPatternDetectionCycle(capturedUserId);
           console.log('[Johnny5] Pattern cycle:', patternResult);
         }
       } catch (extractionError) {
@@ -1323,7 +1361,7 @@ export async function POST(
 
     // 13. Get updated quota for response
     let quotaInfo: ChatSuccessResponse['data']['quota'] = undefined;
-    if (userId) {
+    if (userId !== 'default') {
       const updatedQuota = getJohnny5Quota(userId);
       if (updatedQuota) {
         quotaInfo = {

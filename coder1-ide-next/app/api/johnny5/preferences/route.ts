@@ -1,14 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProfile, saveProfile } from '@/lib/johnny5-db';
+import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 
 /**
  * GET /api/johnny5/preferences
  *
  * Get user preferences from the database
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const profile = await getProfile();
+    let userId = 'default';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      }
+    }
+
+    const profile = await getProfile(userId);
 
     if (!profile) {
       return NextResponse.json({
@@ -57,10 +70,22 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    let userId = 'default';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      }
+    }
+
     const body = await request.json();
 
     // Get existing profile to merge with
-    const existingProfile = await getProfile();
+    const existingProfile = await getProfile(userId);
 
     const updateData: Record<string, any> = {};
 
@@ -92,10 +117,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Save to database
-    await saveProfile(updateData);
+    await saveProfile(updateData, userId);
 
     // Get updated profile
-    const updatedProfile = await getProfile();
+    const updatedProfile = await getProfile(userId);
 
     return NextResponse.json({
       success: true,
@@ -128,14 +153,26 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
+    let userId = 'default';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      }
+    }
+
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
     const clearAll = searchParams.get('all') === 'true';
 
-    const existingProfile = await getProfile();
+    const existingProfile = await getProfile(userId);
 
     if (clearAll) {
-      await saveProfile({ preferences: {} });
+      await saveProfile({ preferences: {} }, userId);
       return NextResponse.json({
         success: true,
         message: 'All preferences cleared'
@@ -145,7 +182,7 @@ export async function DELETE(request: NextRequest) {
     if (key && existingProfile?.preferences) {
       const newPrefs = { ...existingProfile.preferences };
       delete newPrefs[key];
-      await saveProfile({ preferences: newPrefs });
+      await saveProfile({ preferences: newPrefs }, userId);
       return NextResponse.json({
         success: true,
         message: `Preference '${key}' deleted`

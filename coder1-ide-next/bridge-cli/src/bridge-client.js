@@ -15,6 +15,7 @@ const PQueue = require('p-queue');
 const logger = require('./logger');
 const ClaudeExecutor = require('./claude-executor');
 const FileHandler = require('./file-handler');
+const LivingFilesHandler = require('./living-files-handler');
 const { saveCredentials, loadCredentials, clearCredentials } = require('./credentials-manager');
 
 class BridgeClient extends EventEmitter {
@@ -63,6 +64,9 @@ class BridgeClient extends EventEmitter {
       claudePath: this.claudePath
     });
     this.fileHandler = new FileHandler({ verbose: this.verbose });
+
+    // Living files handler - lazy-initialized on first use
+    this.livingFilesHandler = null;
 
     // Track active interactive sessions for input routing
     this.activeInteractiveSessions = new Map(); // sessionId -> commandId
@@ -303,8 +307,26 @@ class BridgeClient extends EventEmitter {
         this.log('Connection accepted by server');
         this.bridgeId = data.bridgeId;
         this.emit('accepted', data);
+
+        // Sync living files to server on connection
+        try {
+          if (!this.livingFilesHandler) {
+            this.livingFilesHandler = new LivingFilesHandler();
+          }
+          const created = this.livingFilesHandler.initializeDefaults();
+          if (created > 0) {
+            logger.info('Initialized living file defaults', { created });
+          }
+
+          const payload = this.livingFilesHandler.readAllWithSizeGuard();
+          const payloadSize = Math.round(Buffer.byteLength(JSON.stringify(payload), 'utf8') / 1024);
+          this.socket.emit('livingfiles:sync', payload);
+          logger.info(`Living files synced (9 files, ${payloadSize}kb)`);
+        } catch (error) {
+          logger.error('Failed to sync living files on connection', { error: error.message });
+        }
       });
-      
+
       // Connection rejected
       this.socket.on('connection:rejected', (data) => {
         this.error('Connection rejected:', data.reason);
@@ -334,6 +356,48 @@ class BridgeClient extends EventEmitter {
       // Handle file operation requests
       this.socket.on('file:request', async (data) => {
         await this.handleFileRequest(data);
+      });
+
+      // Handle living file write requests from server
+      this.socket.on('livingfiles:write', async (data) => {
+        const { filename, content, mode } = data;
+        logger.info('Living file write request', { filename, mode });
+
+        try {
+          if (!this.livingFilesHandler) {
+            this.livingFilesHandler = new LivingFilesHandler();
+          }
+          const result = this.livingFilesHandler.writeFile(filename, content, mode);
+
+          this.socket.emit('livingfiles:write-ack', {
+            filename,
+            success: result.success,
+            error: result.error || null
+          });
+        } catch (error) {
+          logger.error('Living file write failed', { filename, error: error.message });
+          this.socket.emit('livingfiles:write-ack', {
+            filename,
+            success: false,
+            error: error.message
+          });
+        }
+      });
+
+      // Handle living files refresh request from server
+      this.socket.on('livingfiles:request', () => {
+        logger.info('Living files refresh requested by server');
+
+        try {
+          if (!this.livingFilesHandler) {
+            this.livingFilesHandler = new LivingFilesHandler();
+          }
+          const payload = this.livingFilesHandler.readAllWithSizeGuard();
+          this.socket.emit('livingfiles:sync', payload);
+          logger.info('Living files re-synced', { fileCount: Object.keys(payload.files).length });
+        } catch (error) {
+          logger.error('Living files refresh failed', { error: error.message });
+        }
       });
 
       // Handle configuration updates

@@ -795,7 +795,7 @@ if (EnhancedTmuxService) {
 
 // Session management
 class TerminalSession {
-  constructor(id, userId = 'default') {
+  constructor(id, userId = 'default', cols = 80, rows = 30) {
     this.id = id;
     this.userId = userId;
     this.created = new Date();
@@ -849,9 +849,9 @@ class TerminalSession {
       }
       
       this.pty = pty.spawn(shell, [], {
-        name: 'xterm-color',
-        cols: 80,
-        rows: 30,
+        name: 'xterm-256color',
+        cols,
+        rows,
         cwd: finalWorkingDir,
         env: baseEnv
       });
@@ -910,13 +910,13 @@ class TerminalSession {
 }
 
 // Helper to get or create terminal session
-function getOrCreateSession(sessionId, userId = 'default') {
+function getOrCreateSession(sessionId, userId = 'default', cols = 80, rows = 30) {
   if (!sessionId) {
     sessionId = `session_${Date.now()}_${uuidv4().slice(0, 8)}`;
   }
-  
+
   if (!terminalSessions.has(sessionId)) {
-    const session = new TerminalSession(sessionId, userId);
+    const session = new TerminalSession(sessionId, userId, cols, rows);
     terminalSessions.set(sessionId, session);
     
     // Set up PTY exit handler only (data handler will be set up in socket connection)
@@ -1625,6 +1625,20 @@ app.prepare().then(() => {
         // Forward file operation responses
         bridgeManager.emit('file:response', data);
       });
+
+      // Handle living files sync from bridge (on connect or refresh)
+      socket.on('livingfiles:sync', (data) => {
+        console.log(`📁 Living files synced from bridge ${bridgeId} (${Object.keys(data?.files || {}).length} files)`);
+        // bridgeManager handles caching via its own socket handler in setupSocketHandlers
+      });
+
+      // Handle living files write acknowledgment from bridge
+      socket.on('livingfiles:write-ack', (data) => {
+        if (!data.success) {
+          console.error(`📁 Living file write failed on bridge ${bridgeId}: ${data.filename} - ${data.error}`);
+        }
+        // bridgeManager handles cache invalidation via its own socket handler
+      });
       
       // Handle interactive session started from bridge (Dec 10, 2025)
       // When Claude is running in interactive PTY mode, we need to route terminal input to it
@@ -2204,9 +2218,9 @@ app.prepare().then(() => {
 
         let session;
         try {
-          session = getOrCreateSession(sessionId);
+          session = getOrCreateSession(sessionId, 'default', cols, rows);
           currentSessionId = sessionId;
-          console.log('[TERMINAL-CREATE] Session created/retrieved. terminalSessions.size:', terminalSessions.size);
+          console.log(`[TERMINAL-CREATE] Session created/retrieved (${cols}x${rows}). terminalSessions.size:`, terminalSessions.size);
         } catch (error) {
           console.error(`[Terminal] Failed to create/get session ${sessionId}:`, error);
           socket.emit('terminal:error', {

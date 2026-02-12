@@ -20,6 +20,8 @@ import {
 // ============================================================================
 
 export interface HybridSearchConfig {
+  /** User ID to scope search results to. Required. */
+  userId: string;
   /** Weight for vector similarity score (0-1). Default: 0.7 */
   vectorWeight?: number;
   /** Weight for keyword BM25 score (0-1). Default: 0.3 */
@@ -106,11 +108,12 @@ function estimateTokens(text: string): number {
 export async function hybridSearch(
   query: string,
   queryEmbedding: number[] | null,
-  config: HybridSearchConfig = {}
+  config: HybridSearchConfig
 ): Promise<SearchResponse> {
   const startTime = Date.now();
 
   const {
+    userId,
     vectorWeight = 0.7,
     keywordWeight = 0.3,
     topK = 10,
@@ -125,9 +128,9 @@ export async function hybridSearch(
   // Fetch both vector and keyword results
   const [vectorResults, keywordResults] = await Promise.all([
     queryEmbedding && vectorAvailable
-      ? searchMemoryVector(queryEmbedding, topK * 2)
+      ? searchMemoryVector(queryEmbedding, topK * 2, userId)
       : Promise.resolve([]),
-    searchMemoryKeyword(query, topK * 2),
+    searchMemoryKeyword(query, topK * 2, userId),
   ]);
 
   // Determine search type
@@ -233,18 +236,19 @@ export async function hybridSearch(
  */
 export async function keywordOnlySearch(
   query: string,
-  config: Omit<HybridSearchConfig, 'vectorWeight' | 'keywordWeight'> = {}
+  config: Omit<HybridSearchConfig, 'vectorWeight' | 'keywordWeight'>
 ): Promise<SearchResponse> {
   const startTime = Date.now();
 
   const {
+    userId,
     topK = 10,
     minScore = 0.1,
     maxTokens = 4000,
   } = config;
 
   console.log(`[Memory] Keyword search for: "${query.substring(0, 50)}..." minScore=${minScore}`);
-  const keywordResults = await searchMemoryKeyword(query, topK * 2);
+  const keywordResults = await searchMemoryKeyword(query, topK * 2, userId);
   console.log(`[Memory] Keyword search returned ${keywordResults.length} raw results`);
   const allScores = keywordResults.map(r => r.keyword_score);
 
@@ -307,8 +311,8 @@ export async function keywordOnlySearch(
  */
 export async function searchMemory(
   query: string,
-  queryEmbedding?: number[],
-  config: HybridSearchConfig = {}
+  queryEmbedding: number[] | undefined,
+  config: HybridSearchConfig
 ): Promise<SearchResponse> {
   if (queryEmbedding && isVectorSearchAvailable()) {
     return hybridSearch(query, queryEmbedding, config);

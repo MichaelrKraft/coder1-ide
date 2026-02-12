@@ -42,6 +42,8 @@ export interface MemoryContext {
 }
 
 export interface ContextBuildOptions {
+  /** The user ID to scope all memory queries to */
+  userId: string;
   /** User's current message (for relevance matching) */
   userMessage?: string;
   /** Maximum facts to include */
@@ -54,7 +56,7 @@ export interface ContextBuildOptions {
   includeManusLive?: boolean;
 }
 
-const DEFAULT_OPTIONS: Required<ContextBuildOptions> = {
+const DEFAULT_OPTIONS: Required<Omit<ContextBuildOptions, 'userId'>> = {
   userMessage: '',
   maxFacts: 10,
   maxPatterns: 5,
@@ -70,6 +72,7 @@ const DEFAULT_OPTIONS: Required<ContextBuildOptions> = {
  * Build the facts section of the context
  */
 async function buildFactsSection(
+  userId: string,
   userMessage: string,
   maxFacts: number
 ): Promise<{ section: string; count: number }> {
@@ -77,7 +80,7 @@ async function buildFactsSection(
 
   // If we have a user message, get relevant facts
   if (userMessage) {
-    const relevantFacts = await getRelevantFacts(userMessage, Math.ceil(maxFacts / 2));
+    const relevantFacts = await getRelevantFacts(userMessage, Math.ceil(maxFacts / 2), userId);
     facts.push(...relevantFacts);
   }
 
@@ -85,7 +88,7 @@ async function buildFactsSection(
   const factTypes: ExtractedFact['type'][] = ['personal', 'project', 'goal', 'preference', 'technical'];
   for (const type of factTypes) {
     if (facts.length >= maxFacts) break;
-    const typeFacts = await getFactsByType(type, 3);
+    const typeFacts = await getFactsByType(type, 3, userId);
     for (const fact of typeFacts) {
       if (facts.length >= maxFacts) break;
       // Avoid duplicates
@@ -132,10 +135,11 @@ async function buildFactsSection(
  * Build the patterns section of the context
  */
 async function buildPatternsSection(
+  userId: string,
   minConfidence: number,
   maxPatterns: number
 ): Promise<{ section: string; count: number }> {
-  const patterns = await getHighConfidencePatterns(minConfidence, maxPatterns);
+  const patterns = await getHighConfidencePatterns(minConfidence, maxPatterns, userId);
 
   if (patterns.length === 0) {
     return { section: '', count: 0 };
@@ -174,13 +178,13 @@ function getPatternEmoji(type: LearnedPattern['pattern_type']): string {
 /**
  * Build the ManusLive section of the context (if available)
  */
-async function buildManusLiveSection(): Promise<{
+async function buildManusLiveSection(userId: string): Promise<{
   section: string;
   available: boolean;
   profileAvailable: boolean;
 }> {
   try {
-    const unifiedContext = await getUnifiedContext();
+    const unifiedContext = await getUnifiedContext(false, userId);
 
     if (!unifiedContext.manusLiveInstalled && !unifiedContext.localProfile) {
       return { section: '', available: false, profileAvailable: false };
@@ -213,17 +217,18 @@ async function buildManusLiveSection(): Promise<{
  * @returns Complete memory context for prompt injection
  */
 export async function buildMemoryContext(
-  options: ContextBuildOptions = {}
+  options: ContextBuildOptions
 ): Promise<MemoryContext> {
+  const { userId } = options;
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
-  console.log('[MemoryContext] Building context...');
+  console.log('[MemoryContext] Building context for user:', userId);
 
   // Build all sections in parallel
   const [factsResult, patternsResult, manusLiveResult] = await Promise.all([
-    buildFactsSection(opts.userMessage, opts.maxFacts),
-    buildPatternsSection(opts.minPatternConfidence, opts.maxPatterns),
-    opts.includeManusLive ? buildManusLiveSection() : Promise.resolve({ section: '', available: false, profileAvailable: false }),
+    buildFactsSection(userId, opts.userMessage, opts.maxFacts),
+    buildPatternsSection(userId, opts.minPatternConfidence, opts.maxPatterns),
+    opts.includeManusLive ? buildManusLiveSection(userId) : Promise.resolve({ section: '', available: false, profileAvailable: false }),
   ]);
 
   // Combine sections, avoiding duplicates
@@ -270,12 +275,12 @@ export async function buildMemoryContext(
  * Build a lightweight context for quick responses
  * Uses cached/recent data without AI calls
  */
-export async function buildQuickContext(): Promise<string> {
+export async function buildQuickContext(userId: string): Promise<string> {
   try {
     // Just get top facts and patterns from database
     const [personalFacts, patterns] = await Promise.all([
-      getFactsByType('personal', 3),
-      getHighConfidencePatterns(0.8, 3),
+      getFactsByType('personal', 3, userId),
+      getHighConfidencePatterns(0.8, 3, userId),
     ]);
 
     const lines: string[] = [];
@@ -310,10 +315,11 @@ export async function buildQuickContext(): Promise<string> {
  * @returns Suggested proactive behavior, or null if none applicable
  */
 export async function getProactiveSuggestion(
-  currentContext: string
+  currentContext: string,
+  userId: string
 ): Promise<string | null> {
   try {
-    const patterns = await getHighConfidencePatterns(0.75, 3);
+    const patterns = await getHighConfidencePatterns(0.75, 3, userId);
 
     if (patterns.length === 0) return null;
 

@@ -9,12 +9,25 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { saveFacts, type ExtractedFact } from '@/services/memory/fact-extraction-service';
+import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    let userId = 'default';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      }
+    }
+
     const body = await request.json();
     const { type, key, value, confidence } = body;
 
@@ -37,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Save to DB using existing fact extraction service.
     // Session ID 'supervision' groups all supervision-sourced facts.
-    await saveFacts('supervision', [fact]);
+    await saveFacts('supervision', [fact], undefined, userId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

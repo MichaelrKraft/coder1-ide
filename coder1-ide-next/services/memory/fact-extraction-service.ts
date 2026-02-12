@@ -115,7 +115,7 @@ function getGeminiClient(): GoogleGenerativeAI | null {
 /**
  * Format conversation messages for the extraction prompt
  */
-function formatConversation(messages: ConversationMessage[]): string {
+function formatConversation(messages: ConversationMessage[], userId: string): string {
   // Take last 10 messages for context (balance between context and cost)
   const recentMessages = messages.slice(-10);
   return recentMessages
@@ -285,7 +285,8 @@ function extractFactsWithRegex(
  */
 export async function extractFactsFromConversation(
   messages: ConversationMessage[],
-  existingFacts: ExistingFact[] = []
+  existingFacts: ExistingFact[] = [],
+  userId: string
 ): Promise<ExtractedFact[]> {
   console.log('[FactExtraction] Starting extraction...');
   console.log('[FactExtraction] Messages count:', messages.length);
@@ -331,7 +332,7 @@ export async function extractFactsFromConversation(
 
     const prompt = EXTRACTION_PROMPT
       .replace('{existingFacts}', formatExistingFacts(existingFacts))
-      .replace('{conversation}', formatConversation(messages));
+      .replace('{conversation}', formatConversation(messages, userId));
 
     console.log('[FactExtraction] Calling Gemini API...');
     const result = await model.generateContent(prompt);
@@ -382,7 +383,8 @@ export async function extractFactsFromConversation(
 export async function saveFacts(
   sessionId: string,
   facts: ExtractedFact[],
-  sourceMessageId?: string
+  sourceMessageId: string | undefined,
+  userId: string
 ): Promise<void> {
   if (facts.length === 0) return;
 
@@ -394,8 +396,8 @@ export async function saveFacts(
   // Check for existing facts to detect updates/contradictions
   try {
     const placeholders = facts.map(() => '?').join(',');
-    const checkStmt = db.prepare(`SELECT fact_key, fact_value FROM extracted_facts WHERE fact_key IN (${placeholders})`);
-    const existing = checkStmt.all(...facts.map(f => f.key)) as Array<{ fact_key: string; fact_value: string }>;
+    const checkStmt = db.prepare(`SELECT fact_key, fact_value FROM extracted_facts WHERE fact_key IN (${placeholders}) AND user_id = ?`);
+    const existing = checkStmt.all(...facts.map(f => f.key), userId) as Array<{ fact_key: string; fact_value: string }>;
     for (const e of existing) {
       const newFact = facts.find(f => f.key === e.fact_key);
       if (newFact && newFact.value !== e.fact_value) {
@@ -409,11 +411,11 @@ export async function saveFacts(
 
   const insertStmt = db.prepare(`
     INSERT INTO extracted_facts (
-      id, session_id, fact_type, fact_key, fact_value, confidence,
+      id, user_id, session_id, fact_type, fact_key, fact_value, confidence,
       source_message_id, created_at, last_referenced, reference_count
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-    ON CONFLICT(fact_key) DO UPDATE SET
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+    ON CONFLICT(user_id, fact_key) DO UPDATE SET
       fact_value = excluded.fact_value,
       confidence = MAX(confidence, excluded.confidence),
       last_referenced = excluded.created_at,
@@ -425,6 +427,7 @@ export async function saveFacts(
       console.debug(`[FactExtraction] Upserting fact: ${fact.key} = ${fact.value} (type=${fact.type}, confidence=${fact.confidence})`);
       insertStmt.run(
         randomUUID(),
+        userId,
         sessionId,
         fact.type,
         fact.key,
@@ -452,8 +455,9 @@ export async function saveFacts(
  * @param limit - Maximum number of facts to return
  */
 export async function getExistingFacts(
-  sessionId?: string,
-  limit: number = 50
+  sessionId: string | undefined,
+  limit: number = 50,
+  userId: string
 ): Promise<ExistingFact[]> {
   const db = getDb();
 
@@ -462,19 +466,20 @@ export async function getExistingFacts(
     stmt = db.prepare(`
       SELECT fact_key, fact_value
       FROM extracted_facts
-      WHERE session_id = ?
+      WHERE session_id = ? AND user_id = ?
       ORDER BY confidence DESC, reference_count DESC
       LIMIT ?
     `);
-    return stmt.all(sessionId, limit) as ExistingFact[];
+    return stmt.all(sessionId, userId, limit) as ExistingFact[];
   } else {
     stmt = db.prepare(`
       SELECT fact_key, fact_value
       FROM extracted_facts
+      WHERE user_id = ?
       ORDER BY confidence DESC, reference_count DESC
       LIMIT ?
     `);
-    return stmt.all(limit) as ExistingFact[];
+    return stmt.all(userId, limit) as ExistingFact[];
   }
 }
 
@@ -486,7 +491,8 @@ export async function getExistingFacts(
  */
 export async function getRelevantFacts(
   query: string,
-  limit: number = 10
+  limit: number = 10,
+  userId: string
 ): Promise<Array<ExtractedFact & { reference_count: number }>> {
   const db = getDb();
 
@@ -500,10 +506,11 @@ export async function getRelevantFacts(
       SELECT fact_type as type, fact_key as key, fact_value as value,
              confidence, reference_count
       FROM extracted_facts
+      WHERE user_id = ?
       ORDER BY reference_count DESC, confidence DESC
       LIMIT ?
     `);
-    return stmt.all(limit) as Array<ExtractedFact & { reference_count: number }>;
+    return stmt.all(userId, limit) as Array<ExtractedFact & { reference_count: number }>;
   }
 
   // Build a simple relevance query
@@ -514,18 +521,18 @@ export async function getRelevantFacts(
     SELECT fact_type as type, fact_key as key, fact_value as value,
            confidence, reference_count
     FROM extracted_facts
-    WHERE ${likeConditions}
+    WHERE user_id = ? AND (${likeConditions})
     ORDER BY confidence DESC, reference_count DESC
     LIMIT ?
   `);
 
-  return stmt.all(...params, limit) as Array<ExtractedFact & { reference_count: number }>;
+  return stmt.all(userId, ...params, limit) as Array<ExtractedFact & { reference_count: number }>;
 }
 
 /**
  * Update fact reference count (called when a fact is used in context)
  */
-export async function recordFactReference(factKey: string): Promise<void> {
+export async function recordFactReference(factKey: string, userId: string): Promise<void> {
   const db = getDb();
   const now = new Date().toISOString();
 
@@ -533,10 +540,10 @@ export async function recordFactReference(factKey: string): Promise<void> {
     UPDATE extracted_facts
     SET reference_count = reference_count + 1,
         last_referenced = ?
-    WHERE fact_key = ?
+    WHERE fact_key = ? AND user_id = ?
   `);
 
-  stmt.run(now, factKey);
+  stmt.run(now, factKey, userId);
 }
 
 /**
@@ -544,19 +551,20 @@ export async function recordFactReference(factKey: string): Promise<void> {
  */
 export async function getFactsByType(
   factType: ExtractedFact['type'],
-  limit: number = 20
+  limit: number = 20,
+  userId: string
 ): Promise<ExtractedFact[]> {
   const db = getDb();
 
   const stmt = db.prepare(`
     SELECT fact_type as type, fact_key as key, fact_value as value, confidence
     FROM extracted_facts
-    WHERE fact_type = ?
+    WHERE fact_type = ? AND user_id = ?
     ORDER BY confidence DESC, reference_count DESC
     LIMIT ?
   `);
 
-  return stmt.all(factType, limit) as ExtractedFact[];
+  return stmt.all(factType, userId, limit) as ExtractedFact[];
 }
 
 /**
@@ -567,7 +575,8 @@ export async function getFactsByType(
  */
 export async function cleanupStaleFacts(
   olderThanDays: number = 30,
-  maxConfidence: number = 0.7
+  maxConfidence: number = 0.7,
+  userId: string
 ): Promise<number> {
   const db = getDb();
   const cutoffDate = new Date();
@@ -578,9 +587,10 @@ export async function cleanupStaleFacts(
     WHERE created_at < ?
       AND confidence < ?
       AND reference_count = 0
+      AND user_id = ?
   `);
 
-  const result = stmt.run(cutoffDate.toISOString(), maxConfidence);
+  const result = stmt.run(cutoffDate.toISOString(), maxConfidence, userId);
   console.log(`[FactExtraction] Cleaned up ${result.changes} stale facts`);
   return result.changes;
 }
@@ -596,7 +606,7 @@ export async function cleanupStaleFacts(
  * This is a standalone function that can be called by the chat route
  * without going through the Gemini API.
  */
-export function extractDirectFact(message: string): ExtractedFact | null {
+export function extractDirectFact(message: string, userId: string): ExtractedFact | null {
   const match = message.match(/^(?:remember|note|save)\s+(?:that\s+)?(.+)/i);
   if (!match) return null;
 

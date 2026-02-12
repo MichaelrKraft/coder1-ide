@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Johnny5APIResponse } from '@/types/johnny5';
 import { initializeDb, getProfile, saveProfile } from '@/lib/johnny5-db';
+import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 
 /**
  * User Profile for capability matching
@@ -71,10 +72,23 @@ function dbProfileToApiProfile(dbProfile: Awaited<ReturnType<typeof getProfile>>
  * Get the current user profile used for capability matching.
  * Now reads from SQLite database for persistence.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await initializeDb();
-    const dbProfile = await getProfile();
+
+    let userId = 'default';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      }
+    }
+
+    const dbProfile = await getProfile(userId);
     const profile = dbProfileToApiProfile(dbProfile) || getDefaultProfile();
 
     const response: Johnny5APIResponse<UserProfile> = {
@@ -106,10 +120,23 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     await initializeDb();
+
+    let userId = 'default';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      }
+    }
+
     const body = await request.json();
 
     // Get existing profile or create default
-    const existing = await getProfile();
+    const existing = await getProfile(userId);
     const currentProfile = dbProfileToApiProfile(existing) || getDefaultProfile();
 
     // Merge arrays (add new items, keep existing)
@@ -138,10 +165,10 @@ export async function POST(request: NextRequest) {
         ...body.preferences,
         extractedFrom: body.extractedFrom || 'manual',
       },
-    });
+    }, userId);
 
     // Fetch updated profile
-    const updated = await getProfile();
+    const updated = await getProfile(userId);
     const profile = dbProfileToApiProfile(updated) || getDefaultProfile();
 
     const response: Johnny5APIResponse<UserProfile> = {
@@ -173,6 +200,19 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     await initializeDb();
+
+    let userId = 'default';
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      const token = extractTokenFromHeader(authHeader);
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      }
+    }
+
     const body = await request.json();
 
     // Save to database (replace mode)
@@ -183,10 +223,10 @@ export async function PATCH(request: NextRequest) {
       goals: body.goals,
       proactivity_level: body.preferences?.proactivityLevel,
       preferences: body.preferences,
-    });
+    }, userId);
 
     // Fetch updated profile
-    const updated = await getProfile();
+    const updated = await getProfile(userId);
     const profile = dbProfileToApiProfile(updated) || getDefaultProfile();
 
     const response: Johnny5APIResponse<UserProfile> = {
