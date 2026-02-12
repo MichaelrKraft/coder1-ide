@@ -34,6 +34,7 @@ import {
   updateClaudeSubscriptionTier,
 } from '@/lib/auth/db';
 import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+import { extractUserId } from '@/lib/auth/extract-user-id';
 import {
   searchMemory,
   formatForPromptInjection,
@@ -318,7 +319,47 @@ CRITICAL: When you see memory context, facts, or profile information in the mess
       }
 
       if (livingContext) {
-        livingFilesSection = '\n\n' + livingContext;
+        livingFilesSection = `
+
+# Your Living Files
+
+You have 9 persistent Markdown files that define who you are, what you know, and how you operate. They are loaded into your context on every conversation turn. The contents of each file appear below.
+
+**Your files:**
+| File | Mode | Purpose |
+|------|------|---------|
+| SOUL.md | readonly | Your personality, tone, and core values. Embody this. |
+| IDENTITY.md | readonly | Your mission and constraints. Follow these boundaries. |
+| USER.md | auto-updated | Everything you know about your human. Reference these facts actively — don't wait to be asked. |
+| MEMORY.md | auto-updated | Conversation history and session notes. The platform appends a summary after each conversation. |
+| AGENTS.md | writable | Your crew/specialist personas (canonical source — SOUL.md may also reference them). |
+| HEARTBEAT.md | writable | Your proactivity schedule and notification preferences. |
+| TOOLS.md | auto-generated | Your current capabilities and environment. Check before promising actions. |
+| BOOT.md | writable | Your startup sequence and greeting behavior. |
+| BOOTSTRAP.md | auto-generated | Runtime environment status snapshot. |
+
+**How file updates work:**
+- "readonly" = never changes during runtime
+- "auto-updated" = the platform appends new info after each conversation (you don't need to do anything)
+- "writable" = can be updated by the platform when you request changes
+- "auto-generated" = rebuilt by the system automatically
+
+**What is already built and running (do NOT ask for these to be created):**
+- All 9 files exist on disk and are loaded into your context every turn
+- Heartbeat scheduler: active (30s pulse + 5min deep check via Socket.IO)
+- Memory search: active (hybrid vector + BM25 semantic search)
+- File persistence: active (local disk + Bridge-aware for authenticated users)
+
+**Rules:**
+1. These are the ONLY files you have. Never reference files that don't exist (e.g., no "rules.md", "proactivegoals.md", or "projectcontext.md").
+2. When asked about your identity, values, goals, or configuration — cite the specific file by name.
+3. Actively use USER.md facts in conversation. If you know the user's name, use it. If you know their preferences, apply them.
+4. Do NOT tell users that files need to be created, APIs need to be built, or schedulers need to be set up. Everything is already in place.
+5. If a user asks "what do you know about me?" — answer with specifics from USER.md, not a generic disclaimer.
+
+---
+
+${livingContext}`;
       }
     } catch (err) {
       console.warn('[Johnny5] Failed to load living files context:', err);
@@ -462,11 +503,9 @@ export async function POST(
     }
 
     // 2. Check user authentication and quota
+    // Strict check: if Authorization header is present but invalid, reject with 401
     const authHeader = request.headers.get('Authorization');
-    let userId = 'default'; // Default for unauthenticated/dev mode
-
     if (authHeader) {
-      // Auth attempted — must succeed or reject (never silently degrade to 'default')
       const token = extractTokenFromHeader(authHeader);
       if (!token) {
         return errorResponse('Invalid authorization header format', 'UNAUTHORIZED', 401);
@@ -475,7 +514,11 @@ export async function POST(
       if (!decoded) {
         return errorResponse('Token expired or invalid. Please re-authenticate.', 'UNAUTHORIZED', 401);
       }
-      userId = decoded.userId;
+    }
+    // Extract userId from Authorization header OR auth-token cookie
+    const userId = extractUserId(request);
+
+    if (userId !== 'default') {
 
       // Check Johnny5 quota for authenticated users
       const quota = getJohnny5Quota(userId);
@@ -498,7 +541,7 @@ export async function POST(
         } as QuotaExceededResponse, { status: 402 });
       }
     }
-    // No authHeader = dev/anonymous mode → userId stays 'default'
+    // No auth (header or cookie) = dev/anonymous mode → userId stays 'default'
 
     // 3. Check Moltbot first (preferred), then Bridge, then GLM fallback
     const moltbotBridge = getMoltbotBridge();
