@@ -168,6 +168,7 @@ async function indexFile(
     // Upsert the chunk
     await upsertMemoryChunk({
       id: randomUUID(),
+      user_id: 'default',
       source_type: sourceType,
       source_id: sourceId,
       content: chunk.content,
