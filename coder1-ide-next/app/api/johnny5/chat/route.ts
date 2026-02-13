@@ -668,6 +668,13 @@ export async function POST(
             sessionId: moltbotResponse.sessionId || 'moltbot',
             messageId: moltbotResponse.messageId || `msg-${Date.now()}`,
             tokensUsed: { input: 0, output: 0 },
+            mode: {
+              mode: 'moltbot' as const,
+              hasMCP: true,
+              hasProjectContext: true,
+              is24x7: true,
+              provider: 'ManusLive',
+            },
             memoryContext: enableMemoryInjection
               ? {
                   enabled: true,
@@ -1418,6 +1425,11 @@ export async function POST(
     }
 
     // 14. Return success response
+    // Determine mode info for response
+    const modeInfo = modeUsed === 'bridge'
+      ? { mode: 'bridge' as const, hasMCP: true, hasProjectContext: true, is24x7: false, provider: 'Claude Code CLI' }
+      : { mode: 'gemini' as const, hasMCP: false, hasProjectContext: false, is24x7: false, provider: 'Gemini 2.5 Flash' };
+
     return NextResponse.json({
       success: true,
       data: {
@@ -1428,6 +1440,7 @@ export async function POST(
           input: estimatedInputTokens,
           output: estimatedOutputTokens,
         },
+        mode: modeInfo,
         memoryContext: enableMemoryInjection
           ? {
               enabled: true,

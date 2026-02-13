@@ -16,6 +16,7 @@ import { Telegraf } from 'telegraf';
 import { logger } from '@/lib/logger';
 import { getJohnny5Config, getTelegramBotToken, saveConfig } from '@/lib/johnny5-config';
 import type { TelegramIntegration } from '@/lib/johnny5-config';
+import { initializeDb, getTelegramSession, setTelegramSession } from '@/lib/johnny5-db';
 
 // ============================================================================
 // Types
@@ -65,6 +66,16 @@ class Johnny5TelegramBot {
   private cleanupInterval: NodeJS.Timeout | null = null;
   private lastSendTime = 0;
 
+  // Message debouncing for rapid messages
+  private messageQueues = new Map<string, {
+    messages: string[];
+    timeout: NodeJS.Timeout | null;
+  }>();
+  private readonly DEBOUNCE_MS = 1500;
+
+  // Typing indicator timers per chat
+  private typingTimers = new Map<string, NodeJS.Timeout>();
+
   // --------------------------------------------------------------------------
   // Lifecycle
   // --------------------------------------------------------------------------
@@ -73,6 +84,13 @@ class Johnny5TelegramBot {
    * Start the Telegram bot. Validates token before launching.
    */
   async start(): Promise<boolean> {
+    // Initialize database for Telegram session mapping
+    try {
+      await initializeDb();
+    } catch (dbError) {
+      logger.warn('[Johnny5/Telegram] Database init failed (non-fatal):', dbError);
+    }
+
     const config = getJohnny5Config();
     const telegram = config.integrations.telegram;
 
@@ -304,9 +322,16 @@ class Johnny5TelegramBot {
       await ctx.answerCbQuery(msg);
     });
 
-    // Text messages (forward to opportunity engine if callback set)
-    this.bot.on('text', (ctx) => {
-      logger.debug(`[Johnny5/Telegram] Message from ${ctx.from?.username}: ${ctx.message.text}`);
+    // Text messages — forward to Johnny5 chat API
+    this.bot.on('text', async (ctx) => {
+      const chatId = ctx.chat.id.toString();
+      const userId = ctx.from?.id.toString() || 'unknown';
+      const message = ctx.message.text;
+      const username = ctx.from?.username || ctx.from?.first_name || 'Telegram User';
+
+      logger.info(`[Johnny5/Telegram] Message from ${username}: ${message.substring(0, 80)}`);
+
+      this.queueMessage(chatId, userId, username, message, ctx);
     });
   }
 
@@ -374,6 +399,180 @@ class Johnny5TelegramBot {
     ].join('\n');
 
     await ctx.reply(msg, { parse_mode: 'Markdown' });
+  }
+
+  // --------------------------------------------------------------------------
+  // Two-Way Chat: Message Processing
+  // --------------------------------------------------------------------------
+
+  /**
+   * Queue a message with debouncing to batch rapid sequential messages.
+   */
+  private queueMessage(
+    chatId: string,
+    userId: string,
+    username: string,
+    message: string,
+    ctx: any
+  ): void {
+    const key = `${userId}:${chatId}`;
+
+    if (!this.messageQueues.has(key)) {
+      this.messageQueues.set(key, { messages: [], timeout: null });
+    }
+
+    const queue = this.messageQueues.get(key)!;
+    queue.messages.push(message);
+
+    if (queue.timeout) {
+      clearTimeout(queue.timeout);
+    }
+
+    queue.timeout = setTimeout(async () => {
+      const messages = [...queue.messages];
+      queue.messages = [];
+      queue.timeout = null;
+
+      const combinedMessage = messages.join('\n\n');
+      await this.processMessage(chatId, userId, username, combinedMessage, ctx);
+    }, this.DEBOUNCE_MS);
+  }
+
+  /**
+   * Process a message: look up session, call Johnny5 API, send response.
+   */
+  private async processMessage(
+    chatId: string,
+    userId: string,
+    username: string,
+    message: string,
+    ctx: any
+  ): Promise<void> {
+    // Start typing indicator loop (refreshes every 4s before Telegram's 5s expiry)
+    this.startTypingIndicator(chatId);
+
+    try {
+      // Look up existing session or pass empty to let the API create one
+      let sessionId = getTelegramSession(userId, chatId) || '';
+
+      const result = await this.callJohnny5Chat(sessionId, message);
+
+      // Persist session mapping for conversation continuity
+      if (result.sessionId && result.sessionId !== sessionId) {
+        setTelegramSession(userId, chatId, result.sessionId);
+        logger.info(`[Johnny5/Telegram] Session mapped: ${userId}:${chatId} → ${result.sessionId}`);
+      }
+
+      if (result.response) {
+        const sent = await this.sendMessage(chatId, result.response);
+        if (!sent) {
+          // Markdown parse failed — retry as plain text
+          try {
+            const parts = this.splitMessage(result.response);
+            for (const part of parts) {
+              await this.bot!.telegram.sendMessage(chatId, part);
+            }
+          } catch {
+            await ctx.reply('I got a response but had trouble sending it. Please try again.');
+          }
+        }
+      } else {
+        await ctx.reply("I processed your message but couldn't generate a response. Please try again.");
+      }
+    } catch (error: any) {
+      logger.error('[Johnny5/Telegram] Error processing message:', error);
+
+      if (error.status === 402) {
+        await ctx.reply('Message quota exceeded. Please upgrade your plan to continue.');
+      } else if (error.status === 503 || error.status === 502) {
+        await ctx.reply('Johnny5 is temporarily unavailable. Please try again in a moment.');
+      } else if (error.status === 504) {
+        await ctx.reply('Request timed out. Try a simpler question.');
+      } else {
+        await ctx.reply('Sorry, I encountered an error. Please try again.');
+      }
+    } finally {
+      this.stopTypingIndicator(chatId);
+    }
+  }
+
+  /**
+   * Call the Johnny5 chat API and return the response text and session ID.
+   */
+  private async callJohnny5Chat(
+    sessionId: string,
+    message: string
+  ): Promise<{ response: string | null; sessionId: string }> {
+    const port = process.env.PORT || 3001;
+    const baseUrl = `http://localhost:${port}`;
+
+    const body: Record<string, unknown> = {
+      message,
+      enableMemoryInjection: true,
+    };
+
+    if (sessionId) {
+      body.sessionId = sessionId;
+    }
+
+    const response = await fetch(`${baseUrl}/api/johnny5/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const error = new Error(`Chat API error: ${response.status}`) as any;
+      error.status = response.status;
+      throw error;
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.data?.response) {
+      return {
+        response: data.data.response,
+        sessionId: data.data.sessionId || sessionId,
+      };
+    }
+
+    return { response: null, sessionId };
+  }
+
+  // --------------------------------------------------------------------------
+  // Typing Indicator
+  // --------------------------------------------------------------------------
+
+  /**
+   * Start a repeating typing indicator for a chat (refreshes every 4s).
+   */
+  private startTypingIndicator(chatId: string): void {
+    this.stopTypingIndicator(chatId);
+
+    const loop = async () => {
+      try {
+        if (!this.bot) return;
+        await this.bot.telegram.sendChatAction(chatId, 'typing');
+      } catch {
+        this.stopTypingIndicator(chatId);
+        return;
+      }
+      const timer = setTimeout(loop, 4000);
+      this.typingTimers.set(chatId, timer);
+    };
+
+    loop();
+  }
+
+  /**
+   * Stop the typing indicator loop for a chat.
+   */
+  private stopTypingIndicator(chatId: string): void {
+    const timer = this.typingTimers.get(chatId);
+    if (timer) {
+      clearTimeout(timer);
+      this.typingTimers.delete(chatId);
+    }
   }
 
   // --------------------------------------------------------------------------
