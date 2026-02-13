@@ -71,6 +71,7 @@ class BridgeClient extends EventEmitter {
     // Track active interactive sessions for input routing
     this.activeInteractiveSessions = new Map(); // sessionId -> commandId
     this.commandToSessionMap = new Map();       // commandId -> sessionId (reverse lookup)
+    this.activeNonInteractiveProcesses = new Map(); // commandId -> childProcess (for cancel support)
 
     // Set up claudeExecutor event listeners for interactive sessions
     this.setupClaudeExecutorListeners();
@@ -129,6 +130,14 @@ class BridgeClient extends EventEmitter {
       // Data is already sent in handleClaudeCommand, but this catches
       // any data that might come through the event system
       logger.debug('ClaudeExecutor data event', { type, commandId, length: data?.length });
+    });
+
+    // Track non-interactive processes for cancel support
+    this.claudeExecutor.on('process:spawned', ({ commandId, process }) => {
+      this.activeNonInteractiveProcesses.set(commandId, process);
+      process.on('exit', () => {
+        this.activeNonInteractiveProcesses.delete(commandId);
+      });
     });
 
     // When an interactive session exits
@@ -346,6 +355,11 @@ class BridgeClient extends EventEmitter {
       // Handle terminal resize for interactive Claude sessions
       this.socket.on('claude:resize', (data) => {
         this.handleClaudeResize(data);
+      });
+
+      // Handle cancel request (timeout cleanup - kills running processes)
+      this.socket.on('claude:cancel', (data) => {
+        this.handleClaudeCancel(data);
       });
 
       // Handle kill request for interactive Claude sessions
@@ -792,6 +806,50 @@ class BridgeClient extends EventEmitter {
     } else {
       logger.warn('Failed to kill interactive session', { targetCommandId });
     }
+  }
+
+  /**
+   * Handle cancel request (kills running interactive or non-interactive processes)
+   */
+  handleClaudeCancel(data) {
+    const { commandId } = data;
+    if (!commandId) {
+      logger.warn('Cancel request missing commandId');
+      return;
+    }
+
+    logger.info('Cancelling command', { commandId });
+
+    // Try interactive session first
+    const sessionId = this.commandToSessionMap.get(commandId);
+    if (sessionId) {
+      const success = this.claudeExecutor.killSession(commandId);
+      if (success) {
+        logger.info('Cancelled interactive session', { commandId, sessionId });
+        this.activeInteractiveSessions.delete(sessionId);
+        this.commandToSessionMap.delete(commandId);
+        return;
+      }
+    }
+
+    // Try non-interactive process
+    const childProcess = this.activeNonInteractiveProcesses.get(commandId);
+    if (childProcess) {
+      try {
+        childProcess.kill('SIGTERM');
+        // Force kill after 5 seconds if still running
+        setTimeout(() => {
+          try { childProcess.kill('SIGKILL'); } catch (e) { /* already dead */ }
+        }, 5000);
+        logger.info('Cancelled non-interactive process', { commandId });
+      } catch (e) {
+        logger.warn('Failed to kill non-interactive process', { commandId, error: e.message });
+      }
+      this.activeNonInteractiveProcesses.delete(commandId);
+      return;
+    }
+
+    logger.warn('No active process found for cancel', { commandId });
   }
 
   /**

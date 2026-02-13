@@ -285,19 +285,26 @@ Only mention code/git status if the user explicitly asks about it.
       let errorOutput = '';
       let resolved = false;
 
-      // Timeout after 120 seconds (matches Bridge default)
+      // Timeout after 5 minutes (complex prompts with system context + history can take 2-5 min)
+      const JOHNNY5_TIMEOUT = 300000; // 5 minutes
       const timeout = setTimeout(() => {
         if (!resolved) {
           resolved = true;
           cleanup();
+          // Kill the running CLI process to prevent zombies
+          try {
+            bridgeManager.cancelCommand(commandId);
+          } catch (e) {
+            // Best effort - bridge may already be disconnected
+          }
           resolve({
             success: false,
             response: '',
-            error: 'Command timed out after 120 seconds',
+            error: 'Command timed out after 5 minutes',
             errorCode: 'COMMAND_TIMEOUT',
           });
         }
-      }, 120000);
+      }, JOHNNY5_TIMEOUT);
 
       // Cleanup function to remove listeners
       const cleanup = () => {

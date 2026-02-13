@@ -86,3 +86,37 @@ user-workspaces/*
 !user-workspaces/default/app.js
 .tar.gz
 public/videos/
+
+# AI tool configurations (various coding assistants)
+.adal/
+.agent/
+.agents/
+.augment/
+.cline/
+.codebuddy/
+.commandcode/
+.continue/
+.crush/
+.factory/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.vibe/
+.zencoder/
+
+# Test scripts
+telegram-test-*.ts
+test-telegram-*.ts

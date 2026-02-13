@@ -87,8 +87,8 @@ export class BridgeManager extends EventEmitter {
   private readonly PAIRING_CODE_EXPIRY = 5 * 60 * 1000; // 5 minutes
   private readonly HEARTBEAT_INTERVAL = 30 * 1000; // 30 seconds
   private readonly HEARTBEAT_TIMEOUT = 4 * 30 * 1000; // 4 missed heartbeats = 120s (aligned with Socket.IO pingTimeout)
-  // FIXED (Dec 10, 2025): Increased from 60s to 120s for long-running Claude commands
-  private readonly DEFAULT_COMMAND_TIMEOUT = 120 * 1000; // 120 seconds
+  // FIXED (Feb 13, 2026): Increased from 120s to 300s for complex Johnny5/Claude prompts
+  private readonly DEFAULT_COMMAND_TIMEOUT = 300 * 1000; // 5 minutes
   private readonly DEFAULT_FILE_TIMEOUT = 30 * 1000; // 30 seconds for file operations
   private readonly MAX_COMMANDS_PER_BRIDGE = 5;
   private readonly LIVING_FILES_CACHE_TTL = 60 * 1000; // 60 seconds
@@ -537,6 +537,36 @@ export class BridgeManager extends EventEmitter {
         bridgeId: command.bridgeId
       });
     }
+  }
+
+  /**
+   * Cancel a running command and signal the Bridge CLI to kill the process.
+   * Called on timeout to prevent zombie CLI processes.
+   */
+  cancelCommand(commandId: string): void {
+    const command = this.pendingCommands.get(commandId);
+    if (!command) return;
+
+    console.log(`[BridgeManager] Cancelling command ${commandId}`);
+
+    // Signal the Bridge CLI to kill the process
+    const bridge = this.bridges.get(command.bridgeId);
+    if (bridge?.socket.connected) {
+      bridge.socket.emit('claude:cancel', { commandId });
+    }
+
+    // Clean up
+    if (command.timeoutHandle) {
+      clearTimeout(command.timeoutHandle);
+    }
+    this.pendingCommands.delete(commandId);
+
+    this.emit('command:cancelled', {
+      commandId,
+      bridgeId: command.bridgeId,
+      sessionId: command.request.sessionId,
+      error: 'Command cancelled due to timeout',
+    });
   }
 
   /**
