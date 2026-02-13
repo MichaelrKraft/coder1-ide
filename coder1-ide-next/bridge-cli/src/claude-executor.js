@@ -538,6 +538,11 @@ class ClaudeExecutor extends EventEmitter {
         stdio: ['ignore', 'pipe', 'pipe']
       });
 
+      // Emit process reference so callers can track/cancel it
+      if (options.commandId) {
+        this.emit('process:spawned', { commandId: options.commandId, process: claudeProcess });
+      }
+
       let outputBuffer = '';
       let errorBuffer = '';
       let hasExited = false;

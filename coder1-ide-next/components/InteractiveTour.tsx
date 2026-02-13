@@ -77,12 +77,12 @@ const tourSteps: TourStep[] = [
     highlightColor: 'turquoise'
   },
   {
-    id: 'memory-feature',
-    title: 'Memory (Core Feature)',
-    content: 'Access your AI memory, the revolutionary core feature that remembers your coding patterns, preferences, and project context across sessions, and gets smarter as time goes on.',
-    target: 'memory-button',
-    position: 'center-monaco',
-    highlightColor: 'orange' // Orange glow for Memory button
+    id: 'johnny5-assistant',
+    title: 'Johnny5 AI Assistant',
+    content: 'Meet Johnny5 - your AI employee that works while you sleep. Assign tasks, track progress, and wake up to completed work. Your own developer who never stops.',
+    target: 'johnny5-panel',
+    position: 'right-preview',
+    highlightColor: 'orange' // Orange glow for Johnny5 - the wow factor
   },
   {
     id: 'status-bar-features',
@@ -369,6 +369,14 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
       }, 500);
     }
   }, [currentStepData.openMenu, currentStepData.id]);
+
+  // Expand right panel when on Johnny5 step to ensure visibility
+  useEffect(() => {
+    if (currentStepData.id === 'johnny5-assistant') {
+      // Dispatch event to expand right panel if collapsed
+      window.dispatchEvent(new Event('expandRightPanel'));
+    }
+  }, [currentStepData.id]);
 
   // Execute step actions
   const executeStepAction = useCallback((action?: string) => {

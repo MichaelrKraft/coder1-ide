@@ -992,7 +992,8 @@ export async function POST(
     // Determine if we should use Bridge based on both connection status AND query type
     // Key insight: Even when Bridge is connected, personal queries should use Gemini
     // because Claude Code CLI ignores injected memory context
-    const shouldUseBridgeForThisQuery = bridgeConnected && queryClassification.shouldUseBridge;
+    const forceGemini = /\buse gemini\b/i.test(message);
+    const shouldUseBridgeForThisQuery = bridgeConnected && queryClassification.shouldUseBridge && !forceGemini;
 
     if (shouldUseBridgeForThisQuery) {
       // Use Bridge for coding queries (benefits from project context)
@@ -1003,7 +1004,9 @@ export async function POST(
       // Use Gemini for:
       // 1. Personal/memory queries (even when Bridge is connected)
       // 2. All queries when Bridge is not connected
-      if (bridgeConnected) {
+      if (forceGemini) {
+        console.log('[Johnny5] Using Gemini (user override: "use gemini")');
+      } else if (bridgeConnected) {
         console.log(`[Johnny5] Bridge connected but using Gemini for ${queryClassification.category} query (memory-critical)`);
       } else {
         console.log('[Johnny5] Using Gemini API mode (Bridge not connected)');
@@ -1260,11 +1263,12 @@ export async function POST(
       }
 
       if (result.errorCode === 'COMMAND_TIMEOUT') {
-        return errorResponse(
-          'Request timed out. Please try again with a simpler request.',
-          'COMMAND_TIMEOUT',
-          504
-        );
+        return NextResponse.json({
+          success: false,
+          code: 'COMMAND_TIMEOUT',
+          timeoutOptions: true,
+          error: 'Bridge timed out after 5 minutes',
+        }, { status: 504 });
       }
 
       return errorResponse(

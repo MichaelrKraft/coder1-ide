@@ -167,7 +167,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
   };
 
   return (
-    <div className={`h-full flex flex-col bg-bg-secondary relative overflow-hidden ${className || ''}`}>
+    <div data-tour="johnny5-panel" className={`h-full flex flex-col bg-bg-secondary relative overflow-hidden ${className || ''}`}>
       {/* Animated Background Gradient Orbs */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Gradient Orb 1 - Cyan (Johnny5 primary) */}

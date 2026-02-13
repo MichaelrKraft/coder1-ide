@@ -119,18 +119,20 @@ const nextConfig = {
       };
       
       // Prevent bundling of native modules on client side
-      config.externals = [...(config.externals || []), 
+      config.externals = [...(config.externals || []),
         'chokidar',
         'fsevents',
         'better-sqlite3',
+        'sqlite-vec',
         'node-pty'
       ];
     }
     
     // Handle native modules for server
     if (isServer) {
-      config.externals = [...(config.externals || []), 
+      config.externals = [...(config.externals || []),
         'better-sqlite3',
+        'sqlite-vec',
         'chokidar',
         'fsevents',
         'node-pty'

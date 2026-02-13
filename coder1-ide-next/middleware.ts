@@ -8,12 +8,15 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Auth gate: redirect to /login if no auth-token cookie on protected routes
+  // Skip auth check in development mode
   if (PROTECTED_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))) {
-    const authToken = request.cookies.get('auth-token')?.value;
-    if (!authToken) {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+    if (process.env.NODE_ENV !== 'development') {
+      const authToken = request.cookies.get('auth-token')?.value;
+      if (!authToken) {
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('redirect', pathname);
+        return NextResponse.redirect(loginUrl);
+      }
     }
   }
 

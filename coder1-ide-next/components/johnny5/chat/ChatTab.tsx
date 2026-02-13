@@ -709,7 +709,19 @@ export default function ChatTab() {
         } else if (errorCode === 'BRIDGE_ERROR') {
           errorMessage = "⚠️ Bridge error. Please check that coder1-bridge is running and try again.";
         } else if (errorCode === 'COMMAND_TIMEOUT') {
-          errorMessage = "⏳ Request timed out. Please try again with a simpler request.";
+          // Show a helpful choice message instead of a dead-end error
+          addChatMessage({
+            id: `assistant-timeout-${Date.now()}`,
+            role: 'assistant',
+            content: "That request timed out — Claude CLI took longer than 5 minutes. You can:\n\n" +
+              "1. **Try again** — just resend your message and I'll retry via Bridge\n" +
+              "2. **Say \"use gemini\"** — I'll switch to Gemini for a faster response\n\n" +
+              "Complex tasks like creating multiple files can take a while. If this keeps happening, try breaking the task into smaller steps.",
+            timestamp: new Date(),
+          });
+          setIsLoading(false);
+          setIsTyping(false);
+          return;
         } else if (response.status === 503) {
           errorMessage = "🔌 Johnny5 daemon not available. Please ensure ManusLive is running.";
         } else if (response.status === 401) {

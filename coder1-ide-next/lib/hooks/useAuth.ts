@@ -78,20 +78,25 @@ export function useAuth() {
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && user) {
-        // Tab became visible — check if token is still valid
-        const res = await fetch('/api/v2/auth/me', { credentials: 'include' });
-        if (!res.ok) {
-          // Token expired during sleep — try refresh
-          const refreshRes = await fetch('/api/v2/auth/refresh', {
-            method: 'POST',
-            credentials: 'include',
-          });
-          if (refreshRes.ok) {
-            scheduleRefresh();
-          } else {
-            clear();
-            router.push('/login');
+        try {
+          // Tab became visible — check if token is still valid
+          const res = await fetch('/api/v2/auth/me', { credentials: 'include' });
+          if (!res.ok) {
+            // Token expired during sleep — try refresh
+            const refreshRes = await fetch('/api/v2/auth/refresh', {
+              method: 'POST',
+              credentials: 'include',
+            });
+            if (refreshRes.ok) {
+              scheduleRefresh();
+            } else {
+              clear();
+              router.push('/login');
+            }
           }
+        } catch {
+          // Network error on visibility change — silently ignore
+          // Next scheduled refresh or user action will retry
         }
       }
     };
