@@ -369,6 +369,16 @@ export default function ChatTab() {
           console.log('[ChatTab] Attached to terminal session:', data.id);
         });
 
+        // Listen for server-pushed messages (task delegation results, heartbeat findings, etc.)
+        socket.on('johnny5:chat-push', (data: { id: string; content: string; timestamp: string }) => {
+          addChatMessage({
+            id: data.id,
+            role: 'system' as const,
+            content: data.content,
+            timestamp: new Date(data.timestamp),
+          });
+        });
+
         // NOTE: Bridge connection detection moved to useBridgeConnectionState hook (Feb 2026)
         // The hook handles Socket.IO timing more reliably
       } catch (err) {
@@ -384,6 +394,7 @@ export default function ChatTab() {
         socket.off('johnny5:moltbot-connected');
         socket.off('johnny5:moltbot-disconnected');
         socket.off('johnny5:claude-context-ready');
+        socket.off('johnny5:chat-push');
         socket.off('terminal:session-created');
         socket.off('terminal:session-attached');
       }

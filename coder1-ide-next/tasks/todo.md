@@ -1,3 +1,47 @@
+# Skills Tab in Discover Panel
+
+**Design doc:** `docs/plans/2026-02-13-skills-tab-discover-panel-design.md`
+
+## Tasks
+
+- [ ] 1. Add tab state and tab bar UI to DiscoverPanel
+  - Add `activeTab` state (`'commands' | 'skills'`)
+  - Render two tab buttons below header, above search
+  - Style active tab with cyan underline, inactive with muted text
+  - Clear search input when switching tabs
+
+- [ ] 2. Define hardcoded SKILLS_LIST array
+  - Create `SkillItem` interface (id, name, description, icon, category)
+  - Add ~15-20 curated skills with appropriate Lucide icons and categories
+  - Categories: PLANNING, DEVELOPMENT, DEBUGGING, QUALITY, PROJECT MGMT, GIT
+
+- [ ] 3. Conditionally render Commands vs Skills content
+  - Wrap existing commands content in `activeTab === 'commands'` check
+  - Add skills rendering for `activeTab === 'skills'` with same item pattern
+  - Skills grouped by category headers
+  - Same scrollable area styling
+
+- [ ] 4. Wire up skill execution
+  - Click handler calls `injectCommand('/skill <id>', { focusTerminal: true, addNewline: true })`
+  - Show success toast
+  - Close panel and clear search
+
+- [ ] 5. Connect search to skills tab
+  - When `activeTab === 'skills'`, filter SKILLS_LIST instead of commands
+  - Filter on name, description, category (same logic)
+
+- [ ] 6. Visual QA and testing
+  - Verify tab switching works
+  - Verify search filters correctly on both tabs
+  - Verify skill click injects correct command
+  - Verify existing commands tab is unchanged
+
+## Review
+
+_(To be filled after implementation)_
+
+---
+
 # Johnny5 `<execute_bash>` Command Execution Feature
 
 ## Status: Implementation Complete
@@ -249,6 +293,38 @@ Successfully bundled ManusLive with Coder1 for alpha launch. Alpha customers wil
 - Bridge mode MCPs require Bridge CLI to be running (separate test)
 - **Null bytes fix**: Living files content can contain null bytes that Node.js spawn() rejects. Fixed by sanitizing system prompt in ManusLive's `ClaudeCodeExecutor.ts:117`
 - **E2BIG fix**: Large living files exceeded OS argument length limit (~256KB). Fixed by using `--system-prompt-file` with temp file instead of passing directly as CLI argument
+
+---
+
+# Add Claude Code CLI Prerequisites to Bridge Modal
+
+## Goal
+Add a pre-flight checklist to the Bridge setup modals so new users know they need Claude Code CLI installed and authenticated before connecting.
+
+## Todo
+
+- [x] Add "Prerequisites" section to `BridgeConnectButton.tsx` modal — before Step 1
+- [x] Add same prerequisites to `SetupInstructionsModal.tsx` — before the "1-Minute Setup" section
+- [x] Verify dev server compiles without errors
+
+## Review
+
+### Summary (Feb 13, 2026)
+
+Added a "Prerequisites" section to both Bridge setup modals so new users see the Claude Code CLI requirements before attempting to connect.
+
+### Changes Made
+
+1. **`components/bridge/BridgeConnectButton.tsx`** (lines 230-273):
+   - Added purple-themed prerequisites box before Step 1
+   - Shows two requirements: install CLI + authenticate
+   - Copy-to-clipboard on both commands
+   - "Already have Claude Code? Skip to Step 1 below" note
+
+2. **`components/bridge/SetupInstructionsModal.tsx`** (lines 184-232):
+   - Added "Before You Start" section before the "1-Minute Setup"
+   - Same two requirements with copy buttons
+   - Explains that auth opens a browser for Claude Pro/Max sign-in
 
 ---
 

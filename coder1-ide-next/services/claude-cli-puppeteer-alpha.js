@@ -30,7 +30,7 @@ class ClaudeCLIPuppeteerAlpha extends EventEmitter {
       processTimeout: parseInt(process.env.PROCESS_TIMEOUT_MS) || 300000, // 5 minutes
       idleTimeout: parseInt(process.env.IDLE_TIMEOUT_MS) || 60000, // 1 minute
       outputBufferSize: 5000, // Reduced from 10000
-      responseTimeout: 120000, // 2 minutes
+      responseTimeout: 300000, // 5 minutes - matches TS version
       queueEnabled: process.env.SESSION_QUEUE_ENABLED === 'true',
       maxQueueSize: parseInt(process.env.MAX_QUEUE_SIZE) || 5,
       alphaMode: process.env.ALPHA_MODE_ENABLED === 'true'

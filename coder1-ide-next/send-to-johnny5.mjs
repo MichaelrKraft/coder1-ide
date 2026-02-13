@@ -153,12 +153,12 @@ async function main() {
     console.log('Connection closed');
   });
   
-  // Timeout after 2 minutes
+  // Timeout after 5 minutes
   setTimeout(() => {
     console.log('\nTimeout - closing connection');
     ws.close();
     process.exit(0);
-  }, 120000);
+  }, 300000);
 }
 
 main();

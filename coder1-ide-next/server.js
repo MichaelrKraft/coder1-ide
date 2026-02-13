@@ -3768,6 +3768,20 @@ app.prepare().then(() => {
       console.log(`Socket ${socket.id} left johnny5 session: ${sessionId}`);
     });
 
+    // Push a system message into Johnny5's chat panel for all connected clients.
+    // Use this from any server-side process that needs to notify the user via chat.
+    const pushJohnny5ChatMessage = (content, type = 'info') => {
+      if (io) {
+        io.emit('johnny5:chat-push', {
+          id: `push-${Date.now()}`,
+          role: 'system',
+          content,
+          type,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    };
+
     // Johnny5 → Claude Code task delegation
     socket.on('johnny5:delegate-task', async ({ sessionId, task }) => {
       // Auth check: require authenticated socket with terminal permission
@@ -3813,6 +3827,7 @@ app.prepare().then(() => {
           terminalSession.pty.write(taskInput);
           console.log(`[Johnny5→Claude] Task sent to interactive Claude session`);
           socket.emit('johnny5:delegate-result', { success: true, sessionId, method: 'interactive' });
+          pushJohnny5ChatMessage(`Task delegated to Claude Code (interactive): "${task.substring(0, 100)}"`);
         } else {
           socket.emit('johnny5:delegate-result', { success: false, error: 'PTY not available', sessionId });
         }
@@ -3823,6 +3838,7 @@ app.prepare().then(() => {
           terminalSession.pty.write(claudeCommand);
           console.log(`[Johnny5→Claude] Started new Claude session with task`);
           socket.emit('johnny5:delegate-result', { success: true, sessionId, method: 'new-session' });
+          pushJohnny5ChatMessage(`Task delegated to Claude Code (new session): "${task.substring(0, 100)}"`);
         } else {
           socket.emit('johnny5:delegate-result', { success: false, error: 'PTY not available', sessionId });
         }

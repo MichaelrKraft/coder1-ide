@@ -146,7 +146,7 @@ export class CLIOutputParser {
 
   constructor(options: CLIOutputParserOptions = {}) {
     this.options = {
-      completionTimeout: options.completionTimeout || 120000, // 2 minutes
+      completionTimeout: options.completionTimeout || 300000, // 5 minutes
       minResponseLength: options.minResponseLength || 10,
       maxBufferSize: options.maxBufferSize || 50000,
       preserveCodeBlocks: options.preserveCodeBlocks !== false,
