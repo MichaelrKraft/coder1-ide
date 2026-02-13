@@ -2037,12 +2037,30 @@ app.prepare().then(() => {
       const now = Date.now();
       const latency = now - (data?.timestamp || now);
       console.log(`💓 Heartbeat ping received from ${socket.id} (latency: ${latency}ms)`);
-      
+
       // Respond with pong including original timestamp for RTT calculation
-      socket.emit('pong', { 
+      socket.emit('pong', {
         timestamp: data?.timestamp || now,
         serverTime: now
       });
+    });
+
+    // Johnny5 command execution audit logging
+    socket.on('johnny5:audit-command', async (data) => {
+      try {
+        const { logAudit } = require('./lib/johnny5-db.ts');
+        await logAudit('command_executed', {
+          sessionId: data.sessionId,
+          command: data.command,
+          output: data.output,
+          timedOut: data.timedOut,
+          truncated: data.truncated,
+          durationMs: data.durationMs,
+        });
+        console.log(`[Johnny5] Audit logged: ${data.command} (${data.durationMs}ms)`);
+      } catch (err) {
+        console.warn('[Johnny5] Failed to log command audit:', err.message);
+      }
     });
 
     // Team presence: join

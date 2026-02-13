@@ -1,3 +1,87 @@
+# Johnny5 `<execute_bash>` Command Execution Feature
+
+## Status: Implementation Complete
+
+## Summary
+Added support for Johnny5 to execute bash commands via `<execute_bash>` tags. When Johnny5 outputs these tags, they are now parsed and the commands are executed in the terminal, with output displayed in the chat.
+
+## Tasks
+- [x] Create `lib/johnny5-command-parser.ts` - Parse `<execute_bash>` tags
+- [x] Create `lib/terminal-output-capture.ts` - Capture output with timeout
+- [x] Integrate into `components/johnny5/chat/ChatTab.tsx`
+- [x] Add audit logging for executed commands
+- [x] Code verification complete (imports, state, socket listeners, execution flow)
+- [ ] End-to-end testing with Johnny5
+
+## End-to-End Testing Steps
+
+1. **Start dev server:**
+   ```bash
+   cd /Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next
+   npm run dev
+   ```
+
+2. **Open IDE in browser:** http://localhost:3001/ide
+
+3. **Open terminal panel** (click Terminal tab or use shortcut) - this creates `activeTerminalSessionId`
+
+4. **Send test message to Johnny5:**
+   - "What files are in this directory?"
+   - Or: "Check if git is installed"
+
+5. **Verify:**
+   - Command appears in terminal with execution
+   - Output appears in Johnny5 chat with status indicator (✅/❌/⏱️)
+   - Console shows `[Johnny5] Command completed: <cmd> (success, Xms)`
+
+## Changes Made
+
+### New Files Created
+1. **`lib/johnny5-command-parser.ts`** - Parses `<execute_bash>` tags from responses
+   - `parseExecuteBashTags()` - Extracts commands and creates display-friendly response
+   - `hasExecuteBashTags()` - Quick check for tags
+   - `updateCommandResult()` - Formats execution results
+
+2. **`lib/terminal-output-capture.ts`** - Captures terminal output
+   - `captureTerminalOutput()` - Listens for output with timeout
+   - `executeAndCapture()` - Convenience wrapper
+   - Handles ANSI code stripping, truncation (10KB max)
+
+### Modified Files
+1. **`components/johnny5/chat/ChatTab.tsx`**
+   - Added imports for new utilities
+   - Added state: `isExecutingCommand`, `activeTerminalSessionId`
+   - Added socket listeners: `terminal:session-created`, `terminal:session-attached`
+   - Modified response handling to parse and execute commands
+
+## How It Works
+```
+Johnny5 Response: "Let me check the files. <execute_bash>ls -la</execute_bash>"
+                              ↓
+                   parseExecuteBashTags()
+                              ↓
+              Commands extracted: ["ls -la"]
+                              ↓
+              socket.emit('terminal:input')
+                              ↓
+              captureTerminalOutput() (30s timeout)
+                              ↓
+              Display output in chat + audit log
+```
+
+## Edge Cases Handled
+- Multiple commands: Execute sequentially
+- Timeout: 30-second limit with timeout message
+- Large output: Truncated to 10KB
+- Bridge not connected: Shows warning message
+- Malformed tags: Skipped with warning
+
+## Known Limitations
+- Interactive commands (requiring stdin) not supported
+- Long-running processes will timeout at 30s
+
+---
+
 # Fix Johnny5 Telegram Two-Way Chat
 
 ## Goal

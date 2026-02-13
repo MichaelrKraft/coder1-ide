@@ -29,6 +29,12 @@ import { useIDEStore } from '@/stores/useIDEStore';
 import { terminalObserver, type TerminalEvent } from '@/lib/terminal-observer';
 import { useTerminalSupervision, type SupervisionAlert } from '@/lib/hooks/useTerminalSupervision';
 import { useBridgeConnectionState } from '@/lib/useBridgeConnectionState';
+import {
+  parseExecuteBashTags,
+  hasExecuteBashTags,
+  updateCommandResult,
+} from '@/lib/johnny5-command-parser';
+import { executeAndCapture } from '@/lib/terminal-output-capture';
 
 // Typewriter effect component for Johnny5's welcome message
 function TypewriterText({
@@ -181,6 +187,8 @@ export default function ChatTab() {
   const [observations, setObservations] = useState<TerminalEvent[]>([]);
   const [isDelegating, setIsDelegating] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
+  const [isExecutingCommand, setIsExecutingCommand] = useState(false);
+  const [activeTerminalSessionId, setActiveTerminalSessionId] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const lastObservationRef = useRef<number>(0); // Rate limiting
 
@@ -312,6 +320,17 @@ export default function ChatTab() {
           }
         });
 
+        // Track active terminal session for command execution
+        socket.on('terminal:session-created', (data: { id: string }) => {
+          setActiveTerminalSessionId(data.id);
+          console.log('[ChatTab] Active terminal session:', data.id);
+        });
+
+        socket.on('terminal:session-attached', (data: { id: string }) => {
+          setActiveTerminalSessionId(data.id);
+          console.log('[ChatTab] Attached to terminal session:', data.id);
+        });
+
         // NOTE: Bridge connection detection moved to useBridgeConnectionState hook (Feb 2026)
         // The hook handles Socket.IO timing more reliably
       } catch (err) {
@@ -327,6 +346,8 @@ export default function ChatTab() {
         socket.off('johnny5:moltbot-connected');
         socket.off('johnny5:moltbot-disconnected');
         socket.off('johnny5:claude-context-ready');
+        socket.off('terminal:session-created');
+        socket.off('terminal:session-attached');
       }
     };
   }, [setMoltbotStatus, fetchJohnny5Mode]);
@@ -705,18 +726,108 @@ export default function ChatTab() {
         }
       }
 
-      // Add assistant response
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: data.data?.response || data.response,
-        timestamp: new Date(),
-        toolCalls: data.data?.toolCalls || data.toolCalls,
-        thinking: data.data?.thinking || data.thinking,
-        reasoningSteps: data.data?.reasoningSteps,
-      };
+      // Get raw response
+      const rawResponse = data.data?.response || data.response;
 
-      addChatMessage(assistantMessage);
+      // Check for <execute_bash> commands
+      let finalContent = rawResponse;
+      if (hasExecuteBashTags(rawResponse) && johnny5Mode?.hasMCP && activeTerminalSessionId) {
+        const { commands, displayResponse } = parseExecuteBashTags(rawResponse);
+
+        // Add initial message with pending indicators
+        const assistantMsgId = `assistant-${Date.now()}`;
+        addChatMessage({
+          id: assistantMsgId,
+          role: 'assistant',
+          content: displayResponse,
+          timestamp: new Date(),
+          toolCalls: data.data?.toolCalls || data.toolCalls,
+          thinking: data.data?.thinking || data.thinking,
+          reasoningSteps: data.data?.reasoningSteps,
+        });
+
+        // Execute commands sequentially
+        if (commands.length > 0) {
+          setIsExecutingCommand(true);
+          let updatedContent = displayResponse;
+
+          try {
+            const socket = await getSocket();
+
+            for (const cmd of commands) {
+              console.log(`[Johnny5] Executing command: ${cmd.command}`);
+
+              // Execute and capture output
+              const result = await executeAndCapture(
+                socket,
+                activeTerminalSessionId,
+                cmd.command,
+                { timeoutMs: 30000, maxBytes: 10240 }
+              );
+
+              // Determine status
+              const status = result.timedOut ? 'timeout' : 'success';
+
+              // Update content with result
+              const commandResult = updateCommandResult(
+                '',
+                cmd.command,
+                result.output,
+                status
+              );
+
+              // Add result after the command indicator
+              updatedContent += commandResult;
+
+              // Update the message with results so far
+              updateChatMsg(assistantMsgId, { content: updatedContent });
+
+              // Audit log the command execution via server (non-blocking)
+              socket.emit('johnny5:audit-command', {
+                sessionId,
+                command: cmd.command,
+                output: result.output.slice(0, 1000), // First 1KB only
+                timedOut: result.timedOut,
+                truncated: result.truncated,
+                durationMs: result.durationMs,
+              });
+
+              console.log(`[Johnny5] Command completed: ${cmd.command} (${status}, ${result.durationMs}ms)`);
+            }
+          } catch (execError) {
+            console.error('[Johnny5] Command execution error:', execError);
+            updatedContent += '\n\n❌ Error executing commands. Check terminal connection.';
+            updateChatMsg(assistantMsgId, { content: updatedContent });
+          } finally {
+            setIsExecutingCommand(false);
+          }
+        }
+      } else if (hasExecuteBashTags(rawResponse) && !johnny5Mode?.hasMCP) {
+        // Has commands but no MCP access - show warning
+        const { displayResponse } = parseExecuteBashTags(rawResponse);
+        finalContent = displayResponse + '\n\n⚠️ *Commands detected but cannot execute - Bridge not connected.*';
+
+        addChatMessage({
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: finalContent,
+          timestamp: new Date(),
+          toolCalls: data.data?.toolCalls || data.toolCalls,
+          thinking: data.data?.thinking || data.thinking,
+          reasoningSteps: data.data?.reasoningSteps,
+        });
+      } else {
+        // No commands - add message normally
+        addChatMessage({
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: finalContent,
+          timestamp: new Date(),
+          toolCalls: data.data?.toolCalls || data.toolCalls,
+          thinking: data.data?.thinking || data.thinking,
+          reasoningSteps: data.data?.reasoningSteps,
+        });
+      }
     } catch (error) {
       // User cancelled the request — not an error
       if (error instanceof DOMException && error.name === 'AbortError') {
