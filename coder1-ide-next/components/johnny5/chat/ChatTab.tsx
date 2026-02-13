@@ -35,6 +35,8 @@ import {
   updateCommandResult,
 } from '@/lib/johnny5-command-parser';
 import { executeAndCapture } from '@/lib/terminal-output-capture';
+import TaskQueueDropdown from './TaskQueueDropdown';
+import { useTaskQueueStore } from '@/stores/useTaskQueueStore';
 
 // Typewriter effect component for Johnny5's welcome message
 function TypewriterText({
@@ -242,6 +244,42 @@ export default function ChatTab() {
       inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 150)}px`;
     }
   }, [inputValue]);
+
+  // Task queue store for completion detection
+  const { getNextTask, markTaskComplete } = useTaskQueueStore();
+
+  // Completion detection - auto-load next task when Johnny5 signals completion
+  const COMPLETION_SIGNALS = [
+    'done', 'complete', 'completed', 'finished', 'all set',
+    'task complete', "that's everything", 'ready for next',
+    'successfully', 'implementation complete', 'changes committed'
+  ];
+
+  useEffect(() => {
+    // Only check the last message
+    if (messages.length === 0 || isLoading) return;
+
+    const lastMessage = messages[messages.length - 1];
+
+    // Only check assistant messages
+    if (lastMessage.role !== 'assistant') return;
+
+    // Check if message contains completion signals
+    const content = lastMessage.content.toLowerCase();
+    const hasCompletionSignal = COMPLETION_SIGNALS.some(signal =>
+      content.includes(signal)
+    );
+
+    if (hasCompletionSignal) {
+      const nextTask = getNextTask();
+      if (nextTask && !inputValue.trim()) {
+        // Auto-load next task into input
+        setInputValue(nextTask.task_text);
+        markTaskComplete(nextTask.id);
+        inputRef.current?.focus();
+      }
+    }
+  }, [messages, isLoading, getNextTask, markTaskComplete, inputValue]);
 
   // Resolve active crew member details for prompt injection
   const activeCrewInfo = useMemo(() => {
@@ -1189,49 +1227,14 @@ export default function ChatTab() {
 
       {/* Input Area */}
       <div className="px-4 py-3 border-t border-border-default bg-bg-secondary/30">
-        {/* Quick actions */}
-        <div className="flex items-center gap-2 mb-2">
-          <button
-            onClick={() => {
-              setInputValue('Build a feature: ');
+        {/* Task Queue */}
+        <div className="mb-2">
+          <TaskQueueDropdown
+            onTaskSelect={(taskText) => {
+              setInputValue(taskText);
               inputRef.current?.focus();
             }}
-            className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-text-secondary transition-all flex items-center gap-1.5"
-          >
-            <Sparkles className="w-3 h-3" />
-            Build a feature
-          </button>
-          <button
-            onClick={() => {
-              setInputValue('Research: ');
-              inputRef.current?.focus();
-            }}
-            className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-text-secondary transition-all flex items-center gap-1.5"
-          >
-            <Brain className="w-3 h-3" />
-            Research
-          </button>
-          <button
-            onClick={() => {
-              setInputValue('/status');
-              inputRef.current?.focus();
-            }}
-            className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-text-secondary transition-all flex items-center gap-1.5"
-          >
-            <RefreshCw className="w-3 h-3" />
-            Check status
-          </button>
-          <button
-            onClick={() => {
-              setInputValue('/delegate ');
-              inputRef.current?.focus();
-            }}
-            disabled={isDelegating}
-            className="px-2.5 py-1 rounded-lg bg-bg-tertiary hover:bg-bg-secondary text-[10px] text-text-muted hover:text-coder1-cyan transition-all flex items-center gap-1.5"
-          >
-            <ArrowUpRight className="w-3 h-3" />
-            {isDelegating ? 'Delegating...' : 'Delegate to Claude'}
-          </button>
+          />
         </div>
 
         {/* Input */}
