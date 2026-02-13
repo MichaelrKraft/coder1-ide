@@ -181,6 +181,56 @@ export function SetupInstructionsModal({
           </div>
 
           <div className="space-y-6">
+            {/* Prerequisites */}
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-5">
+              <h3 className="text-lg font-semibold text-purple-300 mb-2">Before You Start</h3>
+              <p className="text-sm text-gray-300 mb-3">
+                The Bridge connects to your local <strong className="text-white">Claude Code CLI</strong>. If you haven&apos;t set it up yet:
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="text-white bg-purple-600 rounded-full w-5 h-5 inline-flex items-center justify-center text-xs shrink-0 mt-0.5">1</span>
+                  <div>
+                    <p className="text-sm text-gray-200 font-medium">Install Claude Code CLI</p>
+                    <div className="bg-black rounded p-2 font-mono text-sm mt-1 flex items-center justify-between group">
+                      <div>
+                        <span className="text-green-400">$</span> <span className="text-white select-all">npm install -g @anthropic-ai/claude-code</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText('npm install -g @anthropic-ai/claude-code');
+                        }}
+                        className="ml-2 px-2 py-0.5 text-xs bg-purple-600 hover:bg-purple-500 rounded font-semibold whitespace-nowrap"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-white bg-purple-600 rounded-full w-5 h-5 inline-flex items-center justify-center text-xs shrink-0 mt-0.5">2</span>
+                  <div>
+                    <p className="text-sm text-gray-200 font-medium">Authenticate with your Claude account (one-time)</p>
+                    <div className="bg-black rounded p-2 font-mono text-sm mt-1 flex items-center justify-between group">
+                      <div>
+                        <span className="text-green-400">$</span> <span className="text-white select-all">claude auth login</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText('claude auth login');
+                        }}
+                        className="ml-2 px-2 py-0.5 text-xs bg-purple-600 hover:bg-purple-500 rounded font-semibold whitespace-nowrap"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">This opens a browser to sign in with your Claude Pro or Max account</p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-3">Already have Claude Code installed and authenticated? Skip to setup below.</p>
+            </div>
+
             <div className="bg-bg-primary rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4 text-blue-400">
                 📍 1-Minute Setup (Recommended)

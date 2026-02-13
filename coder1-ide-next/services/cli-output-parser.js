@@ -17,7 +17,7 @@ class CLIOutputParser {
   constructor(options = {}) {
     this.options = {
       // Response completion detection
-      completionTimeout: options.completionTimeout || 120000, // 2 minutes - AI tasks can take time to complete
+      completionTimeout: options.completionTimeout || 300000, // 5 minutes - AI tasks can take time to complete
       minResponseLength: options.minResponseLength || 10,
       maxBufferSize: options.maxBufferSize || 50000,
       

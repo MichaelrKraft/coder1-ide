@@ -227,6 +227,51 @@ export function BridgeConnectButton() {
                       📍 Setup Instructions
                     </h3>
                     
+                    {/* Prerequisites */}
+                    <div
+                      className="p-4 rounded-lg border mb-4"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
+                        border: '1px solid rgba(168, 85, 247, 0.3)',
+                      }}
+                    >
+                      <h4 className="font-semibold text-purple-300 mb-2 text-sm flex items-center gap-2">
+                        <span>Prerequisites</span>
+                      </h4>
+                      <p className="text-xs text-gray-400 mb-3">You need Claude Code CLI on your machine. If you have a Claude Pro or Max subscription:</p>
+                      <div className="space-y-2 text-xs text-gray-300">
+                        <div className="flex items-start gap-2">
+                          <span className="text-purple-400 mt-0.5 shrink-0">1.</span>
+                          <div>
+                            <span className="text-white font-medium">Install Claude Code CLI</span>
+                            <div
+                              className="bg-black rounded px-2 py-1 mt-1 font-mono text-xs cursor-pointer hover:bg-gray-900 transition-colors inline-block"
+                              style={{ border: '1px solid rgba(168, 85, 247, 0.2)' }}
+                              onClick={() => copyToClipboard('npm install -g @anthropic-ai/claude-code', 'prereq-install')}
+                            >
+                              <span className="text-green-400">$</span> <span className="text-white">npm install -g @anthropic-ai/claude-code</span>
+                              {copiedCommand === 'prereq-install' && <span className="text-green-400 ml-2">Copied!</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-purple-400 mt-0.5 shrink-0">2.</span>
+                          <div>
+                            <span className="text-white font-medium">Authenticate (one-time)</span>
+                            <div
+                              className="bg-black rounded px-2 py-1 mt-1 font-mono text-xs cursor-pointer hover:bg-gray-900 transition-colors inline-block"
+                              style={{ border: '1px solid rgba(168, 85, 247, 0.2)' }}
+                              onClick={() => copyToClipboard('claude auth login', 'prereq-auth')}
+                            >
+                              <span className="text-green-400">$</span> <span className="text-white">claude auth login</span>
+                              {copiedCommand === 'prereq-auth' && <span className="text-green-400 ml-2">Copied!</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Already have Claude Code? Skip to Step 1 below.</p>
+                    </div>
+
                     <div className="space-y-3">
                       {/* Step 1 */}
                       <div 

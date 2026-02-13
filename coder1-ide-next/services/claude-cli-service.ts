@@ -301,7 +301,7 @@ class ClaudeCliService {
       
       const { stdout, stderr } = await execAsync(claudeCommand, {
         cwd: workingDir,
-        timeout: 120000, // 120 second timeout for file processing
+        timeout: 300000, // 5 minute timeout for file processing
         maxBuffer: 10 * 1024 * 1024 // 10MB buffer for larger responses
       });
 
