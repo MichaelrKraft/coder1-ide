@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bridgeManager } from '@/services/bridge-manager';
 
 // REMOVED (Feb 2026): activeBridges was causing stale connection status
 // Only bridgeManager tracks real WebSocket connections now
@@ -14,11 +13,11 @@ export async function GET(request: NextRequest) {
     }, { status: 400 });
   }
 
-  // FIX (Jan 27, 2026): Check actual WebSocket connection via bridgeManager
-  // The activeBridges map only tracks JWT validation, not actual WebSocket connection
-
-  // First, try to get bridge status from bridgeManager (actual WebSocket connections)
-  const bridgeStatus = bridgeManager?.getBridgeStatus?.(userId);
+  // FIX (Feb 2026): Use global.bridgeManager set by server.js
+  // This ensures we access the same singleton that has actual WebSocket connections
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bridgeManagerGlobal = (global as any).bridgeManager;
+  const bridgeStatus = bridgeManagerGlobal?.getBridgeStatus?.(userId);
 
   if (bridgeStatus?.connected && bridgeStatus.bridges.length > 0) {
     const bridge = bridgeStatus.bridges[0];
@@ -32,7 +31,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Fallback: Check if ANY bridge is connected (alpha fix for userId mismatch)
-  const anyBridge = bridgeManager?.findAnyConnectedBridge?.();
+  const anyBridge = bridgeManagerGlobal?.findAnyConnectedBridge?.();
 
   if (anyBridge) {
     return NextResponse.json({
