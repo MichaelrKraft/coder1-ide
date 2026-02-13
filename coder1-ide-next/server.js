@@ -29,7 +29,7 @@ console.log('   .env.local path:', path.join(__dirname, '.env.local'));
 console.log('═══════════════════════════════════════════════════════════');
 
 // Git commit hash for deployment verification
-const { execSync } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const getGitCommit = () => {
   try {
     return execSync('git rev-parse --short HEAD').toString().trim();
@@ -215,6 +215,70 @@ try {
 } catch (error) {
   console.warn('⚠️ Moltbot Bridge not available:', error.message);
   moltbotBridge = null;
+}
+
+/**
+ * Ensure ManusLive daemon is running before connecting Moltbot
+ * Auto-starts the daemon if not already running
+ */
+async function ensureManusLiveRunning() {
+  const MANUSLIVE_PORT = parseInt(process.env.MANUSLIVE_PORT || '55413');
+  const MANUSLIVE_PATH = process.env.MANUSLIVE_PATH ||
+    path.join(process.env.HOME, 'manuslive/manuslive');
+
+  // 1. Check if already running
+  try {
+    execSync(`lsof -i :${MANUSLIVE_PORT} 2>/dev/null | grep LISTEN`, { encoding: 'utf-8' });
+    console.log(`✅ ManusLive daemon already running on port ${MANUSLIVE_PORT}`);
+    return { success: true, wasRunning: true };
+  } catch {
+    // Not running, continue to start it
+  }
+
+  // 2. Check if ManusLive is installed
+  const cliPath = path.join(MANUSLIVE_PATH, 'dist/cli.js');
+  if (!fs.existsSync(cliPath)) {
+    console.warn(`⚠️ ManusLive not found at ${MANUSLIVE_PATH}`);
+    console.warn('   Johnny5 will use Bridge or Gemini fallback');
+    return { success: false, error: 'ManusLive not installed' };
+  }
+
+  // 3. Start ManusLive daemon
+  console.log(`🚀 Starting ManusLive daemon from ${MANUSLIVE_PATH}...`);
+  try {
+    const daemon = spawn('node', ['dist/cli.js', 'start', '--skip-validation'], {
+      cwd: MANUSLIVE_PATH,
+      detached: true,
+      stdio: ['ignore', 'ignore', 'ignore'],
+      env: { ...process.env, NODE_ENV: 'production' }
+    });
+    daemon.unref();
+
+    // 4. Wait for it to be ready (with timeout)
+    const maxWait = 60000; // 60 seconds (ManusLive can take 30-45s to initialize)
+    const checkInterval = 500;
+    let waited = 0;
+
+    while (waited < maxWait) {
+      await new Promise(r => setTimeout(r, checkInterval));
+      waited += checkInterval;
+
+      try {
+        execSync(`lsof -i :${MANUSLIVE_PORT} 2>/dev/null | grep LISTEN`, { encoding: 'utf-8' });
+        console.log(`✅ ManusLive daemon started successfully (${waited}ms)`);
+        return { success: true, wasRunning: false, startTime: waited };
+      } catch {
+        // Still waiting
+      }
+    }
+
+    console.warn(`⚠️ ManusLive daemon did not start within ${maxWait}ms`);
+    return { success: false, error: 'Startup timeout' };
+
+  } catch (err) {
+    console.error('❌ Failed to start ManusLive:', err.message);
+    return { success: false, error: err.message };
+  }
 }
 
 // Socket.IO instance (initialized later after HTTP server creation)
@@ -1928,10 +1992,25 @@ app.prepare().then(() => {
   // Connect to Moltbot if enabled (Johnny5 autonomous agent)
   // NOTE: This MUST come AFTER setting up event listeners above
   if (moltbotBridge && process.env.MOLTBOT_ENABLED === 'true' && process.env.MOLTBOT_GATEWAY_URL) {
-    console.log('🤖 Initializing Moltbot connection...');
-    moltbotBridge.connect(process.env.MOLTBOT_GATEWAY_URL)
-      .then(() => console.log('✅ Connected to Moltbot Gateway'))
-      .catch(err => console.warn('⚠️ Moltbot connection failed (will retry):', err.message));
+    // Ensure ManusLive daemon is running before connecting
+    ensureManusLiveRunning().then((result) => {
+      if (!result.success) {
+        console.warn(`⚠️ ManusLive unavailable: ${result.error}`);
+        console.warn('   Johnny5 will use Bridge or Gemini fallback');
+        // Don't try to connect if ManusLive failed to start
+        return;
+      }
+
+      // Connect to Moltbot Gateway
+      console.log('🤖 Initializing Moltbot connection...');
+      try {
+        moltbotBridge.connect(process.env.MOLTBOT_GATEWAY_URL)
+          .then(() => console.log('✅ Connected to Moltbot Gateway'))
+          .catch(err => console.warn('⚠️ Moltbot connection failed (will retry):', err.message));
+      } catch (err) {
+        console.warn('⚠️ Moltbot connection error:', err.message);
+      }
+    });
   }
 
   // Event Bridge Note: Event forwarding handled directly in claude-code-bridge.js

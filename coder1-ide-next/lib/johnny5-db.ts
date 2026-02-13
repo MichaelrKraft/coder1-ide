@@ -470,6 +470,18 @@ function createTables(database: Database.Database): void {
     -- Indexes for crew history
     CREATE INDEX IF NOT EXISTS idx_crew_history_member ON crew_history(crew_member);
     CREATE INDEX IF NOT EXISTS idx_crew_history_created ON crew_history(created_at);
+
+    -- =========================================================================
+    -- Telegram Session Mapping (for two-way Telegram chat)
+    -- =========================================================================
+
+    CREATE TABLE IF NOT EXISTS telegram_sessions (
+      telegram_user_id TEXT NOT NULL,
+      telegram_chat_id TEXT NOT NULL,
+      johnny5_session_id TEXT NOT NULL,
+      last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (telegram_user_id, telegram_chat_id)
+    );
   `);
 
   // =========================================================================
@@ -2015,6 +2027,32 @@ export function deletePendingLivingFileWrite(id: number): void {
   const database = getDb();
   const stmt = database.prepare('DELETE FROM pending_living_file_writes WHERE id = ?');
   stmt.run(id);
+}
+
+// ============================================================================
+// Telegram Session Mapping
+// ============================================================================
+
+/**
+ * Get the Johnny5 session ID mapped to a Telegram user/chat pair.
+ */
+export function getTelegramSession(userId: string, chatId: string): string | null {
+  const database = getDb();
+  const row = database.prepare(
+    'SELECT johnny5_session_id FROM telegram_sessions WHERE telegram_user_id = ? AND telegram_chat_id = ?'
+  ).get(userId, chatId) as { johnny5_session_id: string } | undefined;
+  return row?.johnny5_session_id ?? null;
+}
+
+/**
+ * Store or update the Telegram → Johnny5 session mapping.
+ */
+export function setTelegramSession(userId: string, chatId: string, sessionId: string): void {
+  const database = getDb();
+  database.prepare(`
+    INSERT OR REPLACE INTO telegram_sessions (telegram_user_id, telegram_chat_id, johnny5_session_id, last_message_at)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+  `).run(userId, chatId, sessionId);
 }
 
 // Re-export ManusLive types for convenience

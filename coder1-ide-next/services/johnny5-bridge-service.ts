@@ -382,7 +382,7 @@ Only mention code/git status if the user explicitly asks about it.
       bridgeManager.executeCommand(this.userId, {
         sessionId: 'johnny5-chat',
         commandId,
-        command: `claude --print --tools "" --strict-mcp-config '${escapedPrompt}'`,
+        command: `claude --print '${escapedPrompt}'`,
         context: {
           workingDirectory: '/tmp',
         },

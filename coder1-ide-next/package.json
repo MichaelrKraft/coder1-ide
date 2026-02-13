@@ -38,7 +38,8 @@
     "load:all": "npm run load:session && npm run load:agent",
     "load:report": "npx artillery run --output load-tests/report.json load-tests/session-stress.yml && npx artillery report load-tests/report.json",
     "load:quick": "npx artillery quick --count 10 -n 5 http://localhost:3001/api/health",
-    "postinstall": "npm rebuild node-pty better-sqlite3 --build-from-source"
+    "postinstall": "npm rebuild node-pty better-sqlite3 --build-from-source && node scripts/setup-manuslive.js",
+    "setup:manuslive": "node scripts/setup-manuslive.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.63.0",

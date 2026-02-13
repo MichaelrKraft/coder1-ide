@@ -72,6 +72,42 @@ function TypewriterText({
     </span>
   );
 }
+
+// Mode indicator component for showing Johnny5's current operational mode
+function ModeIndicator({ mode }: { mode: 'moltbot' | 'bridge' | 'gemini' | null }) {
+  const modeInfo: Record<string, { label: string; description: string; colorClass: string; dotClass: string }> = {
+    moltbot: {
+      label: 'Full Autonomy',
+      description: 'MCP tools, 24/7 operation',
+      colorClass: 'text-green-400',
+      dotClass: 'bg-green-400',
+    },
+    bridge: {
+      label: 'Bridge Mode',
+      description: 'Claude Code CLI',
+      colorClass: 'text-yellow-400',
+      dotClass: 'bg-yellow-400',
+    },
+    gemini: {
+      label: 'Basic Chat',
+      description: 'Memory + reasoning',
+      colorClass: 'text-gray-400',
+      dotClass: 'bg-gray-400',
+    },
+  };
+
+  const info = mode ? modeInfo[mode] : modeInfo.gemini;
+
+  return (
+    <div className="flex items-center gap-1.5" title={info.description}>
+      <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${info.dotClass}`} />
+      <span className={`text-[10px] ${info.colorClass}`}>
+        Online • {info.label}
+      </span>
+    </div>
+  );
+}
+
 import { AlertCircle } from 'lucide-react';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import crewData from '@/data/crew-members.json';
@@ -648,6 +684,27 @@ export default function ChatTab() {
         setChatSessionId(responseSessionId);
       }
 
+      // Update mode from response if present (detects mode changes)
+      const responseMode = data.data?.mode || data.mode;
+      if (responseMode) {
+        const previousMode = johnny5Mode?.mode;
+        const newMode: Johnny5Mode = {
+          mode: responseMode.mode,
+          capabilities: responseMode.hasMCP
+            ? ['Memory', 'MCP Tools', 'Project Context', ...(responseMode.is24x7 ? ['24/7 Operation'] : [])]
+            : ['Memory', 'Reasoning'],
+          hasMCP: responseMode.hasMCP,
+          provider: responseMode.provider,
+          isLimitedMode: responseMode.mode === 'gemini',
+        };
+        setJohnny5Mode(newMode);
+
+        // Log mode change for debugging
+        if (previousMode && previousMode !== responseMode.mode) {
+          console.log(`[Johnny5] Mode changed: ${previousMode} → ${responseMode.mode}`);
+        }
+      }
+
       // Add assistant response
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -732,10 +789,7 @@ export default function ChatTab() {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-text-primary">Johnny5</h3>
-            <p className="text-[10px] text-green-400 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-              Online • Ready to assist
-            </p>
+            <ModeIndicator mode={johnny5Mode?.mode || null} />
           </div>
         </div>
         <div className="flex items-center gap-3">
