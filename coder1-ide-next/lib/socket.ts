@@ -115,7 +115,7 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
           timeout: 45000, // INCREASED: Match server connectTimeout
           forceNew: false,
           // FIXED: Consistent keep-alive across all environments
-          pingTimeout: 60000,   // 60s — detect dead connections within 1 minute
+          pingTimeout: 300000,  // 5 min — allows long Claude CLI commands without disconnect
           pingInterval: 25000,  // 25s — keep connection alive
           // ADDED: Additional stability settings
           autoConnect: true,
@@ -209,8 +209,8 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
             const now = Date.now();
             const timeSinceLastPong = now - lastPongTime;
             
-            // If we haven't received a pong in 2 minutes, connection may be stale
-            if (timeSinceLastPong > 120000) {
+            // If we haven't received a pong in 5 minutes, connection may be stale
+            if (timeSinceLastPong > 300000) {
               console.warn(`⚠️ No pong received for ${Math.round(timeSinceLastPong/1000)}s - connection may be stale`);
             }
             

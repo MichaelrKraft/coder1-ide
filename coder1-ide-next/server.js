@@ -1125,7 +1125,9 @@ app.prepare().then(() => {
   const INSTANCE_ID = require('crypto').randomUUID().slice(0, 8);
   console.log(`🆔 Server Instance ID: ${INSTANCE_ID}`);
 
+  console.log('[DEBUG] Creating HTTP server...');
   const server = createServer((req, res) => {
+    console.log(`🔍 [DEBUG] Request received: ${req.method} ${req.url}`);
     // ADDED: Debug header to trace which server instance handled the request
     res.setHeader('X-Instance-ID', INSTANCE_ID);
 
@@ -1460,8 +1462,8 @@ app.prepare().then(() => {
       }
     };
     
-    // Execute with fallback handling
-    handleWithFallback().catch(error => {
+    // Execute with fallback handling - MUST return the promise to prevent request handler from exiting early
+    return handleWithFallback().catch(error => {
       console.error('❌ Critical request handling error:', error);
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
@@ -1476,9 +1478,16 @@ app.prepare().then(() => {
   // Track socket-to-session relationships for cleanup
   const socketToSession = new Map();
   
+  // [DEBUG] Add event listeners before Socket.IO attaches
+  console.log('[DEBUG] Adding HTTP server event listeners...');
+  server.on('connection', (socket) => console.log('[DEBUG] TCP connection received'));
+  server.on('request', (req) => console.log('[DEBUG] HTTP request event:', req.url));
+  server.on('upgrade', (req, socket, head) => console.log('[DEBUG] Upgrade request:', req.url));
+
   // Initialize Socket.IO with Render-specific configuration
   // UPDATED: Increased timeouts to prevent connection drops during idle periods
   // UPDATED: Added Chrome extension conflict protection
+  console.log('[DEBUG] Attaching Socket.IO to server...');
   io = new Server(server, {
     cors: {
       origin: dev 
@@ -1497,7 +1506,7 @@ app.prepare().then(() => {
     path: '/socket.io/',
     transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket
     allowEIO3: true, // Support older clients
-    pingTimeout: 60000, // 60s — aligned with client, detect dead connections within 1 minute
+    pingTimeout: 300000, // 5 min — allows long Claude CLI commands without disconnect
     pingInterval: 25000, // 25s — keep connection alive
     upgradeTimeout: 30000, // Time to wait for upgrade from polling to websocket
     allowUpgrades: true, // Allow upgrade from polling to websocket
@@ -1510,6 +1519,10 @@ app.prepare().then(() => {
     destroyUpgrade: false, // Keep upgrade connections alive
     destroyUpgradeTimeout: 1000 // But clean up failed upgrades quickly
   });
+
+  // [DEBUG] Check server listeners after Socket.IO attached
+  console.log('[DEBUG] Socket.IO attached. Server request listeners:', server.listenerCount('request'));
+  console.log('[DEBUG] Server connection listeners:', server.listenerCount('connection'));
 
   // Inject Instance ID into Socket.IO handshake headers for sticky-session debugging
   io.engine.on("headers", (headers, req) => {
@@ -3768,20 +3781,6 @@ app.prepare().then(() => {
       console.log(`Socket ${socket.id} left johnny5 session: ${sessionId}`);
     });
 
-    // Push a system message into Johnny5's chat panel for all connected clients.
-    // Use this from any server-side process that needs to notify the user via chat.
-    const pushJohnny5ChatMessage = (content, type = 'info') => {
-      if (io) {
-        io.emit('johnny5:chat-push', {
-          id: `push-${Date.now()}`,
-          role: 'system',
-          content,
-          type,
-          timestamp: new Date().toISOString(),
-        });
-      }
-    };
-
     // Johnny5 → Claude Code task delegation
     socket.on('johnny5:delegate-task', async ({ sessionId, task }) => {
       // Auth check: require authenticated socket with terminal permission
@@ -3827,7 +3826,6 @@ app.prepare().then(() => {
           terminalSession.pty.write(taskInput);
           console.log(`[Johnny5→Claude] Task sent to interactive Claude session`);
           socket.emit('johnny5:delegate-result', { success: true, sessionId, method: 'interactive' });
-          pushJohnny5ChatMessage(`Task delegated to Claude Code (interactive): "${task.substring(0, 100)}"`);
         } else {
           socket.emit('johnny5:delegate-result', { success: false, error: 'PTY not available', sessionId });
         }
@@ -3838,7 +3836,6 @@ app.prepare().then(() => {
           terminalSession.pty.write(claudeCommand);
           console.log(`[Johnny5→Claude] Started new Claude session with task`);
           socket.emit('johnny5:delegate-result', { success: true, sessionId, method: 'new-session' });
-          pushJohnny5ChatMessage(`Task delegated to Claude Code (new session): "${task.substring(0, 100)}"`);
         } else {
           socket.emit('johnny5:delegate-result', { success: false, error: 'PTY not available', sessionId });
         }
@@ -4067,9 +4064,12 @@ app.prepare().then(() => {
   })();
   
   // Start server
+  console.log('[DEBUG] Calling server.listen() on port', port);
   server.listen(port, (err) => {
     if (err) throw err;
-    
+    console.log('[DEBUG] server.listen() callback fired');
+    console.log('[DEBUG] Server request listeners at start:', server.listenerCount('request'));
+
     if (isAlphaMode) {
       console.log('╔══════════════════════════════════════════════════╗');
       console.log('║          Coder1 IDE - Alpha Deployment           ║');
@@ -4205,6 +4205,9 @@ app.prepare().then(() => {
     // ========================================================================
     // Initialize Johnny5 Heartbeat Service (Living Files)
     // ========================================================================
+    // TEMPORARILY DISABLED: Triggers sqlite-vec blocking issue
+    console.log('⚠️  [Johnny5] Heartbeat Service DISABLED - sqlite-vec blocking issue needs fix');
+    /*
     if (process.env.JOHNNY5_LIVING_FILES === 'true') {
       try {
         const { getHeartbeatService } = require('./services/johnny5/heartbeat-service.ts');
@@ -4250,10 +4253,14 @@ app.prepare().then(() => {
         console.warn('⚠️ Johnny5 Heartbeat Service not available:', heartbeatError.message);
       }
     }
+    */
 
     // ========================================================================
     // Initialize Johnny5 Proactive Services
     // ========================================================================
+    // TEMPORARILY DISABLED: Opportunity Engine triggers sqlite-vec blocking issue
+    console.log('⚠️  [Johnny5] Proactive Services DISABLED - sqlite-vec blocking issue needs fix');
+    /*
     try {
       const { loadConfig } = require('./lib/johnny5-config.ts');
       const config = loadConfig();
@@ -4295,6 +4302,7 @@ app.prepare().then(() => {
     } catch (error) {
       console.warn('⚠️ Johnny5 Proactive Services not available:', error.message);
     }
+    */
 
     // Initialize Memory Exporter for Claude Skills
     if (memoryExporter) {
@@ -4318,60 +4326,66 @@ app.prepare().then(() => {
     // ========================================================================
     // Initialize Johnny5 Memory Sources (CRITICAL for memory recall)
     // ========================================================================
-    // This indexes ManusLive files and session history into memory_chunks table
-    // Without this, Johnny5 has no persistent memory!
-    try {
-      // Clear ManusLive cache to ensure fresh reads
+    // TEMPORARILY DISABLED: Causes server to hang during sqlite-vec initialization
+    // TODO: Fix blocking database operations in johnny5-db.ts
+    console.log('⚠️  [Johnny5 Memory] DISABLED - sqlite-vec blocking issue needs fix');
+    /*
+    // DEFERRED: Run after event loop tick to avoid blocking server startup
+    setImmediate(() => {
       try {
-        const { clearManusLiveCache } = require('./lib/manuslive-memory.ts');
-        clearManusLiveCache();
-        console.log('[Johnny5] ManusLive cache cleared');
-      } catch (cacheError) {
-        console.warn('[Johnny5] Could not clear ManusLive cache:', cacheError.message);
-      }
-
-      const { initializeMemorySources, cleanupMemorySources } = require('./services/memory/sources/index.ts');
-
-      console.log('[Johnny5 Memory] Starting initialization...');
-
-      initializeMemorySources({
-        indexManusLive: true,
-        indexSessions: true,
-        sessionLimit: 50,
-        startWatcher: true,
-        onProgress: (msg) => console.log(`[Johnny5 Memory] ${msg}`),
-      }).then((result) => {
-        console.log('═══════════════════════════════════════════════════════════');
-        console.log('✅ Johnny5 Memory Sources Initialized');
-        console.log(`   ManusLive chunks: ${result.manusLive?.chunks || 0}`);
-        console.log(`   Session chunks: ${result.sessions?.chunks || 0}`);
-        console.log(`   File watcher: ${result.watcherStarted ? 'RUNNING' : 'STOPPED'}`);
-        console.log(`   TOTAL chunks indexed: ${result.totalChunks}`);
-        console.log('═══════════════════════════════════════════════════════════');
-
-        // Log warning if no data indexed
-        if (result.totalChunks === 0) {
-          console.warn('⚠️  WARNING: No memory chunks indexed!');
-          console.warn('   - Check if ManusLive files exist at ~/.manuslive/workspace/');
-          console.warn('   - Check if sessions exist in johnny5.db');
+        // Clear ManusLive cache to ensure fresh reads
+        try {
+          const { clearManusLiveCache } = require('./lib/manuslive-memory.ts');
+          clearManusLiveCache();
+          console.log('[Johnny5] ManusLive cache cleared');
+        } catch (cacheError) {
+          console.warn('[Johnny5] Could not clear ManusLive cache:', cacheError.message);
         }
-      }).catch((error) => {
-        console.error('═══════════════════════════════════════════════════════════');
-        console.error('❌ Johnny5 Memory Initialization FAILED');
-        console.error('   Error:', error.message);
-        console.error('   Memory recall will NOT work until this is fixed!');
-        console.error('═══════════════════════════════════════════════════════════');
-      });
 
-      // Cleanup on shutdown
-      process.on('SIGTERM', () => {
-        console.log('[Johnny5 Memory] Cleaning up...');
-        cleanupMemorySources();
-      });
+        const { initializeMemorySources, cleanupMemorySources } = require('./services/memory/sources/index.ts');
 
-    } catch (error) {
-      console.error('❌ Johnny5 Memory Sources module failed to load:', error.message);
-    }
+        console.log('[Johnny5 Memory] Starting initialization...');
+
+        initializeMemorySources({
+          indexManusLive: true,
+          indexSessions: true,
+          sessionLimit: 50,
+          startWatcher: true,
+          onProgress: (msg) => console.log(`[Johnny5 Memory] ${msg}`),
+        }).then((result) => {
+          console.log('═══════════════════════════════════════════════════════════');
+          console.log('✅ Johnny5 Memory Sources Initialized');
+          console.log(`   ManusLive chunks: ${result.manusLive?.chunks || 0}`);
+          console.log(`   Session chunks: ${result.sessions?.chunks || 0}`);
+          console.log(`   File watcher: ${result.watcherStarted ? 'RUNNING' : 'STOPPED'}`);
+          console.log(`   TOTAL chunks indexed: ${result.totalChunks}`);
+          console.log('═══════════════════════════════════════════════════════════');
+
+          // Log warning if no data indexed
+          if (result.totalChunks === 0) {
+            console.warn('⚠️  WARNING: No memory chunks indexed!');
+            console.warn('   - Check if ManusLive files exist at ~/.manuslive/workspace/');
+            console.warn('   - Check if sessions exist in johnny5.db');
+          }
+        }).catch((error) => {
+          console.error('═══════════════════════════════════════════════════════════');
+          console.error('❌ Johnny5 Memory Initialization FAILED');
+          console.error('   Error:', error.message);
+          console.error('   Memory recall will NOT work until this is fixed!');
+          console.error('═══════════════════════════════════════════════════════════');
+        });
+
+        // Cleanup on shutdown
+        process.on('SIGTERM', () => {
+          console.log('[Johnny5 Memory] Cleaning up...');
+          cleanupMemorySources();
+        });
+
+      } catch (error) {
+        console.error('❌ Johnny5 Memory Sources module failed to load:', error.message);
+      }
+    });
+    */
   });
 
 // Helper functions for context capture integration
