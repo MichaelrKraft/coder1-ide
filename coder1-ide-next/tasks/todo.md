@@ -10,7 +10,7 @@
 - [x] 4. Add commit/push/deploy patterns in `query-classifier.ts` and `query-intent.ts`
 - [x] 5. Add tests for new functions (17 new tests, 78 total passing)
 - [x] 6. Clean up bad indexed data and re-index via backfill (540 bad chunks deleted, 427 re-indexed)
-- [ ] 7. Verify in live Johnny5 Chat
+- [x] 7. Verify in live Johnny5 Chat — query routing works (session_recall, not coding), unified search returns results, file names are real paths. Response quality limited by sparse historical data (most old checkpoints had empty snapshot.files). New checkpoints will index properly.
 
 ## Review
 
