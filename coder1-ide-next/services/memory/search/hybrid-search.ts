@@ -14,6 +14,7 @@ import {
   isVectorSearchAvailable,
   type MemorySearchResult,
 } from '@/lib/johnny5-db';
+import { getRelativeTimeWithDate } from '@/lib/utils/relative-time';
 
 // ============================================================================
 // Types
@@ -461,7 +462,7 @@ export function formatForPromptInjection(
 
 /**
  * Format session memory search results for injection into Claude prompt.
- * Groups results by session/date and formats with session-aware headers.
+ * Enhanced with relevance tiers, relative time, and code fences.
  */
 export function formatSessionMemoryForInjection(
   results: HybridSearchResult[],
@@ -469,32 +470,60 @@ export function formatSessionMemoryForInjection(
 ): string {
   if (results.length === 0) return '';
 
-  const parts: string[] = ['## Session History\n'];
-  let tokenCount = 20;
+  // Count high-relevance matches (>= 0.5 combined score)
+  const highRelevance = results.filter(r => r.combined_score >= 0.5).length;
+  const headerNote = highRelevance > 0
+    ? `(${highRelevance} high-relevance match${highRelevance > 1 ? 'es' : ''})`
+    : '';
 
-  // Group by date from source_id (ide:{sessionId}:...)
+  const parts: string[] = [`## Session Memory ${headerNote}\n`];
+  let tokenCount = 25;
+  let lowRelevanceCount = 0;
+
   for (const result of results) {
-    const date = result.created_at
-      ? new Date(result.created_at).toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        })
-      : 'Unknown date';
+    // Tier 3: Low relevance (<0.3) - just count, don't include
+    if (result.combined_score < 0.3) {
+      lowRelevanceCount++;
+      continue;
+    }
 
-    const source = result.source_type?.replace('ide_', '').replace(/_/g, ' ') || 'session';
-    const heading = result.heading || source;
+    // Get relative time
+    const relativeTime = result.created_at
+      ? getRelativeTimeWithDate(result.created_at)
+      : 'Unknown time';
+
+    // Format source type for display
+    const sourceType = result.source_type?.replace('ide_', '').replace(/_/g, ' ') || 'session';
+    const heading = result.heading || sourceType;
+
+    // Show relevance percentage for Tier 1 (high relevance >= 0.5)
+    const relevanceNote = result.combined_score >= 0.5
+      ? ` (${Math.round(result.combined_score * 100)}% relevance)`
+      : '';
 
     // Sanitize content
     const sanitizedContent = sanitizeForCLI(result.content);
-    const entry = `### ${date} — ${heading}\n${sanitizedContent}\n\n`;
+
+    // Use code fences for terminal/error content
+    const isCodeContent = ['ide_terminal_chunk', 'ide_error', 'terminal_chunk', 'error'].includes(
+      result.source_type || ''
+    );
+    const formattedContent = isCodeContent
+      ? `\`\`\`\n${sanitizedContent}\n\`\`\``
+      : sanitizedContent;
+
+    const entry = `### ${relativeTime} — ${heading}${relevanceNote}\n${formattedContent}\n\n`;
     const entryTokens = estimateTokens(entry);
 
     if (tokenCount + entryTokens > maxTokens) break;
 
     parts.push(entry);
     tokenCount += entryTokens;
+  }
+
+  // Mention low-relevance matches that were omitted
+  if (lowRelevanceCount > 0) {
+    parts.push(`_[+${lowRelevanceCount} lower-relevance match${lowRelevanceCount > 1 ? 'es' : ''} omitted]_\n`);
   }
 
   return parts.join('');

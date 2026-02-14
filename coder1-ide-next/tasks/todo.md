@@ -1,3 +1,222 @@
+# Create SkillStoreBrowser Component (Feb 14, 2026)
+
+## Plan
+
+Single file: `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/components/johnny5/skills/SkillStoreBrowser.tsx`
+
+### Tasks
+- [x] 1. Create the component file with all state, types, and helper functions
+- [x] 2. Build the UI sections (search, skeleton, results, modal, empty states, load more)
+- [x] 3. Verify TypeScript compiles cleanly (0 errors in SkillStoreBrowser.tsx)
+
+### Review
+
+**File created**: `/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next/components/johnny5/skills/SkillStoreBrowser.tsx` (440 lines)
+
+**Architecture**: Single self-contained component with 3 internal sub-components:
+- `SkillStoreBrowser` (main) -- search state, API calls, install logic, security modal orchestration
+- `StoreSkillCard` -- renders one skill from the search results
+- `SkeletonCard` -- shimmer loading placeholder
+- `SecurityReviewModal` -- modal for warning/dangerous security findings
+
+**State management**:
+- `query` + debounce via `useRef`/`setTimeout` (300ms) -- no external debounce library
+- `results` / `cursor` / `hasMore` for cursor-based pagination
+- `installedSlugs: Set<string>` tracks successful installs in session
+- `installingSlugs: Set<string>` tracks in-progress installs for per-card spinners
+- `securityModal` state object controls the review modal
+
+**API integration**:
+- `searchSkills()` -- GET `/api/johnny5/skills/clawhub?q=...&limit=12&cursor=...`
+- `installSkill()` -- POST `/api/johnny5/skills/clawhub/install` with safe/warning/dangerous branching
+- `handleForceInstall()` -- resends with `force: true` from the security modal
+
+**Install flow**:
+- `safe` -- installs immediately, marks as installed, calls `onInstalled?.()`
+- `warning` -- opens SecurityReviewModal with findings, user can "Install Anyway" (force)
+- `dangerous` -- opens SecurityReviewModal with findings, no install option, just "Close"
+
+**Props**: `{ onInstalled?: () => void }` -- already wired by SkillsManager (line 317: `<SkillStoreBrowser onInstalled={fetchSkills} />`)
+
+**Design system**: All Tailwind classes match SkillCard/SkillCreator patterns (bg-bg-secondary, border-border-default, text-coder1-cyan, etc.). lucide-react icons only.
+
+---
+
+# ClawHub Skills Integration for Johnny5 (Feb 14, 2026)
+
+**Plan:** `/Users/michaelkraft/.claude/plans/idempotent-gliding-lighthouse.md`
+
+## Tasks
+
+### Phase 1: Foundation (Steps 1-3)
+- [x] 1. Fix SkillsService foundation — multi-dir, race condition, flat dirs, refresh (`lib/skills-service.ts`)
+- [x] 2. Add `skills` table + CRUD helpers to johnny5-db (`lib/johnny5-db.ts`)
+- [x] 3. Add ClawHub + security types, extend Johnny5Skill (`types/johnny5.ts`)
+- [x] 3b. Install gray-matter dependency (`package.json`)
+
+### Phase 2: New Services (Steps 4-5)
+- [x] 4. Create security scanner service (`services/johnny5/skill-security-scanner.ts`)
+- [x] 5. Create ClawHub adapter service (`services/johnny5/clawhub-adapter.ts`)
+
+### Phase 3: Wiring (Steps 6-8)
+- [x] 6. Inject skills into Johnny5 chat (`app/api/johnny5/chat/route.ts`)
+- [x] 7. Wire skills API to real data, remove mock data (`app/api/johnny5/skills/route.ts`, `[skillId]/route.ts`)
+- [x] 8. Create ClawHub API routes (`app/api/johnny5/skills/clawhub/`)
+
+### Phase 4: UI (Steps 9-10)
+- [x] 9. Create Skills Store Browser UI (`components/johnny5/skills/SkillStoreBrowser.tsx`)
+- [x] 10. Update SkillsManager — tabs, real data, remove MOCK_SKILLS (`components/johnny5/skills/`)
+  - [x] 10a. Remove MOCK_SKILLS array from SkillsManager.tsx
+  - [x] 10b. Add state for active tab, real data, loading, refreshing
+  - [x] 10c. Fetch real skills from /api/johnny5/skills on mount
+  - [x] 10d. Wire handlers to real API calls (toggle, delete, create)
+  - [x] 10e. Add tab toggle (My Skills / Skills Store) in header
+  - [x] 10f. Add refresh button with spinning animation
+  - [x] 10g. Add source badge filter dropdown
+  - [x] 10h. Add loading state display
+  - [x] 10i. Add source badge to SkillCard.tsx (Community/Built-in)
+  - [x] 10j. Update index.ts exports (remove MOCK_SKILLS, add SkillStoreBrowser)
+
+### Cleanup
+- [x] 11. Remove MOCK_SKILLS from all 5 locations
+- [x] 12. Enable feature flag (`ENABLE_SKILLS_SYSTEM=true`)
+
+## Review
+
+### Summary
+All 12 steps completed. The ClawHub Skills Integration is fully wired end-to-end: infrastructure fixes, security scanning, ClawHub API adapter, skills injection into chat, real data APIs, and a complete Skills Store UI.
+
+### Files Created (5 new files)
+1. **`services/johnny5/skill-security-scanner.ts`** — Pattern-based security scanner with 15 dangerous + 10 warning patterns to block malicious skills before installation
+2. **`services/johnny5/clawhub-adapter.ts`** (378 lines) — ClawHub API client with caching (5-min search, 1-hr detail), rate limit handling, install pipeline (fetch → scan → parse frontmatter → convert → write), and compatibility scoring
+3. **`app/api/johnny5/skills/clawhub/route.ts`** — GET proxy for ClawHub search API
+4. **`app/api/johnny5/skills/clawhub/install/route.ts`** — POST install endpoint with security scan gate (safe/warning/dangerous)
+5. **`components/johnny5/skills/SkillStoreBrowser.tsx`** (440 lines) — Skills Store browser UI with debounced search, cursor pagination, per-card install spinners, and security review modal
+
+### Files Modified (11 files)
+1. **`lib/skills-service.ts`** — Fixed critical path mismatch (now supports `cwd/skills/` + `~/.coder1/skills/`), added singleton promise guard, flat directory support, `refreshSkills()`, `uninstallSkill()`, `getSkillsBySource()`
+2. **`lib/johnny5-db.ts`** — Added `skills` table with CRUD helpers (`upsertSkill`, `getSkillRecords`, `incrementSkillUsage`, `updateSkillEnabled`, `deleteSkillRecord`)
+3. **`types/johnny5.ts`** — Extended `Johnny5Skill` with `source`, `clawhubSlug`, `securityScore`, `compatibility`; added `ClawHubSkillSummary`, `ClawHubSkillDetail`, `ClawHubSearchResponse`, `SkillSecurityReport` types
+4. **`lib/skills-integration-utils.ts`** — Added `matchSkillsToQuery()` keyword overlap scorer for matching skills to user messages
+5. **`app/api/johnny5/chat/route.ts`** — Injected skill context (Tier 1 list + Tier 2 instructions for top 3 matches, 2000 token cap) into main and Moltbot code paths
+6. **`app/api/johnny5/skills/route.ts`** — Rewrote GET/POST to use real SkillsService + DB instead of MOCK_SKILLS
+7. **`app/api/johnny5/skills/[skillId]/route.ts`** — Rewrote GET/PATCH/DELETE to use real data
+8. **`components/johnny5/skills/SkillsManager.tsx`** — Added "My Skills" / "Skills Store" tabs, real data fetch on mount, API-wired handlers, refresh button, source filter, loading state; removed MOCK_SKILLS
+9. **`components/johnny5/skills/SkillCard.tsx`** — Added source badge ("Community" with Globe icon / "Built-in" with HardDrive icon)
+10. **`components/johnny5/skills/index.ts`** — Removed MOCK_SKILLS export, added SkillStoreBrowser export
+11. **`services/johnny5/skill-builder.ts`** — Removed 162-line MOCK_SKILLS array and mock initialization from constructor
+
+### Config Changes
+- **`.env.local`** — Set `ENABLE_SKILLS_SYSTEM=true`
+- **`package.json`** — Added `gray-matter` dependency for YAML frontmatter parsing
+
+### MOCK_SKILLS Cleanup (all 5 locations removed)
+1. `app/api/johnny5/skills/route.ts` — Replaced with `getSkillRecords()` from johnny5-db
+2. `app/api/johnny5/skills/[skillId]/route.ts` — Replaced with `getSkillRecord()` from johnny5-db
+3. `components/johnny5/skills/SkillsManager.tsx` — Replaced with `useEffect` fetch from API
+4. `components/johnny5/skills/index.ts` — Removed `MOCK_SKILLS` re-export
+5. `services/johnny5/skill-builder.ts` — Removed array and constructor initialization
+
+### Architecture
+```
+User searches "Skills Store" tab
+    → GET /api/johnny5/skills/clawhub?q=...
+    → ClawHubAdapter.searchSkills() → clawhub.ai API → cached results
+    → User clicks "Install"
+    → POST /api/johnny5/skills/clawhub/install { slug }
+    → ClawHubAdapter.installSkill()
+        → Fetch SKILL.md from ClawHub
+        → SkillSecurityScanner.scanSkillContent() → safe/warning/dangerous
+        → Parse YAML frontmatter via gray-matter
+        → Write to ~/.coder1/skills/clawhub/{slug}/
+        → Upsert into skills DB table
+        → SkillsService.refreshSkills()
+    → Skill appears in "My Skills" tab with "Community" badge
+
+User sends message in Johnny5 chat
+    → shouldUseSkills() checks ENABLE_SKILLS_SYSTEM env var
+    → Load enabled skills from DB + SkillsService
+    → Inject Tier 1 metadata list (~24 tokens/skill)
+    → matchSkillsToQuery() scores keywords → top 3 relevant skills
+    → Inject Tier 2 SKILL.md instructions (capped at 2000 tokens)
+    → incrementSkillUsage() for each injected skill
+```
+
+### Branding Rule
+- Internal code: "clawhub" everywhere (API routes, services, types, DB columns)
+- User-facing UI: "Community" and "Skills Store" only — no mention of ClawHub or OpenClaw
+
+### TypeScript Verification
+0 errors in all modified/created files (only pre-existing JSX-in-.ts errors in test utilities)
+
+---
+
+# Fix: Terminal Jankiness — Overlapping Text & Input Lag (Feb 14, 2026)
+
+**Root Cause**: Multiple issues in `components/terminal/BetaTerminal.tsx`:
+1. **Dual ResizeObserver**: Observer 1 (line 769, 10ms delay, fit-only) and Observer 2 (line 1050, 100ms delay, fit+server-notify) both fire on the same resize event. The 90ms gap causes PTY/xterm dimension mismatch → overlapping text.
+2. **Observer 2 never cleaned up**: Created in `connectToBackend` without storing in ref. Leaks on reconnect, creating duplicate observers.
+3. **Console.log spam**: `forceScrollToBottom` logs container height on every terminal:data event during Claude Code mode.
+4. **Aggressive auto-scroll**: Non-Claude path fires 4+ scroll calls per terminal:data event.
+5. **Per-keystroke re-renders**: `setCurrentLineBuffer()` triggers React re-render on every character typed.
+
+## Tasks
+
+- [ ] 1. Consolidate dual ResizeObserver into single observer with proper cleanup (`BetaTerminal.tsx`)
+- [ ] 2. Remove console.log spam from `forceScrollToBottom` (`BetaTerminal.tsx`)
+- [ ] 3. Simplify non-Claude auto-scroll path (`BetaTerminal.tsx`)
+- [ ] 4. Use ref instead of state for `currentLineBuffer` to avoid per-keystroke re-renders (`BetaTerminal.tsx`)
+- [ ] 5. Commit all session memory + terminal fixes
+
+---
+
+# Fix: Session Memory Returns Conversation History Instead of IDE Data (Feb 14, 2026)
+
+**Root Cause**: Three compounding issues:
+1. `ide_*` chunks have garbled terminal data (incomplete ANSI stripping: `^H`, `^[[<u` survive)
+2. Source type boost (1.5x) too weak — 118 terminal chunks and 236 error chunks outscore 7 file_change chunks
+3. Gemini draws on rich conversation history over thin memory context — no instruction prevents this
+
+## Tasks
+
+- [x] 1. Fix checkpoint route to pass real userId to session indexer (`app/api/checkpoint/route.ts`)
+- [x] 2. Fix search functions to include `'default'` as fallback userId (`lib/johnny5-db.ts`)
+- [x] 3. Refine system prompt override for Gemini-routed queries (`app/api/johnny5/chat/route.ts`)
+- [x] 4. Filter unified search results to `ide_*` source types for session queries (`unified-session-search.ts`)
+- [x] 5. Increase source type boost from 1.5x to 5x for intent-matched types (`unified-session-search.ts`)
+- [x] 6. Improve ANSI stripping to catch control chars like `^H`, `^[[<u` (`session-indexer.ts`)
+- [x] 7. Strengthen query routing override prompt to explicitly deprioritize conversation history (`chat/route.ts`)
+
+---
+
+# Fix: Terminal Jankiness During Johnny5 Chat (Feb 14, 2026)
+
+**Plan:** `/Users/michaelkraft/.claude/plans/snappy-watching-bengio.md`
+
+## Tasks
+
+- [x] 1. Fix server-side system prompt: override mode to Gemini when routing to Gemini (not Bridge) in `chat/route.ts`
+- [x] 2. Fix client-side stale React state: use response mode directly for hasMCP check in `ChatTab.tsx`
+- [x] 3. Fix event name mismatch: `terminal:output` → `terminal:data` in `terminal-output-capture.ts`
+- [x] 4. Update todo.md with review section
+
+## Review
+
+### Root Cause
+When Johnny5 routes a query to Gemini (for session_recall/personal queries), the system prompt still claims bridge shell capabilities because `detectJohnny5Mode()` checks connection status, not routing intent. Gemini sees it can execute commands → responds with `<execute_bash>git status</execute_bash>` → ChatTab injects command into user's active terminal.
+
+Three bugs compound:
+1. **Server**: Wrong system prompt tells Gemini it has shell capabilities even when query was routed away from Bridge
+2. **Client**: React state timing — `setJohnny5Mode()` is batched, but `execute_bash` check reads stale old state
+3. **terminal-output-capture.ts**: Listens on `terminal:output` but server emits `terminal:data` — capture never works, times out after 30s
+
+### Files Modified (3 files)
+1. **`app/api/johnny5/chat/route.ts`** (line 1079) — Override mode to Gemini when routing to Gemini (not Bridge). System prompt now says "Cannot execute commands" for session_recall queries.
+2. **`components/johnny5/chat/ChatTab.tsx`** (line 802) — Use `responseMode?.hasMCP` from API response directly instead of stale `johnny5Mode?.hasMCP` React state.
+3. **`lib/terminal-output-capture.ts`** (lines 65, 119) — Fixed `terminal:output` → `terminal:data` to match server event name.
+
+---
+
 # Fix: Session Memory Returns Vague/Broken Results (Feb 14, 2026)
 
 **Plan:** `/Users/michaelkraft/.claude/plans/snappy-watching-bengio.md`
@@ -503,3 +722,44 @@ Ran code review on all changes. Found 4 CRITICAL + 4 HIGH issues. After manual a
 | MEDIUM | Replay route doesn't exist | ✅ FIXED |
 
 All 7 Johnny5 tabs are now properly connected to their APIs.
+
+---
+
+# Improve Johnny5 Session Memory Response Quality (Feb 14, 2026)
+
+**Problem:** Johnny5's session memory responses were too vague/generic - users asked "What did I work on regarding payments?" and got generalized answers instead of specific quotes, dates, and context.
+
+**Root Causes:**
+1. Flat formatting - all memory chunks dumped with generic headers
+2. No relevance signaling - high vs low confidence matches shown identically
+3. No temporal context - showed "Mon, Feb 14" not "2 hours ago"
+4. Weak system prompt - told Johnny5 to use memory but not HOW
+
+## Tasks
+
+- [x] 1. Create relative time helper utility (`lib/utils/relative-time.ts`)
+- [x] 2. Enhance memory formatting with relevance tiers (`hybrid-search.ts`)
+- [x] 3. Improve system prompt for memory usage (`chat/route.ts`)
+- [x] 4. Fix currentLineBuffer ref migration bug (bonus fix from handoff)
+- [x] 5. Verify improved Johnny5 responses
+
+## Changes Made
+
+| File | Change |
+|------|--------|
+| `lib/utils/relative-time.ts` | NEW: `getRelativeTime()` and `getRelativeTimeWithDate()` helpers |
+| `services/memory/search/hybrid-search.ts` | Enhanced `formatSessionMemoryForInjection()` with relevance tiers, relative time, code fences |
+| `app/api/johnny5/chat/route.ts` | Added "How to Present Session Memory" instructions to Query Routing Override |
+| `components/terminal/BetaTerminal.tsx` | Fixed currentLineBuffer ref migration bug (4 usages updated) |
+
+## Review
+
+**Before:** Johnny5 would say generic things like "you worked on errors recently"
+
+**After:** Johnny5 now says specific things like:
+- "A recurring issue I see in a recent terminal chunk (from about 13 hours ago)..."
+- "✗ Auto-update failed · Try claude doctor..." (exact error quoted)
+- "Additionally, I see two less recent errors (52% relevance)..."
+- Specific file paths like `coder1-ide-next/app/api/files/tree/route.ts`
+
+**Verified:** API test confirmed relative time, relevance scores, verbatim quotes, and specific file paths all working.

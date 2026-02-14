@@ -79,6 +79,7 @@ function BetaTerminal({
   const connectionInProgressRef = useRef(false);
   const aiPlatformsInitializedRef = useRef(false);
   const socketRef = useRef<any>(null); // Socket reference like working Terminal
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   
   // State
   const [isConnected, setIsConnected] = useState(false);
@@ -94,8 +95,8 @@ function BetaTerminal({
   const [showPlatformSelector, setShowPlatformSelector] = useState(false);
   const [aiSessionId, setAiSessionId] = useState<string | null>(null);
   
-  // Claude command detection
-  const [currentLineBuffer, setCurrentLineBuffer] = useState('');
+  // Claude command detection — use ref to avoid re-render on every keystroke
+  const currentLineBufferRef = useRef('');
   const [claudeCodeActive, setClaudeCodeActive] = useState(false);
   
   // BETA: Enhanced scroll function for Claude Code accessibility - REDUCED AGGRESSION
@@ -124,8 +125,6 @@ function BetaTerminal({
             term.scrollToBottom();
           }
         });
-        
-        console.log('🎯 Beta Terminal: Throttled scroll executed - container height:', container.scrollHeight);
       } catch (error) {
         console.warn('🎯 Beta Terminal: Force scroll failed:', error);
       }
@@ -766,16 +765,6 @@ function BetaTerminal({
       term.focus();
     }, 0);
 
-    const resizeObserver = new ResizeObserver(() => {
-      if (fitAddonRef.current) {
-        setTimeout(() => {
-          fitAddonRef.current?.fit();
-        }, 10);
-      }
-    });
-
-    resizeObserver.observe(terminalRef.current);
-
     // Initialize AI platforms after terminal is ready (only once)
     if (!sessionCreatedRef.current) {
       // Initialize AI platforms in a non-blocking way
@@ -788,7 +777,7 @@ function BetaTerminal({
     }
 
     return () => {
-      resizeObserver.disconnect();
+      resizeObserverRef.current?.disconnect();
       term.dispose();
       xtermRef.current = null;
     };
@@ -890,25 +879,7 @@ function BetaTerminal({
           }, 100);
         } else {
           // Normal scrolling for non-Claude Code sessions
-          try {
-            term.scrollToBottom();
-            setTimeout(() => {
-              if (term) {
-                const buffer = term.buffer.active;
-                term.scrollToLine(buffer.length);
-                
-                const terminalElement = terminalRef.current;
-                if (terminalElement) {
-                  const viewport = terminalElement.querySelector('.xterm-viewport');
-                  if (viewport) {
-                    viewport.scrollTop = viewport.scrollHeight;
-                  }
-                }
-              }
-            }, 10);
-          } catch (error) {
-            console.warn('Normal scroll failed:', error);
-          }
+          term.scrollToBottom();
         }
         
         // Check for AI command patterns
@@ -1003,32 +974,32 @@ function BetaTerminal({
       
       // Handle Claude command detection
       if (data === '\r' || data === '\n') {
-        const currentBuffer = currentLineBuffer.trim();
+        const currentBuffer = currentLineBufferRef.current.trim();
         // Check if it's a new command (not a Claude Code continuation)
         if (currentBuffer && !currentBuffer.toLowerCase().includes('claude') && claudeCodeActive) {
           setClaudeCodeActive(false);
           console.log('🎯 Beta Terminal: New command detected - deactivating Claude Code padding');
         }
-        setCurrentLineBuffer('');
+        currentLineBufferRef.current = '';
       } else if (data === '\u007f' || data === '\b') {
-        setCurrentLineBuffer(prev => prev.slice(0, -1));
+        currentLineBufferRef.current = currentLineBufferRef.current.slice(0, -1);
       } else if (data >= ' ' || data === '\t') {
-        setCurrentLineBuffer(prev => {
-          const newBuffer = prev + data;
-          if (newBuffer.toLowerCase().includes('claude')) {
-            if (!isSupervisionActive) {
-              enableSupervision();
-              console.log('👁️ Beta Terminal: Supervision auto-activated - claude detected');
-            }
-            if (onClaudeTyped) {
-              onClaudeTyped();
-            }
-            // Activate Claude Code padding
+        const newBuffer = currentLineBufferRef.current + data;
+        currentLineBufferRef.current = newBuffer;
+        if (newBuffer.toLowerCase().includes('claude')) {
+          if (!isSupervisionActive) {
+            enableSupervision();
+            console.log('👁️ Beta Terminal: Supervision auto-activated - claude detected');
+          }
+          if (onClaudeTyped) {
+            onClaudeTyped();
+          }
+          // Activate Claude Code padding only if not already active
+          if (!claudeCodeActive) {
             setClaudeCodeActive(true);
             console.log('🎯 Beta Terminal: Claude Code detected - activating dynamic padding');
           }
-          return newBuffer;
-        });
+        }
       }
       
       if (onTerminalCommand) {
@@ -1036,21 +1007,25 @@ function BetaTerminal({
       }
     });
 
-    // Handle resize
+    // Handle resize — always fit xterm, only notify server when connected
     const handleResize = () => {
-      if (fitAddonRef.current && xtermRef.current && socket.connected) {
+      if (fitAddonRef.current && xtermRef.current) {
         fitAddonRef.current.fit();
-        const { cols, rows } = xtermRef.current;
-        socket.emit('terminal:resize', { id: sessionId, cols, rows });
+        if (socket.connected) {
+          const { cols, rows } = xtermRef.current;
+          socket.emit('terminal:resize', { id: sessionId, cols, rows });
+        }
       }
     };
 
-    // Set up resize observer
+    // Set up single resize observer (clean up previous if reconnecting)
     if (terminalRef.current && terminalRef.current.parentElement) {
+      resizeObserverRef.current?.disconnect();
       const resizeObserver = new ResizeObserver(() => {
         setTimeout(handleResize, 100);
       });
       resizeObserver.observe(terminalRef.current.parentElement);
+      resizeObserverRef.current = resizeObserver;
     }
   };
 

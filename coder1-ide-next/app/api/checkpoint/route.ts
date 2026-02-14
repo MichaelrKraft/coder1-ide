@@ -7,6 +7,7 @@ import { contextDatabase } from '@/services/context-database';
 import { processCheckpointDataForSave, filterThinkingAnimations, filterThinkingAnimationsAsync } from '@/lib/checkpoint-utils';
 import { getDatabase, closeDatabaseSafely } from '@/lib/database';
 import { calculateRecoveryScore, isCheckpointRecoverable } from '@/lib/recovery-utils';
+import { extractUserId } from '@/lib/auth/extract-user-id';
 
 const execAsync = promisify(exec);
 
@@ -414,11 +415,13 @@ export async function POST(request: NextRequest) {
     await fs.writeFile(sessionMetadataPath, JSON.stringify(sessionData, null, 2));
 
     // Async session memory indexing - don't block checkpoint response
+    // Extract userId from auth so session data is scoped to the correct user
+    const indexUserId = extractUserId(request);
     setImmediate(async () => {
       try {
         const { indexSessionFromCheckpoint } = await import('@/services/memory/session-indexer');
-        const indexResult = await indexSessionFromCheckpoint(checkpoint, sessionId, 'default');
-        console.log(`[SessionIndexer] Indexed ${indexResult.chunksIndexed} chunks, skipped ${indexResult.skipped}`);
+        const indexResult = await indexSessionFromCheckpoint(checkpoint, sessionId, indexUserId);
+        console.log(`[SessionIndexer] Indexed ${indexResult.chunksIndexed} chunks for user=${indexUserId}, skipped ${indexResult.skipped}`);
       } catch (indexError) {
         console.error('[SessionIndexer] Indexing failed (non-blocking):', indexError);
       }
