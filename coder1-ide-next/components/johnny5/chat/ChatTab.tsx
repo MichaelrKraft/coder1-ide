@@ -799,7 +799,9 @@ export default function ChatTab() {
 
       // Check for <execute_bash> commands
       let finalContent = rawResponse;
-      if (hasExecuteBashTags(rawResponse) && johnny5Mode?.hasMCP && activeTerminalSessionId) {
+      // Use response mode directly — React state (johnny5Mode) is stale until next render
+      const responseModeHasMCP = responseMode?.hasMCP ?? johnny5Mode?.hasMCP ?? false;
+      if (hasExecuteBashTags(rawResponse) && responseModeHasMCP && activeTerminalSessionId) {
         const { commands, displayResponse } = parseExecuteBashTags(rawResponse);
 
         // Add initial message with pending indicators

@@ -196,9 +196,10 @@ export async function unifiedSessionSearch(
   const budget = allocateTokenBudget(intent.intent, 2000);
 
   // 2. Build hybrid search config with intent-aware boosting
+  // 5x boost ensures intent-matched types rank above general terminal/error noise
   const sourceTypeBoosts: Record<string, number> = {};
   for (const st of intent.preferredSourceTypes) {
-    sourceTypeBoosts[st] = 1.5;
+    sourceTypeBoosts[st] = 5.0;
   }
 
   const hybridConfig: HybridSearchConfig = {
@@ -221,6 +222,16 @@ export async function unifiedSessionSearch(
     ),
     tryEternalSearch(intent.strippedQuery || query, 3),
   ]);
+
+  // 3.5. Filter to IDE session data only for session queries.
+  // memory_chunks contains mixed source types (session, manuslive_memory, ide_*).
+  // For session recall queries, only ide_* chunks are relevant — conversation
+  // history and ManusLive facts would confuse the response.
+  if (intent.intent !== 'general') {
+    hybridResponse.results = hybridResponse.results.filter(
+      r => r.source_type.startsWith('ide_')
+    );
+  }
 
   // 4. Deduplicate overlapping results
   const deduped = deduplicateBySession(

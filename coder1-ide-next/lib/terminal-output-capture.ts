@@ -62,7 +62,7 @@ export function captureTerminalOutput(
 
     const cleanup = () => {
       clearTimeout(timeoutId);
-      socket.off('terminal:output', handleOutput);
+      socket.off('terminal:data', handleOutput);
     };
 
     const handleOutput = (data: { id: string; data: string }) => {
@@ -116,7 +116,7 @@ export function captureTerminalOutput(
     }, opts.timeoutMs);
 
     // Listen for output
-    socket.on('terminal:output', handleOutput);
+    socket.on('terminal:data', handleOutput);
   });
 }
 

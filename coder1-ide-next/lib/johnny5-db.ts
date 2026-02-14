@@ -693,6 +693,34 @@ function createTables(database: Database.Database): void {
     console.error('[Johnny5 DB] Source ID index creation error:', err);
   }
 
+  // Step 8: Skills table for tracking installations and usage
+  try {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS skills (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        source TEXT DEFAULT 'local',
+        clawhub_slug TEXT,
+        clawhub_version TEXT,
+        trigger_type TEXT DEFAULT 'manual',
+        created_by TEXT DEFAULT 'user',
+        enabled INTEGER DEFAULT 1,
+        usage_count INTEGER DEFAULT 0,
+        success_count INTEGER DEFAULT 0,
+        last_used_at DATETIME,
+        security_score TEXT,
+        installed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_skills_source ON skills(source);
+      CREATE INDEX IF NOT EXISTS idx_skills_enabled ON skills(enabled);
+    `);
+  } catch (err) {
+    console.error('[Johnny5 DB] Skills table creation error:', err);
+  }
+
   // Create vector table if sqlite-vec is available
   if (sqliteVecLoaded) {
     try {
@@ -1967,7 +1995,8 @@ export async function searchMemoryKeyword(
 
   // Build date filter SQL
   let dateSQL = '';
-  const params: (string | number)[] = [sanitizedQuery, userId];
+  // Include 'default' user_id as fallback for legacy session data indexed before user-scoping
+  const params: (string | number)[] = [sanitizedQuery, userId, 'default'];
   if (dateFilter?.after) {
     dateSQL += ' AND mc.created_at >= ?';
     params.push(dateFilter.after);
@@ -1993,7 +2022,7 @@ export async function searchMemoryKeyword(
       mc.created_at
     FROM memory_fts
     JOIN memory_chunks mc ON memory_fts.rowid = mc.rowid
-    WHERE memory_fts MATCH ? AND mc.user_id = ?${dateSQL}
+    WHERE memory_fts MATCH ? AND mc.user_id IN (?, ?)${dateSQL}
     ORDER BY bm25(memory_fts)
     LIMIT ?
   `);
@@ -2048,6 +2077,7 @@ export async function searchMemoryVector(
   try {
     // Over-fetch by 5x because vec0 MATCH+LIMIT applies before the user_id join filter.
     // We fetch more results, then filter by user_id in the JOIN, and take the final limit.
+    // Include 'default' user_id as fallback for legacy session data indexed before user-scoping.
     const overFetchLimit = limit * 5;
     const stmt = database.prepare(`
       SELECT
@@ -2063,7 +2093,7 @@ export async function searchMemoryVector(
         mc.created_at
       FROM memory_embeddings me
       JOIN memory_chunks mc ON me.chunk_id = mc.id
-      WHERE me.embedding MATCH ? AND mc.user_id = ?
+      WHERE me.embedding MATCH ? AND mc.user_id IN (?, 'default')
       ORDER BY me.distance
       LIMIT ?
     `);
@@ -2247,6 +2277,121 @@ export function setTelegramSession(userId: string, chatId: string, sessionId: st
     INSERT OR REPLACE INTO telegram_sessions (telegram_user_id, telegram_chat_id, johnny5_session_id, last_message_at)
     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
   `).run(userId, chatId, sessionId);
+}
+
+// ============================================================================
+// Skills Operations
+// ============================================================================
+
+export interface SkillRecord {
+  id: string;
+  name: string;
+  description: string | null;
+  source: 'local' | 'clawhub';
+  clawhub_slug: string | null;
+  clawhub_version: string | null;
+  trigger_type: string;
+  created_by: string;
+  enabled: number;
+  usage_count: number;
+  success_count: number;
+  last_used_at: string | null;
+  security_score: string | null;
+  installed_at: string;
+  updated_at: string;
+}
+
+export function upsertSkill(skill: {
+  id: string;
+  name: string;
+  description?: string;
+  source?: 'local' | 'clawhub';
+  clawhub_slug?: string;
+  clawhub_version?: string;
+  trigger_type?: string;
+  created_by?: string;
+  enabled?: boolean;
+  security_score?: string;
+}): void {
+  const database = getDb();
+  const now = new Date().toISOString();
+  database.prepare(`
+    INSERT INTO skills (id, name, description, source, clawhub_slug, clawhub_version, trigger_type, created_by, enabled, security_score, installed_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name,
+      description = excluded.description,
+      source = excluded.source,
+      clawhub_slug = excluded.clawhub_slug,
+      clawhub_version = excluded.clawhub_version,
+      trigger_type = excluded.trigger_type,
+      created_by = excluded.created_by,
+      enabled = excluded.enabled,
+      security_score = excluded.security_score,
+      updated_at = excluded.updated_at
+  `).run(
+    skill.id,
+    skill.name,
+    skill.description ?? null,
+    skill.source ?? 'local',
+    skill.clawhub_slug ?? null,
+    skill.clawhub_version ?? null,
+    skill.trigger_type ?? 'manual',
+    skill.created_by ?? 'user',
+    skill.enabled !== false ? 1 : 0,
+    skill.security_score ?? null,
+    now,
+    now
+  );
+}
+
+export function getSkillRecords(filters?: { enabled?: boolean; source?: string }): SkillRecord[] {
+  const database = getDb();
+  let sql = 'SELECT * FROM skills';
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (filters?.enabled !== undefined) {
+    conditions.push('enabled = ?');
+    params.push(filters.enabled ? 1 : 0);
+  }
+  if (filters?.source) {
+    conditions.push('source = ?');
+    params.push(filters.source);
+  }
+
+  if (conditions.length > 0) {
+    sql += ' WHERE ' + conditions.join(' AND ');
+  }
+  sql += ' ORDER BY name ASC';
+
+  return database.prepare(sql).all(...params) as SkillRecord[];
+}
+
+export function getSkillRecord(id: string): SkillRecord | null {
+  const database = getDb();
+  return database.prepare('SELECT * FROM skills WHERE id = ?').get(id) as SkillRecord | null;
+}
+
+export function incrementSkillUsage(skillId: string, success: boolean = true): void {
+  const database = getDb();
+  const now = new Date().toISOString();
+  const sql = success
+    ? 'UPDATE skills SET usage_count = usage_count + 1, success_count = success_count + 1, last_used_at = ?, updated_at = ? WHERE id = ?'
+    : 'UPDATE skills SET usage_count = usage_count + 1, last_used_at = ?, updated_at = ? WHERE id = ?';
+  database.prepare(sql).run(now, now, skillId);
+}
+
+export function updateSkillEnabled(skillId: string, enabled: boolean): void {
+  const database = getDb();
+  const now = new Date().toISOString();
+  database.prepare('UPDATE skills SET enabled = ?, updated_at = ? WHERE id = ?').run(enabled ? 1 : 0, now, skillId);
+}
+
+export function deleteSkillRecord(skillId: string): boolean {
+  const database = getDb();
+  const result = database.prepare('DELETE FROM skills WHERE id = ?').run(skillId);
+  return result.changes > 0;
 }
 
 // Re-export ManusLive types for convenience

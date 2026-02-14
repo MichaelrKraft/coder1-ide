@@ -45,9 +45,13 @@ function stripAnsiCodes(text: string): string {
   return text
     .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')        // CSI: colors, cursor movement
     .replace(/\x1b\[\?[0-9;]*[a-zA-Z]/g, '')       // Private CSI: ?25h, ?2004h
+    .replace(/\x1b\[[<>=]?[0-9;]*[a-zA-Z~]/g, '')  // Extended CSI: mouse, keypad mode
     .replace(/\x1b\][^\x07]*(?:\x07|\x1b\\)/g, '') // OSC: window titles
     .replace(/\x1b\([A-Z]/g, '')                     // Character set selection
-    .replace(/\r(?!\n)/g, '');                        // Carriage returns (not \r\n)
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '') // Control chars (^H, ^G, etc.) except \t \n \r
+    .replace(/\r(?!\n)/g, '')                        // Carriage returns (not \r\n)
+    .replace(/\^H/g, '')                             // Literal ^H (backspace display)
+    .replace(/\^\[\[<[a-z]/g, '');                   // Literal ^[[<u style sequences
 }
 
 /**

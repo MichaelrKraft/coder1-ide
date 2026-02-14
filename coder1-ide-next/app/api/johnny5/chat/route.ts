@@ -22,6 +22,8 @@ import {
   getMessages,
   updateSession,
   logAudit,
+  getSkillRecords,
+  incrementSkillUsage,
 } from '@/lib/johnny5-db';
 import {
   Johnny5BridgeService,
@@ -55,6 +57,8 @@ import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
 import { classifyQuery, type ClassificationResult } from '@/services/query-classifier';
 import { isLivingFilesEnabled, loadLivingFilesContext, appendToLivingFile, formatLivingFilesFromCache } from '@/lib/living-files';
 import { bridgeManager } from '@/services/bridge-manager';
+import { shouldUseSkills, matchSkillsToQuery } from '@/lib/skills-integration-utils';
+import { initializeSkillsService } from '@/lib/skills-service';
 
 // Log memory feature status on module load
 console.log('[Johnny5] Memory features status:', {
@@ -666,6 +670,22 @@ export async function POST(
           moltbotMessage = `## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\`\n\n---\n\n**User Query:**\n${message}`;
         }
 
+        // Skills context for Moltbot
+        if (shouldUseSkills()) {
+          try {
+            const skillsService = await initializeSkillsService();
+            const enabledSkills = skillsService.getAllSkills();
+            if (enabledSkills.length > 0) {
+              const skillsList = enabledSkills
+                .map(s => `- **${s.name}**: ${s.description}`)
+                .join('\n');
+              moltbotMessage = `## Available Skills\n${skillsList}\n\n---\n\n${moltbotMessage}`;
+            }
+          } catch {
+            // Continue without skills
+          }
+        }
+
         // 🔧 FIX (Feb 2026): Truncate Moltbot message to prevent "Prompt too long" errors
         // Two fixes: (1) aggressive truncation, (2) unique session key to prevent history accumulation
         const MAX_MOLTBOT_MESSAGE_LENGTH = 5000; // ~1.25k tokens - aggressive to leave room for ManusLive overhead
@@ -1011,6 +1031,57 @@ export async function POST(
       reasoningSteps.push(`Crew member active: ${crewContext.name}`);
     }
 
+    // 8.1. Skills context injection
+    if (shouldUseSkills()) {
+      try {
+        const skillsService = await initializeSkillsService();
+        const allSkillMeta = skillsService.getAllSkills();
+        const dbSkills = getSkillRecords({ enabled: true });
+        const enabledIds = new Set(dbSkills.map(s => s.id));
+
+        // Filter to enabled skills (if in DB, must be enabled; if not in DB, include by default)
+        const enabledSkills = allSkillMeta.filter(s =>
+          enabledIds.has(s.id) || !dbSkills.find(d => d.id === s.id)
+        );
+
+        // Inject compact Tier 1 skill list
+        if (enabledSkills.length > 0) {
+          const skillsList = enabledSkills
+            .map(s => `- **${s.name}**: ${s.description}`)
+            .join('\n');
+          contextParts.push(`## Available Skills\n${skillsList}`);
+
+          // Match relevant skills to message and inject Tier 2 instructions
+          const matchable = enabledSkills.map(s => ({
+            id: s.id,
+            name: s.name,
+            description: s.description,
+            tags: s.tags || [],
+          }));
+          const relevant = matchSkillsToQuery(message, matchable);
+          let skillTokensUsed = 0;
+
+          for (const skill of relevant.slice(0, 3)) {
+            try {
+              const instructions = await skillsService.loadSkillInstructions(skill.id);
+              const instrTokens = Math.ceil(instructions.content.length / 4);
+              if (skillTokensUsed + instrTokens > 2000) break;
+              contextParts.push(`## Skill: ${skill.name}\n${instructions.content}`);
+              skillTokensUsed += instrTokens;
+              incrementSkillUsage(skill.id, true);
+            } catch {
+              // Skill instructions not found, skip
+            }
+          }
+
+          console.log(`[Johnny5/Skills] ${enabledSkills.length} skills available, ${relevant.length} matched, ${skillTokensUsed} tokens injected`);
+        }
+      } catch (skillsError) {
+        console.warn('[Johnny5/Skills] Skills injection failed:', skillsError);
+        // Continue without skills — graceful degradation
+      }
+    }
+
     if (contextParts.length > 0) {
       enhancedMessage = `${contextParts.join('\n\n')}\n\n---\n\n**User Query:**\n${message}`;
     }
@@ -1077,10 +1148,28 @@ export async function POST(
       try {
         // Detect Johnny5's active mode and available capabilities
         const johnny5Mode = detectJohnny5Mode(moltbotConnected, bridgeConnected);
-        const systemPrompt = await generateJohnny5SystemPrompt(johnny5Mode, userId);
+        let systemPrompt = await generateJohnny5SystemPrompt(johnny5Mode, userId);
+
+        // When routing to Gemini (not Bridge) for memory/personal queries,
+        // add instruction to prevent <execute_bash> usage while keeping
+        // accurate bridge-connected context in the system prompt.
+        if (johnny5Mode.mode !== 'gemini' && !shouldUseBridgeForThisQuery) {
+          systemPrompt += `\n\n## Query Routing Override
+This query is about memory or personal knowledge, not a coding task. Answer ONLY from the session memory data and context injected into the user message (sections labeled "Session Memory", "Session History", "Relevant Memories", etc.). Do NOT use <execute_bash> tags or attempt to execute shell commands. Do NOT reference or describe conversation history between you and the user — focus exclusively on IDE session data (file changes, terminal output, errors, session summaries). If the injected session data doesn't contain the answer, say so honestly rather than drawing from conversation history.
+
+## How to Present Session Memory
+When responding from session memory, follow these guidelines:
+1. **Quote specifics** — Don't say "you worked on payments"; say "you fixed a TypeError in processPayment() at checkout.ts:142"
+2. **Use relative time** — "2 hours ago you ran...", "Last week you hit this error..."
+3. **Prioritize high-relevance** — Focus on entries marked 80%+ relevance; briefly mention lower ones
+4. **Cite source types** — "From your terminal session...", "In an error from yesterday..."
+5. **Acknowledge limitations** — If memory is thin: "I only found 2 relevant chunks from last week..."
+6. **Quote verbatim** — Include exact command strings, error messages, or file paths when available`;
+        }
 
         console.log('[Johnny5] Active mode:', {
-          mode: johnny5Mode.mode,
+          detected: johnny5Mode.mode,
+          routedToGemini: !shouldUseBridgeForThisQuery,
           hasMCP: johnny5Mode.hasMCP,
           provider: johnny5Mode.provider
         });
