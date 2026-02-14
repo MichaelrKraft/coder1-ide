@@ -572,6 +572,35 @@ const teamPresence = new Map();
 // Collaborative editing document state: fileId -> { updates[], userCount, lastActivity, cleanupTimer }
 const collabDocs = new Map();
 
+// 4.3: Case collision detection — per-team map of lowercased path -> original cased path
+const collabFilePathRegistry = new Map(); // teamId -> Map<lowercasePath, originalPath>
+
+// 6.2: Per-user rate limiting for collab file writes (100 writes/minute)
+const collabWriteRateLimiter = new Map(); // userId -> { count, resetTime }
+
+// 6.4 Safeguard #2: Pending collab syncs with state versioning
+// When a bridge is offline and a write fails, queue the content here with
+// the doc's update count (version). On bridge reconnect, compare versions:
+// if the doc has newer updates, skip the stale queued content.
+// Key: `${userId}::${filePath}` -> { content, fileId, teamId, docVersion, queuedAt }
+const pendingCollabSyncs = new Map();
+function checkCollabWriteRateLimit(userId) {
+  const now = Date.now();
+  const entry = collabWriteRateLimiter.get(userId);
+
+  if (!entry || now > entry.resetTime) {
+    collabWriteRateLimiter.set(userId, { count: 1, resetTime: now + 60000 });
+    return true;
+  }
+
+  if (entry.count >= 100) {
+    return false; // Rate limited
+  }
+
+  entry.count++;
+  return true;
+}
+
 function broadcastPresence(teamId) {
   const members = teamPresence.get(teamId);
   const onlineList = members
@@ -1932,6 +1961,53 @@ app.prepare().then(() => {
       bridgeManager.on('bridge:connected', (data) => {
         console.log(`[Bridge] Connected: ${data.bridgeId} for user ${data.userId}`);
         io.emit('bridge:connected', data);
+
+        // 6.4 Safeguard #2: Flush pending collab syncs for this user on reconnect
+        const reconnectedUserId = data.userId;
+        if (reconnectedUserId && pendingCollabSyncs.size > 0) {
+          const prefix = `${reconnectedUserId}::`;
+          const keysToFlush = [];
+          for (const key of pendingCollabSyncs.keys()) {
+            if (key.startsWith(prefix)) {
+              keysToFlush.push(key);
+            }
+          }
+
+          for (const key of keysToFlush) {
+            const pending = pendingCollabSyncs.get(key);
+            if (!pending) continue;
+
+            // Check if the queued content is stale: compare doc version at queue time vs current
+            const currentDoc = collabDocs.get(pending.fileId);
+            const currentVersion = currentDoc ? currentDoc.updates.length : 0;
+
+            if (currentVersion > pending.docVersion) {
+              // Doc has received newer updates since this was queued — content is stale, skip
+              console.log(`[COLLAB] Skipping stale pending sync for ${key} (queued version ${pending.docVersion}, current ${currentVersion})`);
+              pendingCollabSyncs.delete(key);
+              continue;
+            }
+
+            // Content is still current — flush to the reconnected bridge
+            const filePath = key.substring(prefix.length);
+            const userBridges = bridgeManager.getTeamBridges(pending.teamId, teamPresence);
+            const userBridgeIds = userBridges.get(reconnectedUserId);
+            if (userBridgeIds && userBridgeIds.length > 0) {
+              const singleBridgeMap = new Map([[reconnectedUserId, userBridgeIds]]);
+              bridgeManager.writeFileToTeam(singleBridgeMap, filePath, pending.content, undefined, pending.teamId)
+                .then(() => {
+                  console.log(`[COLLAB] Flushed pending sync: ${key}`);
+                  pendingCollabSyncs.delete(key);
+                })
+                .catch((err) => {
+                  console.warn(`[COLLAB] Failed to flush pending sync ${key}:`, err.message);
+                });
+            } else {
+              // Still no bridge for this user in the team — keep pending
+              console.log(`[COLLAB] No team bridge for ${reconnectedUserId}, keeping pending sync`);
+            }
+          }
+        }
       });
 
       bridgeManager.on('bridge:disconnected', (data) => {
@@ -2088,6 +2164,11 @@ app.prepare().then(() => {
       }
       members.get(userId).sockets.add(socket.id);
       broadcastPresence(teamId);
+
+      // 4.6: Notify the user's bridge that this team is authorized for collab writes
+      if (bridgeManager) {
+        bridgeManager.broadcastToUser(userId, 'team:authorized', { teamId });
+      }
 
       // Map terminal sessions to team for code activity tracking
       // Use the socketToSession map to find this socket's terminal session
@@ -2250,10 +2331,12 @@ app.prepare().then(() => {
         doc.updates.push(update);
         doc.lastActivity = Date.now();
 
-        // Prune stored updates to prevent unbounded growth
-        if (doc.updates.length > 200) {
-          // Keep only the last 100 updates (simple pruning without Y.mergeUpdates on server)
+        // Prune stored updates to prevent unbounded memory growth (Safeguard #5)
+        const MAX_UPDATES_PER_FILE = 500;
+        if (doc.updates.length > MAX_UPDATES_PER_FILE) {
+          // Keep only the last 100 updates (simple pruning — server doesn't load Yjs)
           doc.updates = doc.updates.slice(-100);
+          console.log(`[COLLAB] Compacted updates for ${fileId}: ${MAX_UPDATES_PER_FILE}+ -> ${doc.updates.length}`);
         }
       }
     });
@@ -2283,6 +2366,137 @@ app.prepare().then(() => {
       } else {
         // No stored state — signal synced with empty updates
         socket.emit('y:sync-response', { fileId, updates: [] });
+      }
+    });
+
+    // Collaborative file write — routes writes through bridges to local filesystems
+    socket.on('collab:file-write', async (data) => {
+      if (!checkCollabRate()) return;
+      const { filePath, content, userId: senderUserId, teamId: senderTeamId, fileId } = data;
+
+      // 6.2: Per-user rate limiting (100 writes/minute)
+      const writeUserId = senderUserId || socket._teamPresence?.userId || socket.id;
+      if (!checkCollabWriteRateLimit(writeUserId)) {
+        socket.emit('collab:file-write-ack', {
+          filePath, success: false, error: 'rate_limited',
+          message: 'Too many writes. Max 100 per minute.'
+        });
+        console.warn(`[COLLAB] Rate limited user ${writeUserId} for collab writes`);
+        return;
+      }
+
+      // Validate user is in a collab session for this file
+      if (!socket._collabSession || socket._collabSession.fileId !== fileId) {
+        socket.emit('collab:file-write-ack', {
+          filePath, success: false, error: 'Not in collaborative session for this file'
+        });
+        return;
+      }
+
+      const sessionTeamId = socket._collabSession.teamId || senderTeamId;
+
+      // 4.3: Case collision detection — warn but don't block
+      if (sessionTeamId && filePath) {
+        if (!collabFilePathRegistry.has(sessionTeamId)) {
+          collabFilePathRegistry.set(sessionTeamId, new Map());
+        }
+        const teamPaths = collabFilePathRegistry.get(sessionTeamId);
+        const lowerPath = filePath.toLowerCase();
+        const existingPath = teamPaths.get(lowerPath);
+        if (existingPath && existingPath !== filePath) {
+          // Case collision: warn the client but continue with the write
+          socket.emit('collab:file-write-ack', {
+            filePath,
+            success: true,
+            warning: 'case_collision',
+            conflictingPath: existingPath,
+            message: `Case collision: "${filePath}" conflicts with existing "${existingPath}". May cause issues on case-insensitive filesystems (Windows/Mac).`
+          });
+          console.warn(`[COLLAB] Case collision in team ${sessionTeamId}: "${filePath}" vs "${existingPath}"`);
+        }
+        teamPaths.set(lowerPath, filePath);
+      }
+
+      try {
+        // Get all team members' connected bridges
+        const teamBridges = bridgeManager
+          ? bridgeManager.getTeamBridges(sessionTeamId, teamPresence)
+          : new Map();
+
+        if (teamBridges.size > 0) {
+          // Write to all bridges in parallel (pass teamId for bridge-side validation)
+          const results = await bridgeManager.writeFileToTeam(teamBridges, filePath, content, undefined, sessionTeamId);
+
+          let successCount = 0;
+          let failCount = 0;
+          const failedUsers = [];
+
+          for (const [uid, result] of results) {
+            if (result.success) {
+              successCount++;
+            } else {
+              failCount++;
+              failedUsers.push(uid);
+            }
+          }
+
+          socket.emit('collab:file-write-ack', {
+            filePath,
+            success: true,
+            writtenVia: 'bridge',
+            syncResults: { successCount, failCount }
+          });
+
+          // 6.3: Audit log — successful bridge write
+          try {
+            const { logCollabAudit } = require('./lib/johnny5-db.ts');
+            logCollabAudit({ userId: writeUserId, teamId: sessionTeamId, action: 'collab_write', filePath, metadata: { writtenVia: 'bridge', successCount, failCount } });
+          } catch (auditErr) { /* non-fatal */ }
+
+          if (failedUsers.length > 0) {
+            console.log(`[COLLAB] File write partially failed for ${filePath}: ${failedUsers.length} bridges failed`);
+
+            // 6.4 Safeguard #2: Queue failed writes with doc version for stale-detection on flush
+            const docVersion = collabDocs.has(fileId) ? collabDocs.get(fileId).updates.length : 0;
+            for (const failedUid of failedUsers) {
+              const syncKey = `${failedUid}::${filePath}`;
+              pendingCollabSyncs.set(syncKey, { content, fileId, teamId: sessionTeamId, docVersion, queuedAt: Date.now() });
+            }
+          }
+        } else {
+          // No bridges connected — fallback to server-side fs.writeFile
+          const resolvedPath = path.resolve(process.cwd(), filePath);
+          // Security: ensure path doesn't escape project root
+          if (!resolvedPath.startsWith(path.resolve(process.cwd()))) {
+            throw new Error('Path outside project directory');
+          }
+
+          await fs.promises.writeFile(resolvedPath, content, 'utf-8');
+          socket.emit('collab:file-write-ack', {
+            filePath,
+            success: true,
+            writtenVia: 'server'
+          });
+
+          // 6.3: Audit log — successful server write
+          try {
+            const { logCollabAudit } = require('./lib/johnny5-db.ts');
+            logCollabAudit({ userId: writeUserId, teamId: sessionTeamId, action: 'collab_write', filePath, metadata: { writtenVia: 'server' } });
+          } catch (auditErr) { /* non-fatal */ }
+        }
+      } catch (error) {
+        console.error(`[COLLAB] File write error for ${filePath}:`, error.message);
+        socket.emit('collab:file-write-ack', {
+          filePath,
+          success: false,
+          error: error.message
+        });
+
+        // 6.3: Audit log — failed write
+        try {
+          const { logCollabAudit } = require('./lib/johnny5-db.ts');
+          logCollabAudit({ userId: writeUserId, teamId: sessionTeamId, action: 'collab_write_failed', filePath, metadata: { error: error.message } });
+        } catch (auditErr) { /* non-fatal */ }
       }
     });
 
@@ -4258,9 +4472,7 @@ app.prepare().then(() => {
     // ========================================================================
     // Initialize Johnny5 Proactive Services
     // ========================================================================
-    // TEMPORARILY DISABLED: Opportunity Engine triggers sqlite-vec blocking issue
-    console.log('⚠️  [Johnny5] Proactive Services DISABLED - sqlite-vec blocking issue needs fix');
-    /*
+    // NOTE: sqlite-vec race condition fixed via singleton pattern in lib/johnny5-db.ts
     try {
       const { loadConfig } = require('./lib/johnny5-config.ts');
       const config = loadConfig();
@@ -4302,7 +4514,6 @@ app.prepare().then(() => {
     } catch (error) {
       console.warn('⚠️ Johnny5 Proactive Services not available:', error.message);
     }
-    */
 
     // Initialize Memory Exporter for Claude Skills
     if (memoryExporter) {
