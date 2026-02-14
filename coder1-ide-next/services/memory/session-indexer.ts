@@ -33,6 +33,44 @@ const MAX_TOKENS_PER_CHUNK = 500;
 const MIN_TERMINAL_LENGTH = 200;
 
 // ============================================================================
+// ANSI Code Stripping
+// ============================================================================
+
+/**
+ * Strip ANSI escape codes from terminal output before indexing.
+ * Handles: CSI sequences (colors, cursor), private CSI (?25h),
+ * OSC sequences (window titles), and character set selections.
+ */
+function stripAnsiCodes(text: string): string {
+  return text
+    .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')        // CSI: colors, cursor movement
+    .replace(/\x1b\[\?[0-9;]*[a-zA-Z]/g, '')       // Private CSI: ?25h, ?2004h
+    .replace(/\x1b\][^\x07]*(?:\x07|\x1b\\)/g, '') // OSC: window titles
+    .replace(/\x1b\([A-Z]/g, '')                     // Character set selection
+    .replace(/\r(?!\n)/g, '');                        // Carriage returns (not \r\n)
+}
+
+/**
+ * Extract file paths from snapshot files data.
+ * Handles JSON-stringified IDEFile[] arrays and plain objects.
+ */
+function extractFilePathsFromSnapshot(files: any): string[] {
+  if (!files) return [];
+  try {
+    const parsed = typeof files === 'string' ? JSON.parse(files) : files;
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((f: any) => (typeof f === 'string' ? f : f.path || f.name || ''))
+        .filter(Boolean);
+    }
+    if (typeof parsed === 'object') {
+      return Object.keys(parsed);
+    }
+  } catch {}
+  return [];
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -452,6 +490,11 @@ export async function indexSessionFromCheckpoint(
       return { chunksIndexed: 0, skipped: 0 };
     }
 
+    // Strip ANSI escape codes from terminal history before any processing
+    if (checkpoint.terminalHistory) {
+      checkpoint = { ...checkpoint, terminalHistory: stripAnsiCodes(checkpoint.terminalHistory) };
+    }
+
     const projectPath = checkpoint.data?.snapshot?.projectPath;
     const projectName = projectPath ? getProjectName(projectPath) : undefined;
     const projectPrefix = projectName ? `[Project: ${projectName}] ` : '';
@@ -511,11 +554,18 @@ export async function indexSessionFromCheckpoint(
     }
 
     // ---- File Change Chunks ----
-    if (checkpoint.openFiles && checkpoint.openFiles.length > 0) {
-      console.log(`[SessionIndexer] Indexing ${checkpoint.openFiles.length} file changes`);
+    // Validate openFiles - detect bad data from Object.keys() on stringified JSON
+    let validOpenFiles = checkpoint.openFiles || [];
+    if (validOpenFiles.length > 0 && validOpenFiles.every(f => /^\d+$/.test(f))) {
+      // All entries are numeric indices — bad data from Object.keys(string)
+      validOpenFiles = extractFilePathsFromSnapshot(checkpoint.data?.snapshot?.files);
+    }
 
-      for (let i = 0; i < checkpoint.openFiles.length && chunksIndexed < MAX_CHUNKS_PER_SESSION; i++) {
-        const filepath = checkpoint.openFiles[i];
+    if (validOpenFiles.length > 0) {
+      console.log(`[SessionIndexer] Indexing ${validOpenFiles.length} file changes`);
+
+      for (let i = 0; i < validOpenFiles.length && chunksIndexed < MAX_CHUNKS_PER_SESSION; i++) {
+        const filepath = validOpenFiles[i];
         const filename = filepath.split('/').pop() || filepath;
         const pName = projectName || 'unknown';
 
@@ -557,9 +607,9 @@ export async function indexSessionFromCheckpoint(
         summaryParts.push(`Branch: ${checkpoint.gitBranch}`);
       }
 
-      // Files
-      if (checkpoint.openFiles && checkpoint.openFiles.length > 0) {
-        const fileNames = checkpoint.openFiles
+      // Files (use validated openFiles)
+      if (validOpenFiles.length > 0) {
+        const fileNames = validOpenFiles
           .map((f) => f.split('/').pop() || f)
           .slice(0, 10);
         summaryParts.push(`Files: ${fileNames.join(', ')}`);

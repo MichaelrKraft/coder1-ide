@@ -1,3 +1,39 @@
+# Fix: Session Memory Returns Vague/Broken Results (Feb 14, 2026)
+
+**Plan:** `/Users/michaelkraft/.claude/plans/snappy-watching-bengio.md`
+
+## Tasks
+
+- [x] 1. Fix openFiles parsing in `checkpoint/route.ts` — add `extractFilePaths()` helper
+- [x] 2. Fix openFiles validation in `session-indexer.ts` — detect numeric indices, fall back to snapshot
+- [x] 3. Add ANSI stripping in `session-indexer.ts` — strip before all processing
+- [x] 4. Add commit/push/deploy patterns in `query-classifier.ts` and `query-intent.ts`
+- [x] 5. Add tests for new functions (17 new tests, 78 total passing)
+- [x] 6. Clean up bad indexed data and re-index via backfill (540 bad chunks deleted, 427 re-indexed)
+- [ ] 7. Verify in live Johnny5 Chat
+
+## Review
+
+### Root Cause
+Frontend does `JSON.stringify(openFiles)` → Backend does `Object.keys(stringifiedJSON)` → Returns character indices `['0', '1', '2', ...]` instead of file paths. All 161 `ide_file_change` chunks had content like "File: 0" instead of real paths.
+
+### Files Modified (4 files)
+1. **`app/api/checkpoint/route.ts`** — Added `extractFilePaths()` helper that parses JSON-stringified `IDEFile[]` arrays, extracting `.path` or `.name` from each entry. Replaced `Object.keys(filteredSnapshot.files || {})` with `extractFilePaths(filteredSnapshot.files)`.
+2. **`services/memory/session-indexer.ts`** — Added `stripAnsiCodes()` (handles CSI, private CSI, OSC, character set selection, carriage returns), `extractFilePathsFromSnapshot()` for backfill fallback, and numeric-index detection that falls back to snapshot.files when all openFiles entries are digits.
+3. **`services/query-classifier.ts`** — Added 3 patterns for commit/push/deploy/merge to `SESSION_RECALL_PATTERNS`.
+4. **`services/memory/search/query-intent.ts`** — Added 2 commit patterns to `file_change` intent group.
+
+### Test File Modified
+- **`__tests__/session-memory.test.ts`** — Added 17 new tests: ANSI stripping (6), file path extraction (6), commit pattern matching (5).
+
+### Re-index Results
+- Before: 540 bad `ide_%` chunks (161 file_change with "File: 0", rest with ANSI codes)
+- After: 427 clean chunks (235 ide_error, 116 ide_terminal_chunk, 71 ide_session_summary, 5 ide_file_change)
+- File change chunks now show real file names (e.g., `component-c8f7d56e28d8b154.html`, `index.html`)
+- Most old checkpoints had empty snapshot.files data, hence only 5 file_change chunks from backfill
+
+---
+
 # Fix: Server OOM Crash from TeamSync + Huge memory_chunks Table (Feb 14, 2026)
 
 ## Tasks

@@ -12,6 +12,28 @@ const execAsync = promisify(exec);
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Extract file paths from snapshot files data.
+ * Handles both JSON-stringified IDEFile[] arrays and plain objects.
+ */
+function extractFilePaths(files: any): string[] {
+  if (!files) return [];
+  try {
+    const parsed = typeof files === 'string' ? JSON.parse(files) : files;
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((f: any) => (typeof f === 'string' ? f : f.path || f.name || ''))
+        .filter(Boolean);
+    }
+    if (typeof parsed === 'object') {
+      return Object.keys(parsed);
+    }
+  } catch {
+    // Malformed data
+  }
+  return [];
+}
+
 // Maximum terminal history size for checkpoints (1MB)
 // Prevents memory issues and page freezes from oversized checkpoints
 const MAX_TERMINAL_HISTORY_SIZE = 1 * 1024 * 1024; // 1MB
@@ -304,7 +326,7 @@ export async function POST(request: NextRequest) {
       type: checkpointType,
       checkpointType: checkpointType,  // Alias for clarity
       gitBranch: currentGitBranch,
-      openFiles: Object.keys(filteredSnapshot.files || {}),
+      openFiles: extractFilePaths(filteredSnapshot.files),
       claudeContext: conversationHistory.length > 0 ? {
         messages: conversationHistory,
         hasActiveTask: false  // Could be enhanced with actual task detection

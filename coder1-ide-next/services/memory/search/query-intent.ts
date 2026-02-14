@@ -76,6 +76,8 @@ const INTENT_PATTERN_GROUPS: IntentPatternGroup[] = [
       /\bfiles?\s+(i|we)\s+(changed|edited|modified|touched|updated|created|deleted|removed)\b/i,
       /\b(show|list)\s+(me\s+)?(the\s+)?(file|files)\s+(i|we)\s+(changed|edited|modified)\b/i,
       /\b(what|which)\s+(did\s+)?(i|we)\s+(change|edit|modify|update)\b/i,
+      /\bwhat\s+files?\s+(did|have)\s+(i|we)\s+(recently\s+)?commit(ted)?\b/i,
+      /\bwhat\s+(did\s+)?(i|we)\s+(commit|push|merge)\b/i,
     ],
   },
   {

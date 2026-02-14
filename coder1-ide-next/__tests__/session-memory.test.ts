@@ -612,6 +612,161 @@ async function runTests() {
   });
 
   // --------------------------------------------------------------------------
+  // 7. ANSI Stripping
+  // --------------------------------------------------------------------------
+
+  await describe('ANSI Code Stripping', async () => {
+    // Import stripAnsiCodes indirectly by testing the indexer behavior
+    // Since stripAnsiCodes is private, we test it via the module's exported functions
+    // For direct testing, re-implement the same logic here
+    const stripAnsiCodes = (text: string): string => {
+      return text
+        .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+        .replace(/\x1b\[\?[0-9;]*[a-zA-Z]/g, '')
+        .replace(/\x1b\][^\x07]*(?:\x07|\x1b\\)/g, '')
+        .replace(/\x1b\([A-Z]/g, '')
+        .replace(/\r(?!\n)/g, '');
+    };
+
+    await it('strips CSI color sequences', () => {
+      const input = '\x1b[38;2;215;119;87mcolored text\x1b[0m';
+      const result = stripAnsiCodes(input);
+      expect(result).toBe('colored text');
+    });
+
+    await it('strips private CSI sequences (?25h, ?2004h)', () => {
+      const input = '\x1b[?25l\x1b[?2004h\x1b[?1004hreal content';
+      const result = stripAnsiCodes(input);
+      expect(result).toBe('real content');
+    });
+
+    await it('strips OSC window title sequences', () => {
+      const input = '\x1b]0;My Terminal Title\x07actual output';
+      const result = stripAnsiCodes(input);
+      expect(result).toBe('actual output');
+    });
+
+    await it('strips character set selection', () => {
+      const input = '\x1b(Bplain text';
+      const result = stripAnsiCodes(input);
+      expect(result).toBe('plain text');
+    });
+
+    await it('strips carriage returns but preserves \\r\\n', () => {
+      const input = 'progress\roverwrite\r\nkeep this line';
+      const result = stripAnsiCodes(input);
+      // \r without \n is stripped (merges text), \r\n is preserved
+      expect(result).toBe('progressoverwrite\r\nkeep this line');
+      expect(result).not.toContain('\x1b');
+    });
+
+    await it('handles mixed ANSI codes in terminal output', () => {
+      const input = '\x1b[?25l\x1b[38;2;153;153;153m$ npm run build\x1b[39m\n> next build\n\x1b[32m✓ Compiled\x1b[0m';
+      const result = stripAnsiCodes(input);
+      expect(result).toContain('$ npm run build');
+      expect(result).toContain('✓ Compiled');
+      expect(result).not.toContain('\x1b');
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 8. File Path Extraction
+  // --------------------------------------------------------------------------
+
+  await describe('File Path Extraction from Snapshot', async () => {
+    const extractFilePathsFromSnapshot = (files: any): string[] => {
+      if (!files) return [];
+      try {
+        const parsed = typeof files === 'string' ? JSON.parse(files) : files;
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((f: any) => (typeof f === 'string' ? f : f.path || f.name || ''))
+            .filter(Boolean);
+        }
+        if (typeof parsed === 'object') {
+          return Object.keys(parsed);
+        }
+      } catch {}
+      return [];
+    };
+
+    await it('extracts paths from JSON-stringified IDEFile array', () => {
+      const files = JSON.stringify([
+        { id: '1', path: '/src/app.ts', name: 'app.ts' },
+        { id: '2', path: '/src/index.ts', name: 'index.ts' },
+      ]);
+      const result = extractFilePathsFromSnapshot(files);
+      expect(result.length).toBe(2);
+      expect(result).toContain('/src/app.ts');
+      expect(result).toContain('/src/index.ts');
+    });
+
+    await it('handles files already as object (Object.keys fallback)', () => {
+      const files = { 'server.js': { modified: true }, 'lib/db.ts': { created: true } };
+      const result = extractFilePathsFromSnapshot(files);
+      expect(result.length).toBe(2);
+      expect(result).toContain('server.js');
+    });
+
+    await it('returns empty array for undefined/null', () => {
+      expect(extractFilePathsFromSnapshot(undefined).length).toBe(0);
+      expect(extractFilePathsFromSnapshot(null).length).toBe(0);
+    });
+
+    await it('returns empty array for malformed JSON string', () => {
+      expect(extractFilePathsFromSnapshot('{bad json').length).toBe(0);
+    });
+
+    await it('uses name when path is missing', () => {
+      const files = JSON.stringify([{ id: '1', name: 'fallback.ts' }]);
+      const result = extractFilePathsFromSnapshot(files);
+      expect(result.length).toBe(1);
+      expect(result).toContain('fallback.ts');
+    });
+
+    await it('detects numeric indices as bad data', () => {
+      const badOpenFiles = ['0', '1', '2', '44'];
+      const allNumeric = badOpenFiles.every(f => /^\d+$/.test(f));
+      expect(allNumeric).toBe(true);
+
+      const goodOpenFiles = ['/src/app.ts', '/src/index.ts'];
+      const notNumeric = goodOpenFiles.every(f => /^\d+$/.test(f));
+      expect(notNumeric).toBe(false);
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 9. Commit Pattern Matching
+  // --------------------------------------------------------------------------
+
+  await describe('Commit/Push/Deploy Pattern Matching', async () => {
+    await it('detects file_change intent for "what files did I commit"', () => {
+      const result = detectSessionQueryIntent('what files did I commit');
+      expect(result.intent).toBe('file_change');
+    });
+
+    await it('detects file_change intent for "what files did I recently commit"', () => {
+      const result = detectSessionQueryIntent('what files did I recently commit');
+      expect(result.intent).toBe('file_change');
+    });
+
+    await it('detects file_change intent for "what did I push"', () => {
+      const result = detectSessionQueryIntent('what did I push');
+      expect(result.intent).toBe('file_change');
+    });
+
+    await it('detects file_change intent for "what did we merge"', () => {
+      const result = detectSessionQueryIntent('what did we merge');
+      expect(result.intent).toBe('file_change');
+    });
+
+    await it('detects file_change intent for "what files have I committed"', () => {
+      const result = detectSessionQueryIntent('what files have I committed');
+      expect(result.intent).toBe('file_change');
+    });
+  });
+
+  // --------------------------------------------------------------------------
   // Print Results
   // --------------------------------------------------------------------------
 
