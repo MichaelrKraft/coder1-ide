@@ -131,8 +131,8 @@ export default function LazyTerminalContainer(props: LazyTerminalContainerProps)
     const loadTerminalContainer = async () => {
       try {
         setIsLoading(true);
-        const module = await import('./TerminalContainer');
-        setTerminalContainer(() => module.default);
+        const terminalModule = await import('./TerminalContainer');
+        setTerminalContainer(() => terminalModule.default);
         setError(null);
       } catch (err) {
         console.error('Failed to load TerminalContainer:', err);

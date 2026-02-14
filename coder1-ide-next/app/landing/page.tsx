@@ -293,7 +293,7 @@ function Johnny5FeaturesSection() {
             Your AI Employee That Never Sleeps
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            Johnny5 is not just another AI assistant. It's an autonomous agent that works independently while you rest.
+            Johnny5 is not just another AI assistant. It&apos;s an autonomous agent that works independently while you rest.
           </p>
         </div>
 
@@ -491,7 +491,7 @@ function UseCasesSection() {
             Built for Builders
           </h2>
           <p className="text-xl text-gray-400">
-            Whether you're solo or enterprise, Johnny5 adapts to your workflow
+            Whether you&apos;re solo or enterprise, Johnny5 adapts to your workflow
           </p>
         </div>
 
@@ -575,7 +575,7 @@ function PricingSection() {
             Simple Pricing
           </h2>
           <p className="text-xl text-gray-400">
-            Start free. Upgrade when you're ready for autonomous mode.
+            Start free. Upgrade when you&apos;re ready for autonomous mode.
           </p>
         </div>
 

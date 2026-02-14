@@ -15,8 +15,9 @@ export async function GET(request: NextRequest) {
 
   // FIX (Feb 2026): Use global.bridgeManager set by server.js
   // This ensures we access the same singleton that has actual WebSocket connections
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const bridgeManagerGlobal = (global as any).bridgeManager;
+  const bridgeManagerGlobal = (global as Record<string, unknown>).bridgeManager as {
+    getBridgeStatus?: (userId: string) => { connected: boolean; bridges: Array<{ id: string; connectedAt: string; platform: string; version: string }> };
+  } | undefined;
   const bridgeStatus = bridgeManagerGlobal?.getBridgeStatus?.(userId);
 
   if (bridgeStatus?.connected && bridgeStatus.bridges.length > 0) {

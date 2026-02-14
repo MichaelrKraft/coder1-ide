@@ -32,7 +32,7 @@ export default function TestResultsPanel({
           Ready to Test
         </h3>
         <p className="text-sm text-text-secondary max-w-md">
-          Enter a test command above and click "Run Test" to begin browser automation.
+          Enter a test command above and click &quot;Run Test&quot; to begin browser automation.
         </p>
       </div>
     );

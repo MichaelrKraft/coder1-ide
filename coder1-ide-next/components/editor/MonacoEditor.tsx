@@ -61,6 +61,8 @@ const SafeHeroSection = React.memo(({ onDismiss, onTourStart }: { onDismiss?: ()
   );
 });
 
+SafeHeroSection.displayName = 'SafeHeroSection';
+
 interface MonacoEditorProps {
   value?: string;
   language?: string;

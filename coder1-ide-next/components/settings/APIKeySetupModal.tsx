@@ -247,7 +247,7 @@ export function APIKeySetupModal({
           <h4 className="text-sm font-semibold text-white mb-2">Step 1: Create Account</h4>
           <ol className="list-decimal list-inside space-y-1 text-sm text-gray-400 ml-4">
             <li>Visit <a href="https://open.bigmodel.cn" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">open.bigmodel.cn</a></li>
-            <li>Click "注册" (Register) or "登录" (Login)</li>
+            <li>Click &quot;注册&quot; (Register) or &quot;登录&quot; (Login)</li>
             <li>Complete registration using phone or email</li>
           </ol>
         </div>
@@ -255,8 +255,8 @@ export function APIKeySetupModal({
         <div>
           <h4 className="text-sm font-semibold text-white mb-2">Step 2: Get API Key</h4>
           <ol className="list-decimal list-inside space-y-1 text-sm text-gray-400 ml-4">
-            <li>Navigate to "API Keys" section in dashboard</li>
-            <li>Click "Create API Key" button</li>
+            <li>Navigate to &quot;API Keys&quot; section in dashboard</li>
+            <li>Click &quot;Create API Key&quot; button</li>
             <li>Copy your new API key (format: <code className="text-xs bg-gray-800 px-1 py-0.5 rounded">xxxx.xxxx</code>)</li>
           </ol>
         </div>
@@ -342,7 +342,7 @@ export function APIKeySetupModal({
           <h4 className="text-sm font-semibold text-white mb-2">Step 1: Create Account</h4>
           <ol className="list-decimal list-inside space-y-1 text-sm text-gray-400 ml-4">
             <li>Visit <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">console.anthropic.com</a></li>
-            <li>Click "Sign Up" or "Log In"</li>
+            <li>Click &quot;Sign Up&quot; or &quot;Log In&quot;</li>
             <li>Complete registration using email</li>
           </ol>
         </div>
@@ -350,8 +350,8 @@ export function APIKeySetupModal({
         <div>
           <h4 className="text-sm font-semibold text-white mb-2">Step 2: Get API Key</h4>
           <ol className="list-decimal list-inside space-y-1 text-sm text-gray-400 ml-4">
-            <li>Navigate to "API Keys" section</li>
-            <li>Click "Create Key" button</li>
+            <li>Navigate to &quot;API Keys&quot; section</li>
+            <li>Click &quot;Create Key&quot; button</li>
             <li>Copy your new API key (starts with <code className="text-xs bg-gray-800 px-1 py-0.5 rounded">sk-ant-</code>)</li>
           </ol>
         </div>

@@ -576,9 +576,9 @@ export default function ContextMemoryPanel() {
         {searchTerm && (
           <div className="text-xs text-text-muted bg-coder1-cyan/5 border border-coder1-cyan/20 rounded-lg p-2">
             {filteredAndSortedConversations.length > 0 ? (
-              <>Found {filteredAndSortedConversations.length} conversation{filteredAndSortedConversations.length !== 1 ? 's' : ''} matching "{searchTerm}"</>
+              <>Found {filteredAndSortedConversations.length} conversation{filteredAndSortedConversations.length !== 1 ? 's' : ''} matching &quot;{searchTerm}&quot;</>
             ) : (
-              <>No conversations found matching "{searchTerm}". Try different keywords or clear filters.</>
+              <>No conversations found matching &quot;{searchTerm}&quot;. Try different keywords or clear filters.</>
             )}
           </div>
         )}

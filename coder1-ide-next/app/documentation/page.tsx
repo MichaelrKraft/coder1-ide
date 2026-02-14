@@ -186,13 +186,13 @@ export default function DocumentationPage() {
             <div className="space-y-4">
               <details className="group">
                 <summary className="cursor-pointer font-semibold text-cyan-400 hover:text-cyan-300">
-                  Bridge won't connect to IDE
+                  Bridge won&apos;t connect to IDE
                 </summary>
                 <div className="mt-2 pl-4 text-gray-300">
                   <p>Make sure both services are running:</p>
                   <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
                     <li>Bridge executable is running locally</li>
-                    <li>You're logged into Claude CLI</li>
+                    <li>You&apos;re logged into Claude CLI</li>
                     <li>IDE is open at /ide</li>
                     <li>Check firewall settings</li>
                   </ul>
@@ -201,7 +201,7 @@ export default function DocumentationPage() {
               
               <details className="group">
                 <summary className="cursor-pointer font-semibold text-cyan-400 hover:text-cyan-300">
-                  Terminal says "claude: command not found"
+                  Terminal says &quot;claude: command not found&quot;
                 </summary>
                 <div className="mt-2 pl-4 text-gray-300">
                   <p>This is expected! Claude CLI runs locally, not on the server. You need to:</p>

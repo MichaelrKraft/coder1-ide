@@ -311,7 +311,7 @@ export default function SkillCard({
       {skill.createdBy === 'self_improvement' && (
         <div className="mt-3 px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-md">
           <p className="text-[10px] text-purple-300 italic">
-            "Learned from your repeated workflow patterns"
+            &quot;Learned from your repeated workflow patterns&quot;
           </p>
         </div>
       )}

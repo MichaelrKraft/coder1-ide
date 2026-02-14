@@ -1894,7 +1894,7 @@ function IDEPageContent() {
                   textShadow: '0 0 10px rgba(0, 217, 255, 0.5), 0 0 20px rgba(0, 217, 255, 0.3), 0 0 30px rgba(0, 217, 255, 0.2)'
                 }}
               >
-                The World's First Fully Agentic Development Environment
+                The World&apos;s First Fully Agentic Development Environment
               </p>
             </div>
 

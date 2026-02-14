@@ -260,7 +260,7 @@ export default function FileOpenDialog({ isOpen, onClose, onFileSelect }: FileOp
           
           {!loading && !error && searchQuery && !filteredTree?.children?.length && (
             <div className="text-center py-8 text-gray-500">
-              No files found matching "{searchQuery}"
+              No files found matching &quot;{searchQuery}&quot;
             </div>
           )}
         </div>

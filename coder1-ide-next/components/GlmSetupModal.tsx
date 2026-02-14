@@ -106,7 +106,7 @@ export function GlmSetupModal({ isOpen, onClose }: GlmSetupModalProps) {
                 <div className="flex-1">
                   <p className="text-sm text-gray-300">Switch to GLM 4.6</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Open Terminal Settings (gear icon) → Select "GLM 4.6" from model dropdown
+                    Open Terminal Settings (gear icon) → Select &quot;GLM 4.6&quot; from model dropdown
                   </p>
                 </div>
               </div>

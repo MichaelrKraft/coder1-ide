@@ -675,8 +675,8 @@ export async function POST(
         console.log('🔍 STEP 0: Dynamically importing CLIPRDOrchestrator...');
         let CLIPRDOrchestrator: any;
         try {
-          const module = await import('@/services/prd-tools/cli-tool-orchestrator');
-          CLIPRDOrchestrator = module.CLIPRDOrchestrator;
+          const cliModule = await import('@/services/prd-tools/cli-tool-orchestrator');
+          CLIPRDOrchestrator = cliModule.CLIPRDOrchestrator;
           console.log('✅ STEP 0: CLI orchestrator module imported successfully');
         } catch (importError: any) {
           console.error('❌ STEP 0 FAILED: Cannot import CLI orchestrator');

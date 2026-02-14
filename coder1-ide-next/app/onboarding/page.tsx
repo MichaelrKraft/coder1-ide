@@ -298,7 +298,7 @@ export default function OnboardingPage() {
                   <Zap className="w-10 h-10 text-white" />
                 </div>
                 
-                <h2 className="text-3xl font-bold mb-4">You're All Set!</h2>
+                <h2 className="text-3xl font-bold mb-4">You&apos;re All Set!</h2>
                 <p className="text-xl text-gray-400 mb-8">
                   Launching Coder1 IDE with memory persistence...
                 </p>

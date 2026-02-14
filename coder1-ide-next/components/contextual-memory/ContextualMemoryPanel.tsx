@@ -460,10 +460,10 @@ export const ContextualMemoryPanel: React.FC<ContextualMemoryPanelProps> = ({
           <div className="p-4 text-center">
             <span className="text-gray-500 text-sm">This looks like something new!</span>
             <p className="text-xs text-gray-600 mt-1">
-              I haven't seen a question quite like this before.
+              I haven&apos;t seen a question quite like this before.
             </p>
             <p className="text-xs text-gray-500 mt-2">
-              But don't worry - I'm learning and will remember our conversation!
+              But don&apos;t worry - I&apos;m learning and will remember our conversation!
             </p>
           </div>
         )}
@@ -636,7 +636,7 @@ export const ContextualMemoryPanel: React.FC<ContextualMemoryPanelProps> = ({
       {memories.length > 0 && (
         <div className="px-3 py-2 border-t border-gray-700 bg-gray-800/50">
           <p className="text-xs text-gray-500 text-center">
-            Click "Use" to apply any solution or expand to see details
+            Click &quot;Use&quot; to apply any solution or expand to see details
           </p>
         </div>
       )}

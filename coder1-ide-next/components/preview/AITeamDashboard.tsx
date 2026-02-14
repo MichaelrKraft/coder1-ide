@@ -276,7 +276,7 @@ const AITeamDashboard: React.FC<AITeamDashboardProps> = ({ teamData: initialTeam
         
         {visibleAgents.length === 0 ? (
           <div className="text-gray-500 text-sm italic">
-            No agents currently active. Click "Spawn AI Team" to start.
+            No agents currently active. Click &quot;Spawn AI Team&quot; to start.
           </div>
         ) : (
           <div className="space-y-3">
