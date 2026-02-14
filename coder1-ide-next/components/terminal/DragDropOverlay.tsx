@@ -168,7 +168,7 @@ export default function DragDropOverlay({
                 ⚠️ Important: Copy-Paste Required
               </p>
               <p className="text-base text-blue-200 text-center mb-4 max-w-md mx-auto">
-                After dropping, you'll need to copy the formatted content
+                After dropping, you&apos;ll need to copy the formatted content
                 and paste it into your Claude Code conversation
               </p>
               <div className="flex flex-wrap gap-2 justify-center">

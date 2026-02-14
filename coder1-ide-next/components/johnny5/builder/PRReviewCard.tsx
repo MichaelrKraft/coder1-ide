@@ -195,7 +195,7 @@ export default function PRReviewCard({
           <div className="flex items-start gap-2">
             <Brain className="w-4 h-4 text-coder1-cyan mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-xs font-medium text-text-secondary mb-1">Johnny5's Reasoning</p>
+              <p className="text-xs font-medium text-text-secondary mb-1">Johnny5&apos;s Reasoning</p>
               <p className="text-xs text-text-muted">{pr.reasoning}</p>
             </div>
           </div>

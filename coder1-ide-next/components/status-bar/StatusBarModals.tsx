@@ -265,7 +265,7 @@ export default function StatusBarModals({
                           A handoff creates a comprehensive document that captures:
                         </p>
                         <ul className="text-sm text-text-muted space-y-1 ml-4 list-disc">
-                          <li>What you've accomplished in this session</li>
+                          <li>What you&apos;ve accomplished in this session</li>
                           <li>Current state of your project</li>
                           <li>Any blockers or issues encountered</li>
                           <li>Prioritized next steps</li>

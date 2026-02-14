@@ -28,7 +28,7 @@ export default function MarketingPage() {
                 GitHub
               </Link>
               <Link href="/ide" className="bg-coder1-cyan text-black px-4 py-2 rounded-lg font-medium hover:bg-coder1-cyan/90 transition-colors">
-                It's Free
+                It&apos;s Free
               </Link>
             </nav>
           </div>
@@ -114,7 +114,7 @@ export default function MarketingPage() {
               <DollarSign className="w-12 h-12 mb-4 text-green-400 mx-auto" />
               <h3 className="text-xl font-semibold mb-2">Cost Savings</h3>
               <p className="text-text-secondary">Coder 1 is Free</p>
-              <p className="text-sm text-text-muted mt-2">Uses Claude CLI, not expensive API's</p>
+              <p className="text-sm text-text-muted mt-2">Uses Claude CLI, not expensive APIs</p>
             </div>
 
             <div className="text-center p-6 bg-bg-secondary border border-border-default rounded-lg">

@@ -143,7 +143,7 @@ export default function CheckpointNameModal({
             <div className="text-xs text-text-muted mb-4">
               {name.trim() ? (
                 <>
-                  <strong>Preview:</strong> "{name.trim()}" - {new Date().toLocaleDateString('en-US')} {new Date().toLocaleTimeString()}
+                  <strong>Preview:</strong> &quot;{name.trim()}&quot; - {new Date().toLocaleDateString('en-US')} {new Date().toLocaleTimeString()}
                 </>
               ) : (
                 <>

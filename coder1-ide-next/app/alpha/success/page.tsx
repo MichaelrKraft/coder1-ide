@@ -22,7 +22,7 @@ export default function AlphaSuccessPage() {
         </h1>
 
         <p className="text-xl text-gray-300 mb-8">
-          Your free alpha access has started. Let's get coding!
+          Your free alpha access has started. Let&apos;s get coding!
         </p>
 
         <a

@@ -920,7 +920,7 @@ export default function AlphaLandingPage() {
           {/* Subtitle - Version 2: Claudebot hook */}
           <div className="mb-6 subtitle-fade-in">
             <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
-              You've Heard Of <span className="text-coder1-cyan">Moltbot</span>.
+              You&apos;ve Heard Of <span className="text-coder1-cyan">Moltbot</span>.
             </p>
             <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
               What If It Lived In Your <span className="text-coder1-cyan">IDE</span>?

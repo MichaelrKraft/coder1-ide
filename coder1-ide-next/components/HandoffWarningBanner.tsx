@@ -101,7 +101,7 @@ export default function HandoffWarningBanner({ onCreateHandoff }: HandoffWarning
               A handoff creates a comprehensive session summary that captures:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>What you've accomplished in this session</li>
+              <li>What you&apos;ve accomplished in this session</li>
               <li>Current state of your project</li>
               <li>Any blockers or issues encountered</li>
               <li>Prioritized next steps</li>

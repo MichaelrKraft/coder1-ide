@@ -8,8 +8,10 @@ export async function GET() {
   // FIX (Feb 2026): Use global.bridgeManager set by server.js
   // The module import creates a separate singleton that doesn't have connections
   // server.js sets global.bridgeManager at line 1933 with actual WebSocket connections
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const bridgeManagerGlobal = (global as any).bridgeManager;
+  const bridgeManagerGlobal = (global as Record<string, unknown>).bridgeManager as {
+    hasBridgeForUser?: (userId: string) => boolean;
+    findAnyConnectedBridge?: () => unknown;
+  } | undefined;
   const bridgeConnected = bridgeManagerGlobal?.hasBridgeForUser?.('default') ||
                           !!bridgeManagerGlobal?.findAnyConnectedBridge?.();
 

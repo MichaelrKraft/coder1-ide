@@ -373,7 +373,7 @@ export default function ContextTab({ className = '' }: ContextTabProps) {
         {/* No Results */}
         {debouncedQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
           <div className="text-center py-4 text-text-muted">
-            <p className="text-xs">No memories found for "{debouncedQuery}"</p>
+            <p className="text-xs">No memories found for &quot;{debouncedQuery}&quot;</p>
           </div>
         )}
 

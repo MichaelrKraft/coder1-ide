@@ -56,11 +56,11 @@ export default function UpgradePrompt({
                 <span className="text-coder1-cyan font-medium">
                   Claude Code Pro or Max
                 </span>
-                . Johnny5 works best with Claude's advanced capabilities.
+                . Johnny5 works best with Claude&apos;s advanced capabilities.
               </>
             ) : (
               <>
-                You've used{' '}
+                You&apos;ve used{' '}
                 <span className="text-coder1-cyan font-medium">
                   {messageCount}/{limit} free messages
                 </span>{' '}

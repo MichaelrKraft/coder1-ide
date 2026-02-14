@@ -522,7 +522,7 @@ export default function ExplorationResultsViewer({
 
       <div className="px-6 py-3 border-t border-border-default bg-bg-secondary text-center">
         <p className="text-xs text-text-muted">
-          Click "Adopt" to copy files to your workspace • Preview shows live-rendered HTML • Code tab shows all generated files
+          Click &quot;Adopt&quot; to copy files to your workspace • Preview shows live-rendered HTML • Code tab shows all generated files
         </p>
       </div>
     </div>

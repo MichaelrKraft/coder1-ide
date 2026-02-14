@@ -58,7 +58,7 @@ export function CostEstimate({ estimate, model = 'claude-sonnet-4-5-20250929' }:
             <div className="text-sm">
               <p className="font-medium text-green-300">Completely Free</p>
               <p className="text-xs text-green-400/80">
-                This config doesn't use any AI API calls and has zero cost
+                This config doesn&apos;t use any AI API calls and has zero cost
               </p>
             </div>
           </div>

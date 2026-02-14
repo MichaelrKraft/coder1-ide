@@ -59,7 +59,7 @@ export default function MemoriesPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-            Johnny5's Second Brain
+            Johnny5&apos;s Second Brain
           </h1>
           <p className="text-gray-400">
             Persistent memory system for context across sessions

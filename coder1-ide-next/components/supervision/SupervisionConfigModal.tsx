@@ -430,7 +430,7 @@ Provide contextual warnings, suggestions, and guidance based on this configurati
                   Tell me about your project
                 </h3>
                 <p className="text-sm text-text-muted mb-6">
-                  Help me understand what you're building so I can provide the best supervision
+                  Help me understand what you&apos;re building so I can provide the best supervision
                 </p>
               </div>
 
@@ -515,7 +515,7 @@ Provide contextual warnings, suggestions, and guidance based on this configurati
                   What should I focus on?
                 </h3>
                 <p className="text-sm text-text-muted mb-6">
-                  Select the areas where you'd like supervision and guidance
+                  Select the areas where you&apos;d like supervision and guidance
                 </p>
               </div>
 
@@ -774,7 +774,7 @@ Provide contextual warnings, suggestions, and guidance based on this configurati
                       {previewContent}
                     </pre>
                   ) : (
-                    <p className="text-sm text-text-muted italic">Click "Generate Preview" to see how your supervision will work</p>
+                    <p className="text-sm text-text-muted italic">Click &quot;Generate Preview&quot; to see how your supervision will work</p>
                   )}
                 </div>
               </div>
@@ -792,7 +792,7 @@ Provide contextual warnings, suggestions, and guidance based on this configurati
                   Your Supervision Bot is Ready!
                 </h3>
                 <p className="text-sm text-text-muted mb-6">
-                  Click "Save & Activate" to start intelligent supervision
+                  Click &quot;Save &amp; Activate&quot; to start intelligent supervision
                 </p>
               </div>
 
@@ -802,7 +802,7 @@ Provide contextual warnings, suggestions, and guidance based on this configurati
                   <ul className="space-y-1 text-sm text-text-secondary">
                     <li>✓ Your custom supervision configuration will be saved</li>
                     <li>✓ AI will monitor your terminal commands and code changes</li>
-                    <li>✓ You'll receive contextual guidance based on your settings</li>
+                    <li>✓ You&apos;ll receive contextual guidance based on your settings</li>
                     <li>✓ Supervision adapts to your project over time</li>
                   </ul>
                 </div>

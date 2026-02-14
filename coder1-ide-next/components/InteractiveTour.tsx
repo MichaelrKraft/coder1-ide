@@ -989,7 +989,7 @@ coder1-bridge start
             className="w-4 h-4 rounded border-border-default bg-bg-secondary text-coder1-cyan focus:ring-1 focus:ring-coder1-cyan"
           />
           <label htmlFor="dont-show-tour" className="text-xs text-text-muted cursor-pointer select-none hover:text-text-secondary">
-            Don't show this tour again
+            Don&apos;t show this tour again
           </label>
         </div>
 
