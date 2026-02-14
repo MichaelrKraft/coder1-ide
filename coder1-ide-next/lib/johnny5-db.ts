@@ -2097,7 +2097,7 @@ export async function getMemoryStats(userId: string): Promise<MemoryStats> {
   const manusStmt = database.prepare("SELECT COUNT(*) as count FROM memory_chunks WHERE source_type LIKE 'manuslive%' AND user_id = ?");
   const manuslive = (manusStmt.get(userId) as { count: number }).count;
 
-  const sessionStmt = database.prepare("SELECT COUNT(*) as count FROM memory_chunks WHERE source_type = 'session' AND user_id = ?");
+  const sessionStmt = database.prepare("SELECT COUNT(*) as count FROM memory_chunks WHERE source_type LIKE 'ide_%' AND user_id = ?");
   const sessions = (sessionStmt.get(userId) as { count: number }).count;
 
   const lastStmt = database.prepare('SELECT MAX(updated_at) as last FROM memory_chunks WHERE user_id = ?');
