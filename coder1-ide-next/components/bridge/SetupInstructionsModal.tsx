@@ -246,7 +246,7 @@ export function SetupInstructionsModal({
                   <p className="text-xs text-gray-400 mb-2">Not the web terminal above—your actual {userOS === 'mac' ? 'Mac' : userOS === 'windows' ? 'PC' : 'computer'} terminal</p>
                   <div className="text-sm text-gray-300">
                     {userOS === 'mac' && (
-                      <p>• <span className="text-cyan-400 font-semibold">Mac:</span> Cmd+Space → type "Terminal" → Enter</p>
+                      <p>• <span className="text-cyan-400 font-semibold">Mac:</span> Cmd+Space → type &quot;Terminal&quot; → Enter</p>
                     )}
                     {userOS === 'windows' && (
                       <div>
@@ -313,7 +313,7 @@ export function SetupInstructionsModal({
                     Paste the 6-digit code when prompted in your terminal
                   </p>
                   <p className="text-xs text-gray-400 mt-2">
-                    ⚡ You'll see: <code className="bg-bg-tertiary px-1 rounded text-cyan-300">Enter 6-digit pairing code:</code>
+                    ⚡ You&apos;ll see: <code className="bg-bg-tertiary px-1 rounded text-cyan-300">Enter 6-digit pairing code:</code>
                   </p>
                 </div>
               </div>
@@ -331,7 +331,7 @@ export function SetupInstructionsModal({
                 <div className="flex gap-2">
                   <span className="text-green-400 mt-0.5">✅</span>
                   <p className="text-gray-300">
-                    <strong className="text-white">Keep the bridge running</strong> in the background while coding (don't close that terminal window)
+                    <strong className="text-white">Keep the bridge running</strong> in the background while coding (don&apos;t close that terminal window)
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -376,7 +376,7 @@ export function SetupInstructionsModal({
                 className="w-4 h-4 rounded border-border-default bg-bg-secondary text-coder1-cyan focus:ring-1 focus:ring-coder1-cyan"
               />
               <label htmlFor="dont-show-setup" className="text-sm text-text-muted cursor-pointer select-none hover:text-text-secondary">
-                I've completed the setup, don't show this again
+                I&apos;ve completed the setup, don&apos;t show this again
               </label>
             </div>
           )}

@@ -294,8 +294,8 @@ export function BridgeConnectButton() {
                           <div className="flex-1">
                             <h4 className="font-semibold text-cyan-300 mb-1 text-sm">Open YOUR Local Terminal</h4>
                             <div className="space-y-1 text-xs text-gray-300">
-                              <p>• <strong>Mac:</strong> Press Cmd+Space, type "Terminal"</p>
-                              <p>• <strong>Windows:</strong> Press Win+R, type "cmd"</p>
+                              <p>• <strong>Mac:</strong> Press Cmd+Space, type &quot;Terminal&quot;</p>
+                              <p>• <strong>Windows:</strong> Press Win+R, type &quot;cmd&quot;</p>
                               <p>• <strong>Linux:</strong> Press Ctrl+Alt+T</p>
                             </div>
                           </div>

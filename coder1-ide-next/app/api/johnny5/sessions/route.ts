@@ -15,6 +15,7 @@ import {
   listSessions,
   createSession,
   archiveSession,
+  updateSession,
   type Session
 } from '@/lib/johnny5-db';
 
@@ -57,6 +58,24 @@ export async function GET(request: NextRequest) {
 
     // Get sessions from database
     const sessions = await listSessions(limit + 100, offset); // Get extra for filtering
+
+    // Auto-complete stale sessions: any "active" session older than 2 hours is considered done
+    const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+    const now = Date.now();
+    for (const session of sessions) {
+      if (session.status === 'active') {
+        const sessionAge = now - new Date(session.started_at).getTime();
+        if (sessionAge > TWO_HOURS_MS) {
+          const endedAt = new Date(now - TWO_HOURS_MS).toISOString();
+          await updateSession(session.id, {
+            status: 'completed',
+            ended_at: endedAt,
+          });
+          session.status = 'completed';
+          session.ended_at = endedAt;
+        }
+      }
+    }
 
     // Filter by status if provided
     let filtered = status
