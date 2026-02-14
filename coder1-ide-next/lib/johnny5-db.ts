@@ -193,6 +193,7 @@ const DB_PATH = JOHNNY5_DB_PATH;
 const BACKUP_DIR = BACKUP_PATH;
 
 let db: Database.Database | null = null;
+let initPromise: Promise<void> | null = null;
 
 /**
  * Get the database instance, initializing if necessary
@@ -238,10 +239,32 @@ function initializeDbSync(): void {
 }
 
 /**
- * Initialize the database (async wrapper for consistency)
+ * Initialize the database (async wrapper with singleton protection)
+ *
+ * Uses a promise-based singleton pattern to prevent race conditions when
+ * multiple services call initializeDb() concurrently. This ensures sqlite-vec
+ * is loaded exactly once, fixing the blocking issue that previously required
+ * disabling Johnny5 Proactive Services.
  */
 export async function initializeDb(): Promise<void> {
-  initializeDbSync();
+  // Already initialized
+  if (db) return;
+
+  // Already initializing - wait for it
+  if (initPromise) return initPromise;
+
+  // Start initialization
+  initPromise = new Promise<void>((resolve, reject) => {
+    try {
+      initializeDbSync();
+      resolve();
+    } catch (err) {
+      initPromise = null; // Allow retry on error
+      reject(err);
+    }
+  });
+
+  return initPromise;
 }
 
 /**
@@ -338,6 +361,24 @@ function createTables(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp);
     CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action);
     CREATE INDEX IF NOT EXISTS idx_usage_stats_date ON usage_stats(date);
+
+    -- =========================================================================
+    -- Collaborative Editing Audit Log (Phase 6 - Security Hardening)
+    -- =========================================================================
+
+    CREATE TABLE IF NOT EXISTS collab_audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp INTEGER NOT NULL,
+      user_id TEXT NOT NULL,
+      team_id TEXT,
+      action TEXT NOT NULL,
+      file_path TEXT,
+      metadata TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_collab_audit_timestamp ON collab_audit_log(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_collab_audit_user ON collab_audit_log(user_id);
+    CREATE INDEX IF NOT EXISTS idx_collab_audit_action ON collab_audit_log(action);
 
     -- =========================================================================
     -- Memory System Tables (for semantic search)
@@ -922,6 +963,35 @@ export async function logAudit(action: string, details?: unknown): Promise<void>
   `);
 
   stmt.run(id, action, details ? JSON.stringify(details) : null, now);
+}
+
+/**
+ * Log a collaborative editing audit entry (Phase 6 - Security Hardening)
+ */
+export function logCollabAudit(entry: {
+  userId: string;
+  teamId?: string;
+  action: string;
+  filePath?: string;
+  metadata?: Record<string, unknown>;
+}): void {
+  try {
+    const database = getDb();
+    database.prepare(`
+      INSERT INTO collab_audit_log (timestamp, user_id, team_id, action, file_path, metadata)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      Date.now(),
+      entry.userId,
+      entry.teamId ?? null,
+      entry.action,
+      entry.filePath ?? null,
+      entry.metadata ? JSON.stringify(entry.metadata) : null
+    );
+  } catch (err) {
+    // Non-fatal: don't let audit logging break the write path
+    console.error('[Johnny5 DB] Collab audit log error:', err);
+  }
 }
 
 /**
