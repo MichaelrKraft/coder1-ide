@@ -516,9 +516,34 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
 function SecurityTabConnected() {
   const {
     security,
+    securityLoading,
     updatePermission,
     dismissSecurityWarning,
+    setSecurity,
+    setSecurityLoading,
   } = useJohnny5Store();
+
+  // Fetch real security data on mount
+  useEffect(() => {
+    const loadSecurityData = async () => {
+      setSecurityLoading(true);
+      try {
+        const response = await fetch('/api/johnny5/security/score');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setSecurity(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('[SecurityTabConnected] Failed to load security data:', error);
+      } finally {
+        setSecurityLoading(false);
+      }
+    };
+
+    loadSecurityData();
+  }, [setSecurity, setSecurityLoading]);
 
   return (
     <SecurityTab

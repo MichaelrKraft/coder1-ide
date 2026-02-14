@@ -21,6 +21,57 @@ interface TeamFact {
   is_active: boolean;
 }
 
+/** Map Supabase team_knowledge row (data JSONB) into flat TeamFact.
+ *  Handles three source_table types:
+ *  - extracted_facts:   { fact_key, fact_value }
+ *  - learned_patterns:  { pattern_type, pattern_description }
+ *  - memory_chunks:     { heading, section_type, content }
+ */
+function mapKnowledgeRow(row: Record<string, unknown>): TeamFact {
+  const data = (row.data || {}) as Record<string, unknown>;
+  const sourceTable = row.source_table as string;
+
+  let factKey = '';
+  let rawValue = '';
+
+  if (sourceTable === 'extracted_facts') {
+    factKey = (data.fact_key as string) || '';
+    rawValue = (data.fact_value as string) || '';
+  } else if (sourceTable === 'learned_patterns') {
+    factKey = (data.pattern_type as string) || '';
+    rawValue = (data.pattern_description as string) || '';
+  } else {
+    // memory_chunks — use heading if descriptive, otherwise label as "session memory"
+    const heading = (data.heading as string) || '';
+    const genericHeadings = ['assistant', 'user', 'system', ''];
+    factKey = genericHeadings.includes(heading.toLowerCase()) ? 'session memory' : heading;
+    rawValue = (data.content as string) || '';
+  }
+
+  // Truncate long content for display
+  const factValue = rawValue.length > 200 ? rawValue.substring(0, 200) + '...' : rawValue;
+
+  return {
+    id: row.id as string,
+    fact_key: factKey,
+    fact_value: factValue,
+    contributed_by_name: (row.contributed_by_name as string) || 'Unknown',
+    contributor_count: (row.contributor_count as number) || 1,
+    is_active: row.is_active !== false,
+  };
+}
+
+/** Map and sort team knowledge rows: specific facts first, generic session memory last */
+function mapAndSortKnowledge(rows: Record<string, unknown>[]): TeamFact[] {
+  return rows
+    .map(mapKnowledgeRow)
+    .sort((a, b) => {
+      const aIsGeneric = a.fact_key === 'session memory' ? 1 : 0;
+      const bIsGeneric = b.fact_key === 'session memory' ? 1 : 0;
+      return aIsGeneric - bIsGeneric;
+    });
+}
+
 interface CodeEvent {
   id: string;
   type: string;
@@ -42,19 +93,27 @@ function timeAgo(timestamp: string): string {
 }
 
 export default function TeamPanel() {
-  const { syncTeam, syncStatus, createTeam, inviteMember, triggerSync, teams, selectTeam, onlineMembers } = useTeamStore();
+  const { syncTeam, syncStatus, createTeam, inviteMember, triggerSync, teams, selectTeam, onlineMembers, fetchTeams } = useTeamStore();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [facts, setFacts] = useState<TeamFact[]>([]);
   const [newTeamName, setNewTeamName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [copied, setCopied] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [gitSuggestion, setGitSuggestion] = useState<string | null>(null);
   const [recentActivity, setRecentActivity] = useState<CodeEvent[]>([]);
 
-  // Auto-detect git remote for team name suggestion
+  // On mount, fetch existing teams the user belongs to
   useEffect(() => {
     if (!syncTeam) {
+      fetchTeams();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-detect git remote for team name suggestion
+  useEffect(() => {
+    if (!syncTeam && teams.length === 0) {
       fetch('/api/git/context')
         .then(r => r.json())
         .then(data => {
@@ -66,7 +125,7 @@ export default function TeamPanel() {
         })
         .catch(() => {}); // Silent fail
     }
-  }, [syncTeam]);
+  }, [syncTeam, teams.length]);
 
   // Fetch members and facts when team is selected
   useEffect(() => {
@@ -85,7 +144,7 @@ export default function TeamPanel() {
       .then(r => r.json())
       .then(data => {
         if (data.success) {
-          setFacts(data.data || []);
+          setFacts(mapAndSortKnowledge(data.data || []));
         }
       })
       .catch(() => {});
@@ -151,8 +210,14 @@ export default function TeamPanel() {
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) return;
     setIsCreating(true);
-    await createTeam(newTeamName.trim());
-    setIsCreating(false);
+    setCreateError(null);
+    try {
+      await createTeam(newTeamName.trim());
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Failed to create team');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleInvite = async () => {
@@ -172,7 +237,7 @@ export default function TeamPanel() {
       // Refresh knowledge feed after successful sync
       fetch(`/api/team/${syncTeam.id}/knowledge`)
         .then(r => r.json())
-        .then(data => { if (data.success) setFacts(data.data || []); })
+        .then(data => { if (data.success) setFacts(mapAndSortKnowledge(data.data || [])); })
         .catch(() => {});
     }
   };
@@ -242,11 +307,17 @@ export default function TeamPanel() {
           </div>
         )}
 
+        {createError && (
+          <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded px-3 py-2">
+            {createError}
+          </div>
+        )}
+
         <div className="flex gap-2">
           <input
             type="text"
             value={newTeamName}
-            onChange={(e) => setNewTeamName(e.target.value)}
+            onChange={(e) => { setNewTeamName(e.target.value); setCreateError(null); }}
             placeholder="Team name"
             className="flex-1 bg-bg-tertiary border border-border-default rounded px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-coder1-cyan"
             onKeyDown={(e) => e.key === 'Enter' && handleCreateTeam()}
