@@ -300,7 +300,7 @@ class BridgeClient extends EventEmitter {
         upgrade: true, // Allow upgrade from polling to websocket
         rememberUpgrade: true, // Remember successful upgrades
         timeout: 45000, // Match server connectTimeout
-        pingTimeout: 120000, // 2 minutes - generous timeout for production
+        pingTimeout: 300000, // 5 minutes - allows long Claude CLI commands
         pingInterval: 25000 // 25 seconds - keep connection alive
       });
       
