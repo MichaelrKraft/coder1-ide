@@ -119,6 +119,9 @@ const SESSION_RECALL_PATTERNS = [
   /\b(what errors? did I (hit|get|encounter))\b/i,
   /\b(what commands? did I (run|execute|use))\b/i,
   /\b(which (files?|projects?) did I)\b/i,
+  /\b(what (files?|changes?) did I (recently\s+)?commit)\b/i,
+  /\bwhat\s+did\s+I\s+(commit|push|deploy|merge)\b/i,
+  /\b(my|our|recent|last)\s+(commit|commits)\b/i,
 ];
 
 // ============================================================================
