@@ -313,6 +313,7 @@ Only mention code/git status if the user explicitly asks about it.
         bridgeManager.off('command:complete', completeHandler);
         bridgeManager.off('command:error', errorHandler);
         bridgeManager.off('command:cancelled', cancelledHandler);
+        bridgeManager.off('command:timeout', timeoutHandler);
       };
 
       // Listen for output events
@@ -376,11 +377,26 @@ Only mention code/git status if the user explicitly asks about it.
         }
       };
 
+      // Listen for bridge-manager timeout (resolves immediately instead of hanging)
+      const timeoutHandler = (data: { commandId: string; bridgeId: string }) => {
+        if (data.commandId === commandId && !resolved) {
+          resolved = true;
+          cleanup();
+          resolve({
+            success: false,
+            response: '',
+            error: 'Command timed out after 5 minutes',
+            errorCode: 'COMMAND_TIMEOUT',
+          });
+        }
+      };
+
       // Register listeners
       bridgeManager.on('command:output', outputHandler);
       bridgeManager.on('command:complete', completeHandler);
       bridgeManager.on('command:error', errorHandler);
       bridgeManager.on('command:cancelled', cancelledHandler);
+      bridgeManager.on('command:timeout', timeoutHandler);
 
       // Escape prompt for shell - use single quotes and escape any single quotes in the prompt
       const escapedPrompt = prompt.replace(/'/g, "'\\''");
