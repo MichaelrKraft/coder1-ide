@@ -1,3 +1,18 @@
+# Fix: Server OOM Crash from TeamSync + Huge memory_chunks Table (Feb 14, 2026)
+
+## Tasks
+
+- [x] 1. Diagnose server crash — `team-sync-service.ts` runs `SELECT * FROM memory_chunks` every 30s, loading 9.1 GB into 4 GB heap
+- [x] 2. Fix with SQL-level filtering — `WHERE LENGTH(content) < 50KB` for memory_chunks table only (preserves team sync for small chunks)
+- [x] 3. Fix memory stats query — `source_type LIKE 'ide_%'` in johnny5-db.ts
+- [x] 4. Verify server survives past 85-second crash window (confirmed: 3+ minutes stable)
+
+### Files Modified
+1. **`services/team-sync-service.ts`** (lines 346-354) — Added SQL `WHERE LENGTH(content) < ?` filter when querying `memory_chunks` table. Loads 1,113 rows (1.1 MB) instead of 1,321 rows (9.1 GB).
+2. **`lib/johnny5-db.ts`** (line 2100) — Changed `source_type = 'session'` → `source_type LIKE 'ide_%'` for correct session memory stats.
+
+---
+
 # Johnny5 Session Memory - "ChatAid for Coding Sessions" (Feb 14, 2026)
 
 **Plan:** `/Users/michaelkraft/.claude/plans/snappy-watching-bengio.md`
@@ -31,6 +46,10 @@
 
 ### Verification
 - [x] 12. TypeScript compilation check - 0 errors in all session memory files
+
+### Testing
+- [x] 13. Unit tests (`__tests__/session-memory.test.ts`) - 61 tests: temporal parser, query intent, budget allocation, sensitive data redaction, edge cases
+- [x] 14. Integration tests (`__tests__/session-memory-integration.test.ts`) - 18 tests: indexing pipeline, deduplication, noise filtering, keyword search, intent routing, cleanup
 
 ## Review
 

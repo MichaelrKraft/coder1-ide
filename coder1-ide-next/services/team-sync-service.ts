@@ -343,7 +343,15 @@ class TeamSyncService {
     for (const table of VALID_SOURCE_TABLES) {
       let rows: Record<string, unknown>[];
       try {
-        rows = db.prepare(`SELECT * FROM ${table}`).all() as Record<string, unknown>[];
+        // For memory_chunks, filter out oversized rows at SQL level to prevent OOM
+        // (manuslive_memory rows can be 51MB+ each, totaling 9+ GB)
+        if (table === 'memory_chunks') {
+          rows = db.prepare(
+            `SELECT * FROM ${table} WHERE LENGTH(content) < ?`
+          ).all(MAX_PUSH_ROW_SIZE_BYTES) as Record<string, unknown>[];
+        } else {
+          rows = db.prepare(`SELECT * FROM ${table}`).all() as Record<string, unknown>[];
+        }
       } catch {
         // Table may not exist
         continue;
