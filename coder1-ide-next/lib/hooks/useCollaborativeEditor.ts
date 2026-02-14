@@ -7,7 +7,8 @@
  *  - Y.Doc per file
  *  - YSocketIOProvider (custom Socket.IO transport)
  *  - MonacoBinding (y-monaco bidirectional sync)
- *  - Auto-save to /api/files/write
+ *  - Auto-save via Socket.IO collab:file-write (routes through bridges to local filesystems)
+ *  - IndexedDB queue for offline writes (Safeguard #3)
  *
  * Critical edge cases handled:
  *  - C1: collabActiveRef blocks setValue() in MonacoEditor
@@ -132,22 +133,31 @@ export function useCollaborativeEditor(
     setConnectedUsers([]);
   }, [collabActiveRef]);
 
-  // --- Auto-save (debounced, only for first user in room) ---
+  // --- Auto-save via Socket.IO (debounced, only for first user in room) ---
   const autoSave = useCallback((filePath: string, content: string) => {
     if (!isFirstInRoomRef.current) return; // Only host saves
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
-      try {
-        await fetch('/api/files/write', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filePath, content }),
+      const socket = socketRef.current;
+      if (socket?.connected) {
+        socket.emit('collab:file-write', {
+          filePath,
+          content,
+          userId,
+          teamId,
+          fileId,
         });
-      } catch (e) {
-        console.warn('[Collab] Auto-save failed:', e);
+      } else {
+        // Socket disconnected — queue locally via IndexedDB (Safeguard #3)
+        try {
+          await collabQueuePut({ filePath, content, fileId: fileId || filePath, timestamp: Date.now() });
+          console.log('[Collab] Write queued locally (socket disconnected)');
+        } catch (e) {
+          console.warn('[Collab] Failed to queue local write:', e);
+        }
       }
     }, 500);
-  }, []);
+  }, [userId, teamId, fileId]);
 
   // --- Main effect: create/destroy Yjs setup on file change ---
   useEffect(() => {
@@ -227,6 +237,25 @@ export function useCollaborativeEditor(
         socket.on('collab:user-joined', () => handleAwarenessChange());
         socket.on('collab:user-left', () => handleAwarenessChange());
 
+        // Listen for write acknowledgments from server
+        socket.on('collab:file-write-ack', (data: {
+          filePath: string;
+          success: boolean;
+          error?: string;
+          writtenVia?: 'bridge' | 'server';
+          syncResults?: { successCount: number; failCount: number };
+        }) => {
+          if (!data.success) {
+            console.warn('[Collab] File write failed:', data.error);
+            setError(`Save failed: ${data.error}`);
+          }
+        });
+
+        // Flush any queued offline writes now that socket is connected
+        collabQueueFlush(socket, userId, teamId).catch((e) => {
+          console.warn('[Collab] Failed to flush offline queue:', e);
+        });
+
         // Wait for initial sync before creating binding
         const onSync = async () => {
           if (cancelled || !editorRef.current) return;
@@ -301,4 +330,92 @@ export function useCollaborativeEditor(
     connectedUsers,
     error,
   };
+}
+
+// ============================================================================
+// IndexedDB Queue for Offline Collab Writes (Safeguard #3)
+// Minimal helper: queue writes when socket is disconnected, flush on reconnect.
+// ============================================================================
+
+interface CollabQueueEntry {
+  filePath: string;
+  content: string;
+  fileId: string;
+  timestamp: number;
+}
+
+const COLLAB_QUEUE_DB = 'coder1-collab-queue';
+const COLLAB_QUEUE_STORE = 'pending-writes';
+
+function openCollabQueueDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      reject(new Error('IndexedDB not available'));
+      return;
+    }
+    const req = indexedDB.open(COLLAB_QUEUE_DB, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(COLLAB_QUEUE_STORE)) {
+        db.createObjectStore(COLLAB_QUEUE_STORE, { keyPath: 'filePath' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function collabQueuePut(entry: CollabQueueEntry): Promise<void> {
+  const db = await openCollabQueueDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(COLLAB_QUEUE_STORE, 'readwrite');
+    tx.objectStore(COLLAB_QUEUE_STORE).put(entry);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+async function collabQueueFlush(
+  socket: import('socket.io-client').Socket,
+  userId: string,
+  teamId: string | null
+): Promise<void> {
+  let db: IDBDatabase;
+  try {
+    db = await openCollabQueueDB();
+  } catch {
+    return; // IndexedDB not available, nothing to flush
+  }
+
+  const entries: CollabQueueEntry[] = await new Promise((resolve, reject) => {
+    const tx = db.transaction(COLLAB_QUEUE_STORE, 'readonly');
+    const req = tx.objectStore(COLLAB_QUEUE_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+
+  if (entries.length === 0) {
+    db.close();
+    return;
+  }
+
+  console.log(`[Collab] Flushing ${entries.length} queued offline writes`);
+
+  for (const entry of entries) {
+    socket.emit('collab:file-write', {
+      filePath: entry.filePath,
+      content: entry.content,
+      userId,
+      teamId,
+      fileId: entry.fileId,
+    });
+  }
+
+  // Clear the queue after flushing
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(COLLAB_QUEUE_STORE, 'readwrite');
+    tx.objectStore(COLLAB_QUEUE_STORE).clear();
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
 }

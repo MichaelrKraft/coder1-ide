@@ -167,14 +167,13 @@ if (process.env.ENABLE_ETERNAL_MEMORY === 'true') {
 }
 
 // Memory Exporter for Claude Skills integration
+// DISABLED: Module import pulls in EternalMemorySearch, contextDatabase,
+// embeddingService, vectorSearchService — all heavy. Combined with Next.js dev
+// mode holding ~10K compiled modules in memory, exceeds the 2GB default heap.
+// The 30-second auto-export interval also leaked memory, compounding the issue.
+// TODO: Refactor memory-exporter to use lazy loading or a separate worker process.
 let memoryExporter = null;
-try {
-  const memoryExporterModule = require('./services/memory-exporter.ts');
-  memoryExporter = memoryExporterModule.memoryExporter;
-  console.log('💾 Memory Exporter loaded - will export to Claude Skills directory');
-} catch (error) {
-  console.warn('⚠️ Memory Exporter not available:', error.message);
-}
+console.log('⚠️ Memory Exporter disabled (heap OOM prevention)');
 
 // Agent Terminal Manager for Phase 2: Interactive Agent Terminals
 // Uses global singleton registry to prevent multiple instances across module reloads
@@ -4516,22 +4515,10 @@ app.prepare().then(() => {
     }
 
     // Initialize Memory Exporter for Claude Skills
+    // NOTE: Auto-export disabled — was causing heap OOM crashes (leaks ~2GB+ over minutes).
+    // Re-enable after fixing memory leak in memory-exporter.ts exportAll().
     if (memoryExporter) {
-      memoryExporter.initialize().then(() => {
-        console.log('✅ Memory Exporter initialized');
-        console.log(`   Export directory: ${memoryExporter.getStats().exportDir}`);
-
-        // Auto-export every 30 seconds
-        setInterval(() => {
-          memoryExporter.exportAll().catch(error => {
-            console.error('❌ [MemoryExporter] Auto-export failed:', error.message);
-          });
-        }, 30000);
-
-        console.log('   Auto-export: Every 30 seconds');
-      }).catch(error => {
-        console.error('❌ Memory Exporter initialization failed:', error);
-      });
+      console.log('⚠️ Memory Exporter loaded but auto-export disabled (heap OOM fix)');
     }
 
     // ========================================================================

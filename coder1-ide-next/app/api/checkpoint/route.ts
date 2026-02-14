@@ -390,7 +390,18 @@ export async function POST(request: NextRequest) {
     const sessionData = JSON.parse(await fs.readFile(sessionMetadataPath, 'utf8'));
     sessionData.lastUpdated = new Date().toISOString();
     await fs.writeFile(sessionMetadataPath, JSON.stringify(sessionData, null, 2));
-    
+
+    // Async session memory indexing - don't block checkpoint response
+    setImmediate(async () => {
+      try {
+        const { indexSessionFromCheckpoint } = await import('@/services/memory/session-indexer');
+        const indexResult = await indexSessionFromCheckpoint(checkpoint, sessionId, 'default');
+        console.log(`[SessionIndexer] Indexed ${indexResult.chunksIndexed} chunks, skipped ${indexResult.skipped}`);
+      } catch (indexError) {
+        console.error('[SessionIndexer] Indexing failed (non-blocking):', indexError);
+      }
+    });
+
     return NextResponse.json({
       success: true,
       checkpoint,

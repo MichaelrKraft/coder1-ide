@@ -121,7 +121,7 @@ export interface UsageStats {
 export interface MemoryChunk {
   id: string;
   user_id: string;
-  source_type: 'manuslive_memory' | 'manuslive_user' | 'session';
+  source_type: string;
   source_id: string;
   content: string;
   content_hash: string;
@@ -144,6 +144,7 @@ export interface MemorySearchResult {
   vector_score: number;
   keyword_score: number;
   combined_score: number;
+  created_at: string;
 }
 
 export interface EmbeddingMetadata {
@@ -385,9 +386,11 @@ function createTables(database: Database.Database): void {
     -- =========================================================================
 
     -- Memory chunks with metadata
+    -- NOTE: source_type CHECK constraint removed to support session memory types
+    -- (ide_session_summary, ide_terminal_chunk, ide_file_change, ide_error, ide_git_commit, ide_command)
     CREATE TABLE IF NOT EXISTS memory_chunks (
       id TEXT PRIMARY KEY,
-      source_type TEXT NOT NULL CHECK(source_type IN ('manuslive_memory', 'manuslive_user', 'session')),
+      source_type TEXT NOT NULL,
       source_id TEXT NOT NULL,
       content TEXT NOT NULL,
       content_hash TEXT NOT NULL,
@@ -601,6 +604,93 @@ function createTables(database: Database.Database): void {
     `);
   } catch (err) {
     console.error('[Johnny5 DB] pending_living_file_writes table error:', err);
+  }
+
+  // Step 6: Session Memory Migration - remove CHECK constraint on source_type
+  // SQLite doesn't support ALTER TABLE DROP CONSTRAINT, so for existing databases
+  // with the CHECK constraint, we recreate the table. For new databases, the CREATE TABLE
+  // above already omits the constraint. We detect by trying an insert with a new type.
+  try {
+    // Test if the CHECK constraint exists by trying a temporary insert+rollback
+    database.exec(`BEGIN`);
+    try {
+      database.prepare(`
+        INSERT INTO memory_chunks (id, source_type, source_id, content, content_hash, user_id)
+        VALUES ('__check_test__', 'ide_session_summary', '__test__', '__test__', '__test__', '__test__')
+      `).run();
+      // If we get here, constraint doesn't exist (or is already removed)
+      database.prepare(`DELETE FROM memory_chunks WHERE id = '__check_test__'`).run();
+      database.exec(`COMMIT`);
+    } catch (checkErr: unknown) {
+      database.exec(`ROLLBACK`);
+      const msg = checkErr instanceof Error ? checkErr.message : String(checkErr);
+      if (msg.includes('CHECK constraint')) {
+        console.log('[Johnny5 DB] Migrating memory_chunks table to remove CHECK constraint...');
+        // Recreate table without CHECK constraint
+        database.exec(`
+          CREATE TABLE IF NOT EXISTS memory_chunks_new (
+            id TEXT PRIMARY KEY,
+            source_type TEXT NOT NULL,
+            source_id TEXT NOT NULL,
+            content TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            start_line INTEGER,
+            end_line INTEGER,
+            token_count INTEGER DEFAULT 0,
+            heading TEXT,
+            section_type TEXT,
+            user_id TEXT DEFAULT 'default',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(source_id, content_hash)
+          );
+          INSERT OR IGNORE INTO memory_chunks_new SELECT * FROM memory_chunks;
+          DROP TABLE memory_chunks;
+          ALTER TABLE memory_chunks_new RENAME TO memory_chunks;
+        `);
+        // Recreate indexes after table rename
+        database.exec(`
+          CREATE INDEX IF NOT EXISTS idx_memory_chunks_source ON memory_chunks(source_type, source_id);
+          CREATE INDEX IF NOT EXISTS idx_memory_chunks_hash ON memory_chunks(content_hash);
+          CREATE INDEX IF NOT EXISTS idx_memory_chunks_updated ON memory_chunks(updated_at);
+          CREATE INDEX IF NOT EXISTS idx_memory_chunks_user ON memory_chunks(user_id);
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_chunks_source_hash ON memory_chunks(user_id, source_id, content_hash);
+        `);
+        // Recreate FTS triggers
+        database.exec(`
+          DROP TRIGGER IF EXISTS memory_chunks_ai;
+          DROP TRIGGER IF EXISTS memory_chunks_ad;
+          DROP TRIGGER IF EXISTS memory_chunks_au;
+          CREATE TRIGGER memory_chunks_ai AFTER INSERT ON memory_chunks BEGIN
+            INSERT INTO memory_fts(rowid, content, heading, section_type)
+            VALUES (new.rowid, new.content, new.heading, new.section_type);
+          END;
+          CREATE TRIGGER memory_chunks_ad AFTER DELETE ON memory_chunks BEGIN
+            INSERT INTO memory_fts(memory_fts, rowid, content, heading, section_type)
+            VALUES ('delete', old.rowid, old.content, old.heading, old.section_type);
+          END;
+          CREATE TRIGGER memory_chunks_au AFTER UPDATE ON memory_chunks BEGIN
+            INSERT INTO memory_fts(memory_fts, rowid, content, heading, section_type)
+            VALUES ('delete', old.rowid, old.content, old.heading, old.section_type);
+            INSERT INTO memory_fts(rowid, content, heading, section_type)
+            VALUES (new.rowid, new.content, new.heading, new.section_type);
+          END;
+        `);
+        console.log('[Johnny5 DB] Memory chunks table migration complete');
+      }
+    }
+  } catch (err) {
+    console.error('[Johnny5 DB] Session memory migration error:', err);
+  }
+
+  // Step 7: Add source_id index for session lookups
+  try {
+    database.exec(`
+      CREATE INDEX IF NOT EXISTS idx_memory_chunks_source_id ON memory_chunks(source_id);
+      CREATE INDEX IF NOT EXISTS idx_memory_chunks_created ON memory_chunks(created_at);
+    `);
+  } catch (err) {
+    console.error('[Johnny5 DB] Source ID index creation error:', err);
   }
 
   // Create vector table if sqlite-vec is available
@@ -1722,7 +1812,7 @@ export { BACKUP_PATH };
 export async function upsertMemoryChunk(chunk: {
   id: string;
   user_id: string;
-  source_type: 'manuslive_memory' | 'manuslive_user' | 'session';
+  source_type: string;
   source_id: string;
   content: string;
   content_hash: string;
@@ -1856,8 +1946,14 @@ function sanitizeFTS5Query(query: string): string {
 
 /**
  * Keyword search using FTS5
+ * @param dateFilter Optional date range filter for temporal queries
  */
-export async function searchMemoryKeyword(query: string, limit: number, userId: string): Promise<MemorySearchResult[]> {
+export async function searchMemoryKeyword(
+  query: string,
+  limit: number,
+  userId: string,
+  dateFilter?: { after?: string; before?: string }
+): Promise<MemorySearchResult[]> {
   const database = getDb();
 
   // Sanitize query for FTS5
@@ -1869,7 +1965,20 @@ export async function searchMemoryKeyword(query: string, limit: number, userId: 
 
   console.log('[Johnny5 DB] FTS5 query:', sanitizedQuery);
 
-  // FTS5 search with BM25 ranking, filtered by user_id
+  // Build date filter SQL
+  let dateSQL = '';
+  const params: (string | number)[] = [sanitizedQuery, userId];
+  if (dateFilter?.after) {
+    dateSQL += ' AND mc.created_at >= ?';
+    params.push(dateFilter.after);
+  }
+  if (dateFilter?.before) {
+    dateSQL += ' AND mc.created_at <= ?';
+    params.push(dateFilter.before);
+  }
+  params.push(limit);
+
+  // FTS5 search with BM25 ranking, filtered by user_id and optional date range
   const stmt = database.prepare(`
     SELECT
       mc.id as chunk_id,
@@ -1880,16 +1989,17 @@ export async function searchMemoryKeyword(query: string, limit: number, userId: 
       mc.end_line,
       0.0 as vector_score,
       bm25(memory_fts) as keyword_score,
-      bm25(memory_fts) as combined_score
+      bm25(memory_fts) as combined_score,
+      mc.created_at
     FROM memory_fts
     JOIN memory_chunks mc ON memory_fts.rowid = mc.rowid
-    WHERE memory_fts MATCH ? AND mc.user_id = ?
+    WHERE memory_fts MATCH ? AND mc.user_id = ?${dateSQL}
     ORDER BY bm25(memory_fts)
     LIMIT ?
   `);
 
   try {
-    return stmt.all(sanitizedQuery, userId, limit) as MemorySearchResult[];
+    return stmt.all(...params) as MemorySearchResult[];
   } catch (err) {
     console.error('[Johnny5 DB] FTS search error:', err, 'Query:', sanitizedQuery);
     return [];
@@ -1921,11 +2031,13 @@ export async function storeEmbedding(chunkId: string, embedding: number[]): Prom
 
 /**
  * Vector similarity search (if sqlite-vec available)
+ * @param dateFilter Optional date range filter for temporal queries
  */
 export async function searchMemoryVector(
   queryEmbedding: number[],
   limit: number,
-  userId: string
+  userId: string,
+  dateFilter?: { after?: string; before?: string }
 ): Promise<MemorySearchResult[]> {
   if (!sqliteVecLoaded) {
     console.warn('[Johnny5 DB] Vector search not available, use keyword search instead');
@@ -1947,14 +2059,26 @@ export async function searchMemoryVector(
         mc.end_line,
         me.distance as vector_score,
         0.0 as keyword_score,
-        me.distance as combined_score
+        me.distance as combined_score,
+        mc.created_at
       FROM memory_embeddings me
       JOIN memory_chunks mc ON me.chunk_id = mc.id
       WHERE me.embedding MATCH ? AND mc.user_id = ?
       ORDER BY me.distance
       LIMIT ?
     `);
-    return stmt.all(JSON.stringify(queryEmbedding), userId, overFetchLimit).slice(0, limit) as MemorySearchResult[];
+    let results = stmt.all(JSON.stringify(queryEmbedding), userId, overFetchLimit) as MemorySearchResult[];
+
+    // Apply date filter in-memory (vec0 doesn't support additional WHERE clauses well)
+    if (dateFilter?.after || dateFilter?.before) {
+      results = results.filter(r => {
+        if (dateFilter.after && r.created_at < dateFilter.after) return false;
+        if (dateFilter.before && r.created_at > dateFilter.before) return false;
+        return true;
+      });
+    }
+
+    return results.slice(0, limit);
   } catch (err) {
     console.error('[Johnny5 DB] Vector search error:', err);
     return [];

@@ -32,9 +32,23 @@ export {
   searchMemory,
   formatSearchResults,
   formatForPromptInjection,
+  formatSessionMemoryForInjection,
   type HybridSearchConfig,
   type HybridSearchResult,
   type SearchResponse,
+  // Temporal parsing
+  parseTemporalReference,
+  stripTemporalReference,
+  type TemporalRange,
+  // Query intent
+  detectSessionQueryIntent,
+  allocateTokenBudget,
+  type SessionQueryIntent,
+  type QueryIntentResult,
+  type TokenBudgetAllocation,
+  // Unified search
+  unifiedSessionSearch,
+  type UnifiedSearchResult,
 } from './search';
 
 // Embeddings
@@ -103,3 +117,9 @@ export {
   type MemoryContext,
   type ContextBuildOptions,
 } from './memory-context-builder';
+
+// Session Indexer - Indexes checkpoint data into memory_chunks
+export {
+  indexSessionFromCheckpoint,
+  type CheckpointData,
+} from './session-indexer';

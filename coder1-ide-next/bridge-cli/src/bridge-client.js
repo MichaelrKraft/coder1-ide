@@ -372,6 +372,177 @@ class BridgeClient extends EventEmitter {
         await this.handleFileRequest(data);
       });
 
+      // Handle collaborative file write requests (from collab editing sync)
+      // 6.1: Blocked patterns — sensitive files that should never be written via collab sync
+      const COLLAB_BLOCKED_PATTERNS = [
+        /\.env/i,                // Any .env file (.env, .env.local, .env.production, etc.)
+        /credentials/i,          // Credential files
+        /\.git\/config$/i,       // Git config
+        /id_rsa/i,               // SSH private keys
+        /\.ssh\//i,              // SSH directory
+        /\.aws\//i,              // AWS credentials directory
+        /\.npmrc$/i,             // npm config (may contain tokens)
+        /\.netrc$/i,             // netrc auth file
+        /\.pypirc$/i,            // Python package index config
+        /node_modules\//,        // Don't write into dependencies
+      ];
+      const COLLAB_ALLOWED_EXTENSIONS = [
+        '.ts', '.tsx', '.js', '.jsx', '.json', '.md', '.css', '.scss',
+        '.html', '.yaml', '.yml', '.toml', '.py', '.go', '.rs', '.java',
+        '.c', '.cpp', '.h', '.hpp', '.rb', '.php', '.swift', '.kt',
+        '.vue', '.svelte', '.astro', '.txt', '.xml', '.sql', '.sh',
+      ];
+
+      // Tracks last applied sequence per file to drop stale/out-of-order writes
+      if (!this._collabLastSequence) {
+        this._collabLastSequence = new Map(); // filePath -> lastSequenceNumber
+      }
+      // Safeguard #4: Track authorized teams for bridge-side validation
+      if (!this._authorizedTeams) {
+        this._authorizedTeams = new Set();
+      }
+      // Track whether bridge has received any team auth events
+      if (this._teamAuthInitialized === undefined) {
+        this._teamAuthInitialized = false;
+      }
+
+      // Listen for team authorization events from server
+      this.socket.on('team:authorized', ({ teamId }) => {
+        if (teamId) {
+          this._authorizedTeams.add(teamId);
+          this._teamAuthInitialized = true;
+          logger.info('Team authorized for collab writes', { teamId });
+        }
+      });
+
+      this.socket.on('file:write-collab', async (data) => {
+        const { requestId, filePath, content, sequenceNumber, expectedHash, teamId } = data;
+
+        logger.info('Collaborative file write request', { requestId, filePath, sequenceNumber });
+
+        try {
+          // Safeguard #4: Verify this bridge is authorized for this team
+          // If teamId is provided, the bridge must have received a team:authorized event for it.
+          // No grace period — writes from unknown teams are always rejected.
+          if (teamId && !this._authorizedTeams.has(teamId)) {
+            logger.warn('Unauthorized team write attempt', { teamId, filePath, authInitialized: this._teamAuthInitialized });
+            this.socket.emit('file:response', {
+              requestId,
+              operation: 'collab-write',
+              result: null,
+              error: 'Not authorized for this team'
+            });
+            return;
+          }
+
+          // 4.2: Convert protocol path (forward slashes) to native OS path
+          const nativePath = this._toNativePath(filePath);
+
+          // Validate path (no traversal, no absolute paths)
+          const pathMod = require('path');
+          const normalized = pathMod.normalize(nativePath);
+          if (normalized.includes('..')) {
+            throw new Error('Path traversal not allowed');
+          }
+
+          // 6.1: Check blocked patterns — block sensitive files
+          for (const pattern of COLLAB_BLOCKED_PATTERNS) {
+            if (pattern.test(filePath) || pattern.test(normalized)) {
+              logger.warn('Blocked collab write to sensitive file', { filePath, pattern: pattern.toString() });
+              this.socket.emit('file:response', {
+                requestId,
+                operation: 'collab-write',
+                result: null,
+                error: `Blocked: writing to sensitive file pattern (${pattern})`
+              });
+              return;
+            }
+          }
+
+          // 6.1: Warn on non-standard extensions (don't block, just log)
+          const ext = pathMod.extname(normalized).toLowerCase();
+          if (ext && !COLLAB_ALLOWED_EXTENSIONS.includes(ext)) {
+            logger.warn('Collab write to non-standard extension', { filePath, ext });
+          }
+
+          // Check sequence number — drop stale writes (Safeguard: write ordering)
+          if (sequenceNumber != null) {
+            const lastSeq = this._collabLastSequence.get(filePath) || 0;
+            if (sequenceNumber < lastSeq) {
+              logger.warn('Dropping out-of-order collab write', { filePath, sequenceNumber, lastSeq });
+              this.socket.emit('file:response', {
+                requestId,
+                operation: 'collab-write',
+                result: { dropped: true, reason: 'stale_sequence' },
+                error: null
+              });
+              return;
+            }
+            this._collabLastSequence.set(filePath, sequenceNumber);
+          }
+
+          // Hash comparison before overwrite (Safeguard: detect local-side edits outside IDE)
+          if (expectedHash) {
+            try {
+              const fsSync = require('fs');
+              const crypto = require('crypto');
+              const resolvedPath = this.fileHandler.resolvePath(nativePath);
+              const existing = fsSync.readFileSync(resolvedPath, 'utf8');
+              const actualHash = crypto.createHash('md5').update(existing).digest('hex');
+              if (actualHash !== expectedHash) {
+                this.socket.emit('file:response', {
+                  requestId,
+                  operation: 'collab-write',
+                  result: null,
+                  error: `local_conflict: file modified outside IDE (expected ${expectedHash}, got ${actualHash})`
+                });
+                return;
+              }
+            } catch (hashErr) {
+              // File doesn't exist yet — safe to write (ENOENT is OK)
+              if (hashErr.code !== 'ENOENT') {
+                logger.warn('Hash check error, proceeding with write', { filePath, error: hashErr.message });
+              }
+            }
+          }
+
+          // 4.4: Strip UTF-8 BOM if present
+          let cleanContent = content;
+          if (cleanContent.length > 0 && cleanContent.charCodeAt(0) === 0xFEFF) {
+            cleanContent = cleanContent.slice(1);
+          }
+
+          // 4.1: Convert LF to native line endings (Windows uses CRLF)
+          if (process.platform === 'win32') {
+            // Content arrives as LF from server; convert to CRLF for Windows
+            cleanContent = cleanContent.replace(/\n/g, '\r\n');
+          }
+
+          // 4.5 Safeguard #1: Backup existing file before overwrite
+          await this._backupBeforeOverwrite(nativePath);
+
+          const result = await this.fileHandler.write(nativePath, cleanContent);
+
+          this.socket.emit('file:response', {
+            requestId,
+            operation: 'collab-write',
+            result,
+            error: null
+          });
+
+          logger.info('Collaborative file written', { filePath, size: result.size });
+        } catch (error) {
+          logger.error('Collaborative file write failed', { filePath, error: error.message });
+
+          this.socket.emit('file:response', {
+            requestId,
+            operation: 'collab-write',
+            result: null,
+            error: error.message
+          });
+        }
+      });
+
       // Handle living file write requests from server
       this.socket.on('livingfiles:write', async (data) => {
         const { filename, content, mode } = data;
@@ -1000,6 +1171,64 @@ class BridgeClient extends EventEmitter {
 
     // Default: return original error message for debugging
     return errorMsg;
+  }
+
+  // ============================================================================
+  // Cross-Platform Helpers (Phase 4)
+  // ============================================================================
+
+  /**
+   * 4.2: Convert protocol path (forward slashes) to native OS path.
+   * Protocol always uses '/' — Windows needs '\'.
+   */
+  _toNativePath(protocolPath) {
+    if (process.platform === 'win32') {
+      return protocolPath.replace(/\//g, '\\');
+    }
+    return protocolPath;
+  }
+
+  /**
+   * 4.5 Safeguard #1: Backup existing file before overwrite.
+   * Copies to .coder1/backup/{timestamp}_{filename}, keeps last 10 per file.
+   */
+  async _backupBeforeOverwrite(filePath) {
+    const fs = require('fs');
+    const pathMod = require('path');
+
+    try {
+      const resolvedPath = this.fileHandler.resolvePath(filePath);
+      // Check if file exists — if not, no backup needed
+      await fs.promises.access(resolvedPath, fs.constants.F_OK);
+
+      const existing = await fs.promises.readFile(resolvedPath, 'utf8');
+      const backupDir = pathMod.join(process.cwd(), '.coder1', 'backup');
+      await fs.promises.mkdir(backupDir, { recursive: true });
+
+      const timestamp = Date.now();
+      const basename = pathMod.basename(filePath);
+      const backupPath = pathMod.join(backupDir, `${timestamp}_${basename}`);
+      await fs.promises.writeFile(backupPath, existing, 'utf8');
+
+      // Prune: keep only last 10 backups for this filename
+      const entries = await fs.promises.readdir(backupDir);
+      const matching = entries
+        .filter(e => e.endsWith(`_${basename}`))
+        .sort(); // Sorted by timestamp prefix (ascending)
+      if (matching.length > 10) {
+        const toDelete = matching.slice(0, matching.length - 10);
+        for (const old of toDelete) {
+          await fs.promises.unlink(pathMod.join(backupDir, old)).catch(() => {});
+        }
+      }
+
+      logger.debug('Backup created before collab overwrite', { backupPath });
+    } catch (err) {
+      // ENOENT = file doesn't exist yet, no backup needed
+      if (err.code !== 'ENOENT') {
+        logger.warn('Backup before overwrite failed (non-fatal)', { filePath, error: err.message });
+      }
+    }
   }
 
   /**

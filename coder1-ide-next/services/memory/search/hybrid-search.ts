@@ -34,6 +34,14 @@ export interface HybridSearchConfig {
   maxTokens?: number;
   /** Prefer more recent content on tie scores. Default: true */
   preferRecent?: boolean;
+  /** Filter by date - only include results created after this date */
+  afterDate?: Date;
+  /** Filter by date - only include results created before this date */
+  beforeDate?: Date;
+  /** Boost multiplier for specific source types. e.g., { 'ide_error': 1.5 } */
+  sourceTypeBoosts?: Record<string, number>;
+  /** Boost for recency (0-1). Default 0. Applied as time-decay multiplier. */
+  recencyBoost?: number;
 }
 
 export interface HybridSearchResult extends MemorySearchResult {
@@ -120,17 +128,27 @@ export async function hybridSearch(
     minScore = 0.1,
     maxTokens = 4000,
     preferRecent = true,
+    afterDate,
+    beforeDate,
+    sourceTypeBoosts,
+    recencyBoost,
   } = config;
 
   const vectorAvailable = isVectorSearchAvailable();
   let searchType: 'hybrid' | 'vector' | 'keyword' = 'keyword';
 
+  // Build date filter for SQL queries
+  const dateFilter = (afterDate || beforeDate) ? {
+    after: afterDate?.toISOString(),
+    before: beforeDate?.toISOString(),
+  } : undefined;
+
   // Fetch both vector and keyword results
   const [vectorResults, keywordResults] = await Promise.all([
     queryEmbedding && vectorAvailable
-      ? searchMemoryVector(queryEmbedding, topK * 2, userId)
+      ? searchMemoryVector(queryEmbedding, topK * 2, userId, dateFilter)
       : Promise.resolve([]),
-    searchMemoryKeyword(query, topK * 2, userId),
+    searchMemoryKeyword(query, topK * 2, userId, dateFilter),
   ]);
 
   // Determine search type
@@ -191,6 +209,29 @@ export async function hybridSearch(
     }
   }
 
+  // Apply source type boosts
+  if (sourceTypeBoosts && Object.keys(sourceTypeBoosts).length > 0) {
+    for (const result of resultMap.values()) {
+      const boost = sourceTypeBoosts[result.source_type];
+      if (boost) {
+        result.combined_score *= boost;
+      }
+    }
+  }
+
+  // Apply recency boost (time-decay multiplier)
+  if (recencyBoost && recencyBoost > 0) {
+    const now = Date.now();
+    const HALF_LIFE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+    for (const result of resultMap.values()) {
+      if (result.created_at) {
+        const ageMs = now - new Date(result.created_at).getTime();
+        const decay = Math.exp(-ageMs / HALF_LIFE_MS);
+        result.combined_score += recencyBoost * decay;
+      }
+    }
+  }
+
   // Convert to array and sort by combined score
   let results = Array.from(resultMap.values())
     .filter(r => r.combined_score >= minScore)
@@ -200,7 +241,9 @@ export async function hybridSearch(
       if (Math.abs(scoreDiff) > 0.001) return scoreDiff;
 
       // On tie, prefer more recent if enabled
-      // (This would need timestamp data - for now just maintain order)
+      if (preferRecent && a.created_at && b.created_at) {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
       return 0;
     });
 
@@ -245,10 +288,18 @@ export async function keywordOnlySearch(
     topK = 10,
     minScore = 0.1,
     maxTokens = 4000,
+    afterDate,
+    beforeDate,
   } = config;
 
+  // Build date filter for SQL queries
+  const dateFilter = (afterDate || beforeDate) ? {
+    after: afterDate?.toISOString(),
+    before: beforeDate?.toISOString(),
+  } : undefined;
+
   console.log(`[Memory] Keyword search for: "${query.substring(0, 50)}..." minScore=${minScore}`);
-  const keywordResults = await searchMemoryKeyword(query, topK * 2, userId);
+  const keywordResults = await searchMemoryKeyword(query, topK * 2, userId, dateFilter);
   console.log(`[Memory] Keyword search returned ${keywordResults.length} raw results`);
   const allScores = keywordResults.map(r => r.keyword_score);
 
@@ -397,6 +448,47 @@ export function formatForPromptInjection(
     // Sanitize content to remove problematic CLI patterns
     const sanitizedContent = sanitizeForCLI(result.content);
     const entry = `### From ${source}${lineRef}\n${sanitizedContent}\n\n`;
+    const entryTokens = estimateTokens(entry);
+
+    if (tokenCount + entryTokens > maxTokens) break;
+
+    parts.push(entry);
+    tokenCount += entryTokens;
+  }
+
+  return parts.join('');
+}
+
+/**
+ * Format session memory search results for injection into Claude prompt.
+ * Groups results by session/date and formats with session-aware headers.
+ */
+export function formatSessionMemoryForInjection(
+  results: HybridSearchResult[],
+  maxTokens: number = 1400
+): string {
+  if (results.length === 0) return '';
+
+  const parts: string[] = ['## Session History\n'];
+  let tokenCount = 20;
+
+  // Group by date from source_id (ide:{sessionId}:...)
+  for (const result of results) {
+    const date = result.created_at
+      ? new Date(result.created_at).toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : 'Unknown date';
+
+    const source = result.source_type?.replace('ide_', '').replace(/_/g, ' ') || 'session';
+    const heading = result.heading || source;
+
+    // Sanitize content
+    const sanitizedContent = sanitizeForCLI(result.content);
+    const entry = `### ${date} — ${heading}\n${sanitizedContent}\n\n`;
     const entryTokens = estimateTokens(entry);
 
     if (tokenCount + entryTokens > maxTokens) break;
