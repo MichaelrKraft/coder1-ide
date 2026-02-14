@@ -99,9 +99,10 @@ export default function TaskQueueDropdown({ onTaskSelect }: TaskQueueDropdownPro
     inputRef.current?.focus();
   };
 
-  // Handle task selection (load into chat)
+  // Handle task selection (load into chat and remove from queue)
   const handleTaskSelect = (task: TaskQueueItemType) => {
     onTaskSelect(task.task_text);
+    removeTask(task.id);
     setDropdownOpen(false);
   };
 
@@ -209,7 +210,7 @@ export default function TaskQueueDropdown({ onTaskSelect }: TaskQueueDropdownPro
           {/* Footer hint */}
           {tasks.length > 0 && (
             <div className="px-3 py-2 border-t border-border-default text-[10px] text-text-muted">
-              Click a task to load it • Drag to reorder • "urgent" = priority
+              Click a task to load it • Drag to reorder • &quot;urgent&quot; = priority
             </div>
           )}
         </div>

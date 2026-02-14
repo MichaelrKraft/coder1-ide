@@ -1,44 +1,104 @@
+# Fix Johnny5 Sessions Tab — Stale "Running" Sessions
+
+## Goal
+Fix three bugs in the Johnny5 Sessions tab: all sessions showing "Running" (spinning), no sessions from today, and session detail loading forever.
+
+## Tasks
+
+- [x] 1. Investigate sessions API and database
+- [x] 2. Add auto-complete for stale sessions in GET /api/johnny5/sessions
+- [x] 3. Verify fix works (all 20 stale sessions now show "Completed")
+
+## Review
+
+### Summary (Feb 13, 2026)
+
+Fixed stale sessions that were permanently stuck in "active" status.
+
+### Root Cause
+
+`completeSession()` exists in `session-tracker.ts` but is never called from any chat handler or API route. Sessions are created with `status: 'active'` via `createSession()` and stay that way forever. All 20 sessions in the database were "active" — some from 6 days ago.
+
+### Changes Made
+
+**`app/api/johnny5/sessions/route.ts`** (GET handler):
+- Added `updateSession` import from `johnny5-db`
+- Added stale session auto-complete: any "active" session older than 2 hours is automatically marked `completed` with an `ended_at` timestamp when the sessions list is fetched
+- This runs on each GET request, so the Sessions Tab self-heals on load
+
+### Verification
+
+Before fix: `{'active': 20}` — all sessions stuck as "Running" with spinners
+After fix: `{'completed': 20}` — all sessions show green checkmarks
+
+---
+
+# Fix Task Queue Bugs
+
+## Goal
+Fix three bugs preventing task queue from working properly: tasks not removed when selected, badge count not updating, and chat box repopulating after clearing.
+
+## Tasks
+
+- [x] 1. Fix task not removed from queue on selection (`TaskQueueDropdown.tsx`)
+- [x] 2. Fix completion detection re-firing loop (`ChatTab.tsx`)
+- [x] 3. Verify TypeScript compiles clean
+
+## Review
+
+### Summary (Feb 13, 2026)
+
+Fixed three interrelated task queue bugs.
+
+### Root Cause
+
+1. **`TaskQueueDropdown.tsx:103`** — `handleTaskSelect()` loaded text into chat but never called `removeTask()`, so the task stayed in the queue, badge stayed at 1, and dropdown still showed it.
+2. **`ChatTab.tsx:258`** — Completion detection useEffect had `inputValue` in its dependency array. When the user cleared the chat box, it re-triggered, saw the same completion signal in the last message, and repopulated the input.
+
+### Changes Made
+
+1. **`components/johnny5/chat/TaskQueueDropdown.tsx`** (line 103):
+   - Added `removeTask(task.id)` call in `handleTaskSelect()` so the task is removed from queue when clicked
+
+2. **`components/johnny5/chat/ChatTab.tsx`** (line 249):
+   - Added `lastProcessedMessageIndexRef` to track which message index was already processed
+   - Completion detection now skips if the current last message index was already handled
+   - Prevents the re-fire loop when user clears the chat box
+
+---
+
 # Skills Tab in Discover Panel
 
 **Design doc:** `docs/plans/2026-02-13-skills-tab-discover-panel-design.md`
 
 ## Tasks
 
-- [ ] 1. Add tab state and tab bar UI to DiscoverPanel
-  - Add `activeTab` state (`'commands' | 'skills'`)
-  - Render two tab buttons below header, above search
-  - Style active tab with cyan underline, inactive with muted text
-  - Clear search input when switching tabs
-
-- [ ] 2. Define hardcoded SKILLS_LIST array
-  - Create `SkillItem` interface (id, name, description, icon, category)
-  - Add ~15-20 curated skills with appropriate Lucide icons and categories
-  - Categories: PLANNING, DEVELOPMENT, DEBUGGING, QUALITY, PROJECT MGMT, GIT
-
-- [ ] 3. Conditionally render Commands vs Skills content
-  - Wrap existing commands content in `activeTab === 'commands'` check
-  - Add skills rendering for `activeTab === 'skills'` with same item pattern
-  - Skills grouped by category headers
-  - Same scrollable area styling
-
-- [ ] 4. Wire up skill execution
-  - Click handler calls `injectCommand('/skill <id>', { focusTerminal: true, addNewline: true })`
-  - Show success toast
-  - Close panel and clear search
-
-- [ ] 5. Connect search to skills tab
-  - When `activeTab === 'skills'`, filter SKILLS_LIST instead of commands
-  - Filter on name, description, category (same logic)
-
-- [ ] 6. Visual QA and testing
-  - Verify tab switching works
-  - Verify search filters correctly on both tabs
-  - Verify skill click injects correct command
-  - Verify existing commands tab is unchanged
+- [x] 1. Add tab state and tab bar UI to DiscoverPanel
+- [x] 2. Define hardcoded SKILLS_LIST array (20 skills, 6 categories)
+- [x] 3. Conditionally render Commands vs Skills content
+- [x] 4. Wire up skill execution
+- [x] 5. Connect search to skills tab
+- [ ] 6. Visual QA and testing (needs dev server)
 
 ## Review
 
-_(To be filled after implementation)_
+### Summary (Feb 13, 2026)
+
+Added a "Skills" tab to the Discover panel, alongside the existing "Commands" tab.
+
+### Changes Made
+
+**`components/status-bar/DiscoverPanel.tsx`** (single file):
+- Added `SkillItem` interface and `SKILLS_LIST` constant (20 curated Claude Code skills across 6 categories)
+- Added `activeTab` state (`'commands' | 'skills'`)
+- Added tab bar UI between AI Plugins promo and search bar (cyan underline active style)
+- Added `filteredSkills` and `skillsByCategory` computed values for search
+- Added `executeSkill()` handler (injects `/skill <id>` into terminal)
+- Wrapped existing commands content in `{activeTab === 'commands' && ...}`
+- Added skills tab rendering with category grouping, same item pattern as commands
+- Search placeholder updates based on active tab
+- Switching tabs clears search input
+- Added Lucide imports: Lightbulb, Gauge, Eye, Layers, PenTool, RefreshCw, Lock, FileCode, Settings, Webhook
 
 ---
 

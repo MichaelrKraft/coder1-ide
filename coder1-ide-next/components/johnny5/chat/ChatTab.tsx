@@ -247,6 +247,7 @@ export default function ChatTab() {
 
   // Task queue store for completion detection
   const { getNextTask, markTaskComplete } = useTaskQueueStore();
+  const lastProcessedMessageIndexRef = useRef<number>(-1);
 
   // Completion detection - auto-load next task when Johnny5 signals completion
   const COMPLETION_SIGNALS = [
@@ -259,10 +260,14 @@ export default function ChatTab() {
     // Only check the last message
     if (messages.length === 0 || isLoading) return;
 
-    const lastMessage = messages[messages.length - 1];
+    const lastIndex = messages.length - 1;
+    const lastMessage = messages[lastIndex];
 
     // Only check assistant messages
     if (lastMessage.role !== 'assistant') return;
+
+    // Skip if we already processed this message
+    if (lastIndex <= lastProcessedMessageIndexRef.current) return;
 
     // Check if message contains completion signals
     const content = lastMessage.content.toLowerCase();
@@ -271,6 +276,9 @@ export default function ChatTab() {
     );
 
     if (hasCompletionSignal) {
+      // Mark as processed so we don't re-fire
+      lastProcessedMessageIndexRef.current = lastIndex;
+
       const nextTask = getNextTask();
       if (nextTask && !inputValue.trim()) {
         // Auto-load next task into input

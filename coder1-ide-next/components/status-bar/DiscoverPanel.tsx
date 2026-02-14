@@ -14,7 +14,8 @@ import {
   Play, TestTube, Upload, Trash2, HelpCircle, RotateCcw, Activity,
   Wrench, Palette, Bug, MessageSquare, Zap, ClipboardList, FileSearch,
   Database, FolderOpen, Users, Calculator, ListTodo, Hash,
-  Shield, Rocket, Monitor, Server, Brain, Clock, Archive, Download, Check
+  Shield, Rocket, Monitor, Server, Brain, Clock, Archive, Download, Check,
+  Lightbulb, Eye, Layers, PenTool, Lock, Settings, Webhook
 } from 'lucide-react';
 import WcyganCommandsSection from '../WcyganCommandsSection';
 import { useUIStore } from '@/stores/useUIStore';
@@ -39,6 +40,44 @@ interface TaskCommand {
   category: string;
 }
 
+interface SkillItem {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType<any>;
+  category: string;
+}
+
+const SKILLS_LIST: SkillItem[] = [
+  // PLANNING
+  { id: 'brainstorming', name: 'Brainstorming', description: 'Transform ideas into validated designs', icon: Lightbulb, category: 'PLANNING' },
+  { id: 'business-setup', name: 'Business Setup', description: 'Set up business project structure', icon: Rocket, category: 'PLANNING' },
+
+  // DEVELOPMENT
+  { id: 'frontend-design', name: 'Frontend Design', description: 'Production-grade UI interfaces', icon: PenTool, category: 'DEVELOPMENT' },
+  { id: 'tailwind', name: 'Tailwind', description: 'Tailwind CSS utility-first patterns', icon: Palette, category: 'DEVELOPMENT' },
+  { id: 'hook-development', name: 'Hook Development', description: 'Create Claude Code automation hooks', icon: Webhook, category: 'DEVELOPMENT' },
+  { id: 'command-development', name: 'Command Development', description: 'Create custom slash commands', icon: Zap, category: 'DEVELOPMENT' },
+  { id: 'skill-development', name: 'Skill Development', description: 'Create new Claude Code skills', icon: Settings, category: 'DEVELOPMENT' },
+  { id: 'stripe-integration', name: 'Stripe Integration', description: 'Stripe payment integration', icon: Lock, category: 'DEVELOPMENT' },
+  { id: 'mcp-code-orchestrator', name: 'MCP Orchestrator', description: 'MCP server orchestration', icon: Server, category: 'DEVELOPMENT' },
+
+  // DEBUGGING
+  { id: 'coder1-debugging-system', name: 'Debugging System', description: 'Systematic debugging for Coder1', icon: Bug, category: 'DEBUGGING' },
+
+  // QUALITY
+  { id: 'coder1-quality-guardian', name: 'Quality Guardian', description: 'Coder1 quality standards enforcement', icon: Shield, category: 'QUALITY' },
+  { id: 'coder1-context-expert', name: 'Context Expert', description: 'Coder1 architecture knowledge', icon: Brain, category: 'QUALITY' },
+
+  // WORKFLOW
+  { id: 'agent-handoff', name: 'Agent Handoff', description: 'Seamless agent knowledge transfer', icon: Users, category: 'WORKFLOW' },
+  { id: 'adaptive-explorer', name: 'Adaptive Explorer', description: 'Dynamic exploration strategies', icon: Eye, category: 'WORKFLOW' },
+  { id: 'parallel-exploration-orchestrator', name: 'Parallel Explorer', description: 'Orchestrate parallel exploration', icon: Layers, category: 'WORKFLOW' },
+  { id: 'session-archiver', name: 'Session Archiver', description: 'Archive and summarize sessions', icon: Archive, category: 'WORKFLOW' },
+  { id: 'memory-setup', name: 'Memory Setup', description: 'Set up persistent memory system', icon: Database, category: 'WORKFLOW' },
+  { id: 'changelog-generator', name: 'Changelog Generator', description: 'Generate project changelogs', icon: FileText, category: 'WORKFLOW' },
+];
+
 export default function DiscoverPanel() {
   const {
     discoverPanel,
@@ -60,6 +99,9 @@ export default function DiscoverPanel() {
   // Search state
   const [searchInput, setSearchInput] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'commands' | 'skills'>('commands');
   
   // Panel ref for click-outside-to-close functionality
   const panelRef = useRef<HTMLDivElement>(null);
@@ -473,6 +515,60 @@ export default function DiscoverPanel() {
     }
   };
 
+  // Filter skills based on search
+  const filteredSkills = SKILLS_LIST.filter(skill => {
+    if (!searchInput) return true;
+    const query = searchInput.toLowerCase();
+    return (
+      skill.name.toLowerCase().includes(query) ||
+      skill.description.toLowerCase().includes(query) ||
+      skill.category.toLowerCase().includes(query)
+    );
+  });
+
+  // Group filtered skills by category
+  const skillsByCategory = filteredSkills.reduce((acc, skill) => {
+    if (!acc[skill.category]) acc[skill.category] = [];
+    acc[skill.category].push(skill);
+    return acc;
+  }, {} as Record<string, SkillItem[]>);
+
+  // Execute a skill
+  const executeSkill = (skill: SkillItem) => {
+    if (!isTerminalReady()) {
+      addToast({
+        message: 'Terminal not connected - command copied to clipboard',
+        type: 'info'
+      });
+      try {
+        navigator.clipboard?.writeText(`/skill ${skill.id}`);
+      } catch (error) {
+        // Clipboard not available
+      }
+      return;
+    }
+
+    const success = injectCommand(`/skill ${skill.id}`, {
+      focusTerminal: true,
+      addNewline: true,
+      replace: false
+    });
+
+    if (success) {
+      addToast({
+        message: `Skill ${skill.name} sent to terminal`,
+        type: 'success'
+      });
+      toggleDiscoverPanel();
+      setSearchInput('');
+    } else {
+      addToast({
+        message: `Failed to send skill ${skill.name} to terminal`,
+        type: 'error'
+      });
+    }
+  };
+
   // Handle custom command save
   const handleSaveCommand = () => {
     const name = newCommand.name.trim();
@@ -587,6 +683,30 @@ export default function DiscoverPanel() {
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex px-4 pt-2 border-b border-border-default">
+          <button
+            onClick={() => { setActiveTab('commands'); setSearchInput(''); }}
+            className={`px-4 py-2 text-sm font-medium transition-all border-b-2 ${
+              activeTab === 'commands'
+                ? 'text-text-primary border-coder1-cyan'
+                : 'text-text-muted border-transparent hover:text-text-secondary'
+            }`}
+          >
+            Commands
+          </button>
+          <button
+            onClick={() => { setActiveTab('skills'); setSearchInput(''); }}
+            className={`px-4 py-2 text-sm font-medium transition-all border-b-2 ${
+              activeTab === 'skills'
+                ? 'text-text-primary border-coder1-cyan'
+                : 'text-text-muted border-transparent hover:text-text-secondary'
+            }`}
+          >
+            Skills
+          </button>
+        </div>
+
         {/* Search Bar */}
         <div className="px-4 py-3 border-b border-border-default">
           <div className="relative">
@@ -594,7 +714,7 @@ export default function DiscoverPanel() {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search commands..."
+              placeholder={activeTab === 'commands' ? 'Search commands...' : 'Search skills...'}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-bg-primary border border-border-default rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-coder1-cyan focus:ring-1 focus:ring-coder1-cyan transition-all text-sm"
@@ -604,6 +724,44 @@ export default function DiscoverPanel() {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-4 py-3" style={{ maxHeight: '500px' }}>
+
+          {/* Skills Tab */}
+          {activeTab === 'skills' && (
+            <div>
+              {Object.keys(skillsByCategory).length === 0 ? (
+                <p className="text-sm text-text-muted text-center py-4">No skills match your search</p>
+              ) : (
+                Object.entries(skillsByCategory).map(([category, skills]) => (
+                  <div key={category} className="mb-4">
+                    <h4 className="text-xs font-semibold text-coder1-cyan uppercase tracking-wider mb-2">
+                      {category} <span className="text-orange-500">({skills.length})</span>
+                    </h4>
+                    <div className="space-y-1">
+                      {skills.map((skill) => {
+                        const IconComponent = skill.icon;
+                        return (
+                          <button
+                            key={skill.id}
+                            onClick={() => executeSkill(skill)}
+                            className="w-full flex items-center gap-3 px-3 py-2 text-left text-text-secondary hover:text-text-primary hover:bg-bg-primary rounded-lg transition-all group"
+                          >
+                            <IconComponent className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan transition-colors" />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm">{skill.name}</div>
+                              <div className="text-xs text-text-muted">{skill.description}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Commands Tab */}
+          {activeTab === 'commands' && <>
           {/* Slash Commands (Scrollable) */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
@@ -773,6 +931,7 @@ export default function DiscoverPanel() {
               </div>
             </div>
           )}
+          </>}
 
         </div>
       </div>
