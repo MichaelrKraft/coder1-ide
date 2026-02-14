@@ -14,7 +14,7 @@
 // Types
 // ============================================================================
 
-export type QueryCategory = 'personal' | 'coding' | 'hybrid' | 'general';
+export type QueryCategory = 'personal' | 'coding' | 'hybrid' | 'general' | 'session_recall';
 
 export interface ClassificationResult {
   category: QueryCategory;
@@ -104,6 +104,23 @@ const HYBRID_PATTERNS = [
   /\bwhat('s| is) my (tech |technology )?(stack|setup)\b/i,
 ];
 
+/**
+ * Patterns that indicate session recall queries
+ * These search through past coding sessions for specific events/context
+ */
+const SESSION_RECALL_PATTERNS = [
+  /\b(remember when|remember that time|that time when)\b/i,
+  /\b(what (files?|changes?) did I)\b/i,
+  /\b(what did I (do|work on|change|fix|build|implement))\b/i,
+  /\b(last (session|time) (I|we))\b/i,
+  /\b(show me|find) (my|the) (history|sessions?|changes?)\b/i,
+  /\b(what happened|what was I doing)\b/i,
+  /\b(in that session|during that|back when I)\b/i,
+  /\b(what errors? did I (hit|get|encounter))\b/i,
+  /\b(what commands? did I (run|execute|use))\b/i,
+  /\b(which (files?|projects?) did I)\b/i,
+];
+
 // ============================================================================
 // Classification Functions
 // ============================================================================
@@ -150,20 +167,35 @@ export function classifyQuery(message: string): ClassificationResult {
   const personalMatches = matchPatterns(normalizedMessage, PERSONAL_PATTERNS);
   const codingMatches = matchPatterns(normalizedMessage, CODING_PATTERNS);
   const hybridMatches = matchPatterns(normalizedMessage, HYBRID_PATTERNS);
+  const sessionRecallMatches = matchPatterns(normalizedMessage, SESSION_RECALL_PATTERNS);
 
   // Calculate confidence scores
   const personalConfidence = calculateConfidence(personalMatches, message.length);
   const codingConfidence = calculateConfidence(codingMatches, message.length);
   const hybridConfidence = calculateConfidence(hybridMatches, message.length);
+  const sessionRecallConfidence = calculateConfidence(sessionRecallMatches, message.length);
 
   console.log('[QueryClassifier] Scores:', {
+    sessionRecall: sessionRecallConfidence.toFixed(2),
     personal: personalConfidence.toFixed(2),
     coding: codingConfidence.toFixed(2),
     hybrid: hybridConfidence.toFixed(2),
+    sessionRecallMatches,
     personalMatches,
     codingMatches,
     hybridMatches,
   });
+
+  // Check session recall first (more specific than personal)
+  if (sessionRecallConfidence > 0.3) {
+    return {
+      category: 'session_recall',
+      confidence: sessionRecallConfidence,
+      shouldUseBridge: false, // MUST use Gemini - Bridge ignores memory context
+      reasoning: 'Session recall query. Using Gemini to search and present session history.',
+      matchedPatterns: sessionRecallMatches,
+    };
+  }
 
   // Determine category based on highest confidence
   // Personal queries take priority if they match (memory is critical)

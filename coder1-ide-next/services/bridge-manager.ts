@@ -81,6 +81,8 @@ export class BridgeManager extends EventEmitter {
   private livingFilesCache: Map<string, LivingFilesCacheEntry> = new Map();
   private writeQueues: Map<string, Promise<void>> = new Map();
   private pendingLivingFilesSync: Map<string, PendingLivingFilesSync> = new Map();
+  // Collab write sequence numbers: filePath -> next sequence number
+  private collabWriteSequences: Map<string, number> = new Map();
 
   // Configuration
   private readonly PAIRING_CODE_LENGTH = 6;
@@ -891,6 +893,141 @@ export class BridgeManager extends EventEmitter {
         bridge.socket.emit(event, data);
       }
     });
+  }
+
+  // ============================================================================
+  // Collaborative Editing: Cross-Platform Helpers
+  // ============================================================================
+
+  /**
+   * Normalize line endings to LF (canonical format for protocol transmission).
+   * Bridges convert to native line endings on their side before writing.
+   */
+  private normalizeLineEndings(content: string): string {
+    return content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  }
+
+  /**
+   * Normalize file path for protocol: always use forward slashes.
+   * Bridges convert to native separators before filesystem operations.
+   * Also validates against drive letters and UNC paths.
+   */
+  private normalizePathForProtocol(filePath: string): string {
+    const normalized = filePath.replace(/\\/g, '/');
+    // Reject Windows drive letters (e.g. C:/) and UNC paths (//server)
+    if (/^[A-Za-z]:/.test(normalized)) {
+      throw new Error('Absolute paths with drive letters are not allowed in collab protocol');
+    }
+    if (normalized.startsWith('//')) {
+      throw new Error('UNC paths are not allowed in collab protocol');
+    }
+    return normalized;
+  }
+
+  // ============================================================================
+  // Collaborative Editing: Bridge File Write Methods
+  // ============================================================================
+
+  /**
+   * Get the next write sequence number for a file path (monotonically increasing).
+   */
+  getNextWriteSequence(filePath: string): number {
+    const current = this.collabWriteSequences.get(filePath) || 0;
+    const next = current + 1;
+    this.collabWriteSequences.set(filePath, next);
+    return next;
+  }
+
+  /**
+   * Get all connected bridges for users in a team.
+   * Returns Map of userId -> bridgeId[] for all team members with connected bridges.
+   */
+  getTeamBridges(
+    teamId: string,
+    teamPresence: Map<string, Map<string, { userId: string; sockets: Set<string> }>>
+  ): Map<string, string[]> {
+    const result = new Map<string, string[]>();
+    const teamMembers = teamPresence.get(teamId);
+    if (!teamMembers) return result;
+
+    for (const [userId] of teamMembers) {
+      const bridgeIds = this.userBridges.get(userId);
+      if (bridgeIds && bridgeIds.size > 0) {
+        result.set(userId, Array.from(bridgeIds));
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Write file to multiple users' bridges for collaborative sync.
+   * Writes to all bridges in parallel with 10s timeout per write.
+   * Returns Map of userId -> { success, error? }
+   */
+  async writeFileToTeam(
+    teamBridges: Map<string, string[]>,
+    filePath: string,
+    content: string,
+    expectedHash?: string,
+    teamId?: string
+  ): Promise<Map<string, { success: boolean; error?: string }>> {
+    const results = new Map<string, { success: boolean; error?: string }>();
+    const writePromises: Promise<void>[] = [];
+
+    // Cross-platform normalization before sending to any bridge
+    const normalizedPath = this.normalizePathForProtocol(filePath);
+    const normalizedContent = this.normalizeLineEndings(content);
+    const sequenceNumber = this.getNextWriteSequence(normalizedPath);
+
+    for (const [userId, bridgeIds] of teamBridges) {
+      const bridgeId = bridgeIds[0]; // Use first available bridge
+      const bridge = this.bridges.get(bridgeId);
+
+      if (!bridge || !bridge.socket.connected) {
+        results.set(userId, { success: false, error: 'Bridge not connected' });
+        continue;
+      }
+
+      const writePromise = new Promise<void>((resolve) => {
+        const requestId = `collab_${Date.now()}_${randomBytes(4).toString('hex')}`;
+
+        const timeout = setTimeout(() => {
+          this.pendingFileRequests.delete(requestId);
+          results.set(userId, { success: false, error: 'Write timeout (10s)' });
+          resolve();
+        }, 10000);
+
+        this.pendingFileRequests.set(requestId, {
+          resolve: () => {
+            clearTimeout(timeout);
+            results.set(userId, { success: true });
+            resolve();
+          },
+          reject: (error: Error) => {
+            clearTimeout(timeout);
+            results.set(userId, { success: false, error: error.message });
+            resolve();
+          },
+          timeout,
+          operation: 'collab-write',
+          path: filePath
+        });
+
+        bridge.socket.emit('file:write-collab', {
+          requestId,
+          filePath: normalizedPath,
+          content: normalizedContent,
+          sequenceNumber,
+          expectedHash: expectedHash || null,
+          teamId: teamId || null
+        });
+      });
+
+      writePromises.push(writePromise);
+    }
+
+    await Promise.all(writePromises);
+    return results;
   }
 }
 

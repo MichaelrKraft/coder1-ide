@@ -38,6 +38,7 @@ import { extractUserId } from '@/lib/auth/extract-user-id';
 import {
   searchMemory,
   formatForPromptInjection,
+  formatSessionMemoryForInjection,
   createGeminiProvider,
   // Memory Intelligence Services (NEW)
   buildMemoryContext,
@@ -46,6 +47,9 @@ import {
   getExistingFacts,
   runPatternDetectionCycle,
   type ConversationMessage as MemoryConversationMessage,
+  // Session Memory
+  detectSessionQueryIntent,
+  unifiedSessionSearch,
 } from '@/services/memory';
 import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
 import { classifyQuery, type ClassificationResult } from '@/services/query-classifier';
@@ -598,17 +602,40 @@ export async function POST(
               }
             }
 
-            const searchResult = await searchMemory(message, queryEmbedding, {
-              userId,
-              topK: 5,
-              maxTokens: 2000,
-              minScore: 0.05,  // Lower threshold for keyword-only search
-            });
+            // Detect session intent for Moltbot path too
+            const moltbotSessionIntent = detectSessionQueryIntent(message);
+            let searchResult;
+
+            if (moltbotSessionIntent.intent !== 'general' && moltbotSessionIntent.confidence > 0.3) {
+              const unifiedResult = await unifiedSessionSearch(message, queryEmbedding, userId, moltbotSessionIntent);
+              // Convert unified result to searchResult-like shape for existing code
+              searchResult = {
+                results: unifiedResult.memoriesUsed.map(m => ({
+                  chunk_id: m.id,
+                  source_type: m.sourceType,
+                  combined_score: m.score,
+                  citation: m.citation,
+                  content: '',
+                })),
+                searchType: unifiedResult.searchType,
+                totalTokens: unifiedResult.totalTokens,
+                processingTimeMs: unifiedResult.processingTimeMs,
+                // Store the formatted context for direct use
+                _formattedContext: unifiedResult.combinedFormatted,
+              };
+            } else {
+              searchResult = await searchMemory(message, queryEmbedding, {
+                userId,
+                topK: 5,
+                maxTokens: 2000,
+                minScore: 0.05,
+              });
+            }
 
             console.log(`[Johnny5/Moltbot] Memory search: ${searchResult.results.length} results, type=${searchResult.searchType}, time=${searchResult.processingTimeMs}ms`);
 
             if (searchResult.results.length > 0) {
-              const memoryContext = formatForPromptInjection(searchResult, 2000);
+              const memoryContext = (searchResult as any)._formattedContext || formatForPromptInjection(searchResult, 2000);
               const moltbotParts: string[] = [memoryContext];
               // Include terminal context if provided
               if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
@@ -819,39 +846,60 @@ export async function POST(
           }
         }
 
-        // Search memory for relevant context
-        // Use lower minScore for keyword-only search (no vector search available)
-        const searchResult = await searchMemory(message, queryEmbedding, {
-          userId,
-          topK: 5,
-          maxTokens: 2000,
-          minScore: 0.05,  // Lower threshold for keyword-only search
-        });
+        // Detect session query intent for smart routing
+        const sessionIntent = detectSessionQueryIntent(message);
+        console.log(`[Johnny5] Session intent: ${sessionIntent.intent} (confidence=${sessionIntent.confidence.toFixed(2)})`);
 
-        console.log(`[Johnny5] Memory search completed: ${searchResult.results.length} results, type=${searchResult.searchType}, time=${searchResult.processingTimeMs}ms`);
-        reasoningSteps.push(`Searching memory (${searchResult.searchType})...`);
-
-        if (searchResult.results.length > 0) {
-          // Format memories for injection
-          memoryContext = formatForPromptInjection(searchResult, 2000);
-          searchType = searchResult.searchType;
-          totalMemoryTokens = searchResult.totalTokens;
-
-          // Track which memories were used
-          memoriesUsed = searchResult.results.map((r) => ({
-            id: r.chunk_id,
-            sourceType: r.source_type,
-            score: r.combined_score,
-            citation: r.citation,
-          }));
-
-          console.log(
-            `[Johnny5] Injected ${memoriesUsed.length} memories (${searchType} search, ${totalMemoryTokens} tokens)`
+        // Use unified session search for session_recall queries, regular search otherwise
+        if (sessionIntent.intent !== 'general' && sessionIntent.confidence > 0.3) {
+          // Session-aware unified search
+          const unifiedResult = await unifiedSessionSearch(
+            message,
+            queryEmbedding,
+            userId,
+            sessionIntent
           );
-          console.log('[Johnny5] Memory sources:', memoriesUsed.map(m => `${m.sourceType}:${m.score.toFixed(2)}`).join(', '));
-          reasoningSteps.push(`Found ${memoriesUsed.length} relevant memories`);
+
+          if (unifiedResult.combinedFormatted) {
+            memoryContext = unifiedResult.combinedFormatted;
+            searchType = unifiedResult.searchType;
+            totalMemoryTokens = unifiedResult.totalTokens;
+            memoriesUsed = unifiedResult.memoriesUsed.map((m) => ({
+              id: m.id,
+              sourceType: m.sourceType,
+              score: m.score,
+              citation: m.citation,
+            }));
+            console.log(`[Johnny5] Unified session search: ${memoriesUsed.length} results, type=${searchType}, tokens=${totalMemoryTokens}`);
+            reasoningSteps.push(`Session memory: ${memoriesUsed.length} results (${sessionIntent.intent})`);
+          }
         } else {
-          console.log('[Johnny5] No memories found for query');
+          // Standard memory search for general queries
+          const searchResult = await searchMemory(message, queryEmbedding, {
+            userId,
+            topK: 5,
+            maxTokens: 2000,
+            minScore: 0.05,
+          });
+
+          console.log(`[Johnny5] Memory search completed: ${searchResult.results.length} results, type=${searchResult.searchType}, time=${searchResult.processingTimeMs}ms`);
+          reasoningSteps.push(`Searching memory (${searchResult.searchType})...`);
+
+          if (searchResult.results.length > 0) {
+            memoryContext = formatForPromptInjection(searchResult, 2000);
+            searchType = searchResult.searchType;
+            totalMemoryTokens = searchResult.totalTokens;
+            memoriesUsed = searchResult.results.map((r) => ({
+              id: r.chunk_id,
+              sourceType: r.source_type,
+              score: r.combined_score,
+              citation: r.citation,
+            }));
+            console.log(`[Johnny5] Injected ${memoriesUsed.length} memories (${searchType} search, ${totalMemoryTokens} tokens)`);
+            reasoningSteps.push(`Found ${memoriesUsed.length} relevant memories`);
+          } else {
+            console.log('[Johnny5] No memories found for query');
+          }
         }
       } catch (memoryError) {
         console.warn('[Johnny5] Memory search failed:', memoryError);

@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Disabled to prevent double-initialization issues
+  // Transpile y-monaco (pure ESM module) for Next.js compatibility
+  transpilePackages: ['y-monaco'],
   // GitHub Pages Configuration
   // CRITICAL: Do NOT use 'standalone' with custom server - it breaks API routes
   output: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? 'export' : undefined,
@@ -37,6 +39,19 @@ const nextConfig = {
     
     // Monaco Editor webpack plugin for client-side only
     if (!isServer) {
+      const path = require('path');
+
+      // Resolve y-monaco's monaco-editor ESM imports to the correct path
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'monaco-editor/esm/vs/editor/editor.api.js': path.resolve(
+          __dirname, 'node_modules/monaco-editor/esm/vs/editor/editor.api.js'
+        ),
+        'monaco-editor/esm/vs/editor/editor.api': path.resolve(
+          __dirname, 'node_modules/monaco-editor/esm/vs/editor/editor.api.js'
+        ),
+      };
+
       try {
         const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
         config.plugins.push(
@@ -61,7 +76,10 @@ const nextConfig = {
         '@xterm/xterm': stubPath,
         '@xterm/addon-fit': stubPath,
         'monaco-editor': stubPath,
+        'monaco-editor/esm/vs/editor/editor.api.js': stubPath,
+        'monaco-editor/esm/vs/editor/editor.api': stubPath,
         '@monaco-editor/react': stubPath,
+        'y-monaco': stubPath,
         'three': stubPath,
         '@react-three/fiber': stubPath,
         'ogl': stubPath,
