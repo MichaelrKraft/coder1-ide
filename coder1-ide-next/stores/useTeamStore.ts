@@ -41,7 +41,7 @@ interface TeamStore {
   updateSyncStatus: (status: Partial<SyncStatus>) => void;
   markBriefingReceived: () => void;
   fetchTeams: () => Promise<void>;
-  createTeam: (name: string) => Promise<SyncTeam | null>;
+  createTeam: (name: string) => Promise<SyncTeam>;
   inviteMember: (email: string) => Promise<string | null>;
   triggerSync: () => Promise<boolean>;
   selectTeam: (teamId: string) => void;
@@ -109,9 +109,10 @@ export const useTeamStore = create<TeamStore>()(
             set({ syncTeam: team });
             return team;
           }
-          return null;
-        } catch {
-          return null;
+          throw new Error(data.error || 'Failed to create team');
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to create team';
+          throw new Error(message);
         }
       },
 

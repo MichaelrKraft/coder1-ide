@@ -66,7 +66,8 @@ interface Johnny5Store {
   
   // Security (KEY DIFFERENTIATOR)
   security: Johnny5SecurityState;
-  
+  securityLoading: boolean;
+
   // Mission Control
   tasks: Johnny5Task[];
   activityLog: Johnny5ActivityEntry[];
@@ -149,7 +150,9 @@ interface Johnny5Store {
   addAuditEntry: (entry: Johnny5SecurityState['auditLog'][0]) => void;
   addPromptInjectionAlert: (alert: Johnny5SecurityState['promptInjectionAlerts'][0]) => void;
   updatePermission: (id: string, status: 'allowed' | 'blocked' | 'risky') => void;
-  
+  setSecurity: (security: Partial<Johnny5SecurityState>) => void;
+  setSecurityLoading: (loading: boolean) => void;
+
   // ================================================================================
   // Mission Control Actions
   // ================================================================================
@@ -301,7 +304,8 @@ const initialState = {
   
   // Security
   security: initialSecurityState,
-  
+  securityLoading: false,
+
   // Mission Control
   tasks: [] as Johnny5Task[],
   activityLog: [] as Johnny5ActivityEntry[],
@@ -530,7 +534,24 @@ export const useJohnny5Store = create<Johnny5Store>()(
           false,
           'updatePermission'
         ),
-        
+
+        setSecurity: (security) => set(
+          (state) => ({
+            security: {
+              ...state.security,
+              ...security,
+            }
+          }),
+          false,
+          'setSecurity'
+        ),
+
+        setSecurityLoading: (loading) => set(
+          { securityLoading: loading },
+          false,
+          'setSecurityLoading'
+        ),
+
         // ================================================================================
         // Mission Control Actions
         // ================================================================================

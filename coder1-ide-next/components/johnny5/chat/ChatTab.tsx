@@ -8,7 +8,6 @@ import {
   Sparkles,
   Zap,
   Brain,
-  Settings2,
   MoreHorizontal,
   Copy,
   Check,
@@ -988,12 +987,6 @@ export default function ChatTab() {
             title="Clear Chat&#10;Start a fresh conversation with Johnny5"
           >
             <Trash2 className="w-4 h-4" />
-          </button>
-          <button
-            className="p-2 rounded-lg hover:bg-bg-tertiary text-text-muted hover:text-text-secondary transition-all"
-            title="Chat Settings&#10;Configure message display and behavior"
-          >
-            <Settings2 className="w-4 h-4" />
           </button>
         </div>
       </div>
