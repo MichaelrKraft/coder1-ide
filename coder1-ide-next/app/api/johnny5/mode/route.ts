@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
+import { bridgeManager } from '@/services/bridge-manager';
 
 export async function GET() {
   const moltbotBridge = getMoltbotBridge();
   const moltbotConnected = moltbotBridge?.isConnected() ?? false;
 
-  // FIX (Feb 2026): Use global.bridgeManager set by server.js
-  // The module import creates a separate singleton that doesn't have connections
-  // server.js sets global.bridgeManager at line 1933 with actual WebSocket connections
-  const bridgeManagerGlobal = (global as Record<string, unknown>).bridgeManager as {
-    hasBridgeForUser?: (userId: string) => boolean;
-    findAnyConnectedBridge?: () => unknown;
-  } | undefined;
-  const bridgeConnected = bridgeManagerGlobal?.hasBridgeForUser?.('default') ||
-                          !!bridgeManagerGlobal?.findAnyConnectedBridge?.();
+  // FIX (Feb 2026): Import bridgeManager directly like /api/johnny5/chat does
+  // global.bridgeManager isn't reliably accessible in Next.js API routes
+  const bridgeConnected = bridgeManager?.hasBridgeForUser?.('default') ||
+                          !!bridgeManager?.findAnyConnectedBridge?.();
 
   let mode: 'moltbot' | 'bridge' | 'gemini';
   let capabilities: string[];
