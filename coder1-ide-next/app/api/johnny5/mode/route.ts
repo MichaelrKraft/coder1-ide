@@ -8,8 +8,17 @@ export async function GET() {
 
   // FIX (Feb 2026): Import bridgeManager directly like /api/johnny5/chat does
   // global.bridgeManager isn't reliably accessible in Next.js API routes
-  const bridgeConnected = bridgeManager?.hasBridgeForUser?.('default') ||
-                          !!bridgeManager?.findAnyConnectedBridge?.();
+  const hasBridgeForDefault = bridgeManager?.hasBridgeForUser?.('default') ?? false;
+  const anyBridge = bridgeManager?.findAnyConnectedBridge?.();
+  const bridgeConnected = hasBridgeForDefault || !!anyBridge;
+
+  // Debug logging
+  console.log('[Johnny5 Mode] Bridge check:', {
+    bridgeManagerExists: !!bridgeManager,
+    hasBridgeForDefault,
+    anyBridge: anyBridge ? { id: anyBridge.id, userId: anyBridge.userId } : null,
+    bridgeConnected
+  });
 
   let mode: 'moltbot' | 'bridge' | 'gemini';
   let capabilities: string[];
