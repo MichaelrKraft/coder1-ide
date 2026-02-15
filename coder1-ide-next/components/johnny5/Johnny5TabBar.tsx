@@ -11,6 +11,7 @@ import {
   Target,
   Sun,
   Settings,
+  Sparkles,
 } from 'lucide-react';
 import { Johnny5Tab } from '@/types/johnny5';
 
@@ -69,6 +70,12 @@ const tabs: { id: Johnny5Tab; label: string; icon: React.ReactNode; title: strin
     label: 'Brief',
     icon: <Sun className="w-3.5 h-3.5" />,
     title: 'Morning Brief - Daily summary of overnight work'
+  },
+  {
+    id: 'skills',
+    label: 'Skills',
+    icon: <Sparkles className="w-3.5 h-3.5" />,
+    title: 'Skills Manager - Manage and install Johnny5 skills'
   },
 ];
 
