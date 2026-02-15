@@ -279,42 +279,7 @@ export default function HeroSection({ onTourStart, onDismiss }: HeroSectionProps
           </span>
         </button>
 
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            router.push('/smart-prd-generator-standalone.html');
-          }}
-          className="glass-button flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-lg transition-all duration-300 w-full transform hover:translate-y-[-2px]"
-          data-tour="prd-generator-button"
-          title="Smart PRD Generator - AI-powered Product Requirements Document creation with 5-question intelligent flow"
-          style={{
-            background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
-            border: '1px solid #4A90E2',
-            boxShadow: '0 0 10px rgba(74, 144, 226, 0.2), 0 0 20px rgba(74, 144, 226, 0.1), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 0 20px rgba(251, 146, 60, 0.4), 0 0 40px rgba(251, 146, 60, 0.2), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
-            e.currentTarget.style.borderColor = 'rgba(251, 146, 60, 0.5)';
-            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-            e.currentTarget.style.backdropFilter = 'blur(6px)';
-            (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(6px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = '0 0 10px rgba(74, 144, 226, 0.2), 0 0 20px rgba(74, 144, 226, 0.1), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)';
-            e.currentTarget.style.borderColor = '#4A90E2';
-            e.currentTarget.style.transform = 'translateY(0) scale(1)';
-            e.currentTarget.style.backdropFilter = 'blur(4px)';
-            (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
-          }}
-        >
-          <span className="text-gray-300 text-left text-sm sm:text-base">
-            Automate your PRD documentation
-          </span>
-        </button>
-
-        <button 
+        <button
           onClick={(e) => {
             e.stopPropagation();
             router.push('/vibe-dashboard');

@@ -19,13 +19,13 @@ export async function GET(request: NextRequest) {
     // Handle OAuth errors
     if (error) {
       return NextResponse.redirect(
-        new URL('/auth/login?error=github_oauth_denied', baseUrl)
+        new URL('/login?error=github_oauth_denied', baseUrl)
       );
     }
 
     if (!code) {
       return NextResponse.redirect(
-        new URL('/auth/login?error=missing_code', baseUrl)
+        new URL('/login?error=missing_code', baseUrl)
       );
     }
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const storedState = request.cookies.get('github-oauth-state')?.value;
     if (!state || !storedState || state !== storedState) {
       return NextResponse.redirect(
-        new URL('/auth/login?error=invalid_state', baseUrl)
+        new URL('/login?error=invalid_state', baseUrl)
       );
     }
 
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     if (!githubUser.email) {
       return NextResponse.redirect(
-        new URL('/auth/login?error=no_email', baseUrl)
+        new URL('/login?error=no_email', baseUrl)
       );
     }
 
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     return NextResponse.redirect(
-      new URL('/auth/login?error=oauth_failed', baseUrl)
+      new URL('/login?error=oauth_failed', baseUrl)
     );
   }
 }
