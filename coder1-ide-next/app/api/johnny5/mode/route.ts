@@ -1,20 +1,22 @@
 import { NextResponse } from 'next/server';
 import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
-import { bridgeManager } from '@/services/bridge-manager';
 
 export async function GET() {
   const moltbotBridge = getMoltbotBridge();
   const moltbotConnected = moltbotBridge?.isConnected() ?? false;
 
-  // FIX (Feb 2026): Import bridgeManager directly like /api/johnny5/chat does
-  // global.bridgeManager isn't reliably accessible in Next.js API routes
-  const hasBridgeForDefault = bridgeManager?.hasBridgeForUser?.('default') ?? false;
-  const anyBridge = bridgeManager?.findAnyConnectedBridge?.();
+  // Use global.bridgeManager set by server.js (line ~2019)
+  // Direct module import creates a SEPARATE singleton that doesn't have connections
+  // because Next.js API routes are compiled separately from the custom server
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bridgeManagerGlobal = (global as any).bridgeManager;
+  const hasBridgeForDefault = bridgeManagerGlobal?.hasBridgeForUser?.('default') ?? false;
+  const anyBridge = bridgeManagerGlobal?.findAnyConnectedBridge?.();
   const bridgeConnected = hasBridgeForDefault || !!anyBridge;
 
   // Debug logging
   console.log('[Johnny5 Mode] Bridge check:', {
-    bridgeManagerExists: !!bridgeManager,
+    bridgeManagerExists: !!bridgeManagerGlobal,
     hasBridgeForDefault,
     anyBridge: anyBridge ? { id: anyBridge.id, userId: anyBridge.userId } : null,
     bridgeConnected
@@ -42,7 +44,7 @@ export async function GET() {
     isLimitedMode: mode === 'gemini',
     // Debug info (temporary)
     _debug: {
-      bridgeManagerExists: !!bridgeManager,
+      bridgeManagerExists: !!bridgeManagerGlobal,
       hasBridgeForDefault,
       anyBridge: anyBridge ? { id: anyBridge.id, userId: anyBridge.userId } : null,
     }
