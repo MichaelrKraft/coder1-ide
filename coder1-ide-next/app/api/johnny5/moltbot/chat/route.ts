@@ -204,7 +204,16 @@ export async function POST(
     console.log(`[Moltbot Chat] Response received: ${response.text.substring(0, 100)}...`);
 
     // 4.5 Detect CLI error text returned as "successful" response — trigger frontend fallback
-    if (response.text.includes('Prompt is too long') || response.text.includes('CLI exited with code')) {
+    const cliErrorPatterns = [
+      'Prompt is too long',
+      'CLI exited with code',
+      'Invalid API key',
+      'API key not found',
+      'Authentication failed',
+      'ANTHROPIC_API_KEY',
+    ];
+    const hasCliError = cliErrorPatterns.some(pattern => response.text.includes(pattern));
+    if (hasCliError) {
       console.warn('[Moltbot Chat] Response contains CLI error, triggering fallback:', response.text.slice(0, 200));
       return NextResponse.json(
         { success: false, error: 'Moltbot CLI error', code: 'MOLTBOT_DISABLED', timestamp: new Date() },

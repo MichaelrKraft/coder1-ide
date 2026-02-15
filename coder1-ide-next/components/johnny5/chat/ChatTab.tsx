@@ -797,6 +797,18 @@ export default function ChatTab() {
       // Get raw response
       const rawResponse = data.data?.response || data.response;
 
+      // Check for empty or error responses that slipped through server validation
+      if (!rawResponse || rawResponse.trim() === '') {
+        throw new Error('Johnny5 returned an empty response. Please try again.');
+      }
+
+      // Check for common CLI error patterns that might not have been caught server-side
+      const cliErrorPatterns = ['Invalid API key', 'API key not found', 'Authentication failed', 'ANTHROPIC_API_KEY'];
+      const matchedError = cliErrorPatterns.find(pattern => rawResponse.includes(pattern));
+      if (matchedError) {
+        throw new Error(`Authentication error: ${matchedError}. Please check your API configuration.`);
+      }
+
       // Check for <execute_bash> commands
       let finalContent = rawResponse;
       // Use response mode directly — React state (johnny5Mode) is stale until next render
