@@ -11,6 +11,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import { homedir } from 'os';
 
 // ============================================================================
 // Type Definitions
@@ -23,7 +24,7 @@ export interface SkillMetadata {
   id: string;
   name: string;
   description: string;
-  category: 'agents' | 'productivity' | 'debugging' | 'analysis';
+  category: 'agents' | 'productivity' | 'debugging' | 'analysis' | 'clawhub' | 'development' | 'research' | 'monitoring';
   tools: string[];
   version: string;
   estimatedTokens: number;
@@ -165,16 +166,21 @@ class LRUCache<T> {
 // ============================================================================
 
 export class SkillsService {
-  private skillsDir: string;
+  private skillsDirs: string[];
   private metadataCache: Map<string, SkillMetadata>;
+  private skillPathMap: Map<string, string>; // skillId -> absolute path
   private instructionsCache: LRUCache<SkillInstructions>;
   private referenceCache: LRUCache<SkillReference>;
   private initialized: boolean;
   private metrics: SkillMetrics[];
 
-  constructor(skillsDir?: string) {
-    this.skillsDir = skillsDir || path.join(process.cwd(), 'skills');
+  constructor(skillsDirs?: string[]) {
+    this.skillsDirs = skillsDirs || [
+      path.join(process.cwd(), 'skills'),       // bundled local skills
+      path.join(homedir(), '.coder1', 'skills'), // user-installed skills (including ClawHub)
+    ];
     this.metadataCache = new Map();
+    this.skillPathMap = new Map();
     this.instructionsCache = new LRUCache<SkillInstructions>(50, 3600000);
     this.referenceCache = new LRUCache<SkillReference>(100, 3600000);
     this.initialized = false;
@@ -189,54 +195,86 @@ export class SkillsService {
 
     const startTime = Date.now();
     const skills = await this.discoverSkills();
+    let successCount = 0;
 
     for (const skillPath of skills) {
       try {
         const metadata = await this.loadMetadata(skillPath);
         this.metadataCache.set(metadata.id, metadata);
+        this.skillPathMap.set(metadata.id, skillPath);
+        successCount++;
       } catch (error) {
         console.error(`Failed to load skill metadata: ${skillPath}`, error);
       }
     }
 
     this.initialized = true;
-    console.log(`✅ SkillsService initialized: ${this.metadataCache.size} skills loaded in ${Date.now() - startTime}ms`);
+
+    if (skills.length > 0 && successCount === 0) {
+      console.warn(`⚠️ SkillsService: discovered ${skills.length} skill directories but failed to load any metadata`);
+    }
+
+    console.log(`SkillsService initialized: ${successCount}/${skills.length} skills loaded in ${Date.now() - startTime}ms`);
   }
 
   /**
-   * Discover all skills in the skills directory
+   * Check if the service is initialized
+   */
+  isInitialized(): boolean {
+    return this.initialized;
+  }
+
+  /**
+   * Discover all skills across all configured directories.
+   * Supports both flat (skill-id/metadata.json) and nested (category/skill-id/metadata.json) structures.
    */
   private async discoverSkills(): Promise<string[]> {
     const skillPaths: string[] = [];
 
-    try {
-      const categories = await fs.readdir(this.skillsDir);
+    for (const baseDir of this.skillsDirs) {
+      try {
+        await fs.access(baseDir);
+      } catch {
+        continue; // Directory doesn't exist, skip
+      }
 
-      for (const category of categories) {
-        const categoryPath = path.join(this.skillsDir, category);
-        const stat = await fs.stat(categoryPath);
+      try {
+        const entries = await fs.readdir(baseDir);
 
-        if (!stat.isDirectory()) continue;
+        for (const entry of entries) {
+          const entryPath = path.join(baseDir, entry);
+          const stat = await fs.stat(entryPath);
+          if (!stat.isDirectory()) continue;
 
-        const skills = await fs.readdir(categoryPath);
+          // Check for flat structure: baseDir/skill-id/metadata.json
+          const flatMetadata = path.join(entryPath, 'metadata.json');
+          try {
+            await fs.access(flatMetadata);
+            skillPaths.push(entryPath);
+            continue; // Found at flat level, skip category scanning
+          } catch {
+            // Not flat, try category structure
+          }
 
-        for (const skill of skills) {
-          const skillPath = path.join(categoryPath, skill);
-          const skillStat = await fs.stat(skillPath);
+          // Check for nested structure: baseDir/category/skill-id/metadata.json
+          const subEntries = await fs.readdir(entryPath);
+          for (const subEntry of subEntries) {
+            const subPath = path.join(entryPath, subEntry);
+            const subStat = await fs.stat(subPath);
+            if (!subStat.isDirectory()) continue;
 
-          if (skillStat.isDirectory()) {
-            const metadataPath = path.join(skillPath, 'metadata.json');
+            const nestedMetadata = path.join(subPath, 'metadata.json');
             try {
-              await fs.access(metadataPath);
-              skillPaths.push(skillPath);
+              await fs.access(nestedMetadata);
+              skillPaths.push(subPath);
             } catch {
               // No metadata.json, skip
             }
           }
         }
+      } catch (error) {
+        console.error(`Error discovering skills in ${baseDir}:`, error);
       }
-    } catch (error) {
-      console.error('Error discovering skills:', error);
     }
 
     return skillPaths;
@@ -421,7 +459,10 @@ export class SkillsService {
    * Get skill path from metadata
    */
   private getSkillPath(metadata: SkillMetadata): string {
-    return path.join(this.skillsDir, metadata.category, metadata.id);
+    const stored = this.skillPathMap.get(metadata.id);
+    if (stored) return stored;
+    // Fallback to first directory + category structure
+    return path.join(this.skillsDirs[0], metadata.category, metadata.id);
   }
 
   /**
@@ -484,6 +525,42 @@ export class SkillsService {
   }
 
   /**
+   * Re-scan skill directories and refresh the cache
+   */
+  async refreshSkills(): Promise<void> {
+    this.metadataCache.clear();
+    this.skillPathMap.clear();
+    this.instructionsCache.clear();
+    this.referenceCache.clear();
+    this.initialized = false;
+    await this.initialize();
+  }
+
+  /**
+   * Uninstall a skill by removing it from cache
+   * (Filesystem deletion should be handled by the caller)
+   */
+  uninstallSkill(skillId: string): void {
+    this.metadataCache.delete(skillId);
+    this.skillPathMap.delete(skillId);
+    this.instructionsCache.clear(); // Clear since we can't target a specific key
+  }
+
+  /**
+   * Get skills filtered by a source directory path
+   */
+  getSkillsBySource(source: 'local' | 'clawhub'): SkillMetadata[] {
+    const localDir = path.join(process.cwd(), 'skills');
+    return this.getAllSkills().filter(skill => {
+      const skillPath = this.skillPathMap.get(skill.id) || '';
+      if (source === 'local') {
+        return skillPath.startsWith(localDir);
+      }
+      return !skillPath.startsWith(localDir);
+    });
+  }
+
+  /**
    * Preload commonly used skills
    */
   async preloadSkills(skillIds: string[]): Promise<void> {
@@ -497,6 +574,7 @@ export class SkillsService {
 // ============================================================================
 
 let instance: SkillsService | null = null;
+let initPromise: Promise<SkillsService> | null = null;
 
 export function getSkillsService(): SkillsService {
   if (!instance) {
@@ -506,7 +584,14 @@ export function getSkillsService(): SkillsService {
 }
 
 export async function initializeSkillsService(): Promise<SkillsService> {
-  const service = getSkillsService();
-  await service.initialize();
-  return service;
+  if (instance?.isInitialized()) return instance;
+
+  if (!initPromise) {
+    initPromise = (async () => {
+      const service = getSkillsService();
+      await service.initialize();
+      return service;
+    })();
+  }
+  return initPromise;
 }

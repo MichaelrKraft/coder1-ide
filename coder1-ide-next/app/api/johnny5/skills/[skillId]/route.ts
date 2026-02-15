@@ -1,106 +1,159 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Johnny5Skill, Johnny5APIResponse } from '@/types/johnny5';
+import { getSkillRecord, updateSkillEnabled, deleteSkillRecord, upsertSkill, type SkillRecord } from '@/lib/johnny5-db';
+import { initializeSkillsService } from '@/lib/skills-service';
+import { shouldUseSkills } from '@/lib/skills-integration-utils';
+
+function toJohnny5Skill(record: SkillRecord): Johnny5Skill {
+  return {
+    id: record.id,
+    name: record.name,
+    description: record.description || '',
+    trigger: (record.trigger_type as Johnny5Skill['trigger']) || 'manual',
+    createdBy: (record.created_by as Johnny5Skill['createdBy']) || 'user',
+    createdAt: new Date(record.installed_at),
+    lastUsed: record.last_used_at ? new Date(record.last_used_at) : undefined,
+    usageCount: record.usage_count,
+    successRate: record.usage_count > 0 ? Math.round((record.success_count / record.usage_count) * 100) : 100,
+    dependencies: [],
+    enabled: record.enabled === 1,
+    source: record.source as 'local' | 'clawhub',
+    clawhubSlug: record.clawhub_slug || undefined,
+    securityScore: (record.security_score as 'safe' | 'warning' | 'dangerous') || undefined,
+  };
+}
 
 /**
  * GET /api/johnny5/skills/[skillId]
- *
- * Get a specific skill by ID.
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: { skillId: string } }
 ) {
   const { skillId } = params;
-  const skill = MOCK_SKILLS.find((s) => s.id === skillId);
 
-  if (!skill) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Skill not found',
-        timestamp: new Date(),
-      },
-      { status: 404 }
-    );
+  // Try DB first
+  const dbRecord = getSkillRecord(skillId);
+  if (dbRecord) {
+    return NextResponse.json({
+      success: true,
+      data: toJohnny5Skill(dbRecord),
+      timestamp: new Date(),
+    } as Johnny5APIResponse<Johnny5Skill>);
   }
 
-  const response: Johnny5APIResponse<Johnny5Skill> = {
-    success: true,
-    data: skill,
-    timestamp: new Date(),
-  };
+  // Try SkillsService (local filesystem skills)
+  if (shouldUseSkills()) {
+    try {
+      const service = await initializeSkillsService();
+      const allSkills = service.getAllSkills();
+      const meta = allSkills.find(s => s.id === skillId);
+      if (meta) {
+        const skill: Johnny5Skill = {
+          id: meta.id,
+          name: meta.name,
+          description: meta.description,
+          trigger: 'manual',
+          createdBy: 'system',
+          createdAt: new Date(),
+          usageCount: 0,
+          successRate: 100,
+          dependencies: [],
+          enabled: true,
+          source: 'local',
+        };
+        return NextResponse.json({
+          success: true,
+          data: skill,
+          timestamp: new Date(),
+        } as Johnny5APIResponse<Johnny5Skill>);
+      }
+    } catch {
+      // SkillsService not available
+    }
+  }
 
-  return NextResponse.json(response);
+  return NextResponse.json(
+    { success: false, error: 'Skill not found', timestamp: new Date() },
+    { status: 404 }
+  );
 }
 
 /**
  * PATCH /api/johnny5/skills/[skillId]
- *
- * Update a skill. Used for enabling/disabling, editing, etc.
- *
- * Request body (all optional):
- * - enabled: boolean
- * - name: string
- * - description: string
- * - trigger: string
- * - dependencies: string[]
  */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { skillId: string } }
 ) {
   const { skillId } = params;
-  const skillIndex = MOCK_SKILLS.findIndex((s) => s.id === skillId);
-
-  if (skillIndex === -1) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Skill not found',
-        timestamp: new Date(),
-      },
-      { status: 404 }
-    );
-  }
 
   try {
     const body = await request.json();
-    const skill = MOCK_SKILLS[skillIndex];
 
-    // Update allowed fields
+    // Ensure skill exists in DB (create if only in SkillsService)
+    let dbRecord = getSkillRecord(skillId);
+    if (!dbRecord) {
+      // Check SkillsService
+      if (shouldUseSkills()) {
+        try {
+          const service = await initializeSkillsService();
+          const meta = service.getAllSkills().find(s => s.id === skillId);
+          if (meta) {
+            upsertSkill({
+              id: meta.id,
+              name: meta.name,
+              description: meta.description,
+              source: 'local',
+              created_by: 'system',
+            });
+            dbRecord = getSkillRecord(skillId);
+          }
+        } catch {
+          // SkillsService not available
+        }
+      }
+    }
+
+    if (!dbRecord) {
+      return NextResponse.json(
+        { success: false, error: 'Skill not found', timestamp: new Date() },
+        { status: 404 }
+      );
+    }
+
+    // Update enabled state
     if (typeof body.enabled === 'boolean') {
-      skill.enabled = body.enabled;
-    }
-    if (body.name) {
-      skill.name = body.name;
-    }
-    if (body.description) {
-      skill.description = body.description;
-    }
-    if (body.trigger) {
-      skill.trigger = body.trigger;
-    }
-    if (Array.isArray(body.dependencies)) {
-      skill.dependencies = body.dependencies;
-    }
-    if (body.code !== undefined) {
-      skill.code = body.code;
+      updateSkillEnabled(skillId, body.enabled);
     }
 
-    const response: Johnny5APIResponse<Johnny5Skill> = {
+    // Update other fields via upsert
+    if (body.name || body.description || body.trigger) {
+      upsertSkill({
+        id: skillId,
+        name: body.name || dbRecord.name,
+        description: body.description || dbRecord.description || undefined,
+        trigger_type: body.trigger || dbRecord.trigger_type,
+      });
+    }
+
+    // Re-fetch updated record
+    const updated = getSkillRecord(skillId);
+    if (!updated) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to fetch updated skill', timestamp: new Date() },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
       success: true,
-      data: skill,
+      data: toJohnny5Skill(updated),
       timestamp: new Date(),
-    };
-
-    return NextResponse.json(response);
+    } as Johnny5APIResponse<Johnny5Skill>);
   } catch (error) {
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Invalid request body',
-        timestamp: new Date(),
-      },
+      { success: false, error: 'Invalid request body', timestamp: new Date() },
       { status: 400 }
     );
   }
@@ -108,134 +161,54 @@ export async function PATCH(
 
 /**
  * DELETE /api/johnny5/skills/[skillId]
- *
- * Delete a skill. Only user-created skills can be deleted.
  */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { skillId: string } }
 ) {
   const { skillId } = params;
-  const skillIndex = MOCK_SKILLS.findIndex((s) => s.id === skillId);
+  const dbRecord = getSkillRecord(skillId);
 
-  if (skillIndex === -1) {
+  if (!dbRecord) {
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Skill not found',
-        timestamp: new Date(),
-      },
+      { success: false, error: 'Skill not found', timestamp: new Date() },
       { status: 404 }
     );
   }
 
-  const skill = MOCK_SKILLS[skillIndex];
-
   // Prevent deletion of system skills
-  if (skill.createdBy === 'system') {
+  if (dbRecord.created_by === 'system') {
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Cannot delete system skills',
-        timestamp: new Date(),
-      },
+      { success: false, error: 'Cannot delete system skills', timestamp: new Date() },
       { status: 403 }
     );
   }
 
-  // Remove skill from array
-  MOCK_SKILLS.splice(skillIndex, 1);
+  // If ClawHub skill, also clean up filesystem
+  if (dbRecord.source === 'clawhub' && dbRecord.clawhub_slug) {
+    try {
+      const { uninstallSkill } = await import('@/services/johnny5/clawhub-adapter');
+      await uninstallSkill(dbRecord.clawhub_slug);
+    } catch {
+      // Filesystem cleanup failed but continue with DB deletion
+    }
+  }
 
-  const response: Johnny5APIResponse<{ deleted: true; skillId: string }> = {
+  deleteSkillRecord(skillId);
+
+  // Also remove from SkillsService cache
+  if (shouldUseSkills()) {
+    try {
+      const service = await initializeSkillsService();
+      service.uninstallSkill(skillId);
+    } catch {
+      // SkillsService not available
+    }
+  }
+
+  return NextResponse.json({
     success: true,
     data: { deleted: true, skillId },
     timestamp: new Date(),
-  };
-
-  return NextResponse.json(response);
+  } as Johnny5APIResponse<{ deleted: true; skillId: string }>);
 }
-
-// ================================================================================
-// Mock Data (shared with main route - in real impl, use database)
-// ================================================================================
-
-const MOCK_SKILLS: Johnny5Skill[] = [
-  {
-    id: 'skill_001',
-    name: 'Daily Analytics Report',
-    description: 'Generates a daily report of token usage, session stats, and efficiency metrics.',
-    trigger: 'scheduled',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    usageCount: 47,
-    successRate: 98,
-    dependencies: ['analytics-service'],
-    enabled: true,
-  },
-  {
-    id: 'skill_002',
-    name: 'Morning Brief Generator',
-    description: 'Compiles overnight activity into a morning summary with actionable items.',
-    trigger: 'scheduled',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 8 * 60 * 60 * 1000),
-    usageCount: 28,
-    successRate: 100,
-    dependencies: ['morning-brief-service', 'activity-tracker'],
-    enabled: true,
-  },
-  {
-    id: 'skill_003',
-    name: 'Security Audit',
-    description: 'Scans for potential security issues and prompt injection attempts.',
-    trigger: 'event',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 30 * 60 * 1000),
-    usageCount: 156,
-    successRate: 99,
-    dependencies: ['security-service'],
-    enabled: true,
-  },
-  {
-    id: 'skill_004',
-    name: 'Content Repurposer',
-    description: 'Repurposes content from YouTube videos to newsletter format and X threads.',
-    trigger: 'manual',
-    createdBy: 'self_improvement',
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    usageCount: 12,
-    successRate: 87,
-    dependencies: ['youtube-api', 'content-generator'],
-    enabled: true,
-  },
-  {
-    id: 'skill_005',
-    name: 'Competitor Video Monitor',
-    description: 'Monitors competitor YouTube channels for outlier videos and trend opportunities.',
-    trigger: 'scheduled',
-    createdBy: 'self_improvement',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 12 * 60 * 60 * 1000),
-    usageCount: 8,
-    successRate: 94,
-    dependencies: ['youtube-api', 'trend-analyzer'],
-    enabled: true,
-  },
-  {
-    id: 'skill_006',
-    name: 'Quick Deploy Script',
-    description: 'Custom deployment script for staging environment.',
-    trigger: 'manual',
-    createdBy: 'user',
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    usageCount: 24,
-    successRate: 96,
-    dependencies: ['vercel-api'],
-    enabled: true,
-  },
-];

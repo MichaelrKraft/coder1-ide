@@ -16,6 +16,8 @@ import {
   Bot,
   User,
   Sparkles,
+  Globe,
+  HardDrive,
 } from 'lucide-react';
 import type { Johnny5Skill } from '@/types/johnny5';
 
@@ -251,6 +253,29 @@ export default function SkillCard({
           {originBadge.icon}
           {originBadge.label}
         </span>
+
+        {/* Source Badge */}
+        {skill.source && (
+          <span className={`
+            inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium
+            ${skill.source === 'clawhub'
+              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40'
+              : 'bg-gray-500/20 text-gray-400 border border-gray-500/40'
+            }
+          `}>
+            {skill.source === 'clawhub' ? (
+              <>
+                <Globe className="w-3 h-3" />
+                Community
+              </>
+            ) : (
+              <>
+                <HardDrive className="w-3 h-3" />
+                Built-in
+              </>
+            )}
+          </span>
+        )}
 
         {/* Trigger Badge */}
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-bg-tertiary text-text-secondary border border-border-default">
