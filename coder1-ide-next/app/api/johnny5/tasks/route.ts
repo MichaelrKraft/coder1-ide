@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const triggeredBy = searchParams.get('triggeredBy') as Johnny5TaskTrigger | null;
 
     // Get REAL tasks from task tracker (already sorted)
-    const tasks = getTasks({
+    const tasks = await getTasks({
       status: status || undefined,
       type: type || undefined,
       priority: priority || undefined,

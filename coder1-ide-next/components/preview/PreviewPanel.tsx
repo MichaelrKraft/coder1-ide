@@ -319,13 +319,6 @@ const PreviewPanel = React.memo(function PreviewPanel({
             'Preview',
             'Live preview of your HTML, CSS, and JavaScript code'
           )}
-          {/* Legacy Contextual Memory - hidden by default, kept for backwards compatibility */}
-          {renderTabButton(
-            'contextual-memory',
-            <Brain className="w-4 h-4" />,
-            'Memory',
-            'View relevant past conversations and solutions based on your current context'
-          )}
           {renderTabButton(
             'teams',
             <Users className="w-4 h-4" />,

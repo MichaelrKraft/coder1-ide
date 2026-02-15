@@ -1880,24 +1880,6 @@ function IDEPageContent() {
               </div>
             )}
 
-            {/* Blue Banner - Agentic Development Environment */}
-            <div 
-              className="w-full h-12 flex items-center justify-center bg-bg-secondary border-b border-bg-tertiary"
-              style={{ 
-                color: 'var(--primary-cyan)',
-                background: 'linear-gradient(90deg, var(--bg-secondary) 0%, rgba(0, 217, 255, 0.05) 50%, var(--bg-secondary) 100%)'
-              }}
-            >
-              <p 
-                className="text-sm font-semibold tracking-wide"
-                style={{
-                  textShadow: '0 0 10px rgba(0, 217, 255, 0.5), 0 0 20px rgba(0, 217, 255, 0.3), 0 0 30px rgba(0, 217, 255, 0.2)'
-                }}
-              >
-                The World&apos;s First Fully Agentic Development Environment
-              </p>
-            </div>
-
             {/* Active File Display Bar */}
             {activeFile && (
               <div className="w-full h-8 flex items-center px-4 bg-bg-tertiary border-b border-border-default">

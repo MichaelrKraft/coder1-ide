@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
     // Handle OAuth errors
     if (error) {
       return NextResponse.redirect(
-        new URL('/auth/login?error=google_oauth_denied', request.url)
+        new URL('/login?error=google_oauth_denied', request.url)
       );
     }
     
     if (!code) {
       return NextResponse.redirect(
-        new URL('/auth/login?error=missing_code', request.url)
+        new URL('/login?error=missing_code', request.url)
       );
     }
     
@@ -61,9 +61,9 @@ export async function GET(request: NextRequest) {
       ip_address: request.ip || undefined,
     });
     
-    // Create response with redirect to dashboard
+    // Create response with redirect to IDE
     const response = NextResponse.redirect(
-      new URL('/auth/dashboard', request.url)
+      new URL('/ide', request.url)
     );
     
     // Set cookies
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     // logger?.error('Google OAuth callback error:', error);
     return NextResponse.redirect(
-      new URL('/auth/login?error=oauth_failed', request.url)
+      new URL('/login?error=oauth_failed', request.url)
     );
   }
 }
