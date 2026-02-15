@@ -206,23 +206,17 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
     return 'Good Evening';
   }, []);
 
-  // Format date for display
+  // Format date for display - always show actual date and time
   const formatBriefDate = (date: Date | string) => {
     const d = new Date(date);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (d.toDateString() === today.toDateString()) {
-      return 'Today';
-    }
-    if (d.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
-    }
     return d.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'short',
       day: 'numeric',
+    }) + ' at ' + d.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
     });
   };
 

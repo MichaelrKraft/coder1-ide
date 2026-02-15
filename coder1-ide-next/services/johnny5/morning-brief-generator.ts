@@ -230,7 +230,7 @@ export async function generateMorningBrief(targetDate: Date): Promise<Johnny5Mor
     weather: {
       temperature: 65 + Math.floor(Math.random() * 15),
       condition: ['Sunny', 'Partly Cloudy', 'Clear'][Math.floor(Math.random() * 3)],
-      location: 'San Francisco, CA', // Could be made dynamic with weather API
+      location: 'Littleton, CO', // Could be made dynamic with weather API
     },
     summary,
     builtOvernight,
