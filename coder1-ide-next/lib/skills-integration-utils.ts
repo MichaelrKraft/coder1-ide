@@ -365,3 +365,60 @@ export async function withSkillsFallback<T>(
   }
   return await legacyOperation();
 }
+
+// ============================================================================
+// Skill-to-Query Matching
+// ============================================================================
+
+/**
+ * Match skills to a user query using keyword overlap scoring.
+ * Returns skills sorted by relevance score (highest first).
+ */
+export function matchSkillsToQuery(
+  query: string,
+  skills: Array<{ id: string; name: string; description: string; tags: string[] }>
+): Array<{ id: string; name: string; description: string; tags: string[]; score: number }> {
+  const STOP_WORDS = new Set([
+    'i', 'me', 'my', 'we', 'you', 'your', 'the', 'a', 'an', 'is', 'are', 'was',
+    'be', 'do', 'does', 'did', 'have', 'has', 'had', 'to', 'of', 'in', 'for',
+    'on', 'with', 'at', 'by', 'from', 'it', 'its', 'this', 'that', 'what',
+    'which', 'who', 'when', 'where', 'why', 'how', 'can', 'will', 'should',
+    'would', 'could', 'may', 'just', 'please', 'help', 'want', 'need',
+  ]);
+
+  // Tokenize query
+  const queryWords = query
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+
+  if (queryWords.length === 0) return [];
+
+  const querySet = new Set(queryWords);
+
+  return skills
+    .map(skill => {
+      // Tokenize skill name + description + tags
+      const skillText = `${skill.name} ${skill.description} ${skill.tags.join(' ')}`.toLowerCase();
+      const skillWords = skillText
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 2);
+
+      // Score by keyword overlap
+      let score = 0;
+      for (const word of skillWords) {
+        if (querySet.has(word)) score += 1;
+      }
+
+      // Bonus for exact name match
+      if (skill.name.toLowerCase().includes(query.toLowerCase().slice(0, 20))) {
+        score += 2;
+      }
+
+      return { ...skill, score };
+    })
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score);
+}

@@ -1,78 +1,158 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Johnny5Skill, Johnny5APIResponse } from '@/types/johnny5';
+import { initializeSkillsService } from '@/lib/skills-service';
+import { getSkillRecords, upsertSkill, type SkillRecord } from '@/lib/johnny5-db';
+import { shouldUseSkills } from '@/lib/skills-integration-utils';
+
+/**
+ * Convert a SkillRecord from the DB + SkillMetadata from SkillsService into a Johnny5Skill
+ */
+function toJohnny5Skill(dbRecord: SkillRecord | null, meta?: { id: string; name: string; description: string; category: string; tags: string[] }): Johnny5Skill {
+  if (dbRecord) {
+    return {
+      id: dbRecord.id,
+      name: dbRecord.name,
+      description: dbRecord.description || '',
+      trigger: (dbRecord.trigger_type as Johnny5Skill['trigger']) || 'manual',
+      createdBy: (dbRecord.created_by as Johnny5Skill['createdBy']) || 'user',
+      createdAt: new Date(dbRecord.installed_at),
+      lastUsed: dbRecord.last_used_at ? new Date(dbRecord.last_used_at) : undefined,
+      usageCount: dbRecord.usage_count,
+      successRate: dbRecord.usage_count > 0 ? Math.round((dbRecord.success_count / dbRecord.usage_count) * 100) : 100,
+      dependencies: [],
+      enabled: dbRecord.enabled === 1,
+      source: dbRecord.source as 'local' | 'clawhub',
+      clawhubSlug: dbRecord.clawhub_slug || undefined,
+      securityScore: (dbRecord.security_score as 'safe' | 'warning' | 'dangerous') || undefined,
+    };
+  }
+
+  // Fallback: create from SkillsService metadata (no DB record yet)
+  if (meta) {
+    return {
+      id: meta.id,
+      name: meta.name,
+      description: meta.description,
+      trigger: 'manual',
+      createdBy: 'system',
+      createdAt: new Date(),
+      usageCount: 0,
+      successRate: 100,
+      dependencies: [],
+      enabled: true,
+      source: 'local',
+    };
+  }
+
+  throw new Error('Either dbRecord or meta must be provided');
+}
 
 /**
  * GET /api/johnny5/skills
  *
- * Returns all Johnny5 skills with optional filtering.
- *
- * Query params:
- * - enabled: 'true' or 'false' to filter by enabled status
- * - createdBy: 'system', 'user', or 'self_improvement'
- * - trigger: 'scheduled', 'event', 'manual', or 'trend'
+ * Returns all skills, merging SkillsService metadata with DB records.
  */
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const enabledFilter = searchParams.get('enabled');
-  const createdByFilter = searchParams.get('createdBy');
-  const triggerFilter = searchParams.get('trigger');
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const enabledFilter = searchParams.get('enabled');
+    const createdByFilter = searchParams.get('createdBy');
+    const triggerFilter = searchParams.get('trigger');
+    const sourceFilter = searchParams.get('source');
 
-  let skills = [...MOCK_SKILLS];
+    // Get DB records
+    const dbRecords = getSkillRecords();
+    const dbMap = new Map(dbRecords.map(r => [r.id, r]));
 
-  // Apply filters
-  if (enabledFilter !== null) {
-    const enabled = enabledFilter === 'true';
-    skills = skills.filter((s) => s.enabled === enabled);
+    // Get SkillsService metadata (local skills from filesystem)
+    let serviceSkills: Array<{ id: string; name: string; description: string; category: string; tags: string[] }> = [];
+    if (shouldUseSkills()) {
+      try {
+        const service = await initializeSkillsService();
+        serviceSkills = service.getAllSkills();
+      } catch {
+        // SkillsService not available
+      }
+    }
+
+    // Merge: DB records take priority, service skills fill gaps
+    const skillMap = new Map<string, Johnny5Skill>();
+
+    // Add all DB records
+    for (const record of dbRecords) {
+      skillMap.set(record.id, toJohnny5Skill(record));
+    }
+
+    // Add service skills not in DB
+    for (const meta of serviceSkills) {
+      if (!skillMap.has(meta.id)) {
+        skillMap.set(meta.id, toJohnny5Skill(null, meta));
+      }
+    }
+
+    let skills = Array.from(skillMap.values());
+
+    // Apply filters
+    if (enabledFilter !== null) {
+      const enabled = enabledFilter === 'true';
+      skills = skills.filter(s => s.enabled === enabled);
+    }
+    if (createdByFilter) {
+      skills = skills.filter(s => s.createdBy === createdByFilter);
+    }
+    if (triggerFilter) {
+      skills = skills.filter(s => s.trigger === triggerFilter);
+    }
+    if (sourceFilter) {
+      skills = skills.filter(s => s.source === sourceFilter);
+    }
+
+    const response: Johnny5APIResponse<Johnny5Skill[]> = {
+      success: true,
+      data: skills,
+      timestamp: new Date(),
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: 'Failed to load skills', timestamp: new Date() },
+      { status: 500 }
+    );
   }
-
-  if (createdByFilter) {
-    skills = skills.filter((s) => s.createdBy === createdByFilter);
-  }
-
-  if (triggerFilter) {
-    skills = skills.filter((s) => s.trigger === triggerFilter);
-  }
-
-  const response: Johnny5APIResponse<Johnny5Skill[]> = {
-    success: true,
-    data: skills,
-    timestamp: new Date(),
-  };
-
-  return NextResponse.json(response);
 }
 
 /**
  * POST /api/johnny5/skills
  *
  * Create a new skill.
- *
- * Request body:
- * - name: string
- * - description: string
- * - trigger: 'scheduled' | 'event' | 'manual' | 'trend'
- * - dependencies: string[]
- * - code?: string
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validate required fields
     if (!body.name || !body.description || !body.trigger) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing required fields: name, description, trigger',
-          timestamp: new Date(),
-        },
+        { success: false, error: 'Missing required fields: name, description, trigger', timestamp: new Date() },
         { status: 400 }
       );
     }
 
-    // Create new skill
+    const id = `skill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Save to DB
+    upsertSkill({
+      id,
+      name: body.name,
+      description: body.description,
+      trigger_type: body.trigger,
+      created_by: 'user',
+      source: 'local',
+      enabled: true,
+    });
+
     const newSkill: Johnny5Skill = {
-      id: `skill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id,
       name: body.name,
       description: body.description,
       trigger: body.trigger,
@@ -83,10 +163,8 @@ export async function POST(request: NextRequest) {
       dependencies: body.dependencies || [],
       code: body.code,
       enabled: true,
+      source: 'local',
     };
-
-    // In real implementation, save to database
-    MOCK_SKILLS.push(newSkill);
 
     const response: Johnny5APIResponse<Johnny5Skill> = {
       success: true,
@@ -97,97 +175,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Invalid request body',
-        timestamp: new Date(),
-      },
+      { success: false, error: 'Invalid request body', timestamp: new Date() },
       { status: 400 }
     );
   }
 }
-
-// ================================================================================
-// Mock Data
-// ================================================================================
-
-const MOCK_SKILLS: Johnny5Skill[] = [
-  {
-    id: 'skill_001',
-    name: 'Daily Analytics Report',
-    description: 'Generates a daily report of token usage, session stats, and efficiency metrics.',
-    trigger: 'scheduled',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    usageCount: 47,
-    successRate: 98,
-    dependencies: ['analytics-service'],
-    enabled: true,
-  },
-  {
-    id: 'skill_002',
-    name: 'Morning Brief Generator',
-    description: 'Compiles overnight activity into a morning summary with actionable items.',
-    trigger: 'scheduled',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 8 * 60 * 60 * 1000),
-    usageCount: 28,
-    successRate: 100,
-    dependencies: ['morning-brief-service', 'activity-tracker'],
-    enabled: true,
-  },
-  {
-    id: 'skill_003',
-    name: 'Security Audit',
-    description: 'Scans for potential security issues and prompt injection attempts.',
-    trigger: 'event',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 30 * 60 * 1000),
-    usageCount: 156,
-    successRate: 99,
-    dependencies: ['security-service'],
-    enabled: true,
-  },
-  {
-    id: 'skill_004',
-    name: 'Content Repurposer',
-    description: 'Repurposes content from YouTube videos to newsletter format and X threads.',
-    trigger: 'manual',
-    createdBy: 'self_improvement',
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    usageCount: 12,
-    successRate: 87,
-    dependencies: ['youtube-api', 'content-generator'],
-    enabled: true,
-  },
-  {
-    id: 'skill_005',
-    name: 'Competitor Video Monitor',
-    description: 'Monitors competitor YouTube channels for outlier videos and trend opportunities.',
-    trigger: 'scheduled',
-    createdBy: 'self_improvement',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 12 * 60 * 60 * 1000),
-    usageCount: 8,
-    successRate: 94,
-    dependencies: ['youtube-api', 'trend-analyzer'],
-    enabled: true,
-  },
-  {
-    id: 'skill_006',
-    name: 'Quick Deploy Script',
-    description: 'Custom deployment script for staging environment.',
-    trigger: 'manual',
-    createdBy: 'user',
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    usageCount: 24,
-    successRate: 96,
-    dependencies: ['vercel-api'],
-    enabled: true,
-  },
-];

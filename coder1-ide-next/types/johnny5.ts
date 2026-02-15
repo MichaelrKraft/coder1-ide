@@ -45,7 +45,8 @@ export type Johnny5Tab =
   | 'context'
   | 'security'
   | 'mission-control'
-  | 'morning-brief';
+  | 'morning-brief'
+  | 'skills';
 
 export type Johnny5Status = 'idle' | 'working' | 'sleeping' | 'error';
 
@@ -406,6 +407,11 @@ export interface Johnny5Skill {
   code?: string;
   dependencies: string[];
   enabled: boolean;
+  source?: 'local' | 'clawhub';
+  clawhubSlug?: string;
+  securityScore?: 'safe' | 'warning' | 'dangerous';
+  compatibility?: SkillCompatibility;
+  category?: SkillCategory;
 }
 
 // ================================================================================
@@ -635,4 +641,61 @@ export interface MoltbotGatewayEvent {
   payload: unknown;
   timestamp: Date;
   sessionId?: string;
+}
+
+// ================================================================================
+// Skills Store Types (ClawHub Integration)
+// ================================================================================
+
+export type SkillCategory =
+  | 'productivity'
+  | 'research'
+  | 'monitoring'
+  | 'communication'
+  | 'development'
+  | 'agents'
+  | 'clawhub';
+
+export type SkillCompatibility = 'high' | 'medium' | 'low';
+
+export interface ClawHubSkillSummary {
+  slug: string;
+  displayName: string;
+  summary: string;
+  version: string;
+  downloads: number;
+  stars: number;
+  updatedAt: string;
+  score: number;
+}
+
+export interface ClawHubSkillDetail extends ClawHubSkillSummary {
+  owner: { handle: string; displayName: string; image: string };
+  tags: string[];
+  files: { path: string; sha256: string; size: number }[];
+  createdAt: string;
+}
+
+export interface ClawHubSearchResponse {
+  results: ClawHubSkillSummary[];
+  hasMore: boolean;
+  cursor?: string;
+}
+
+// ================================================================================
+// Skill Security Types
+// ================================================================================
+
+export interface SkillSecurityFinding {
+  severity: 'info' | 'warning' | 'danger';
+  pattern: string;
+  description: string;
+  line?: number;
+}
+
+export interface SkillSecurityReport {
+  skillId: string;
+  score: 'safe' | 'warning' | 'dangerous';
+  findings: SkillSecurityFinding[];
+  scannedAt: Date;
 }

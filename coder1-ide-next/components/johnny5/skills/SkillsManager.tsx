@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Brain,
   Search,
@@ -16,14 +16,24 @@ import {
   Clock,
   Hand,
   TrendingUp,
+  Store,
+  Loader2,
+  X,
+  Globe,
+  HardDrive,
+  CheckCircle,
+  Play,
+  AlertTriangle,
 } from 'lucide-react';
 import type { Johnny5Skill } from '@/types/johnny5';
 import SkillCard from './SkillCard';
 import SkillCreator from './SkillCreator';
+import SkillStoreBrowser from './SkillStoreBrowser';
 
 type FilterCategory = 'all' | 'productivity' | 'research' | 'monitoring' | 'communication' | 'development';
 type FilterOrigin = 'all' | 'system' | 'user' | 'self_improvement';
 type FilterTrigger = 'all' | 'scheduled' | 'event' | 'manual' | 'trend';
+type FilterSource = 'all' | 'local' | 'clawhub';
 
 interface SkillsManagerProps {
   skills?: Johnny5Skill[];
@@ -43,26 +53,66 @@ interface SkillsManagerProps {
  * - Create new skills
  * - Edit and delete existing skills
  * - Group skills by origin (system, user, self-learned)
+ * - Browse and install skills from the Skills Store
  */
 export default function SkillsManager({
-  skills = MOCK_SKILLS,
+  skills,
   onToggleSkill,
   onEditSkill,
   onDeleteSkill,
   onRunSkill,
   onCreateSkill,
 }: SkillsManagerProps) {
+  const [activeTab, setActiveTab] = useState<'my-skills' | 'store'>('my-skills');
+  const [loadedSkills, setLoadedSkills] = useState<Johnny5Skill[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<FilterCategory>('all');
   const [originFilter, setOriginFilter] = useState<FilterOrigin>('all');
   const [triggerFilter, setTriggerFilter] = useState<FilterTrigger>('all');
+  const [sourceFilter, setSourceFilter] = useState<FilterSource>('all');
   const [showEnabledOnly, setShowEnabledOnly] = useState(false);
   const [showCreator, setShowCreator] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedSkill, setSelectedSkill] = useState<Johnny5Skill | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  // Use prop if provided, otherwise use loaded data
+  const activeSkills = skills || loadedSkills;
+
+  // Fetch skills from API
+  const fetchSkills = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/johnny5/skills');
+      if (res.ok) {
+        const json = await res.json();
+        setLoadedSkills(json.data || []);
+      }
+    } catch (err) {
+      console.error('[Skills] Failed to fetch:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchSkills();
+  }, [fetchSkills]);
+
+  // Refresh handler
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchSkills();
+    setRefreshing(false);
+  };
 
   // Filter and search skills
   const filteredSkills = useMemo(() => {
-    return skills.filter((skill) => {
+    return activeSkills.filter((skill) => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -74,8 +124,6 @@ export default function SkillsManager({
 
       // Category filter
       if (categoryFilter !== 'all') {
-        // Skills don't have category in type, so we'll infer from name/description
-        // In real implementation, add category to skill type
         const skillCategory = inferCategory(skill);
         if (skillCategory !== categoryFilter) return false;
       }
@@ -90,6 +138,12 @@ export default function SkillsManager({
         return false;
       }
 
+      // Source filter
+      if (sourceFilter !== 'all') {
+        const skillSource = skill.source || 'local';
+        if (skillSource !== sourceFilter) return false;
+      }
+
       // Enabled filter
       if (showEnabledOnly && !skill.enabled) {
         return false;
@@ -97,7 +151,7 @@ export default function SkillsManager({
 
       return true;
     });
-  }, [skills, searchQuery, categoryFilter, originFilter, triggerFilter, showEnabledOnly]);
+  }, [activeSkills, searchQuery, categoryFilter, originFilter, triggerFilter, sourceFilter, showEnabledOnly]);
 
   // Group skills by origin
   const groupedSkills = useMemo(() => {
@@ -116,30 +170,87 @@ export default function SkillsManager({
 
   // Stats
   const stats = useMemo(() => ({
-    total: skills.length,
-    enabled: skills.filter((s) => s.enabled).length,
-    system: skills.filter((s) => s.createdBy === 'system').length,
-    user: skills.filter((s) => s.createdBy === 'user').length,
-    selfLearned: skills.filter((s) => s.createdBy === 'self_improvement').length,
-  }), [skills]);
+    total: activeSkills.length,
+    enabled: activeSkills.filter((s) => s.enabled).length,
+    system: activeSkills.filter((s) => s.createdBy === 'system').length,
+    user: activeSkills.filter((s) => s.createdBy === 'user').length,
+    selfLearned: activeSkills.filter((s) => s.createdBy === 'self_improvement').length,
+  }), [activeSkills]);
 
-  const handleToggle = (skillId: string) => {
+  const handleToggle = async (skillId: string) => {
+    const skill = activeSkills.find((s) => s.id === skillId);
+    if (!skill) return;
+
+    try {
+      const res = await fetch(`/api/johnny5/skills/${skillId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !skill.enabled }),
+      });
+      if (res.ok) {
+        await fetchSkills();
+      }
+    } catch (err) {
+      console.error('[Skills] Failed to toggle:', err);
+    }
+
     onToggleSkill?.(skillId);
   };
 
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const handleEdit = (skill: Johnny5Skill) => {
+    setSelectedSkill(skill);
     onEditSkill?.(skill);
   };
 
-  const handleDelete = (skillId: string) => {
+  const handleDelete = async (skillId: string) => {
+    const skill = activeSkills.find((s) => s.id === skillId);
+    const name = skill?.name || skillId;
+    if (!confirm(`Delete skill "${name}"? This cannot be undone.`)) return;
+
+    try {
+      const res = await fetch(`/api/johnny5/skills/${skillId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        showToast(`Deleted "${name}"`, 'success');
+        await fetchSkills();
+      } else {
+        const json = await res.json().catch(() => null);
+        showToast(json?.error || 'Failed to delete skill', 'error');
+      }
+    } catch (err) {
+      console.error('[Skills] Failed to delete:', err);
+      showToast('Failed to delete skill', 'error');
+    }
+
     onDeleteSkill?.(skillId);
   };
 
-  const handleRun = (skillId: string) => {
+  const handleRun = async (skillId: string) => {
+    const skill = activeSkills.find((s) => s.id === skillId);
+    showToast(`Triggered "${skill?.name || skillId}"`, 'success');
     onRunSkill?.(skillId);
   };
 
-  const handleCreate = (skill: Omit<Johnny5Skill, 'id' | 'createdAt' | 'usageCount' | 'successRate'>) => {
+  const handleCreate = async (skill: Omit<Johnny5Skill, 'id' | 'createdAt' | 'usageCount' | 'successRate'>) => {
+    try {
+      const res = await fetch('/api/johnny5/skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(skill),
+      });
+      if (res.ok) {
+        await fetchSkills();
+      }
+    } catch (err) {
+      console.error('[Skills] Failed to create:', err);
+    }
+
     onCreateSkill?.(skill);
     setShowCreator(false);
   };
@@ -177,138 +288,201 @@ export default function SkillsManager({
             {stats.enabled}/{stats.total} enabled
           </span>
         </div>
-        <button
-          onClick={() => setShowCreator(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-coder1-cyan/20 text-coder1-cyan border border-coder1-cyan/40 rounded-lg text-xs font-semibold hover:bg-coder1-cyan/30 transition-all"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          New Skill
-        </button>
-      </div>
-
-      {/* Search and Filter Bar */}
-      <div className="px-4 py-3 border-b border-border-default space-y-2 relative z-10">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-          <input
-            type="text"
-            placeholder="Search skills..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-bg-secondary border border-border-default rounded-lg text-sm text-text-primary placeholder-text-muted focus:border-coder1-cyan focus:outline-none"
-          />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-1.5 text-text-muted hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-all disabled:opacity-50"
+            title="Refresh skills"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={() => setShowCreator(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-coder1-cyan/20 text-coder1-cyan border border-coder1-cyan/40 rounded-lg text-xs font-semibold hover:bg-coder1-cyan/30 transition-all"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New Skill
+          </button>
         </div>
+      </div>
 
-        {/* Filter Toggle */}
+      {/* Tab Bar */}
+      <div className="flex border-b border-border-default relative z-10">
         <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors"
+          onClick={() => setActiveTab('my-skills')}
+          className={`
+            flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold transition-all
+            ${activeTab === 'my-skills'
+              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-coder1-cyan/5'
+              : 'text-text-muted hover:text-text-secondary'
+            }
+          `}
         >
-          <Filter className="w-3.5 h-3.5" />
-          Filters
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          <Brain className="w-3.5 h-3.5" />
+          My Skills
         </button>
+        <button
+          onClick={() => setActiveTab('store')}
+          className={`
+            flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold transition-all
+            ${activeTab === 'store'
+              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-coder1-cyan/5'
+              : 'text-text-muted hover:text-text-secondary'
+            }
+          `}
+        >
+          <Store className="w-3.5 h-3.5" />
+          Skills Store
+        </button>
+      </div>
 
-        {/* Filter Options */}
-        {showFilters && (
-          <div className="flex flex-wrap gap-2 pt-2">
-            {/* Origin Filter */}
-            <select
-              value={originFilter}
-              onChange={(e) => setOriginFilter(e.target.value as FilterOrigin)}
-              className="px-2 py-1 bg-bg-secondary border border-border-default rounded text-xs text-text-primary focus:border-coder1-cyan focus:outline-none"
-            >
-              <option value="all">All Origins</option>
-              <option value="system">System</option>
-              <option value="user">User Created</option>
-              <option value="self_improvement">Self-Learned</option>
-            </select>
-
-            {/* Trigger Filter */}
-            <select
-              value={triggerFilter}
-              onChange={(e) => setTriggerFilter(e.target.value as FilterTrigger)}
-              className="px-2 py-1 bg-bg-secondary border border-border-default rounded text-xs text-text-primary focus:border-coder1-cyan focus:outline-none"
-            >
-              <option value="all">All Triggers</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="event">Event</option>
-              <option value="manual">Manual</option>
-              <option value="trend">Trend</option>
-            </select>
-
-            {/* Enabled Only */}
-            <label className="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer">
+      {/* Tab Content */}
+      {activeTab === 'store' ? (
+        <SkillStoreBrowser onInstalled={fetchSkills} />
+      ) : (
+        <>
+          {/* Search and Filter Bar */}
+          <div className="px-4 py-3 border-b border-border-default space-y-2 relative z-10">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
-                type="checkbox"
-                checked={showEnabledOnly}
-                onChange={(e) => setShowEnabledOnly(e.target.checked)}
-                className="rounded border-border-default bg-bg-secondary text-coder1-cyan focus:ring-coder1-cyan"
+                type="text"
+                placeholder="Search skills..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-bg-secondary border border-border-default rounded-lg text-sm text-text-primary placeholder-text-muted focus:border-coder1-cyan focus:outline-none"
               />
-              Enabled only
-            </label>
+            </div>
+
+            {/* Filter Toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              Filters
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Filter Options */}
+            {showFilters && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {/* Origin Filter */}
+                <select
+                  value={originFilter}
+                  onChange={(e) => setOriginFilter(e.target.value as FilterOrigin)}
+                  className="px-2 py-1 bg-bg-secondary border border-border-default rounded text-xs text-text-primary focus:border-coder1-cyan focus:outline-none"
+                >
+                  <option value="all">All Origins</option>
+                  <option value="system">System</option>
+                  <option value="user">User Created</option>
+                  <option value="self_improvement">Self-Learned</option>
+                </select>
+
+                {/* Trigger Filter */}
+                <select
+                  value={triggerFilter}
+                  onChange={(e) => setTriggerFilter(e.target.value as FilterTrigger)}
+                  className="px-2 py-1 bg-bg-secondary border border-border-default rounded text-xs text-text-primary focus:border-coder1-cyan focus:outline-none"
+                >
+                  <option value="all">All Triggers</option>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="event">Event</option>
+                  <option value="manual">Manual</option>
+                  <option value="trend">Trend</option>
+                </select>
+
+                {/* Source Filter */}
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value as FilterSource)}
+                  className="px-2 py-1 bg-bg-secondary border border-border-default rounded text-xs text-text-primary focus:border-coder1-cyan focus:outline-none"
+                >
+                  <option value="all">All Sources</option>
+                  <option value="local">Built-in</option>
+                  <option value="clawhub">Community</option>
+                </select>
+
+                {/* Enabled Only */}
+                <label className="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showEnabledOnly}
+                    onChange={(e) => setShowEnabledOnly(e.target.checked)}
+                    className="rounded border-border-default bg-bg-secondary text-coder1-cyan focus:ring-coder1-cyan"
+                  />
+                  Enabled only
+                </label>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Skills List */}
-      <div className="flex-1 overflow-auto p-4 space-y-6 relative z-10">
-        {filteredSkills.length === 0 ? (
-          <div className="text-center py-8">
-            <Brain className="w-12 h-12 mx-auto mb-3 text-text-muted opacity-50" />
-            <p className="text-sm text-text-secondary">No skills found</p>
-            <p className="text-xs text-text-muted mt-1">
-              {searchQuery ? 'Try a different search term' : 'Create your first skill to get started'}
-            </p>
+          {/* Skills List */}
+          <div className="flex-1 overflow-auto p-4 space-y-6 relative z-10">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-coder1-cyan animate-spin mb-3" />
+                <p className="text-sm text-text-muted">Loading skills...</p>
+              </div>
+            ) : filteredSkills.length === 0 ? (
+              <div className="text-center py-8">
+                <Brain className="w-12 h-12 mx-auto mb-3 text-text-muted opacity-50" />
+                <p className="text-sm text-text-secondary">No skills found</p>
+                <p className="text-xs text-text-muted mt-1">
+                  {searchQuery ? 'Try a different search term' : 'Create your first skill to get started'}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* System Skills */}
+                {groupedSkills.system.length > 0 && (
+                  <SkillGroup
+                    title="System Skills"
+                    icon={<Bot className="w-4 h-4 text-blue-400" />}
+                    count={groupedSkills.system.length}
+                    skills={groupedSkills.system}
+                    onToggle={handleToggle}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onRun={handleRun}
+                  />
+                )}
+
+                {/* User Skills */}
+                {groupedSkills.user.length > 0 && (
+                  <SkillGroup
+                    title="User Created"
+                    icon={<User className="w-4 h-4 text-green-400" />}
+                    count={groupedSkills.user.length}
+                    skills={groupedSkills.user}
+                    onToggle={handleToggle}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onRun={handleRun}
+                  />
+                )}
+
+                {/* Self-Learned Skills */}
+                {groupedSkills.self_improvement.length > 0 && (
+                  <SkillGroup
+                    title="Self-Learned"
+                    icon={<Sparkles className="w-4 h-4 text-purple-400" />}
+                    count={groupedSkills.self_improvement.length}
+                    description="Learned from your conversations and patterns"
+                    skills={groupedSkills.self_improvement}
+                    onToggle={handleToggle}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onRun={handleRun}
+                  />
+                )}
+              </>
+            )}
           </div>
-        ) : (
-          <>
-            {/* System Skills */}
-            {groupedSkills.system.length > 0 && (
-              <SkillGroup
-                title="System Skills"
-                icon={<Bot className="w-4 h-4 text-blue-400" />}
-                count={groupedSkills.system.length}
-                skills={groupedSkills.system}
-                onToggle={handleToggle}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onRun={handleRun}
-              />
-            )}
-
-            {/* User Skills */}
-            {groupedSkills.user.length > 0 && (
-              <SkillGroup
-                title="User Created"
-                icon={<User className="w-4 h-4 text-green-400" />}
-                count={groupedSkills.user.length}
-                skills={groupedSkills.user}
-                onToggle={handleToggle}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onRun={handleRun}
-              />
-            )}
-
-            {/* Self-Learned Skills */}
-            {groupedSkills.self_improvement.length > 0 && (
-              <SkillGroup
-                title="Self-Learned"
-                icon={<Sparkles className="w-4 h-4 text-purple-400" />}
-                count={groupedSkills.self_improvement.length}
-                description="Learned from your conversations and patterns"
-                skills={groupedSkills.self_improvement}
-                onToggle={handleToggle}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onRun={handleRun}
-              />
-            )}
-          </>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Skill Creator Modal */}
       {showCreator && (
@@ -317,6 +491,120 @@ export default function SkillsManager({
             onCancel={() => setShowCreator(false)}
             onCreate={handleCreate}
           />
+        </div>
+      )}
+
+      {/* Skill Detail Panel */}
+      {selectedSkill && (
+        <div className="absolute inset-0 z-50 bg-bg-primary/95 backdrop-blur-sm overflow-auto">
+          <div className="max-w-lg mx-auto p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-sm font-bold text-text-primary">Skill Details</h3>
+              <button
+                onClick={() => setSelectedSkill(null)}
+                className="p-1.5 text-text-muted hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Name</label>
+                <p className="text-sm text-text-primary mt-1">{selectedSkill.name}</p>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Description</label>
+                <p className="text-sm text-text-secondary mt-1">{selectedSkill.description || 'No description'}</p>
+              </div>
+              <div className="flex gap-6">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Source</label>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    {selectedSkill.source === 'clawhub' ? (
+                      <><Globe className="w-3.5 h-3.5 text-orange-400" /><span className="text-sm text-orange-400">Community</span></>
+                    ) : (
+                      <><HardDrive className="w-3.5 h-3.5 text-gray-400" /><span className="text-sm text-gray-400">Built-in</span></>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Trigger</label>
+                  <p className="text-sm text-text-secondary mt-1 capitalize">{selectedSkill.trigger}</p>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Status</label>
+                  <p className={`text-sm mt-1 ${selectedSkill.enabled ? 'text-green-400' : 'text-text-muted'}`}>
+                    {selectedSkill.enabled ? 'Enabled' : 'Disabled'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-6">
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Usage</label>
+                  <p className="text-sm text-text-secondary mt-1">{selectedSkill.usageCount} runs</p>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Success Rate</label>
+                  <p className="text-sm text-text-secondary mt-1">{selectedSkill.successRate}%</p>
+                </div>
+                {selectedSkill.clawhubSlug && (
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Slug</label>
+                    <p className="text-sm text-text-secondary mt-1">{selectedSkill.clawhubSlug}</p>
+                  </div>
+                )}
+              </div>
+              {selectedSkill.securityScore && (
+                <div>
+                  <label className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">Security</label>
+                  <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                    selectedSkill.securityScore === 'safe' ? 'bg-green-500/20 text-green-400' :
+                    selectedSkill.securityScore === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-red-500/20 text-red-400'
+                  }`}>
+                    {selectedSkill.securityScore === 'safe' ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                    {selectedSkill.securityScore}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4 border-t border-border-default">
+                {selectedSkill.trigger === 'manual' && (
+                  <button
+                    onClick={() => { handleRun(selectedSkill.id); setSelectedSkill(null); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-coder1-cyan/20 text-coder1-cyan border border-coder1-cyan/40 rounded-lg text-xs font-semibold hover:bg-coder1-cyan/30 transition-all"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    Run
+                  </button>
+                )}
+                <button
+                  onClick={() => { handleToggle(selectedSkill.id); setSelectedSkill(null); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-tertiary text-text-secondary border border-border-default rounded-lg text-xs font-semibold hover:text-text-primary transition-all"
+                >
+                  {selectedSkill.enabled ? 'Disable' : 'Enable'}
+                </button>
+                <button
+                  onClick={() => { const id = selectedSkill.id; setSelectedSkill(null); handleDelete(id); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg text-xs font-semibold hover:bg-red-500/20 transition-all ml-auto"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg text-xs font-medium shadow-lg border transition-all ${
+          toast.type === 'success' ? 'bg-green-500/20 text-green-400 border-green-500/40' :
+          toast.type === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/40' :
+          'bg-coder1-cyan/20 text-coder1-cyan border-coder1-cyan/40'
+        }`}>
+          {toast.message}
         </div>
       )}
     </div>
@@ -410,142 +698,3 @@ function inferCategory(skill: Johnny5Skill): FilterCategory {
   if (name.includes('code') || name.includes('build') || desc.includes('development')) return 'development';
   return 'productivity';
 }
-
-// ================================================================================
-// Mock Data
-// ================================================================================
-
-const MOCK_SKILLS: Johnny5Skill[] = [
-  {
-    id: 'skill_001',
-    name: 'Daily Analytics Report',
-    description: 'Generates a daily report of token usage, session stats, and efficiency metrics.',
-    trigger: 'scheduled',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    usageCount: 47,
-    successRate: 98,
-    dependencies: ['analytics-service'],
-    enabled: true,
-  },
-  {
-    id: 'skill_002',
-    name: 'Morning Brief Generator',
-    description: 'Compiles overnight activity into a morning summary with actionable items.',
-    trigger: 'scheduled',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 8 * 60 * 60 * 1000),
-    usageCount: 28,
-    successRate: 100,
-    dependencies: ['morning-brief-service', 'activity-tracker'],
-    enabled: true,
-  },
-  {
-    id: 'skill_003',
-    name: 'Security Audit',
-    description: 'Scans for potential security issues and prompt injection attempts.',
-    trigger: 'event',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 30 * 60 * 1000),
-    usageCount: 156,
-    successRate: 99,
-    dependencies: ['security-service'],
-    enabled: true,
-  },
-  {
-    id: 'skill_004',
-    name: 'PR Auto-Review',
-    description: 'Automatically reviews Johnny5-generated PRs for code quality and security.',
-    trigger: 'event',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    usageCount: 12,
-    successRate: 92,
-    dependencies: ['github-service', 'code-review-service'],
-    enabled: true,
-  },
-  {
-    id: 'skill_005',
-    name: 'Context Cleanup',
-    description: 'Removes stale files from context to optimize token usage.',
-    trigger: 'scheduled',
-    createdBy: 'system',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 60 * 60 * 1000),
-    usageCount: 89,
-    successRate: 100,
-    dependencies: ['context-service'],
-    enabled: true,
-  },
-  {
-    id: 'skill_006',
-    name: 'Content Repurposer',
-    description: 'Repurposes content from YouTube videos to newsletter format and X threads.',
-    trigger: 'manual',
-    createdBy: 'self_improvement',
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    usageCount: 12,
-    successRate: 87,
-    dependencies: ['youtube-api', 'content-generator'],
-    enabled: true,
-  },
-  {
-    id: 'skill_007',
-    name: 'Competitor Video Monitor',
-    description: 'Monitors competitor YouTube channels for outlier videos and trend opportunities.',
-    trigger: 'scheduled',
-    createdBy: 'self_improvement',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 12 * 60 * 60 * 1000),
-    usageCount: 8,
-    successRate: 94,
-    dependencies: ['youtube-api', 'trend-analyzer'],
-    enabled: true,
-  },
-  {
-    id: 'skill_008',
-    name: 'API Update Alerter',
-    description: 'Monitors APIs you use for updates and breaking changes.',
-    trigger: 'trend',
-    createdBy: 'self_improvement',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    usageCount: 5,
-    successRate: 100,
-    dependencies: ['github-api', 'changelog-parser'],
-    enabled: false,
-  },
-  {
-    id: 'skill_009',
-    name: 'Quick Deploy Script',
-    description: 'Custom deployment script for staging environment.',
-    trigger: 'manual',
-    createdBy: 'user',
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    usageCount: 24,
-    successRate: 96,
-    dependencies: ['vercel-api'],
-    enabled: true,
-  },
-  {
-    id: 'skill_010',
-    name: 'Database Backup',
-    description: 'Creates a backup of the database before major operations.',
-    trigger: 'event',
-    createdBy: 'user',
-    createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
-    lastUsed: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    usageCount: 15,
-    successRate: 100,
-    dependencies: ['database-service'],
-    enabled: true,
-  },
-];
-
-export { MOCK_SKILLS };
