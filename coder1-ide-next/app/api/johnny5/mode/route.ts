@@ -40,5 +40,11 @@ export async function GET() {
     hasMCP: mode !== 'gemini',
     provider: mode === 'moltbot' ? 'ManusLive' : mode === 'bridge' ? 'Claude Code CLI' : 'Gemini 2.5 Flash',
     isLimitedMode: mode === 'gemini',
+    // Debug info (temporary)
+    _debug: {
+      bridgeManagerExists: !!bridgeManager,
+      hasBridgeForDefault,
+      anyBridge: anyBridge ? { id: anyBridge.id, userId: anyBridge.userId } : null,
+    }
   });
 }
