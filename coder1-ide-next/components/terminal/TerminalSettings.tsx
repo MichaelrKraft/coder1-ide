@@ -254,7 +254,7 @@ export default function TerminalSettings({
           </div>
 
           {/* LLM Model Selection Section - Prominent at top */}
-          <div className="p-4 border-b border-border-default bg-bg-tertiary/30">
+          <div className="p-4 border-b border-border-default">
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-5 h-5 text-coder1-cyan" />
               <span className="text-base font-semibold text-text-primary">LLM Model</span>
