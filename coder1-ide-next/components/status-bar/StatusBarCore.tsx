@@ -12,7 +12,7 @@ import { Eye, GitBranch, FileText, Brain, AlertTriangle, Zap, Link, Unlink, User
 import StatusBarActions from './StatusBarActions';
 import DiscoverPanel from './DiscoverPanel';
 import CostDisplay from '../terminal/CostDisplay';
-import { SetupInstructionsModal } from '@/components/bridge/SetupInstructionsModal';
+import { BridgeConnectButton } from '@/components/bridge/BridgeConnectButton';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -247,11 +247,11 @@ export default function StatusBarCore({
         </div>
       </div>
 
-      {/* Bridge Setup Modal */}
-      <SetupInstructionsModal
+      {/* Bridge Setup Modal - New visually polished component */}
+      <BridgeConnectButton
         isOpen={showBridgeSetup}
         onClose={() => setShowBridgeSetup(false)}
-        showDontShowAgain={false}
+        modalOnly={true}
       />
     </>
   );

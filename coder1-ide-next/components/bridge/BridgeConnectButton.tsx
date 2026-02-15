@@ -3,8 +3,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 
-export function BridgeConnectButton() {
-  const [isOpen, setIsOpen] = useState(false);
+interface BridgeConnectButtonProps {
+  /** External control: when true, modal is open */
+  isOpen?: boolean;
+  /** External control: called when modal should close */
+  onClose?: () => void;
+  /** Hide the button, only render the modal (for use in StatusBar) */
+  modalOnly?: boolean;
+}
+
+export function BridgeConnectButton({
+  isOpen: externalIsOpen,
+  onClose: externalOnClose,
+  modalOnly = false
+}: BridgeConnectButtonProps = {}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+  // Use external control if provided, otherwise use internal state
+  const isControlled = externalIsOpen !== undefined;
+  const isOpen = isControlled ? externalIsOpen : internalIsOpen;
+  const setIsOpen = isControlled
+    ? (open: boolean) => { if (!open && externalOnClose) externalOnClose(); }
+    : setInternalIsOpen;
   const [pairingCode, setPairingCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [bridgeConnected, setBridgeConnected] = useState(false);
@@ -92,6 +112,13 @@ export function BridgeConnectButton() {
   // Alias for the button onClick
   const generatePairingCode = generatePairingCodeStable;
 
+  // Auto-generate pairing code when externally opened (controlled mode)
+  useEffect(() => {
+    if (isControlled && externalIsOpen && !pairingCode && !isLoading) {
+      generatePairingCodeStable();
+    }
+  }, [isControlled, externalIsOpen, pairingCode, isLoading, generatePairingCodeStable]);
+
   const copyToClipboard = async (text: string, commandType: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -104,14 +131,16 @@ export function BridgeConnectButton() {
 
   return (
     <>
-      <button
-        onClick={generatePairingCode}
-        disabled={isLoading}
-        className="glass-button flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-md transition-all duration-200"
-        style={{
-          background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
-          border: '1px solid rgba(0, 217, 255, 0.6)',
-          boxShadow: '0 0 10px rgba(0, 217, 255, 0.5), 0 0 20px rgba(0, 217, 255, 0.3), 0 4px 15px -3px rgba(0, 217, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+      {/* Only render button if not in modal-only mode */}
+      {!modalOnly && (
+        <button
+          onClick={generatePairingCode}
+          disabled={isLoading}
+          className="glass-button flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-md transition-all duration-200"
+          style={{
+            background: 'linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%)',
+            border: '1px solid rgba(0, 217, 255, 0.6)',
+            boxShadow: '0 0 10px rgba(0, 217, 255, 0.5), 0 0 20px rgba(0, 217, 255, 0.3), 0 4px 15px -3px rgba(0, 217, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
           backdropFilter: 'blur(4px)',
           WebkitBackdropFilter: 'blur(4px)',
           position: 'relative' as const,
@@ -132,10 +161,11 @@ export function BridgeConnectButton() {
           e.currentTarget.style.backdropFilter = 'blur(4px)';
           (e.currentTarget.style as any).WebkitBackdropFilter = 'blur(4px)';
         }}
-        title="Connect Bridge - Link your local Claude CLI to the web IDE"
-      >
-        <span>Bridge</span>
-      </button>
+          title="Connect Bridge - Link your local Claude CLI to the web IDE"
+        >
+          <span>Bridge</span>
+        </button>
+      )}
 
       {/* Professional Coder1 Setup Modal */}
       {isOpen && (
