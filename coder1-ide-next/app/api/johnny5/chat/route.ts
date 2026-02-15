@@ -59,6 +59,7 @@ import { isLivingFilesEnabled, loadLivingFilesContext, appendToLivingFile, forma
 import { bridgeManager } from '@/services/bridge-manager';
 import { shouldUseSkills, matchSkillsToQuery } from '@/lib/skills-integration-utils';
 import { initializeSkillsService } from '@/lib/skills-service';
+import { createTask } from '@/services/johnny5/task-tracker';
 
 // Log memory feature status on module load
 console.log('[Johnny5] Memory features status:', {
@@ -716,7 +717,16 @@ export async function POST(
 
         // Detect CLI error responses that Moltbot returns as "successful" text
         const responseText = moltbotResponse.text || '';
-        if (responseText.includes('Prompt is too long') || responseText.includes('Claude CLI exited with code')) {
+        const cliErrorPatterns = [
+          'Prompt is too long',
+          'Claude CLI exited with code',
+          'Invalid API key',
+          'API key not found',
+          'Authentication failed',
+          'ANTHROPIC_API_KEY',
+        ];
+        const hasCliError = cliErrorPatterns.some(pattern => responseText.includes(pattern));
+        if (hasCliError) {
           console.warn('[Johnny5/Moltbot] Response contains CLI error, falling through to Bridge/Gemini:', responseText.slice(0, 200));
           throw new Error('Moltbot returned CLI error: ' + responseText.slice(0, 100));
         }
@@ -1175,6 +1185,28 @@ When responding from session memory, follow these guidelines:
         });
         reasoningSteps.push(`Generating response via ${johnny5Mode.provider}...`);
 
+        // Add task extraction instructions to system prompt
+        const taskExtractionInstruction = `
+
+## CRITICAL: Task Creation Instructions
+
+When creating tasks via the createMissionTask function, you MUST extract specific, meaningful details from the user's actual message:
+
+1. **Title**: MUST be derived directly from what the user asked for. Extract the core request.
+   - User says "Research React best practices" → Title: "Research React best practices for state management"
+   - User says "Build me a todo app" → Title: "Build a todo app"
+   - User says "Fix the login bug" → Title: "Fix the login bug"
+
+2. **Description**: Capture the user's full intent with context from their message.
+
+3. **FORBIDDEN**: NEVER use generic/placeholder values like:
+   - "test task", "new task", "task", "placeholder", "example", "sample task", "untitled"
+   - These will be automatically rejected and replaced with the user's original message.
+
+4. If uncertain about the title, use the user's exact words (cleaned up slightly for readability).
+`;
+        systemPrompt += taskExtractionInstruction;
+
         // Build conversation history in Gemini format
         const geminiContents = [
           // System instruction as first user message (with mode-aware capabilities)
@@ -1198,6 +1230,38 @@ When responding from session memory, follow these guidelines:
           },
         ];
 
+        // Define function calling tools for Mission Control task creation
+        const geminiTools = [{
+          functionDeclarations: [{
+            name: 'createMissionTask',
+            description: 'Create a task in Mission Control when the user asks you to do something that requires autonomous work, research, building, or any task that should be tracked. IMPORTANT: Extract the actual task details from what the user is asking for - do NOT use generic placeholders like "test task".',
+            parameters: {
+              type: 'OBJECT',
+              properties: {
+                title: {
+                  type: 'STRING',
+                  description: 'A specific, descriptive title derived from the user\'s request. Examples: "Research React best practices for state management", "Build a todo app with Next.js", "Fix authentication bug in login flow". NEVER use generic titles like "test task" or "new task".'
+                },
+                description: {
+                  type: 'STRING',
+                  description: 'A detailed description capturing the user\'s full request and any context they provided. Include what needs to be done, any specific requirements mentioned, and expected outcomes. Extract this from the user\'s actual message.'
+                },
+                type: {
+                  type: 'STRING',
+                  enum: ['build', 'research', 'fix', 'monitor', 'create_pr', 'skill', 'trend'],
+                  description: 'Type of task based on what the user is asking: build (create something new), research (investigate/learn about), fix (bug fix or repair), monitor (watch/track changes), create_pr (code changes), skill (create a skill), trend (track trends)'
+                },
+                priority: {
+                  type: 'STRING',
+                  enum: ['low', 'medium', 'high', 'urgent'],
+                  description: 'Task priority. Default to medium unless user indicates urgency with words like "urgent", "ASAP", "critical".'
+                }
+              },
+              required: ['title', 'description', 'type']
+            }
+          }]
+        }];
+
         const apiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
           {
@@ -1207,6 +1271,7 @@ When responding from session memory, follow these guidelines:
             },
             body: JSON.stringify({
               contents: geminiContents,
+              tools: geminiTools,
             }),
           }
         );
@@ -1222,12 +1287,131 @@ When responding from session memory, follow these guidelines:
           };
         } else {
           const data = await apiResponse.json();
-          // Gemini response format
-          const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          result = {
-            success: true,
-            response: responseText,
-          };
+          const firstPart = data.candidates?.[0]?.content?.parts?.[0];
+
+          // Debug: Log what Gemini returned
+          console.log('[Johnny5] Gemini response type:', firstPart?.functionCall ? 'FUNCTION_CALL' : 'TEXT');
+          if (firstPart?.functionCall) {
+            console.log('[Johnny5] Function call details:', JSON.stringify(firstPart.functionCall));
+          }
+
+          // Check if Gemini wants to call a function
+          if (firstPart?.functionCall) {
+            const functionCall = firstPart.functionCall;
+            console.log('[Johnny5] Function call requested:', functionCall.name, functionCall.args);
+
+            let functionResult: { success: boolean; task?: any; error?: string } = { success: false };
+
+            if (functionCall.name === 'createMissionTask') {
+              try {
+                const args = functionCall.args;
+
+                // Detailed logging of what Gemini actually returns
+                console.log('[Johnny5] Function args extracted:', {
+                  title: args.title,
+                  titleLength: args.title?.length,
+                  description: args.description?.slice(0, 100),
+                  type: args.type,
+                  priority: args.priority,
+                  originalMessage: message.slice(0, 100)
+                });
+
+                // Detect generic/placeholder titles
+                const genericPatterns = ['test task', 'new task', 'task', 'placeholder', 'example', 'sample task', 'untitled'];
+                const titleLower = (args.title || '').toLowerCase().trim();
+                const isGenericTitle = !args.title ||
+                  args.title.length < 10 ||
+                  genericPatterns.some(p => titleLower === p || titleLower.startsWith(p + ' '));
+
+                // If generic, derive title from user message
+                let finalTitle = args.title;
+                let finalDescription = args.description;
+
+                if (isGenericTitle) {
+                  console.log('[Johnny5] Generic title detected, deriving from user message');
+                  // Extract meaningful title from user message - capitalize first letter, clean up
+                  const cleanedMessage = message.replace(/[^\w\s.,!?-]/g, '').trim();
+                  finalTitle = cleanedMessage.length > 80
+                    ? cleanedMessage.slice(0, 77) + '...'
+                    : cleanedMessage;
+                  // Capitalize first letter
+                  finalTitle = finalTitle.charAt(0).toUpperCase() + finalTitle.slice(1);
+                  finalDescription = `User request: ${message}`;
+                  console.log('[Johnny5] Derived title:', finalTitle);
+                }
+
+                const newTask = await createTask({
+                  title: finalTitle,
+                  description: finalDescription || `Task from Johnny5: ${message.slice(0, 200)}`,
+                  type: args.type || 'build',
+                  priority: args.priority || 'medium',
+                  reasoning: `Created via Johnny5 chat: "${message.substring(0, 100)}"`,
+                  triggeredBy: 'conversation',
+                });
+                functionResult = { success: true, task: newTask };
+                console.log('[Johnny5] Task created:', newTask.id, newTask.title);
+              } catch (err) {
+                console.error('[Johnny5] Failed to create task:', err);
+                functionResult = { success: false, error: err instanceof Error ? err.message : 'Task creation failed' };
+              }
+            }
+
+            // Send function result back to Gemini for final response
+            const functionResponseContents = [
+              ...geminiContents,
+              {
+                role: 'model',
+                parts: [{ functionCall: functionCall }],
+              },
+              {
+                role: 'user',
+                parts: [{
+                  functionResponse: {
+                    name: functionCall.name,
+                    response: functionResult,
+                  }
+                }],
+              },
+            ];
+
+            const followUpResponse = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: functionResponseContents }),
+              }
+            );
+
+            if (followUpResponse.ok) {
+              const followUpData = await followUpResponse.json();
+              const responseText = followUpData.candidates?.[0]?.content?.parts?.[0]?.text ||
+                (functionResult.success
+                  ? `I've added "${functionResult.task?.title}" to Mission Control. You can track its progress there.`
+                  : 'I tried to create a task but encountered an error.');
+              result = {
+                success: true,
+                response: responseText,
+                taskCreated: functionResult.success ? functionResult.task : undefined,
+              };
+            } else {
+              // Fallback response if follow-up fails
+              result = {
+                success: true,
+                response: functionResult.success
+                  ? `Done! I've added "${functionResult.task?.title}" to Mission Control as a ${functionResult.task?.type} task with ${functionResult.task?.priority} priority.`
+                  : 'I tried to create a task but encountered an error. Please try again.',
+                taskCreated: functionResult.success ? functionResult.task : undefined,
+              };
+            }
+          } else {
+            // Regular text response (no function call)
+            const responseText = firstPart?.text || '';
+            result = {
+              success: true,
+              response: responseText,
+            };
+          }
         }
       } catch (apiError) {
         console.error('[Johnny5] Gemini API call failed:', apiError);
