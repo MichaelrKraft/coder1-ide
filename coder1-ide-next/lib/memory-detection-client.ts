@@ -144,15 +144,10 @@ export class MemoryDetectionService {
     };
     
     console.log('🔍 [MEMORY-DETECT] Final result with preferences applied:', result);
-    
-    // Show notification if memory-worthy event detected
-    if (isMemoryWorthy && clientMemoryPreferences.areNotificationsEnabled()) {
-      clientMemoryPreferences.showNotification(
-        `Memory-worthy session detected! (${Math.round(overallConfidence * 100)}% confidence)`,
-        'info'
-      );
-    }
-    
+
+    // Memory notifications disabled - user found them distracting
+    // The memory detection still runs but no popup is shown
+
     return result;
   }
 
