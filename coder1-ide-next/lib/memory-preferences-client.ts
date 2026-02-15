@@ -33,7 +33,7 @@ const DEFAULT_PREFERENCES: MemoryPreferences = {
     architectureDecision: false,
     solutionDiscovery: false,
   },
-  notifications: true,
+  notifications: false,  // Disabled by default - was causing unwanted popups
   notificationSound: false,
   templateType: 'default',
 };
