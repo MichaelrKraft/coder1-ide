@@ -253,89 +253,13 @@ export default function TerminalSettings({
             </div>
           </div>
 
-          {/* AI Backend Selection (Z.AI GLM vs Anthropic) */}
-          <div className="p-4 border-b border-border-default">
+          {/* LLM Model Selection Section - Prominent at top */}
+          <div className="p-4 border-b border-border-default bg-bg-tertiary/30">
             <div className="flex items-center gap-2 mb-3">
-              <Shield className="w-4 h-4 text-coder1-cyan" />
-              <span className="text-sm font-medium text-text-primary">AI Backend</span>
-              <span className="text-xs text-text-muted">(requires restart)</span>
+              <Zap className="w-5 h-5 text-coder1-cyan" />
+              <span className="text-base font-semibold text-text-primary">LLM Model</span>
             </div>
             <div className="space-y-2">
-              <button
-                onClick={async () => {
-                  // Note: Backend change requires server restart to take effect
-                  xtermRef.current?.writeln('\r\n⚠️  Backend selection requires restarting Coder1 IDE');
-                  xtermRef.current?.writeln('📝 To enable GLM backend:');
-                  xtermRef.current?.writeln('   1. Edit .env.local: USE_GLM_BACKEND=true');
-                  xtermRef.current?.writeln('   2. Restart server: npm run dev');
-                  xtermRef.current?.writeln('   3. Benefits: $0.10/M tokens with full tool use (90% success)');
-                }}
-                className="w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-bg-tertiary transition-colors text-text-secondary"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-border-default" />
-                  <div className="flex flex-col items-start">
-                    <span>⚡ Anthropic (Claude)</span>
-                    <span className="text-xs text-text-muted">$15/M tokens - Default</span>
-                  </div>
-                </div>
-              </button>
-              <button
-                onClick={async () => {
-                  xtermRef.current?.writeln('\r\n💰 GLM Backend (via Z.AI)');
-                  xtermRef.current?.writeln('✅ Full tool use support (file access, commands, MCP)');
-                  xtermRef.current?.writeln('💵 Cost: $0.10/M tokens (150x cheaper!)');
-                  xtermRef.current?.writeln('🎯 Success rate: 90% tool invocation');
-                  xtermRef.current?.writeln('\r\n📝 Setup:');
-                  xtermRef.current?.writeln('   1. Get API key: https://api.z.ai or https://docs.z.ai');
-                  xtermRef.current?.writeln('   2. Edit .env.local:');
-                  xtermRef.current?.writeln('      ZAI_API_KEY=your-key');
-                  xtermRef.current?.writeln('      USE_GLM_BACKEND=true');
-                  xtermRef.current?.writeln('   3. Restart: npm run dev');
-                }}
-                className="w-full flex items-center justify-between px-3 py-2 text-sm rounded hover:bg-bg-tertiary transition-colors text-text-secondary"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-border-default" />
-                  <div className="flex flex-col items-start">
-                    <span>💰 GLM 4.6 (Z.AI)</span>
-                    <span className="text-xs text-text-muted">$0.10/M - 150x cheaper!</span>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* LLM Model Selection Section */}
-          <div className="p-4 border-b border-border-default">
-            <button
-              onClick={() => setShowModelDropdown(!showModelDropdown)}
-              className="w-full flex items-center justify-between"
-            >
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-coder1-cyan" />
-                <span className="text-sm font-medium text-text-primary">LLM Model</span>
-                <span className="text-xs text-text-muted">(session default)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-coder1-cyan">
-                  {(() => {
-                    const models = [
-                      { model: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
-                      { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' },
-                      { model: 'claude-haiku-3-5-20241022', label: 'Claude Haiku 3.5' },
-                      { model: 'glm-4.6', label: 'GLM 4.6' },
-                      { model: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' }
-                    ];
-                    return models.find(m => m.model === selectedClaudeModel)?.label || 'Select Model';
-                  })()}
-                </span>
-                <ChevronDown className={`w-4 h-4 text-text-muted transition-transform ${showModelDropdown ? 'rotate-180' : ''}`} />
-              </div>
-            </button>
-
-            {showModelDropdown && (
-              <div className="mt-3 space-y-2">
                 {[
                   { model: 'claude-opus-4-6', label: 'Claude Opus 4.6', description: '🆕 Most Capable (Default)', category: 'Claude', helpText: '' },
                   { model: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5', description: 'Fast & Capable', category: 'Claude', helpText: '' },
@@ -370,8 +294,7 @@ export default function TerminalSettings({
                     </div>
                   </button>
                 ))}
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Audio Alerts Section */}

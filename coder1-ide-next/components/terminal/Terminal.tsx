@@ -5548,26 +5548,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             <span>AI Team</span>
           </button>
 
-          {/* Error Doctor button - matches Memory button style exactly */}
-          <button
-            onClick={() => setShowErrorDoctorModal(true)}
-            onDoubleClick={() => {
-              // Debug: manually trigger an error for testing
-              const testError = "bash: invalidcommand: command not found";
-              setLastError(testError);
-              setHasActiveError(true);
-              setErrorHistory(prev => [...prev.slice(-9), testError]);
-            }}
-            className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
-            title="Error Doctor - AI-powered error analysis (double-click to test)"
-          >
-            <Stethoscope className={`w-4 h-4 ${hasActiveError ? 'text-red-400' : ''}`} />
-            <span>Error Dr.</span>
-            {hasActiveError && (
-              <span className="ml-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            )}
-          </button>
-
           {/* Enhanced Supervision button */}
           <button
             data-tour="supervision-button"

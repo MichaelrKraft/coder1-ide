@@ -3065,23 +3065,14 @@ app.prepare().then(() => {
       }
 
       const sessionId = id || currentSessionId;
-      
-      // 🔍 DEBUG: Log session lookup
-      console.log('[SESSION-LOOKUP] Received terminal:input');
-      console.log('[SESSION-LOOKUP] sessionId:', sessionId);
-      console.log('[SESSION-LOOKUP] terminalSessions.size:', terminalSessions.size);
-      
-      // Conductor slash commands removed - multi-Claude tabs handle this differently
-      
+
       const session = terminalSessions.get(sessionId);
-      console.log('[SESSION-LOOKUP] session found:', !!session);
 
       // 🎭 INTERACTIVE CLAUDE SESSION CHECK (Dec 10, 2025)
       // If there's an active interactive Claude session, route ALL input to the bridge
       // This enables the Claude welcome screen and interactive conversation
       const interactiveSession = interactiveClaudeSessions.get(sessionId);
       if (interactiveSession && bridgeManager) {
-        console.log(`[INTERACTIVE] Routing input to Claude PTY session: ${interactiveSession.commandId}`);
 
         // Find the bridge socket
         const bridge = bridgeManager.getBridge?.(interactiveSession.bridgeId);
@@ -3107,12 +3098,6 @@ app.prepare().then(() => {
         // quality gate to find empty buffer and block spawning with score: 0.
         // NOW: Buffer every keystroke and paste chunk so terminal history is complete.
         
-        // 🔍 DEBUG: Log EVERY input event to trace why buffering doesn't execute
-        console.log('[BUFFER-TRACE] terminal:input event received');
-        console.log('[BUFFER-TRACE] sessionId:', sessionId);
-        console.log('[BUFFER-TRACE] data length:', data?.length);
-        console.log('[BUFFER-TRACE] data preview:', JSON.stringify(data?.substring(0, 50)));
-        
         if (data && data.length > 0) {
           // Strip ANSI codes and bracketed paste markers for clean storage
           const cleanData = data
@@ -3127,17 +3112,8 @@ app.prepare().then(() => {
           const isNotJustControlChars = cleanData.replace(/[\r\n]/g, '').length > 0;
           const isNotFocusCode = !data.includes('\x1b[I') && !data.includes('\x1b[O');
           
-          // 🔍 DEBUG: Log what we're filtering
-          if (cleanData.length > 5 && !cleanData.includes('\x1b')) {
-            console.log('[BUFFER-DEBUG] Raw data length:', data.length, 'Clean:', cleanData.substring(0, 80));
-            console.log('[BUFFER-DEBUG] Filters - notJustControl:', isNotJustControlChars, 'notFocus:', isNotFocusCode);
-          }
-          
           if (isNotJustControlChars && isNotFocusCode) {
             bufferTerminalData(sessionId, 'terminal_input', cleanData);
-            if (cleanData.length > 10) {
-              console.log('[BUFFER-DEBUG] ✅ Buffered as terminal_input:', cleanData.substring(0, 80));
-            }
           }
         }
         
