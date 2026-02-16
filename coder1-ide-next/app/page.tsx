@@ -23,6 +23,10 @@ export default function HomePage() {
     'alpha-v2': '/alpha-v2',
     '3': '/alpha-v3',
     'alpha-v3': '/alpha-v3',
+    // Team-focused landing pages (Time Capsules included)
+    'team-v1': '/landing-team-v1',
+    'team-v2': '/landing-team-v2',
+    'team-v3': '/landing-team-v3',
   };
 
   const landingPath = versionMap[version] || '/alpha';
