@@ -1006,7 +1006,10 @@ export default function ChatTab() {
       </div>
 
       {/* Limited Mode Warning Banner - Compact */}
-      {johnny5Mode?.isLimitedMode && !limitedModeDismissed && (
+      {/* FIX (Feb 2026): Also check !bridgeConnected from Socket.IO hook
+          The API endpoint can't detect bridges due to Next.js module isolation,
+          but Socket.IO events reliably detect bridge connection state */}
+      {johnny5Mode?.isLimitedMode && !bridgeConnected && !limitedModeDismissed && (
         <div className="px-4 py-1.5 bg-yellow-500/10 border-b border-yellow-500/30 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 text-yellow-300">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
