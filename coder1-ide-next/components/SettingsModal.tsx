@@ -2,11 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain, Key, AlertCircle, CheckCircle, ExternalLink, LogOut, Calendar, Mail, CreditCard } from 'lucide-react';
+import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain, Key, AlertCircle, CheckCircle, ExternalLink, LogOut, Calendar, Mail, CreditCard, Globe } from 'lucide-react';
 import { clientMemoryPreferences } from '@/lib/memory-preferences-client';
 import { useAPIKeyStatus } from '@/hooks/useAPIKeyStatus';
 import { APIKeyStorage, APIProvider } from '@/lib/api-key-storage';
 import { APIKeySetupModal } from '@/components/settings/APIKeySetupModal';
+import RemoteConnectionsTab from './settings/RemoteConnectionsTab';
+import { SSHSetupModal } from './settings/SSHSetupModal';
+import { SSHConnectionStorage } from '@/lib/ssh-connection-storage';
+import type { SSHConnection } from '@/types/ssh';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -15,7 +19,7 @@ interface SettingsModalProps {
   onFontSizeChange?: (size: number) => void;
 }
 
-type SettingsTab = 'general' | 'editor' | 'terminal' | 'ai' | 'memory' | 'account';
+type SettingsTab = 'general' | 'editor' | 'terminal' | 'ai' | 'memory' | 'account' | 'remote';
 
 interface UserData {
   id: string;
@@ -117,6 +121,12 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
+  // SSH Remote Connections state
+  const [sshConnections, setSSHConnections] = useState<SSHConnection[]>([]);
+  const [activeSSHConnectionId, setActiveSSHConnectionId] = useState<string | null>(null);
+  const [showSSHSetup, setShowSSHSetup] = useState(false);
+  const [editingSSHConnection, setEditingSSHConnection] = useState<SSHConnection | null>(null);
+
   const apiKeyStatus = useAPIKeyStatus();
 
   // Load settings on mount
@@ -182,6 +192,21 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
       fetchUserData();
     }
   }, [isOpen, userData]);
+
+  // Load SSH connections
+  useEffect(() => {
+    const loadSSHConnections = () => {
+      setSSHConnections(SSHConnectionStorage.getConnections());
+      setActiveSSHConnectionId(SSHConnectionStorage.getActiveConnectionId());
+    };
+
+    loadSSHConnections();
+
+    window.addEventListener('ssh-connections-updated', loadSSHConnections);
+    return () => {
+      window.removeEventListener('ssh-connections-updated', loadSSHConnections);
+    };
+  }, []);
 
   // Update settings
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
@@ -259,6 +284,47 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
     }
   };
 
+  // SSH Connection handlers
+  const handleAddSSHConnection = () => {
+    setEditingSSHConnection(null);
+    setShowSSHSetup(true);
+  };
+
+  const handleEditSSHConnection = (id: string) => {
+    const conn = SSHConnectionStorage.getConnection(id);
+    setEditingSSHConnection(conn);
+    setShowSSHSetup(true);
+  };
+
+  const handleDeleteSSHConnection = (id: string) => {
+    SSHConnectionStorage.deleteConnection(id);
+  };
+
+  const handleSSHConnect = (id: string) => {
+    SSHConnectionStorage.setActiveConnectionId(id);
+    const conn = SSHConnectionStorage.getConnection(id);
+    if (conn) {
+      SSHConnectionStorage.updateConnection(id, {
+        lastStatus: 'connected',
+        lastConnected: new Date().toISOString(),
+      });
+    }
+  };
+
+  const handleSSHDisconnect = () => {
+    SSHConnectionStorage.setActiveConnectionId(null);
+  };
+
+  const handleSSHSave = (connection: SSHConnection) => {
+    if (editingSSHConnection) {
+      SSHConnectionStorage.updateConnection(connection.id, connection);
+    } else {
+      SSHConnectionStorage.saveConnection(connection);
+    }
+    setShowSSHSetup(false);
+    setEditingSSHConnection(null);
+  };
+
   // Format date for display
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -277,6 +343,7 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
     { id: 'ai' as SettingsTab, label: 'AI/LLMs', icon: Bot },
     { id: 'memory' as SettingsTab, label: 'Memory', icon: Brain },
     { id: 'account' as SettingsTab, label: 'Account', icon: User },
+    { id: 'remote' as SettingsTab, label: 'Remote', icon: Globe },
   ];
 
   return (
@@ -1015,6 +1082,18 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
               </div>
             )}
 
+            {activeTab === 'remote' && (
+              <RemoteConnectionsTab
+                connections={sshConnections}
+                activeConnectionId={activeSSHConnectionId}
+                onAdd={handleAddSSHConnection}
+                onEdit={handleEditSSHConnection}
+                onDelete={handleDeleteSSHConnection}
+                onConnect={handleSSHConnect}
+                onDisconnect={handleSSHDisconnect}
+              />
+            )}
+
             {activeTab === 'account' && (
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-text-primary mb-4">Account Information</h3>
@@ -1227,6 +1306,18 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
           </div>
         </div>
       </div>
+
+      {showSSHSetup && (
+        <SSHSetupModal
+          isOpen={showSSHSetup}
+          onClose={() => {
+            setShowSSHSetup(false);
+            setEditingSSHConnection(null);
+          }}
+          onSave={handleSSHSave}
+          editingConnection={editingSSHConnection}
+        />
+      )}
     </div>
   );
 }
