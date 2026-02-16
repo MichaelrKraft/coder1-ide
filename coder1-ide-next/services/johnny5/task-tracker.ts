@@ -45,6 +45,11 @@ function mapDbTaskToJohnny5Task(
     result: string | null;
     created_at: string;
     completed_at: string | null;
+    scheduled_at?: string | null;
+    deliver_at?: string | null;
+    retry_count?: number;
+    max_retries?: number;
+    last_error?: string | null;
   },
   metadata?: TaskMetadata
 ): Johnny5Task {
@@ -73,6 +78,11 @@ function mapDbTaskToJohnny5Task(
     reasoning: metadata?.reasoning || `Task created: ${dbTask.title}`,
     triggeredBy: metadata?.triggeredBy || 'user',
     result: dbTask.result ? JSON.parse(dbTask.result) : undefined,
+    scheduledAt: dbTask.scheduled_at ? new Date(dbTask.scheduled_at) : undefined,
+    deliverAt: dbTask.deliver_at ? new Date(dbTask.deliver_at) : undefined,
+    retryCount: dbTask.retry_count ?? 0,
+    maxRetries: dbTask.max_retries ?? 2,
+    lastError: dbTask.last_error ?? undefined,
   };
 }
 
@@ -117,6 +127,8 @@ export async function createTask(params: {
   reasoning?: string;
   triggeredBy?: Johnny5TaskTrigger;
   sessionId?: string;
+  scheduledAt?: Date;
+  deliverAt?: Date;
 }): Promise<Johnny5Task> {
   await initializeDb();
 
@@ -140,6 +152,26 @@ export async function createTask(params: {
     completed_at: null,
   });
 
+  // Set scheduling columns if provided (DB-level createTask doesn't handle these)
+  if (params.scheduledAt || params.deliverAt) {
+    const { getDb } = await import('@/lib/johnny5-db');
+    const database = getDb();
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    if (params.scheduledAt) {
+      updates.push('scheduled_at = ?');
+      values.push(params.scheduledAt.toISOString());
+    }
+    if (params.deliverAt) {
+      updates.push('deliver_at = ?');
+      values.push(params.deliverAt.toISOString());
+    }
+    if (updates.length > 0) {
+      values.push(dbTask.id);
+      database.prepare(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+    }
+  }
+
   // Store extended metadata
   const metadata: TaskMetadata = {
     reasoning: params.reasoning || `Task created: ${params.title}`,
@@ -153,7 +185,10 @@ export async function createTask(params: {
     type: params.type,
   });
 
-  return mapDbTaskToJohnny5Task(dbTask, metadata);
+  // Re-fetch to include scheduling columns
+  const { getTask: dbGetTaskFresh } = await import('@/lib/johnny5-db');
+  const freshTask = await dbGetTaskFresh(dbTask.id);
+  return mapDbTaskToJohnny5Task(freshTask || dbTask, metadata);
 }
 
 /**

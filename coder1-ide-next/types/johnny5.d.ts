@@ -169,6 +169,11 @@ export interface Johnny5Task {
     };
     reasoning: string;
     triggeredBy: Johnny5TaskTrigger;
+    scheduledAt?: Date;
+    deliverAt?: Date;
+    retryCount?: number;
+    maxRetries?: number;
+    lastError?: string;
 }
 export interface Johnny5ActivityEntry {
     id: string;

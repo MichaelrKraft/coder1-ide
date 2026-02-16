@@ -159,3 +159,38 @@ Added `taskExtractionInstruction` to the system prompt that:
    - Say "Build me a todo app"
    - Check Mission Control - should show "Build me a todo app" not "test task"
 4. Check server logs for "[Johnny5] Function args extracted" to verify what Gemini returns
+
+---
+
+# Fix: Time Capsule Prompt Not Appearing (Feb 15, 2026)
+
+## Problem
+The "Save this session as a Time Capsule?" prompt never appears after commits, even though the feature flag is enabled and all infrastructure (DB, API, regex) works correctly.
+
+## Root Cause
+All three commit detection paths in `server.js` require `claudeSession.inClaudeSession === true`. This in-memory state resets on every server restart and only gets set when the server observes the user typing `claude` + Enter. If the server restarts while Claude is running, or the session detection misses the command, `inClaudeSession` stays `false` and commits are silently ignored.
+
+## Fix Plan
+
+### Changes (server.js only - 3 locations)
+
+- [ ] **1. Relax gate in PTY data handler (~line 2745)**
+  Remove the `claudeSession.inClaudeSession` check. Keep feature flag + commit detection.
+
+- [ ] **2. Relax gate in bridge `command:output` handler (~line 1885)**
+  Same change as above.
+
+- [ ] **3. Relax gate in bridge `claude:output` handler (~line 1686)**
+  Same change as above.
+
+### What stays the same
+- Feature flag gating (`NEXT_PUBLIC_TIME_CAPSULES === 'true'`)
+- Commit regex detection (`detectGitEvent`)
+- Socket emit to terminal client
+- Client-side prompt, auto-dismiss, save flow
+- API route and DB storage
+
+### Testing
+- [ ] Make a commit in the IDE terminal and verify the prompt appears
+- [ ] Click Save and verify capsule is created in DB
+- [ ] Verify auto-dismiss after 30 seconds if ignored

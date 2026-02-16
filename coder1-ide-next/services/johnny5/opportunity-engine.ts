@@ -496,25 +496,63 @@ Rules:
           tokensUsed: 0,
         };
 
-      case 'research':
-        // TODO: Wire to trend-monitor real API calls (Phase 10)
-        return {
-          opportunityId: opportunity.id,
-          action,
-          success: true,
-          output: `Research queued: ${action.description}`,
-          tokensUsed: 0,
-        };
+      case 'research': {
+        try {
+          const { TaskTracker: TT } = require('./task-tracker');
+          const researchTask = await TT.createTask({
+            title: action.description,
+            description: JSON.stringify(action.data),
+            type: 'research',
+            priority: 'medium',
+            triggeredBy: 'trend',
+          });
+          return {
+            opportunityId: opportunity.id,
+            action,
+            success: true,
+            output: `Research task created: ${researchTask.id}`,
+            tokensUsed: 0,
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            opportunityId: opportunity.id,
+            action,
+            success: false,
+            error: `Failed to create research task: ${msg}`,
+            tokensUsed: 0,
+          };
+        }
+      }
 
-      case 'build':
-        // TODO: Wire to proactive-builder real execution (Phase 11)
-        return {
-          opportunityId: opportunity.id,
-          action,
-          success: true,
-          output: `Build task queued: ${action.description}`,
-          tokensUsed: 0,
-        };
+      case 'build': {
+        try {
+          const { TaskTracker: TT } = require('./task-tracker');
+          const buildTask = await TT.createTask({
+            title: action.description,
+            description: JSON.stringify(action.data),
+            type: 'build',
+            priority: 'medium',
+            triggeredBy: 'trend',
+          });
+          return {
+            opportunityId: opportunity.id,
+            action,
+            success: true,
+            output: `Build task created: ${buildTask.id}`,
+            tokensUsed: 0,
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            opportunityId: opportunity.id,
+            action,
+            success: false,
+            error: `Failed to create build task: ${msg}`,
+            tokensUsed: 0,
+          };
+        }
+      }
 
       default:
         return {
