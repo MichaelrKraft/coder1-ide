@@ -48,7 +48,10 @@ RUN apk add --no-cache \
     && rm -rf /var/cache/apk/*
 
 # Install Claude Code CLI for SSH remote connections
-RUN curl -fsSL https://claude.ai/install.sh | bash
+# Install as root, then copy to system-wide location
+RUN curl -fsSL https://claude.ai/install.sh | bash && \
+    cp /root/.local/bin/claude /usr/local/bin/claude && \
+    chmod +x /usr/local/bin/claude
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
