@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import { getSessionMemory } from '@/services/johnny5/session-memory';
 
 interface Session {
   id: string;
@@ -55,14 +56,27 @@ export function SessionProvider({ children }: SessionProviderProps) {
     // Prevent multiple initializations (including React StrictMode double-invocation)
     if (!hasInitialized.current) {
       hasInitialized.current = true;
-      
+
       // Use promise-based approach to prevent race conditions
       if (!initializationPromise.current) {
         initializationPromise.current = initializeSession();
       }
-      
+
       // Don't return the promise - React expects either undefined or a cleanup function
       // The promise will handle itself asynchronously
+    }
+  }, []);
+
+  // Initialize Johnny5 SessionMemory for cross-session memory tracking
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const sessionMemory = getSessionMemory();
+      sessionMemory.start();
+      console.log('[SessionContext] Johnny5 SessionMemory initialized');
+
+      return () => {
+        sessionMemory.stop();
+      };
     }
   }, []);
 

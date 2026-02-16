@@ -153,7 +153,7 @@ export function getDefaultConfig(): Johnny5Config {
       executeTerminal: false, // OFF by default (requires trust)
       externalRequests: false, // OFF by default (privacy protection)
     },
-    proactivityLevel: 'medium',
+    proactivityLevel: 'high',  // Default to high for autonomous operation
     integrations: {},
   };
 }
