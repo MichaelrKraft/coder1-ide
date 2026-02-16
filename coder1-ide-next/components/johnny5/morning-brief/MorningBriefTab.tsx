@@ -463,6 +463,20 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
               defaultExpanded={true}
               onItemAction={handleItemAction}
             />
+
+            <BriefSection
+              type="learnings"
+              items={morningBrief.learnings || []}
+              defaultExpanded={true}
+              onItemAction={handleItemAction}
+            />
+
+            <BriefSection
+              type="changes"
+              items={morningBrief.livingFileChanges || []}
+              defaultExpanded={false}
+              onItemAction={handleItemAction}
+            />
           </div>
         )}
       </div>

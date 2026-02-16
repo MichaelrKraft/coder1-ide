@@ -1706,7 +1706,26 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
       }
     }
 
-    // 12.5. After-Chat Memory Intelligence (NEW)
+    // 12.5. Check for skill opportunity (Gap 3: auto-skill suggestions)
+    // If the user has done similar tasks 3+ times, suggest creating a skill
+    let skillSuggestion: { patternId: string; patternDescription: string; count: number } | undefined;
+    try {
+      const { checkForSkillOpportunity } = await import('@/services/memory/pattern-detection-service');
+      const opportunity = await checkForSkillOpportunity(message, userId);
+      if (opportunity?.shouldSuggest) {
+        skillSuggestion = {
+          patternId: opportunity.patternId,
+          patternDescription: opportunity.patternDescription,
+          count: opportunity.count,
+        };
+        console.log(`[Johnny5] Skill suggestion: "${opportunity.patternDescription}" (${opportunity.count}x)`);
+      }
+    } catch (skillSuggestError) {
+      console.warn('[Johnny5] Skill suggestion check failed:', skillSuggestError);
+      // Non-blocking
+    }
+
+    // 12.6. After-Chat Memory Intelligence
     // Run fact extraction asynchronously - don't block the response
     // This enables Johnny5 to learn from every conversation
     // CRITICAL: Capture userId in closure for async extraction
@@ -1790,6 +1809,7 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
         memoryStatus,
         reasoningSteps: reasoningSteps.length > 1 ? reasoningSteps : undefined,
         quota: quotaInfo,
+        skillSuggestion,
       },
     });
   } catch (error) {

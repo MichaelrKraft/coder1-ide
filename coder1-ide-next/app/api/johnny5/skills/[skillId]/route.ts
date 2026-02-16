@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { promises as fs } from 'fs';
+import path from 'path';
 import type { Johnny5Skill, Johnny5APIResponse } from '@/types/johnny5';
 import { getSkillRecord, updateSkillEnabled, deleteSkillRecord, upsertSkill, type SkillRecord } from '@/lib/johnny5-db';
 import { initializeSkillsService } from '@/lib/skills-service';
 import { shouldUseSkills } from '@/lib/skills-integration-utils';
+import { DATA_DIR } from '@/lib/data-paths';
 
 function toJohnny5Skill(record: SkillRecord): Johnny5Skill {
   return {
@@ -137,6 +140,38 @@ export async function PATCH(
       });
     }
 
+    // Update SKILL.md on disk if code or content changed
+    if (body.code || body.name || body.description) {
+      const skillDir = path.join(DATA_DIR, 'skills', skillId);
+      try {
+        await fs.access(skillDir);
+        // Update metadata.json
+        const metadataPath = path.join(skillDir, 'metadata.json');
+        try {
+          const existing = JSON.parse(await fs.readFile(metadataPath, 'utf-8'));
+          const updated = {
+            ...existing,
+            name: body.name || existing.name,
+            description: body.description || existing.description,
+            lastUpdated: new Date().toISOString(),
+          };
+          await fs.writeFile(metadataPath, JSON.stringify(updated, null, 2), 'utf-8');
+        } catch {
+          // metadata.json doesn't exist yet, skip
+        }
+
+        // Update SKILL.md if code provided
+        if (body.code) {
+          const name = body.name || dbRecord.name;
+          const desc = body.description || dbRecord.description || '';
+          const skillMd = `# ${name}\n\n${desc}\n\n## Code\n\n\`\`\`javascript\n${body.code}\n\`\`\`\n`;
+          await fs.writeFile(path.join(skillDir, 'SKILL.md'), skillMd, 'utf-8');
+        }
+      } catch {
+        // Skill directory doesn't exist on disk, skip update
+      }
+    }
+
     // Re-fetch updated record
     const updated = getSkillRecord(skillId);
     if (!updated) {
@@ -184,13 +219,22 @@ export async function DELETE(
     );
   }
 
-  // If ClawHub skill, also clean up filesystem
+  // Clean up filesystem
   if (dbRecord.source === 'clawhub' && dbRecord.clawhub_slug) {
+    // ClawHub skill: use the adapter's uninstall
     try {
       const { uninstallSkill } = await import('@/services/johnny5/clawhub-adapter');
       await uninstallSkill(dbRecord.clawhub_slug);
     } catch {
       // Filesystem cleanup failed but continue with DB deletion
+    }
+  } else {
+    // User-created skill: remove from DATA_DIR/skills/
+    const skillDir = path.join(DATA_DIR, 'skills', skillId);
+    try {
+      await fs.rm(skillDir, { recursive: true, force: true });
+    } catch {
+      // Directory may not exist, non-fatal
     }
   }
 

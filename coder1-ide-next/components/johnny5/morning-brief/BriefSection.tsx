@@ -8,11 +8,13 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Brain,
+  FileText,
 } from 'lucide-react';
 import type { Johnny5BriefItem } from '@/types/johnny5';
 import BriefItem from './BriefItem';
 
-type SectionType = 'built' | 'research' | 'trends' | 'attention';
+type SectionType = 'built' | 'research' | 'trends' | 'attention' | 'learnings' | 'changes';
 
 interface BriefSectionProps {
   type: SectionType;
@@ -179,6 +181,24 @@ function getSectionConfig(type: SectionType): {
         textColor: 'text-yellow-400',
         badgeBg: 'bg-yellow-500/20',
         emptyMessage: 'Nothing requires your immediate attention. Great job!',
+      };
+    case 'learnings':
+      return {
+        icon: Brain,
+        title: 'What I Learned',
+        bgColor: 'bg-purple-500/20',
+        textColor: 'text-purple-400',
+        badgeBg: 'bg-purple-500/20',
+        emptyMessage: 'No new facts or patterns learned yesterday.',
+      };
+    case 'changes':
+      return {
+        icon: FileText,
+        title: 'Living File Updates',
+        bgColor: 'bg-emerald-500/20',
+        textColor: 'text-emerald-400',
+        badgeBg: 'bg-emerald-500/20',
+        emptyMessage: 'No living files were updated yesterday.',
       };
     default:
       return {

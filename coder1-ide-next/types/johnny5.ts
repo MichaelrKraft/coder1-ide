@@ -318,6 +318,8 @@ export interface Johnny5MorningBrief {
   researchCompleted: Johnny5BriefItem[];
   trendsSpotted: Johnny5BriefItem[];
   needsAttention: Johnny5BriefItem[];
+  learnings?: Johnny5BriefItem[];         // Recent facts + patterns
+  livingFileChanges?: Johnny5BriefItem[]; // Living file changes
   summary: string;
   stats?: {
     tokensUsed: number;
@@ -398,7 +400,7 @@ export interface Johnny5Skill {
   id: string;
   name: string;
   description: string;
-  trigger: 'scheduled' | 'event' | 'manual' | 'trend';
+  trigger: 'scheduled' | 'event' | 'manual' | 'trend' | 'agent';
   createdBy: 'system' | 'user' | 'self_improvement';
   createdAt: Date;
   lastUsed?: Date;
@@ -412,6 +414,30 @@ export interface Johnny5Skill {
   securityScore?: 'safe' | 'warning' | 'dangerous';
   compatibility?: SkillCompatibility;
   category?: SkillCategory;
+}
+
+// ================================================================================
+// Skill Feedback & Versioning Types
+// ================================================================================
+
+export interface SkillFeedback {
+  id: string;
+  skillId: string;
+  rating: number;
+  feedbackText?: string;
+  executionContext?: string;
+  createdAt: Date;
+  applied: boolean;
+}
+
+export interface SkillVersion {
+  id: string;
+  skillId: string;
+  version: number;
+  skillMdContent: string;
+  changeSummary?: string;
+  feedbackId?: string;
+  createdAt: Date;
 }
 
 // ================================================================================

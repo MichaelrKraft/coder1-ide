@@ -115,10 +115,56 @@ function ModeIndicator({ mode }: { mode: 'moltbot' | 'bridge' | 'gemini' | null 
   );
 }
 
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Lightbulb } from 'lucide-react';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import crewData from '@/data/crew-members.json';
 import { getSocket } from '@/lib/socket';
+
+// Skill suggestion card for Gap 3: auto-skill suggestions from repeated tasks
+function SkillSuggestionCard({
+  content,
+  onAction,
+}: {
+  content: string;
+  onAction: (action: 'create' | 'dismiss', patternId: string) => void;
+}) {
+  const [acted, setActed] = useState(false);
+
+  // Extract pattern ID from the content markdown links
+  const createMatch = content.match(/skill:create:(\S+)\)/);
+  const dismissMatch = content.match(/skill:dismiss:(\S+)\)/);
+  const patternId = createMatch?.[1] || dismissMatch?.[1] || '';
+
+  // Extract the description text (before the links)
+  const descriptionText = content.split('\n\n[')[0];
+
+  if (acted) {
+    return <span className="text-xs text-text-muted italic">Got it!</span>;
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-start gap-2">
+        <Lightbulb className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 mt-0.5" />
+        <span>{descriptionText}</span>
+      </div>
+      <div className="flex items-center gap-2 pl-5">
+        <button
+          onClick={() => { setActed(true); onAction('create', patternId); }}
+          className="px-2.5 py-1 bg-coder1-cyan/15 text-coder1-cyan border border-coder1-cyan/30 rounded-md text-[11px] font-medium hover:bg-coder1-cyan/25 transition-all"
+        >
+          Create Skill
+        </button>
+        <button
+          onClick={() => { setActed(true); onAction('dismiss', patternId); }}
+          className="px-2.5 py-1 text-text-muted hover:text-text-secondary text-[11px] hover:bg-bg-tertiary rounded-md transition-all"
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  );
+}
 
 import { Johnny5ChatMessage, Johnny5ChatToolCall } from '@/types';
 
@@ -189,6 +235,8 @@ export default function ChatTab() {
   const [isDelegating, setIsDelegating] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
   const [isExecutingCommand, setIsExecutingCommand] = useState(false);
+  const [interviewSessionId, setInterviewSessionId] = useState<string | null>(null);
+  const [interviewProgress, setInterviewProgress] = useState({ current: 0, total: 10 });
   const [activeTerminalSessionId, setActiveTerminalSessionId] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const lastObservationRef = useRef<number>(0); // Rate limiting
@@ -619,6 +667,274 @@ export default function ChatTab() {
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
 
+    // Interview mode intercepts ALL input when active
+    if (interviewSessionId) {
+      if (inputValue.trim().toLowerCase() === '/cancel') {
+        setInterviewSessionId(null);
+        setInterviewProgress({ current: 0, total: 10 });
+        addChatMessage({
+          id: `interview-cancel-${Date.now()}`,
+          role: 'assistant',
+          content: 'Interview cancelled. You can restart anytime with /interview.',
+          timestamp: new Date(),
+        });
+        setInputValue('');
+        return;
+      }
+
+      // Send answer to interview API
+      const answerText = inputValue.trim();
+      setInputValue('');
+      addChatMessage({
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: answerText,
+        timestamp: new Date(),
+      });
+      setIsLoading(true);
+
+      try {
+        const authToken = typeof window !== 'undefined' ? localStorage.getItem('coder1_access_token') : null;
+        const res = await fetch('/api/johnny5/interview', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+          },
+          body: JSON.stringify({ sessionId: interviewSessionId, answer: answerText }),
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          addChatMessage({
+            id: `interview-err-${Date.now()}`,
+            role: 'assistant',
+            content: data.error,
+            timestamp: new Date(),
+          });
+          setInterviewSessionId(null);
+          setInterviewProgress({ current: 0, total: 10 });
+        } else if (data.isComplete) {
+          setInterviewSessionId(null);
+          setInterviewProgress({ current: 0, total: 10 });
+          addChatMessage({
+            id: `interview-done-${Date.now()}`,
+            role: 'assistant',
+            content: `Interview complete! ${data.question}`,
+            timestamp: new Date(),
+          });
+        } else {
+          setInterviewProgress({ current: data.questionNumber, total: data.totalQuestions });
+          addChatMessage({
+            id: `interview-q-${Date.now()}`,
+            role: 'assistant',
+            content: `Question ${data.questionNumber} of ${data.totalQuestions} -- Deep-Dive Interview\n\n${data.question}`,
+            timestamp: new Date(),
+          });
+        }
+      } catch {
+        addChatMessage({
+          id: `interview-err-${Date.now()}`,
+          role: 'assistant',
+          content: 'Interview request failed. Is the server running?',
+          timestamp: new Date(),
+        });
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Check for /audit command
+    if (inputValue.trim().toLowerCase() === '/audit') {
+      setInputValue('');
+      addChatMessage({
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: '/audit',
+        timestamp: new Date(),
+      });
+      try {
+        const auditRes = await fetch('/api/johnny5/audit');
+        if (auditRes.ok) {
+          const auditData = await auditRes.json();
+          const stats = auditData.data;
+          const lines: string[] = ['**Living Files Token Audit**\n'];
+          lines.push('| File | Lines | Tokens | Mode |');
+          lines.push('|------|-------|--------|------|');
+          for (const [filename, info] of Object.entries(stats.files) as [string, any][]) {
+            lines.push(`| ${filename} | ${info.lines} | ${info.estimatedTokens} | ${info.writeMode} |`);
+          }
+          lines.push(`\n**Total: ${stats.totalLines} lines, ${stats.totalTokens} tokens**`);
+          if (stats.auditableFiles.length > 0) {
+            lines.push(`\nFiles that could be trimmed: ${stats.auditableFiles.join(', ')}`);
+          }
+          addChatMessage({
+            id: `audit-${Date.now()}`,
+            role: 'assistant',
+            content: lines.join('\n'),
+            timestamp: new Date(),
+          });
+        } else {
+          addChatMessage({
+            id: `audit-err-${Date.now()}`,
+            role: 'assistant',
+            content: 'Failed to run audit. Check server logs.',
+            timestamp: new Date(),
+          });
+        }
+      } catch {
+        addChatMessage({
+          id: `audit-err-${Date.now()}`,
+          role: 'assistant',
+          content: 'Audit request failed. Is the server running?',
+          timestamp: new Date(),
+        });
+      }
+      return;
+    }
+
+    // Check for /interview command
+    if (inputValue.trim().toLowerCase() === '/interview') {
+      setInputValue('');
+      if (interviewSessionId) {
+        addChatMessage({
+          id: `interview-active-${Date.now()}`,
+          role: 'assistant',
+          content: "You're already in an interview! Type /cancel to stop or keep answering.",
+          timestamp: new Date(),
+        });
+        return;
+      }
+
+      addChatMessage({
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: '/interview',
+        timestamp: new Date(),
+      });
+      setIsLoading(true);
+
+      try {
+        const authToken = typeof window !== 'undefined' ? localStorage.getItem('coder1_access_token') : null;
+        const res = await fetch('/api/johnny5/interview', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+          },
+          body: JSON.stringify({}),
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          addChatMessage({
+            id: `interview-err-${Date.now()}`,
+            role: 'assistant',
+            content: data.error,
+            timestamp: new Date(),
+          });
+        } else {
+          setInterviewSessionId(data.sessionId);
+          setInterviewProgress({ current: data.questionNumber, total: data.totalQuestions });
+          addChatMessage({
+            id: `interview-start-${Date.now()}`,
+            role: 'assistant',
+            content: `Question ${data.questionNumber} of ${data.totalQuestions} -- Deep-Dive Interview\n\nLet's get to know each other! I'll ask you ${data.totalQuestions} questions to build your profile. Type /cancel anytime to stop.\n\n${data.question}`,
+            timestamp: new Date(),
+          });
+        }
+      } catch {
+        addChatMessage({
+          id: `interview-err-${Date.now()}`,
+          role: 'assistant',
+          content: 'Failed to start interview. Is the server running?',
+          timestamp: new Date(),
+        });
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Check for /self-audit command
+    if (inputValue.trim().toLowerCase() === '/self-audit') {
+      setInputValue('');
+      addChatMessage({
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: '/self-audit',
+        timestamp: new Date(),
+      });
+
+      const loadingId = `audit-loading-${Date.now()}`;
+      addChatMessage({
+        id: loadingId,
+        role: 'assistant',
+        content: 'Running self-improvement audit...',
+        timestamp: new Date(),
+      });
+      setIsLoading(true);
+
+      try {
+        const authToken = typeof window !== 'undefined' ? localStorage.getItem('coder1_access_token') : null;
+        const res = await fetch('/api/johnny5/self-audit', {
+          headers: {
+            ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+          },
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          updateChatMsg(loadingId, { content: data.error });
+        } else {
+          // Format the audit results
+          const scoreColor = data.performanceScore <= 3 ? 'LOW' : data.performanceScore <= 6 ? 'MEDIUM' : 'HIGH';
+          const lines: string[] = [];
+          lines.push(`**Self-Improvement Audit** (Score: ${data.performanceScore}/10 - ${scoreColor})\n`);
+          lines.push(data.summary);
+
+          if (data.strengths && data.strengths.length > 0) {
+            lines.push('\n**Strengths:**');
+            data.strengths.forEach((s: string) => lines.push(`  + ${s}`));
+          }
+
+          if (data.weaknesses && data.weaknesses.length > 0) {
+            lines.push('\n**Areas for Improvement:**');
+            data.weaknesses.forEach((w: string) => lines.push(`  - ${w}`));
+          }
+
+          if (data.recommendations && data.recommendations.length > 0) {
+            lines.push('\n**Recommendations:**');
+            data.recommendations.forEach((rec: any, i: number) => {
+              const typeLabel = rec.type === 'create_skill' ? '[Skill]' : rec.type === 'update_living_file' ? '[Memory]' : rec.type === 'adjust_pattern' ? '[Pattern]' : '[General]';
+              lines.push(`${i + 1}. ${typeLabel} ${rec.title}: ${rec.description}${rec.actionable ? ' [Actionable]' : ''}`);
+            });
+          }
+
+          lines.push(`\nSessions analyzed: ${data.sessionsAnalyzed} | Patterns reviewed: ${data.patternsReviewed}`);
+
+          updateChatMsg(loadingId, { content: lines.join('\n') });
+
+          // For actionable recommendations, add a follow-up message with apply option
+          const actionableRecs = (data.recommendations || []).filter((r: any) => r.actionable && r.action);
+          if (actionableRecs.length > 0) {
+            addChatMessage({
+              id: `audit-actions-${Date.now()}`,
+              role: 'system',
+              content: `${actionableRecs.length} actionable recommendation(s) found. To apply them, say "apply audit recommendations" or apply individually by saying "apply recommendation 1".`,
+              timestamp: new Date(),
+            });
+          }
+        }
+      } catch {
+        updateChatMsg(loadingId, { content: 'Self-audit request failed. Is the server running?' });
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     // Check for delegation command
     const delegateMatch = inputValue.trim().match(/^\/delegate\s+(.+)/i);
     if (delegateMatch) {
@@ -910,6 +1226,17 @@ export default function ChatTab() {
           reasoningSteps: data.data?.reasoningSteps,
         });
       }
+
+      // Check for skill suggestion from the API response (Gap 3)
+      const suggestion = data.data?.skillSuggestion;
+      if (suggestion) {
+        addChatMessage({
+          id: `skill-suggest-${Date.now()}`,
+          role: 'system',
+          content: `I've done "${suggestion.patternDescription}" ${suggestion.count} times now. Want me to create a skill so I get better at it each time?\n\n[Create Skill](skill:create:${suggestion.patternId}) | [Dismiss](skill:dismiss:${suggestion.patternId})`,
+          timestamp: new Date(),
+        });
+      }
     } catch (error) {
       // User cancelled the request — not an error
       if (error instanceof DOMException && error.name === 'AbortError') {
@@ -962,6 +1289,8 @@ export default function ChatTab() {
     setMemoryBannerDismissed(false);
     setMemoryStatus(null);
     setObservations([]);
+    setInterviewSessionId(null);
+    setInterviewProgress({ current: 0, total: 10 });
   };
 
   // Format timestamp
@@ -1191,6 +1520,36 @@ export default function ChatTab() {
                 <div className="whitespace-pre-wrap">
                   {message.id.startsWith('welcome') && !message.animationPlayed ? (
                     <TypewriterText text={message.content} speed={25} onComplete={() => markWelcomeAnimationPlayed()} />
+                  ) : message.id.startsWith('skill-suggest-') ? (
+                    <SkillSuggestionCard content={message.content} onAction={async (action, patternId) => {
+                      if (action === 'create') {
+                        try {
+                          const res = await fetch('/api/johnny5/skills', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              name: message.content.split('"')[1] || 'Learned Skill',
+                              description: `Auto-created from repeated pattern: ${message.content.split('"')[1] || ''}`,
+                              trigger: 'manual',
+                              enabled: true,
+                              createdBy: 'self_improvement',
+                            }),
+                          });
+                          if (res.ok) {
+                            addChatMessage({
+                              id: `skill-created-${Date.now()}`,
+                              role: 'system',
+                              content: 'Skill created! You can find it in the Skills Manager.',
+                              timestamp: new Date(),
+                            });
+                          }
+                        } catch { /* silent */ }
+                      } else if (action === 'dismiss') {
+                        try {
+                          await fetch(`/api/johnny5/skills/suggestions/${patternId}/dismiss`, { method: 'POST' });
+                        } catch { /* silent */ }
+                      }
+                    }} />
                   ) : (
                     message.content
                   )}

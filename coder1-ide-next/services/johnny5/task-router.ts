@@ -153,6 +153,11 @@ const COMPLEXITY_PATTERNS = {
 export class TaskRouter {
   private client: Anthropic;
 
+  /** Cached user-defined agent-skills from DB */
+  private agentSkillsCache: CrewMemberSpec[] | null = null;
+  private agentSkillsCacheTime = 0;
+  private static CACHE_TTL = 60_000; // 60 seconds
+
   /**
    * Create a new TaskRouter instance.
    *
@@ -163,14 +168,73 @@ export class TaskRouter {
   }
 
   /**
+   * Load hardcoded crew specs merged with user-defined agent-skills from DB.
+   * Results are cached for CACHE_TTL milliseconds to avoid frequent DB reads.
+   */
+  private async getCrewSpecs(): Promise<CrewMemberSpec[]> {
+    const now = Date.now();
+    if (this.agentSkillsCache && now - this.agentSkillsCacheTime < TaskRouter.CACHE_TTL) {
+      return [...CREW_SPECS, ...this.agentSkillsCache];
+    }
+
+    try {
+      const { getSkillRecords } = await import('@/lib/johnny5-db');
+      const skills = getSkillRecords();
+      const agentSkills = skills
+        .filter((s) => s.trigger_type === 'agent' && s.enabled)
+        .slice(0, 10); // Cap at 10 user-defined agents
+
+      if (agentSkills.length >= 10) {
+        console.warn('[TaskRouter] Agent-skill cap reached (10). Some agent-skills will be ignored.');
+      }
+
+      // Load routing keywords from metadata.json on disk for each agent-skill
+      const { DATA_DIR } = await import('@/lib/data-paths');
+      const path = await import('path');
+      const fs = await import('fs');
+
+      this.agentSkillsCache = agentSkills.map((skill) => {
+        let keywords: string[] = [];
+        try {
+          const metaPath = path.join(DATA_DIR, 'skills', skill.id, 'metadata.json');
+          if (fs.existsSync(metaPath)) {
+            const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+            // 'tools' in metadata.json stores routing keywords for agent-type skills
+            if (Array.isArray(meta.tools)) {
+              keywords = meta.tools.map((k: string) => k.trim().toLowerCase()).filter(Boolean);
+            }
+          }
+        } catch {
+          // Non-fatal: agent still selectable by AI classification via description
+        }
+        return {
+          id: `skill-agent-${skill.id}`,
+          name: skill.name,
+          category: 'custom',
+          description: skill.description || '',
+          keywords,
+        };
+      });
+      this.agentSkillsCacheTime = now;
+
+      return [...CREW_SPECS, ...this.agentSkillsCache];
+    } catch {
+      // Fallback to hardcoded only
+      return [...CREW_SPECS];
+    }
+  }
+
+  /**
    * Classify a task and route it to the appropriate crew member.
    *
    * @param taskDescription - Description of the task to classify
    * @returns Classification result with crew member, complexity, and confidence
    */
   async classify(taskDescription: string): Promise<TaskClassification> {
+    const specs = await this.getCrewSpecs();
+
     // First, try fast keyword-based classification
-    const quickMatch = this.quickClassify(taskDescription);
+    const quickMatch = this.quickClassify(taskDescription, specs);
 
     // If high confidence from keywords, use that
     if (quickMatch.confidence >= 0.8) {
@@ -179,7 +243,7 @@ export class TaskRouter {
 
     // Otherwise, use AI for more nuanced classification
     try {
-      return await this.aiClassify(taskDescription, quickMatch);
+      return await this.aiClassify(taskDescription, quickMatch, specs);
     } catch (error) {
       // Fallback to quick match if AI fails
       console.warn('AI classification failed, using keyword fallback:', error);
@@ -191,13 +255,14 @@ export class TaskRouter {
    * Fast keyword-based classification without AI call.
    *
    * @param taskDescription - Task description to classify
+   * @param specs - Crew member specs to match against (hardcoded + user-defined)
    * @returns Classification based on keyword matching
    */
-  private quickClassify(taskDescription: string): TaskClassification {
+  private quickClassify(taskDescription: string, specs: CrewMemberSpec[]): TaskClassification {
     const lower = taskDescription.toLowerCase();
 
     // Score each crew member based on keyword matches
-    const scores = CREW_SPECS.map((spec) => {
+    const scores = specs.map((spec) => {
       const matchCount = spec.keywords.filter((kw) => lower.includes(kw)).length;
       return {
         id: spec.id,
@@ -210,8 +275,7 @@ export class TaskRouter {
     scores.sort((a, b) => b.score - a.score);
 
     const best = scores[0];
-    const totalKeywords = CREW_SPECS.reduce((sum, s) => sum + s.keywords.length, 0);
-    const maxPossibleScore = Math.max(...CREW_SPECS.map((s) => s.keywords.length));
+    const maxPossibleScore = Math.max(...specs.map((s) => s.keywords.length), 1);
 
     // Calculate confidence based on match ratio and separation from second best
     const confidence = Math.min(
@@ -242,13 +306,15 @@ export class TaskRouter {
    *
    * @param taskDescription - Task description to classify
    * @param fallback - Fallback classification if AI is uncertain
+   * @param specs - Crew member specs to include in the AI prompt
    * @returns AI-enhanced classification
    */
   private async aiClassify(
     taskDescription: string,
-    fallback: TaskClassification
+    fallback: TaskClassification,
+    specs: CrewMemberSpec[]
   ): Promise<TaskClassification> {
-    const crewList = CREW_SPECS.map(
+    const crewList = specs.map(
       (s) => `- ${s.id}: ${s.name} - ${s.description}`
     ).join('\n');
 
@@ -285,8 +351,8 @@ JSON only, no markdown:`,
       // Parse the JSON response
       const parsed = JSON.parse(text.trim());
 
-      // Validate the response
-      const validCrewIds = CREW_SPECS.map((s) => s.id);
+      // Validate the response against all available specs (hardcoded + user-defined)
+      const validCrewIds = specs.map((s) => s.id);
       if (!validCrewIds.includes(parsed.crewMember)) {
         throw new Error(`Invalid crew member: ${parsed.crewMember}`);
       }

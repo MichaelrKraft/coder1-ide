@@ -1,196 +1,198 @@
-# Johnny5 Mission Control Task Creation via Function Calling (Feb 14, 2026)
+# Features 1 & 2: Interview + Self-Audit for Johnny5
 
-## Problem
-When users ask Johnny5 to do tasks, those tasks don't appear in the Mission Control button. The chat route returns conversational responses but never creates tasks in the database.
+## Plan
 
-## Root Cause
-- `POST /api/johnny5/tasks` endpoint exists and works
-- `createTask()` function exists in task-tracker.ts
-- BUT the chat route (`/api/johnny5/chat/route.ts`) never calls either
+Implement the `/interview` deep-dive conversational interview and `/self-audit` self-improvement audit commands for Johnny5.
 
-## Solution: Gemini Function Calling
-Add a `createTask` tool to the Gemini API call so Johnny5 can create tasks when appropriate.
+### Todo Items
 
-## Implementation Plan
-
-- [x] 1. Add `createTask` import from task-tracker service
-- [x] 2. Define the function declaration for Gemini's `tools` parameter
-- [x] 3. Update the Gemini API call to include the function declaration
-- [x] 4. Handle function call responses - execute createTask when Gemini calls it
-- [x] 5. Return task creation info in the response
-
-## Files Modified
-- `app/api/johnny5/chat/route.ts` - Added function calling support
+- [x] 1. MODIFY `lib/johnny5-db.ts` — Add `interview_sessions` table creation + `getRecentMessagesAcrossSessions()` function
+- [x] 2. CREATE `app/api/johnny5/interview/route.ts` — POST endpoint for multi-turn interview
+- [x] 3. CREATE `app/api/johnny5/self-audit/route.ts` — GET endpoint for self-improvement audit
+- [x] 4. CREATE `app/api/johnny5/self-audit/apply/route.ts` — POST endpoint to apply audit recommendations
+- [x] 5. MODIFY `components/johnny5/chat/ChatTab.tsx` — Add interview/self-audit command handling + UI
+- [x] 6. Run TypeScript check to verify no errors (only pre-existing test file errors)
 
 ## Review
 
-### Changes Made
+All 6 items completed. Changes summary:
 
-1. **Import** (line 62): Added `createTask` import from task-tracker service
+| File | Change |
+|------|--------|
+| `lib/johnny5-db.ts` | Added `interview_sessions` table in Step 11 of schema init + `getRecentMessagesAcrossSessions()` function |
+| `app/api/johnny5/interview/route.ts` | New POST endpoint: 10-question state machine, Gemini extraction, follow-ups, regex fallback, USER.md writes |
+| `app/api/johnny5/self-audit/route.ts` | New GET endpoint: loads messages/summaries/patterns/facts/skills, Gemini reflection, statistics fallback, rate limiting |
+| `app/api/johnny5/self-audit/apply/route.ts` | New POST endpoint: applies living file updates and pattern adjustments from audit recommendations |
+| `components/johnny5/chat/ChatTab.tsx` | Added interview state, interview interceptor, /interview command, /self-audit command, clear-chat reset |
 
-2. **Function Declaration** (lines ~1202-1232): Added `geminiTools` array with `createMissionTask` function:
-   - `title`: Short task title (required)
-   - `description`: Detailed description (required)
-   - `type`: One of build/research/fix/monitor/create_pr/skill/trend (required)
-   - `priority`: low/medium/high/urgent (optional, defaults to medium)
-
-3. **API Call** (line ~1243): Added `tools: geminiTools` to the Gemini request body
-
-4. **Function Call Handler** (lines ~1258-1335): Added logic to:
-   - Detect when Gemini returns a `functionCall` instead of text
-   - Execute `createTask()` with the provided arguments
-   - Send function result back to Gemini for a natural language response
-   - Include `taskCreated` in the result for frontend awareness
-
-### How It Works
-When a user asks Johnny5 to do something task-worthy (e.g., "research React best practices", "build me a todo app"), Gemini will:
-1. Recognize this as a task request
-2. Call `createMissionTask` with appropriate title/description/type/priority
-3. Johnny5 executes `createTask()` to save it to the database
-4. Gemini then generates a human-readable confirmation
-5. The task appears in Mission Control
-
-## Verification
-1. Restart dev server (changes are server-side)
-2. Open Johnny5 chat at http://localhost:3001/ide
-3. Ask "Create a task to research React best practices"
-4. Check Mission Control - task should appear in Queued column
+Edge cases handled:
+- Expired/missing sessions -> clean up + error message
+- No Gemini API key -> regex fallback for interview, statistics-only for audit
+- Empty answers -> skip fact storage
+- Answer truncation -> 2000 char limit
+- Rate limiting -> 1 audit per hour
+- Min data threshold -> 5 messages required for audit
+- Gemini timeout -> 30 second limit
+- JSON parse failures -> raw text as general recommendation
+- Session ownership verification -> user_id check
+- Concurrent tabs -> each gets own sessionId
+- Follow-up questions -> max 1 per question via Gemini
+- Interview completion -> writes to USER.md, saves facts, updates profile
 
 ---
 
-# Fix: Johnny5 Not Responding Due to Uncaught CLI Errors (Feb 15, 2026)
+# Feature 3: Dynamic Sub-Agents / User-Defined Crew Members
 
-## Problem
-Johnny5 chat wasn't responding when ManusLive/Claude CLI returned authentication errors like "Invalid API key". The error was passed through as a "successful" response but contained error text that wasn't displayed properly.
+## Plan
 
-## Root Cause
-The CLI error detection code only checked for:
-- 'Prompt is too long'
-- 'CLI exited with code'
+Allow users to create custom crew members (agents) through the Skill Creator. These agent-type skills get picked up by the TaskRouter for routing and the CrewExecutor for execution, enabling user-defined specializations alongside the 6 hardcoded crew members.
 
-It did NOT check for authentication errors like:
-- 'Invalid API key'
-- 'API key not found'
-- 'Authentication failed'
-- 'ANTHROPIC_API_KEY'
+### Todo Items
 
-## Solution
-Added comprehensive CLI error pattern detection to both:
-1. Moltbot chat endpoint (`/api/johnny5/moltbot/chat`)
-2. Main chat endpoint (`/api/johnny5/chat`)
-3. Frontend ChatTab component (fallback detection)
+- [x] 1. Add `'agent'` to the `trigger` union type in `Johnny5Skill` interface (`types/johnny5.ts`)
+- [x] 2. Update `TaskRouter` to load user-defined agent-skills from DB alongside hardcoded specs (`services/johnny5/task-router.ts`)
+  - Add caching properties for agent-skills
+  - Add `getCrewSpecs()` async method
+  - Make `quickClassify()` accept specs parameter
+  - Make `classify()` call `getCrewSpecs()`
+  - Update `aiClassify()` to accept and use specs parameter
+- [x] 3. Update `CrewExecutor.execute()` to handle `skill-agent-*` IDs (`services/johnny5/crew-executor.ts`)
+  - Add `loadAgentSkill()` private method
+  - Add `skill-agent-*` detection before `CREW_MEMBERS.get()` check
+- [x] 4. Update `SkillCreator.tsx` to support agent trigger type (`components/johnny5/skills/SkillCreator.tsx`)
+  - Add 'agent' to trigger options
+  - Add conditional labels for code/dependencies fields
+  - Add default system prompt template for agent type
+- [x] 5. Run TypeScript check to verify no errors
 
-## Files Modified
-- `app/api/johnny5/moltbot/chat/route.ts` - Added authentication error patterns
-- `app/api/johnny5/chat/route.ts` - Added authentication error patterns
-- `components/johnny5/chat/ChatTab.tsx` - Added client-side error detection for empty/error responses
+## Review
 
-## Changes Made
+All 5 items completed. Changes:
 
-### Server-side (both routes)
-```typescript
-const cliErrorPatterns = [
-  'Prompt is too long',
-  'CLI exited with code',
-  'Invalid API key',
-  'API key not found',
-  'Authentication failed',
-  'ANTHROPIC_API_KEY',
-];
-const hasCliError = cliErrorPatterns.some(pattern => response.text.includes(pattern));
-```
+| File | Change |
+|------|--------|
+| `types/johnny5.ts` | Added `'agent'` to the `trigger` union type in `Johnny5Skill` |
+| `services/johnny5/task-router.ts` | Added `agentSkillsCache`, `agentSkillsCacheTime`, `CACHE_TTL`, `getCrewSpecs()` method; updated `classify()`, `quickClassify()`, `aiClassify()` to accept dynamic specs |
+| `services/johnny5/crew-executor.ts` | Added `loadAgentSkill()` method; updated `execute()` to handle `skill-agent-*` IDs before falling back to hardcoded `CREW_MEMBERS` |
+| `components/johnny5/skills/SkillCreator.tsx` | Added `Bot` import, `'agent'` trigger option, context-sensitive labels (System Prompt / Routing Keywords), agent-specific validation, default agent template |
 
-### Client-side (ChatTab.tsx)
-- Check for empty responses and throw meaningful error
-- Check for CLI error patterns that might slip through server validation
-- Show user-friendly error messages for authentication issues
-
-## Result
-When ManusLive/Claude CLI returns authentication errors:
-1. Server detects the error and triggers fallback (returns MOLTBOT_DISABLED)
-2. ChatTab retries with main endpoint
-3. If fallback also fails, shows clear error message to user
+Edge cases handled:
+- Agent-skill deleted while in-use: TaskRouter cache expires after 60s, CrewExecutor checks `s.enabled` at load time
+- Agent-skill disabled: Filtered by `s.enabled` check in both `getCrewSpecs()` and `loadAgentSkill()`
+- Keyword collisions: User agents appended AFTER hardcoded specs, so hardcoded win ties in sorting
+- Empty keywords: Agent still selectable by AI classification via description
+- Too many agents: Cap at 10, warning logged
+- No SKILL.md on disk: Falls back to `skill.description` as system prompt
+- No metadata.json: Falls back to empty keywords array, relies on AI classification
 
 ---
 
-# Fix: Mission Control Tasks Showing "test task" Instead of Proper Titles (Feb 15, 2026)
+# Feature 4: Morning Brief Memory Integration [COMPLETED]
 
-## Problem
-When users ask Johnny5 to create tasks, the tasks appear in Mission Control with generic titles like "test task" instead of meaningful descriptions derived from the user's actual request.
+## Plan
 
-## Root Cause
-1. **Gemini ignores function description instructions** - Despite explicit "NEVER use generic titles" in the tool definition, Gemini returns placeholders
-2. **No argument validation** - Code passes whatever Gemini returns directly to `createTask()` without checking
-3. **No fallback mechanism** - If Gemini returns generic values, there's no recovery
+Integrate Johnny5's memory system (extracted facts, learned patterns, living file changes) into the Morning Brief so users see what Johnny5 learned overnight.
 
-## Implementation Plan
+### Todo Items
 
-- [x] 1. Add validation after extracting function call args to detect generic/placeholder values
-- [x] 2. If generic title detected, derive title from user's original message
-- [x] 3. Add detailed argument logging to debug what Gemini actually returns
-- [x] 4. Enhance system prompt with task extraction instructions (before Gemini API call)
+- [x] 1. Add `learnings` and `livingFileChanges` fields to `Johnny5MorningBrief` interface in `types/johnny5.ts`
+- [x] 2. Add `getRecentFacts()` and `getRecentPatterns()` functions to `lib/johnny5-db.ts`
+- [x] 3. Add `getRecentSnapshots()` function to `lib/living-files.ts`
+- [x] 4. Update `morning-brief-generator.ts` to gather memory data and include in brief
+- [x] 5. Extend `BriefSection.tsx` with 'learnings' and 'changes' section types
+- [x] 6. Add new `BriefSection` components to `MorningBriefTab.tsx`
+- [x] 7. Run TypeScript check to verify no errors
 
-## Files Modified
-- `app/api/johnny5/chat/route.ts` - Add validation, fallback, logging, system prompt enhancement
+## Review
 
-## Changes Made
+All 7 items completed. Changes:
 
-### 1. Validation & Fallback (lines ~1283-1325)
-Added code that:
-- Logs detailed args from Gemini (`title`, `titleLength`, `description`, `type`, `priority`, `originalMessage`)
-- Detects generic patterns: `test task`, `new task`, `task`, `placeholder`, `example`, `sample task`, `untitled`
-- Checks if title is too short (< 10 chars)
-- Falls back to deriving title from user's original message if generic detected
-- Cleans and capitalizes the user message for a proper title
+| File | Change |
+|------|--------|
+| `types/johnny5.ts` | Added `learnings?` and `livingFileChanges?` optional fields to `Johnny5MorningBrief` |
+| `lib/johnny5-db.ts` | Added `getRecentFacts()` and `getRecentPatterns()` functions |
+| `lib/living-files.ts` | Added `statSync` import and `getRecentSnapshots()` function |
+| `services/johnny5/morning-brief-generator.ts` | Added imports, `userId` param, memory data gathering, new brief fields, summary text |
+| `components/johnny5/morning-brief/BriefSection.tsx` | Added `Brain`/`FileText` imports, extended `SectionType`, added switch cases |
+| `components/johnny5/morning-brief/MorningBriefTab.tsx` | Added two new `<BriefSection>` components for learnings and changes |
 
-### 2. System Prompt Enhancement (lines ~1180-1200)
-Added `taskExtractionInstruction` to the system prompt that:
-- Explicitly tells Gemini to derive titles from user's actual message
-- Provides concrete examples
-- Lists FORBIDDEN generic values
-- States these will be automatically rejected and replaced
-
-## Verification Steps
-1. Restart dev server: `npm run dev`
-2. Open Johnny5 at http://localhost:3001/ide
-3. Test task creation:
-   - Say "Research React best practices for state management"
-   - Check Mission Control - should show "Research React best practices..." as title
-   - Say "Build me a todo app"
-   - Check Mission Control - should show "Build me a todo app" not "test task"
-4. Check server logs for "[Johnny5] Function args extracted" to verify what Gemini returns
+Edge cases handled: old cached briefs (optional fields + `|| []`), empty DB (try/catch), disabled living files (returns `[]`), result caps (5/3/3).
 
 ---
 
-# Fix: Time Capsule Prompt Not Appearing (Feb 15, 2026)
+# Cross-Feature Integration Review
 
-## Problem
-The "Save this session as a Time Capsule?" prompt never appears after commits, even though the feature flag is enabled and all infrastructure (DB, API, regex) works correctly.
+## Final Verification
 
-## Root Cause
-All three commit detection paths in `server.js` require `claudeSession.inClaudeSession === true`. This in-memory state resets on every server restart and only gets set when the server observes the user typing `claude` + Enter. If the server restarts while Claude is running, or the session detection misses the command, `inClaudeSession` stays `false` and commits are silently ignored.
+All 4 features implemented and verified:
 
-## Fix Plan
+1. **Feature 1 (Interview)**: `/interview` command with 10-question deep-dive, Gemini Flash extraction, dynamic follow-ups, regex fallback, USER.md + profile writes
+2. **Feature 2 (Self-Audit)**: `/self-audit` command with 5-source data loading, Gemini reflection, statistics fallback, rate limiting, actionable recommendations with Apply buttons
+3. **Feature 3 (Sub-Agents)**: `agent` trigger type in SkillCreator, TaskRouter loads agent-skills with 60s cache, CrewExecutor handles `skill-agent-*` IDs
+4. **Feature 4 (Morning Brief)**: Memory integration with facts, patterns, living file snapshots in two new collapsible sections
 
-### Changes (server.js only - 3 locations)
+## Shared File Conflicts
 
-- [ ] **1. Relax gate in PTY data handler (~line 2745)**
-  Remove the `claudeSession.inClaudeSession` check. Keep feature flag + commit detection.
+- `types/johnny5.ts`: Agent B added `'agent'` to trigger type, Agent C added `learnings?` and `livingFileChanges?` — different interfaces, no conflict
+- `johnny5-db.ts`: Agent A added `interview_sessions` table + `getRecentMessagesAcrossSessions()`, Agent C added `getRecentFacts()` + `getRecentPatterns()` — all additive, no conflict
+- `ChatTab.tsx`: Only Agent A modified (interview + self-audit commands)
 
-- [ ] **2. Relax gate in bridge `command:output` handler (~line 1885)**
-  Same change as above.
+## TypeScript Verification
 
-- [ ] **3. Relax gate in bridge `claude:output` handler (~line 1686)**
-  Same change as above.
+`npx tsc --noEmit` passes with 0 new errors. Only pre-existing errors in `__tests__/test-utils/test-helpers.ts` (JSX in .ts file).
 
-### What stays the same
-- Feature flag gating (`NEXT_PUBLIC_TIME_CAPSULES === 'true'`)
-- Commit regex detection (`detectGitEvent`)
-- Socket emit to terminal client
-- Client-side prompt, auto-dismiss, save flow
-- API route and DB storage
+## New Files Created
 
-### Testing
-- [ ] Make a commit in the IDE terminal and verify the prompt appears
-- [ ] Click Save and verify capsule is created in DB
-- [ ] Verify auto-dismiss after 30 seconds if ignored
+| File | Feature |
+|------|---------|
+| `app/api/johnny5/interview/route.ts` | 1 |
+| `app/api/johnny5/self-audit/route.ts` | 2 |
+| `app/api/johnny5/self-audit/apply/route.ts` | 2 |
+
+## Modified Files
+
+| File | Features |
+|------|----------|
+| `types/johnny5.ts` | 3, 4 |
+| `lib/johnny5-db.ts` | 1, 4 |
+| `lib/living-files.ts` | 4 |
+| `components/johnny5/chat/ChatTab.tsx` | 1, 2 |
+| `services/johnny5/task-router.ts` | 3 |
+| `services/johnny5/crew-executor.ts` | 3 |
+| `components/johnny5/skills/SkillCreator.tsx` | 3 |
+| `services/johnny5/morning-brief-generator.ts` | 4 |
+| `components/johnny5/morning-brief/BriefSection.tsx` | 4 |
+| `components/johnny5/morning-brief/MorningBriefTab.tsx` | 4 |
+
+---
+
+# Feature 5: Morning Brief Socket.IO Notification Badge [COMPLETED]
+
+## Plan
+
+Connect the cron-generated morning briefs to the UI by listening for the `johnny5:morning-brief` Socket.IO event and showing a pulsing notification badge on the Brief tab.
+
+### Todo Items
+
+- [x] 1. Add `hasBriefNotification` prop to `Johnny5TabBar.tsx` interface and destructure it
+- [x] 2. Render pulsing cyan badge on `morning-brief` tab (same pattern as security alerts)
+- [x] 3. Add `getSocket` import and `hasBriefNotification` state to `Johnny5Panel.tsx`
+- [x] 4. Add `useEffect` Socket.IO listener for `johnny5:morning-brief` event
+- [x] 5. Clear notification when user switches to the Brief tab
+- [x] 6. Pass `hasBriefNotification` prop to `<Johnny5TabBar>`
+- [x] 7. Run TypeScript check to verify no errors
+
+## Review
+
+All 7 items completed. Changes:
+
+| File | Change |
+|------|--------|
+| `components/johnny5/Johnny5TabBar.tsx` | Added `hasBriefNotification?` prop, pulsing cyan badge on `morning-brief` tab |
+| `components/johnny5/Johnny5Panel.tsx` | Added `getSocket` import, `hasBriefNotification` state, Socket.IO listener `useEffect`, clear on tab switch, prop pass-through |
+
+Edge cases handled:
+- Socket not connected: `getSocket()` failure caught silently, brief tab still works on-demand
+- Tab already active: If `activeTab === 'morning-brief'` when event fires, notification is suppressed
+- Cleanup: `useEffect` returns cleanup that calls `socket.off()` to prevent memory leaks
+- Multiple tabs: Each browser tab gets its own Socket.IO connection, all get notified

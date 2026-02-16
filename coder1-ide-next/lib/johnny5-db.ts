@@ -577,6 +577,41 @@ function createTables(database: Database.Database): void {
       last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (telegram_user_id, telegram_chat_id)
     );
+
+    -- =========================================================================
+    -- Skill Feedback & Versioning (for iterative skill improvement)
+    -- =========================================================================
+
+    CREATE TABLE IF NOT EXISTS skill_feedback (
+      id TEXT PRIMARY KEY,
+      skill_id TEXT NOT NULL,
+      rating INTEGER CHECK(rating BETWEEN 1 AND 5),
+      feedback_text TEXT,
+      execution_context TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      applied INTEGER DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_skill_feedback_skill ON skill_feedback(skill_id);
+
+    CREATE TABLE IF NOT EXISTS skill_versions (
+      id TEXT PRIMARY KEY,
+      skill_id TEXT NOT NULL,
+      version INTEGER NOT NULL,
+      skill_md_content TEXT NOT NULL,
+      change_summary TEXT,
+      feedback_id TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_skill_versions_skill ON skill_versions(skill_id);
+
+    -- =========================================================================
+    -- Dismissed Skill Suggestions (prevent nagging for auto-suggestions)
+    -- =========================================================================
+
+    CREATE TABLE IF NOT EXISTS dismissed_skill_suggestions (
+      pattern_id TEXT PRIMARY KEY,
+      dismissed_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // =========================================================================
@@ -811,6 +846,27 @@ function createTables(database: Database.Database): void {
     `);
   } catch (err) {
     console.error('[Johnny5 DB] Notifications table creation error:', err);
+  }
+
+  // Step 11: Interview sessions table for deep-dive interviews
+  try {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS interview_sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        current_question INTEGER DEFAULT 0,
+        answers TEXT DEFAULT '{}',
+        extracted_data TEXT DEFAULT '{}',
+        follow_up_pending INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        expires_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_interview_sessions_user ON interview_sessions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_interview_sessions_expires ON interview_sessions(expires_at);
+    `);
+  } catch (err) {
+    console.error('[Johnny5 DB] Interview sessions table creation error:', err);
   }
 
   // NOTE: Vector table (memory_embeddings) is now created by loadVectorExtension()
@@ -2468,6 +2524,166 @@ export function deleteSkillRecord(skillId: string): boolean {
   const database = getDb();
   const result = database.prepare('DELETE FROM skills WHERE id = ?').run(skillId);
   return result.changes > 0;
+}
+
+// =========================================================================
+// Skill Feedback & Versioning
+// =========================================================================
+
+export interface SkillFeedbackRecord {
+  id: string;
+  skill_id: string;
+  rating: number | null;
+  feedback_text: string | null;
+  execution_context: string | null;
+  created_at: string;
+  applied: number;
+}
+
+export interface SkillVersionRecord {
+  id: string;
+  skill_id: string;
+  version: number;
+  skill_md_content: string;
+  change_summary: string | null;
+  feedback_id: string | null;
+  created_at: string;
+}
+
+export function insertSkillFeedback(feedback: {
+  id: string;
+  skill_id: string;
+  rating?: number;
+  feedback_text?: string;
+  execution_context?: string;
+}): void {
+  const database = getDb();
+  database.prepare(`
+    INSERT INTO skill_feedback (id, skill_id, rating, feedback_text, execution_context)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(feedback.id, feedback.skill_id, feedback.rating ?? null, feedback.feedback_text ?? null, feedback.execution_context ?? null);
+}
+
+export function getSkillFeedback(skillId: string): SkillFeedbackRecord[] {
+  const database = getDb();
+  return database.prepare(
+    'SELECT * FROM skill_feedback WHERE skill_id = ? ORDER BY created_at DESC'
+  ).all(skillId) as SkillFeedbackRecord[];
+}
+
+export function markFeedbackApplied(feedbackId: string): void {
+  const database = getDb();
+  database.prepare('UPDATE skill_feedback SET applied = 1 WHERE id = ?').run(feedbackId);
+}
+
+export function insertSkillVersion(version: {
+  id: string;
+  skill_id: string;
+  version: number;
+  skill_md_content: string;
+  change_summary?: string;
+  feedback_id?: string;
+}): void {
+  const database = getDb();
+  database.prepare(`
+    INSERT INTO skill_versions (id, skill_id, version, skill_md_content, change_summary, feedback_id)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(version.id, version.skill_id, version.version, version.skill_md_content, version.change_summary ?? null, version.feedback_id ?? null);
+}
+
+export function getSkillVersions(skillId: string): SkillVersionRecord[] {
+  const database = getDb();
+  return database.prepare(
+    'SELECT * FROM skill_versions WHERE skill_id = ? ORDER BY version DESC'
+  ).all(skillId) as SkillVersionRecord[];
+}
+
+export function getLatestSkillVersion(skillId: string): number {
+  const database = getDb();
+  const result = database.prepare(
+    'SELECT MAX(version) as max_version FROM skill_versions WHERE skill_id = ?'
+  ).get(skillId) as { max_version: number | null } | undefined;
+  return result?.max_version ?? 0;
+}
+
+// =========================================================================
+// Dismissed Skill Suggestions
+// =========================================================================
+
+export function dismissSkillSuggestion(patternId: string): void {
+  const database = getDb();
+  database.prepare(
+    'INSERT OR REPLACE INTO dismissed_skill_suggestions (pattern_id) VALUES (?)'
+  ).run(patternId);
+}
+
+export function isSkillSuggestionDismissed(patternId: string): boolean {
+  const database = getDb();
+  const result = database.prepare(
+    'SELECT 1 FROM dismissed_skill_suggestions WHERE pattern_id = ?'
+  ).get(patternId);
+  return !!result;
+}
+
+/**
+ * Get recently extracted facts within a time window
+ */
+export function getRecentFacts(userId: string, hoursAgo: number): Array<{
+  id: string; fact_key: string; fact_value: string; fact_type: string; confidence: number; created_at: string;
+}> {
+  const db = getDb();
+  const stmt = db.prepare(`
+    SELECT id, fact_key, fact_value, fact_type, confidence, created_at
+    FROM extracted_facts
+    WHERE user_id = ? AND created_at > datetime('now', '-' || ? || ' hours')
+    ORDER BY confidence DESC
+    LIMIT 20
+  `);
+  return stmt.all(userId, hoursAgo) as Array<{
+    id: string; fact_key: string; fact_value: string; fact_type: string; confidence: number; created_at: string;
+  }>;
+}
+
+/**
+ * Get recently observed patterns within a time window
+ */
+export function getRecentPatterns(userId: string, hoursAgo: number): Array<{
+  id: string; pattern_description: string; suggested_action: string; confidence: number; actionable: number;
+}> {
+  const db = getDb();
+  const stmt = db.prepare(`
+    SELECT id, pattern_description, suggested_action, confidence, actionable
+    FROM learned_patterns
+    WHERE user_id = ? AND last_observed > datetime('now', '-' || ? || ' hours')
+    ORDER BY confidence DESC
+    LIMIT 10
+  `);
+  return stmt.all(userId, hoursAgo) as Array<{
+    id: string; pattern_description: string; suggested_action: string; confidence: number; actionable: number;
+  }>;
+}
+
+// =========================================================================
+// Cross-Session Message Query (for Self-Audit)
+// =========================================================================
+
+/**
+ * Get recent messages across ALL sessions, ordered by most recent first.
+ * Used by the self-audit feature to analyze Johnny5's overall performance.
+ */
+export function getRecentMessagesAcrossSessions(limit: number = 20, userId?: string): Array<{
+  role: string; content: string; created_at: string; session_id: string;
+}> {
+  const database = getDb();
+  const stmt = database.prepare(`
+    SELECT role, content, created_at, session_id
+    FROM messages
+    ORDER BY created_at DESC
+    LIMIT ?
+  `);
+  return stmt.all(limit) as Array<{
+    role: string; content: string; created_at: string; session_id: string;
+  }>;
 }
 
 // Re-export ManusLive types for convenience
