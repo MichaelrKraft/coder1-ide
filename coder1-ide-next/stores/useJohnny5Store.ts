@@ -675,16 +675,42 @@ export const useJohnny5Store = create<Johnny5Store>()(
           'updateChatMessage'
         ),
 
-        clearChat: () => set({
-          chatMessages: [{
-            id: `welcome-${Date.now()}`,
-            role: 'assistant' as const,
-            content: "Hi, I'm Johnny5, your always on AI assistant and I'm ready to make your life easier. What can I do for you?",
-            timestamp: new Date(),
-            animationPlayed: false,
-          }],
-          chatSessionId: `session-${Date.now()}`,
-        }, false, 'clearChat'),
+        clearChat: () => {
+          // Emit session complete event before clearing (for cross-session memory)
+          const state = get();
+          if (typeof window !== 'undefined' && state.chatMessages.length > 1) {
+            // Build a summary from the conversation
+            const userMessages = state.chatMessages.filter(m => m.role === 'user');
+            const assistantMessages = state.chatMessages.filter(m => m.role === 'assistant');
+            const summary = userMessages.slice(0, 3).map(m => m.content.slice(0, 100)).join(' | ');
+
+            window.dispatchEvent(new CustomEvent('johnny5:sessionComplete', {
+              detail: {
+                sessionId: state.chatSessionId,
+                sessionName: `Session ${new Date().toLocaleDateString()}`,
+                summary: summary || 'Chat session',
+                filesModified: [],  // Could be populated from terminal activity
+                errorPatterns: [],
+                accomplishments: [],
+                tokensUsed: 0,
+                duration: Math.round((Date.now() - (state.chatMessages[0]?.timestamp?.getTime() || Date.now())) / 60000),
+              }
+            }));
+            console.log('[Johnny5Store] Emitted johnny5:sessionComplete event');
+          }
+
+          // Clear the chat and start fresh
+          set({
+            chatMessages: [{
+              id: `welcome-${Date.now()}`,
+              role: 'assistant' as const,
+              content: "Hi, I'm Johnny5, your always on AI assistant and I'm ready to make your life easier. What can I do for you?",
+              timestamp: new Date(),
+              animationPlayed: false,
+            }],
+            chatSessionId: `session-${Date.now()}`,
+          }, false, 'clearChat');
+        },
 
         setChatSessionId: (sessionId) => set({ chatSessionId: sessionId }, false, 'setChatSessionId'),
 
