@@ -39,33 +39,27 @@ RUN npm run build
 # ============================================
 FROM node:18-alpine AS runtime
 
-# Install runtime dependencies, security updates, and glibc compatibility
-# gcompat provides glibc compatibility for binaries compiled against glibc
+# Install runtime dependencies and Claude Code CLI requirements
+# - bash: Claude Code requires bash (doesn't recognize Alpine's ash shell)
+# - libgcc/libstdc++: Required by Claude's musl binary
+# - ripgrep: Required tool for Claude Code
 RUN apk add --no-cache \
     dumb-init \
     tini \
     curl \
     bash \
-    gcompat \
+    libgcc \
     libstdc++ \
+    ripgrep \
     && rm -rf /var/cache/apk/*
 
+# Environment variable for Claude Code to use system ripgrep
+ENV USE_BUILTIN_RIPGREP=0
+
 # Install Claude Code CLI for SSH remote connections
-# Install as root, then copy to system-wide location
-# Debug: Show where Claude gets installed and verify it works
 RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    echo "=== Claude install complete, finding binary ===" && \
-    find /root -name "claude" -type f 2>/dev/null || true && \
-    ls -la /root/.local/bin/ 2>/dev/null || echo "No .local/bin found" && \
-    if [ -f /root/.local/bin/claude ]; then \
-        cp /root/.local/bin/claude /usr/local/bin/claude && \
-        chmod +x /usr/local/bin/claude && \
-        echo "=== Claude copied to /usr/local/bin ===" && \
-        /usr/local/bin/claude --version; \
-    else \
-        echo "=== Searching for claude binary ===" && \
-        find / -name "claude*" -type f 2>/dev/null | head -20; \
-    fi
+    echo "=== Verifying Claude installation ===" && \
+    claude --version
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
