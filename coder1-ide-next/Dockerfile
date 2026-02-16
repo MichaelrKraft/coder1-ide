@@ -43,7 +43,12 @@ FROM node:18-alpine AS runtime
 RUN apk add --no-cache \
     dumb-init \
     tini \
+    curl \
+    bash \
     && rm -rf /var/cache/apk/*
+
+# Install Claude Code CLI for SSH remote connections
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
