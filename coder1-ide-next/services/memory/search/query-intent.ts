@@ -118,7 +118,7 @@ const INTENT_PATTERN_GROUPS: IntentPatternGroup[] = [
   },
   {
     intent: 'session_recall',
-    preferredSourceTypes: ['ide_session_summary', 'ide_terminal_chunk'],
+    preferredSourceTypes: ['ide_session_summary', 'ide_terminal_chunk', 'claude_session', 'claude_session_summary'],
     patterns: [
       /\bremember\s+when\b/i,
       /\bremember\s+that\s+session\b/i,

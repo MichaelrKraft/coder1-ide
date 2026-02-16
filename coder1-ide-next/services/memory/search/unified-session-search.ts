@@ -223,13 +223,13 @@ export async function unifiedSessionSearch(
     tryEternalSearch(intent.strippedQuery || query, 3),
   ]);
 
-  // 3.5. Filter to IDE session data only for session queries.
-  // memory_chunks contains mixed source types (session, manuslive_memory, ide_*).
-  // For session recall queries, only ide_* chunks are relevant — conversation
-  // history and ManusLive facts would confuse the response.
+  // 3.5. Filter to session data only for session queries.
+  // memory_chunks contains mixed source types (session, manuslive_memory, ide_*, claude_*).
+  // For session recall queries, only ide_* and claude_* chunks are relevant —
+  // ManusLive facts and other non-session data would confuse the response.
   if (intent.intent !== 'general') {
     hybridResponse.results = hybridResponse.results.filter(
-      r => r.source_type.startsWith('ide_')
+      r => r.source_type.startsWith('ide_') || r.source_type.startsWith('claude_')
     );
   }
 

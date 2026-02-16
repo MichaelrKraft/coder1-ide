@@ -1,77 +1,83 @@
-# Time Capsule E2E Test
-# Time Capsule test 2
-# Teams Page Integration & Pricing Update
-# Time Capsule test 5
-# Time Capsule test 4
-# Time Capsule test 7
+# Johnny5 BackgroundExecutor
+
+## Context
+Johnny5 can queue tasks but nothing processes them. The OpportunityEngine has research/build stubs that return "queued" but never execute. We need a BackgroundExecutor that polls TaskTracker, executes tasks via Gemini API, and delivers results.
+
+**User Story**: "Johnny5, research competitor pricing overnight and report at 8am."
+
 ## Tasks
 
-### Phase 1: Add Teams Navigation Button
-- [x] Add Teams link to `/app/alpha/page.tsx` desktop navigation
-- [x] Add Teams link to `/app/alpha-v2/page.tsx` desktop navigation
-- [x] Add Teams link to `/app/alpha-v3/page.tsx` desktop navigation
-(Note: Mobile menus not implemented in alpha pages - only desktop navigation updated)
-
-### Phase 2: Update Pricing on Alpha Pages
-- [x] Update pricing tiers in `/app/alpha/page.tsx` (Team tier → $24/user/month)
-- [x] Update pricing tiers in `/app/alpha-v2/page.tsx` (Team tier → $24/user/month)
-- [x] Update pricing tiers in `/app/alpha-v3/page.tsx` (Team tier → $24/user/month)
-
-### Phase 3: Update Pricing on Teams Page
-- [x] Update pricing tiers in `/app/teams/page.tsx` (Free, Pro, Team at $24/user/month)
-
-### Phase 4: Testing & Verification
-- [x] Test Teams navigation on all alpha pages
-- [x] Verify pricing displays correctly on all pages
-- [x] Test navigation functionality (Teams button → /teams page)
-- [x] Verify no breaking changes
+- [x] 1. Add DB columns (`scheduled_at`, `deliver_at`, `retry_count`, `last_error`) to tasks table
+- [x] 2. Update TaskTracker to handle scheduling fields in create/query
+- [x] 3. Create `services/johnny5/background-executor.ts` — Core polling + routing + execution (~200 lines)
+- [x] 4. Wire BackgroundExecutor to server.js (after CronService init)
+- [x] 5. Wire OpportunityEngine stubs to create real tasks via TaskTracker
+- [x] 6. Add notifications table + API route for offline delivery
+- [x] 7. Test end-to-end — Create task, verify execution, check delivery (needs server restart)
 
 ## Review
 
 ### Changes Made
 
-**1. Teams Navigation Button**
-- Added Teams link to header navigation on all 3 alpha pages (alpha, alpha-v2, alpha-v3)
-- Position: Between "Features" and "Johnny5" in the navigation bar
-- Uses Next.js Link component for proper routing to `/teams` page
-- Styling matches existing navigation items
+**1. Modified: `lib/johnny5-db.ts`**
+- Added 5 columns to tasks CREATE TABLE: `scheduled_at`, `deliver_at`, `retry_count`, `max_retries`, `last_error`
+- Added migration Step 9: ALTERs for existing databases (same pattern as other migrations)
+- Added migration Step 10: `notifications` table with `id`, `task_id`, `user_id`, `message`, `type`, `delivered`, `created_at`, `delivered_at`
 
-**2. Alpha Pages Pricing Update**
-- Updated Team tier pricing from "Custom / contact us" to "$24 per user/month"
-- Tier structure maintained: Free Forever ($0), Pro ($29), Team ($24/user)
-- All feature lists and CTAs preserved
+**2. Modified: `types/johnny5.d.ts`**
+- Added 5 optional fields to `Johnny5Task`: `scheduledAt`, `deliverAt`, `retryCount`, `maxRetries`, `lastError`
 
-**3. Teams Page Pricing Update**
-- Restructured pricing to match alpha pages:
-  - Free: $0/month (try team features, up to 2 members)
-  - Pro: $29/user/month (for individuals and small teams, up to 5 members)
-  - Team: $24/user/month (full team collaboration, unlimited members) - marked as "Most Popular"
-- Removed old "Team Starter ($15)" and "Enterprise (Custom)" tiers
+**3. Modified: `services/johnny5/task-tracker.ts`**
+- Updated `mapDbTaskToJohnny5Task` to accept and return scheduling fields from DB rows
+- Updated `createTask` to accept `scheduledAt` and `deliverAt` params, sets them via direct DB update after insert
+- Re-fetches task after scheduling column updates
+
+**4. New file: `services/johnny5/background-executor.ts`** (~250 lines)
+- Polls TaskTracker every 30s for queued tasks
+- Max 2 concurrent executions
+- Routes research/monitor/trend → Gemini API (no Bridge needed)
+- Routes build/fix → BridgeManager (requires connected Bridge)
+- Respects `scheduledAt` (skips future-scheduled tasks)
+- Respects `deliverAt` (stores result, delivers when time arrives)
+- Retry logic: exponential backoff, max 2 retries, stores `last_error`
+- Crash recovery: re-queues `in_progress` tasks on startup
+- Delivery: Socket.IO (instant) + Telegram (offline) + notifications table (catch-up)
+
+**5. Modified: `server.js`** (~8 lines)
+- Added BackgroundExecutor initialization after Claude session indexing, before Proactive Services
+- Passes `io` and `bridgeManager` references
+
+**6. Modified: `services/johnny5/opportunity-engine.ts`**
+- Replaced `research` stub → `TaskTracker.createTask()` with type 'research'
+- Replaced `build` stub → `TaskTracker.createTask()` with type 'build'
+- Both now create real tasks that BackgroundExecutor will process
+
+**7. New file: `app/api/johnny5/notifications/route.ts`** (~55 lines)
+- GET: Fetch undelivered notifications (up to 50)
+- PATCH: Mark notifications as delivered by passing `{ ids: [...] }`
+
+### Verification (pre-restart)
+- Tasks API returns new fields (`retryCount`, `maxRetries`) correctly
+- Notifications API returns empty array (no notifications yet)
+- Test research task created and queued successfully
+
+### Verification (post-restart)
+- Server restarted, BackgroundExecutor initialized: `[BackgroundExecutor] Started (poll: 30s, max: 2 concurrent)`
+- 3 queued tasks picked up and all completed via Gemini API
+- Created fresh e2e test task → queued → in_progress → completed with Gemini result
+- Notification stored in SQLite `notifications` table (verified via GET /api/johnny5/notifications)
+- PATCH /api/johnny5/notifications marks notifications as delivered correctly
+- Socket.IO `johnny5:task-completed` events emitted for real-time delivery
+
+### Bugs Fixed During Testing
+- **server.js `await` outside async**: Claude session indexing used `await` in synchronous context → changed to `.then()/.catch()`
+- **Dynamic imports failing silently**: `storeNotification` used `await import('@/lib/johnny5-db')` which failed silently in server.js context → moved to top-level imports
 
 ### Files Modified
-
-1. `/app/alpha/page.tsx` - Line 1100: Added Teams link, Lines 1777-1780: Updated pricing
-2. `/app/alpha-v2/page.tsx` - Line 828: Added Teams link, Lines 1505-1508: Updated pricing  
-3. `/app/alpha-v3/page.tsx` - Line 828: Added Teams link, Lines 1503-1506: Updated pricing
-4. `/app/teams/page.tsx` - Lines 586-636: Restructured all 3 pricing tiers
-
-### Verification Results
-
-✅ Teams button visible in navigation on all alpha pages
-✅ Teams button successfully navigates to `/teams` page
-✅ Pricing displays correctly: Free ($0), Pro ($29), Team ($24/user)
-✅ Teams page pricing matches alpha pages structure
-✅ No breaking changes to existing functionality
-✅ Server running successfully on port 3001
-
-### Technical Notes
-
-- Alpha pages use inline navigation (no mobile menu implementation found)
-- All changes were minimal - only added navigation links and updated pricing text
-- Next.js Link component already imported in all alpha page files
-- No structural changes to existing layouts or components
-- Hot module reload working - changes reflected immediately
-
-## Summary
-
-Successfully integrated Teams navigation and updated pricing across all landing pages with minimal code changes. The Teams page is now accessible from the main navigation, and pricing is consistent across all pages showing Free, Pro, and Team tiers with Team at $24/user/month.
+1. `lib/johnny5-db.ts` — DB schema + migrations (tasks columns + notifications table)
+2. `types/johnny5.d.ts` — 5 new fields on Johnny5Task
+3. `services/johnny5/task-tracker.ts` — Scheduling field handling
+4. `services/johnny5/background-executor.ts` — **NEW** (core executor, ~250 lines)
+5. `server.js` — BackgroundExecutor initialization (~8 lines)
+6. `services/johnny5/opportunity-engine.ts` — Research/build stubs replaced
+7. `app/api/johnny5/notifications/route.ts` — **NEW** (notification API, ~55 lines)

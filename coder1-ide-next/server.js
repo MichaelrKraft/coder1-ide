@@ -167,13 +167,11 @@ if (process.env.ENABLE_ETERNAL_MEMORY === 'true') {
 }
 
 // Memory Exporter for Claude Skills integration
-// DISABLED: Module import pulls in EternalMemorySearch, contextDatabase,
-// embeddingService, vectorSearchService — all heavy. Combined with Next.js dev
-// mode holding ~10K compiled modules in memory, exceeds the 2GB default heap.
-// The 30-second auto-export interval also leaked memory, compounding the issue.
+// DISABLED: Separate issue from sqlite-vec — module import pulls in heavy services
+// that exceed the 2GB default heap. The 30-second auto-export interval also leaked memory.
 // TODO: Refactor memory-exporter to use lazy loading or a separate worker process.
 let memoryExporter = null;
-console.log('⚠️ Memory Exporter disabled (heap OOM prevention)');
+console.log('⚠️ Memory Exporter disabled (heap OOM prevention — separate from sqlite-vec fix)');
 
 // Agent Terminal Manager for Phase 2: Interactive Agent Terminals
 // Uses global singleton registry to prevent multiple instances across module reloads
@@ -4394,9 +4392,7 @@ app.prepare().then(() => {
     // ========================================================================
     // Initialize Johnny5 Heartbeat Service (Living Files)
     // ========================================================================
-    // TEMPORARILY DISABLED: Triggers sqlite-vec blocking issue
-    console.log('⚠️  [Johnny5] Heartbeat Service DISABLED - sqlite-vec blocking issue needs fix');
-    /*
+    // Heartbeat Service — deferred to avoid sqlite-vec blocking (fixed: vec now loads lazily)
     if (process.env.JOHNNY5_LIVING_FILES === 'true') {
       try {
         const { getHeartbeatService } = require('./services/johnny5/heartbeat-service.ts');
@@ -4442,7 +4438,36 @@ app.prepare().then(() => {
         console.warn('⚠️ Johnny5 Heartbeat Service not available:', heartbeatError.message);
       }
     }
-    */
+
+    // ========================================================================
+    // Index Claude Code Sessions into Johnny5 Memory
+    // ========================================================================
+    try {
+      const { indexAllClaudeSessions } = require('./services/memory/sources/claude-session-ingester.ts');
+      indexAllClaudeSessions('default', { limit: 50 }).then(indexResult => {
+        if (indexResult.chunks > 0) {
+          console.log(`✅ Indexed ${indexResult.chunks} chunks from ${indexResult.sessions} Claude Code sessions`);
+        } else {
+          console.log('📋 Claude Code sessions: all up to date');
+        }
+      }).catch(err => {
+        console.warn('⚠️ Claude session indexing failed:', err.message);
+      });
+    } catch (claudeSessionError) {
+      console.warn('⚠️ Claude session indexing skipped:', claudeSessionError.message);
+    }
+
+    // ========================================================================
+    // Initialize Johnny5 BackgroundExecutor
+    // ========================================================================
+    try {
+      const { getBackgroundExecutor } = require('./services/johnny5/background-executor.ts');
+      const executor = getBackgroundExecutor();
+      executor.start(io, typeof bridgeManager !== 'undefined' ? bridgeManager : null);
+      console.log('✅ Johnny5 BackgroundExecutor started');
+    } catch (bgError) {
+      console.warn('⚠️ BackgroundExecutor not available:', bgError.message);
+    }
 
     // ========================================================================
     // Initialize Johnny5 Proactive Services
@@ -4500,13 +4525,19 @@ app.prepare().then(() => {
     // ========================================================================
     // Initialize Johnny5 Memory Sources (CRITICAL for memory recall)
     // ========================================================================
-    // TEMPORARILY DISABLED: Causes server to hang during sqlite-vec initialization
-    // TODO: Fix blocking database operations in johnny5-db.ts
-    console.log('⚠️  [Johnny5 Memory] DISABLED - sqlite-vec blocking issue needs fix');
-    /*
-    // DEFERRED: Run after event loop tick to avoid blocking server startup
-    setImmediate(() => {
+    // Memory Sources — deferred with lazy sqlite-vec loading (fixed: vec now loads lazily)
+    // Loads vector extension first, then initializes memory sources
+    setImmediate(async () => {
       try {
+        // Load sqlite-vec extension (deferred, non-blocking)
+        try {
+          const { loadVectorExtension } = require('./lib/johnny5-db.ts');
+          const vecAvailable = await loadVectorExtension();
+          console.log(`[Johnny5 Memory] Vector search: ${vecAvailable ? 'ENABLED' : 'keyword-only fallback'}`);
+        } catch (vecErr) {
+          console.warn('[Johnny5 Memory] Vector extension load skipped:', vecErr.message);
+        }
+
         // Clear ManusLive cache to ensure fresh reads
         try {
           const { clearManusLiveCache } = require('./lib/manuslive-memory.ts');
@@ -4559,8 +4590,7 @@ app.prepare().then(() => {
         console.error('❌ Johnny5 Memory Sources module failed to load:', error.message);
       }
     });
-    */
-  });
+});
 
 // Helper functions for context capture integration
 const initializeContextSession = async (terminalSessionId) => {

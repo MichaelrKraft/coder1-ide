@@ -221,21 +221,11 @@ function initializeDbSync(): void {
   db.pragma('foreign_keys = ON');
   db.pragma('busy_timeout = 5000');
 
-  // Load sqlite-vec extension if available
-  // This must happen BEFORE creating tables that use vec0
-  if (sqliteVecModule) {
-    try {
-      sqliteVecModule.load(db);
-      sqliteVecLoaded = true;
-      console.log('[Johnny5 DB] sqlite-vec extension loaded into database successfully');
-    } catch (err) {
-      sqliteVecLoaded = false;
-      console.warn('[Johnny5 DB] Failed to load sqlite-vec extension into database:', err);
-      console.log('[Johnny5 DB] Falling back to keyword-only search');
-    }
-  }
+  // NOTE: sqlite-vec loading is now DEFERRED to avoid blocking the event loop.
+  // Call loadVectorExtension() after server startup to enable vector search.
+  // Core tables are created without vec0 — vector tables are added by loadVectorExtension().
 
-  // Create tables
+  // Create core tables (no vec0 dependency)
   createTables(db);
 }
 
@@ -279,6 +269,62 @@ export function closeDb(): void {
 }
 
 /**
+ * Deferred sqlite-vec extension loading.
+ *
+ * Loads the native sqlite-vec extension into the database WITHOUT blocking
+ * the Node.js event loop during server startup. Call this after the server
+ * is listening to enable vector search capabilities.
+ *
+ * Returns true if vector search is available, false otherwise (graceful fallback).
+ */
+let vecLoadPromise: Promise<boolean> | null = null;
+
+export function loadVectorExtension(): Promise<boolean> {
+  // Already loaded
+  if (sqliteVecLoaded) return Promise.resolve(true);
+  // Already in progress
+  if (vecLoadPromise) return vecLoadPromise;
+  // No module or no database
+  if (!sqliteVecModule || !db) return Promise.resolve(false);
+
+  vecLoadPromise = new Promise<boolean>((resolve) => {
+    // Use setImmediate to yield to the event loop before the sync load
+    setImmediate(() => {
+      try {
+        sqliteVecModule.load(db);
+        sqliteVecLoaded = true;
+        console.log('[Johnny5 DB] sqlite-vec extension loaded (deferred)');
+
+        // Create vector table now that extension is loaded
+        try {
+          db!.exec(`
+            CREATE VIRTUAL TABLE IF NOT EXISTS memory_embeddings USING vec0(
+              chunk_id TEXT PRIMARY KEY,
+              embedding FLOAT[768]
+            );
+          `);
+          vectorTableCreated = true;
+          console.log('[Johnny5 DB] Vector table created successfully');
+        } catch (tableErr) {
+          vectorTableCreated = false;
+          console.warn('[Johnny5 DB] Failed to create vector table:', tableErr);
+        }
+
+        resolve(true);
+      } catch (err) {
+        sqliteVecLoaded = false;
+        vecLoadPromise = null; // Allow retry
+        console.warn('[Johnny5 DB] sqlite-vec deferred load failed:', err);
+        console.log('[Johnny5 DB] Falling back to keyword-only search');
+        resolve(false);
+      }
+    });
+  });
+
+  return vecLoadPromise;
+}
+
+/**
  * Create all required tables
  */
 function createTables(database: Database.Database): void {
@@ -315,7 +361,12 @@ function createTables(database: Database.Database): void {
       status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'in_progress', 'completed', 'failed', 'cancelled')),
       result TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      completed_at DATETIME
+      completed_at DATETIME,
+      scheduled_at TEXT,
+      deliver_at TEXT,
+      retry_count INTEGER DEFAULT 0,
+      max_retries INTEGER DEFAULT 2,
+      last_error TEXT
     );
 
     -- Audit log table
@@ -721,24 +772,49 @@ function createTables(database: Database.Database): void {
     console.error('[Johnny5 DB] Skills table creation error:', err);
   }
 
-  // Create vector table if sqlite-vec is available
-  if (sqliteVecLoaded) {
+  // Step 9: BackgroundExecutor columns on tasks table
+  const taskMigrationSteps: string[] = [
+    `ALTER TABLE tasks ADD COLUMN scheduled_at TEXT`,
+    `ALTER TABLE tasks ADD COLUMN deliver_at TEXT`,
+    `ALTER TABLE tasks ADD COLUMN retry_count INTEGER DEFAULT 0`,
+    `ALTER TABLE tasks ADD COLUMN max_retries INTEGER DEFAULT 2`,
+    `ALTER TABLE tasks ADD COLUMN last_error TEXT`,
+  ];
+
+  for (const sql of taskMigrationSteps) {
     try {
-      database.exec(`
-        -- Vector embeddings table (sqlite-vec)
-        CREATE VIRTUAL TABLE IF NOT EXISTS memory_embeddings USING vec0(
-          chunk_id TEXT PRIMARY KEY,
-          embedding FLOAT[768]
-        );
-      `);
-      vectorTableCreated = true;
-      console.log('[Johnny5 DB] Vector table created successfully');
-    } catch (err) {
-      vectorTableCreated = false;
-      console.warn('[Johnny5 DB] Failed to create vector table:', err);
-      console.log('[Johnny5 DB] Falling back to keyword-only search');
+      database.exec(sql);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('duplicate column')) {
+        console.error(`[Johnny5 DB] Task migration error: ${msg}`);
+      }
     }
   }
+
+  // Step 10: Notifications table for offline delivery
+  try {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY,
+        task_id TEXT,
+        user_id TEXT DEFAULT 'default',
+        message TEXT NOT NULL,
+        type TEXT DEFAULT 'task_completed',
+        delivered INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now')),
+        delivered_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_notifications_user_delivered ON notifications(user_id, delivered);
+      CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
+    `);
+  } catch (err) {
+    console.error('[Johnny5 DB] Notifications table creation error:', err);
+  }
+
+  // NOTE: Vector table (memory_embeddings) is now created by loadVectorExtension()
+  // which runs after server startup to avoid blocking the event loop.
 }
 
 // ============================================================================
