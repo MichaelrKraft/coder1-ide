@@ -20,6 +20,7 @@ interface Johnny5TabBarProps {
   onTabChange: (tab: Johnny5Tab) => void;
   securityScore?: number;
   hasAlerts?: boolean;
+  hasBriefNotification?: boolean;
 }
 
 const tabs: { id: Johnny5Tab; label: string; icon: React.ReactNode; title: string }[] = [
@@ -83,7 +84,8 @@ export default function Johnny5TabBar({
   activeTab,
   onTabChange,
   securityScore,
-  hasAlerts
+  hasAlerts,
+  hasBriefNotification,
 }: Johnny5TabBarProps) {
   return (
     <div className="flex flex-wrap border-b border-border-default bg-bg-secondary/50">
@@ -119,6 +121,10 @@ export default function Johnny5TabBar({
             {/* Alert indicator */}
             {tab.id === 'security' && hasAlerts && (
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            )}
+            {/* Brief notification indicator */}
+            {tab.id === 'morning-brief' && hasBriefNotification && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-coder1-cyan rounded-full animate-pulse" />
             )}
           </span>
           <span className="truncate w-full text-center">{tab.label}</span>

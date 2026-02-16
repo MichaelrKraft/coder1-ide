@@ -375,6 +375,71 @@ export async function cleanupLowConfidencePatterns(
 }
 
 /**
+ * Check if a task matches a learned pattern that has been repeated enough
+ * to warrant creating a skill. Returns the pattern info if a skill should be suggested.
+ *
+ * @param taskDescription - Brief description of the task just completed
+ * @param userId - User ID for scoping
+ * @returns Suggestion info or null if no suggestion warranted
+ */
+export async function checkForSkillOpportunity(
+  taskDescription: string,
+  userId: string
+): Promise<{ shouldSuggest: boolean; patternId: string; patternDescription: string; count: number } | null> {
+  const db = getDb();
+
+  // Look for patterns with evidence_count >= 3 that match the task
+  const patterns = db.prepare(`
+    SELECT id, pattern_type, pattern_description, evidence_count
+    FROM learned_patterns
+    WHERE user_id = ? AND evidence_count >= 3 AND confidence >= 0.6
+    ORDER BY evidence_count DESC
+    LIMIT 20
+  `).all(userId) as Array<{
+    id: string;
+    pattern_type: string;
+    pattern_description: string;
+    evidence_count: number;
+  }>;
+
+  if (patterns.length === 0) return null;
+
+  // Simple keyword matching against the task description
+  const taskLower = taskDescription.toLowerCase();
+  const taskWords = taskLower.split(/\s+/).filter(w => w.length > 3);
+
+  for (const pattern of patterns) {
+    const patternLower = pattern.pattern_description.toLowerCase();
+
+    // Check if at least 2 significant words from the task match the pattern description
+    const matchCount = taskWords.filter(word => patternLower.includes(word)).length;
+    if (matchCount >= 2 || taskLower.includes(patternLower.substring(0, 20))) {
+      // Check if this suggestion was already dismissed
+      const { isSkillSuggestionDismissed } = await import('@/lib/johnny5-db');
+      if (isSkillSuggestionDismissed(pattern.id)) continue;
+
+      // Check if a skill already exists for this pattern
+      const { getSkillRecords } = await import('@/lib/johnny5-db');
+      const existingSkills = getSkillRecords();
+      const alreadyHasSkill = existingSkills.some(s =>
+        s.name.toLowerCase().includes(patternLower.substring(0, 15)) ||
+        (s.description && s.description.toLowerCase().includes(patternLower.substring(0, 15)))
+      );
+      if (alreadyHasSkill) continue;
+
+      return {
+        shouldSuggest: true,
+        patternId: pattern.id,
+        patternDescription: pattern.pattern_description,
+        count: pattern.evidence_count,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
  * Run full pattern detection and update cycle
  * Call this periodically (e.g., after every 10 conversations or daily)
  */

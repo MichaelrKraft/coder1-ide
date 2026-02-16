@@ -26,6 +26,7 @@ import CoachTip from './CoachTip';
 import CrewPanel from './CrewPanel';
 import { LiveFeed } from './LiveFeed';
 import crewData from '@/data/crew-members.json';
+import { getSocket } from '@/lib/socket';
 import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { getPatternDetector } from '@/services/johnny5/pattern-detector';
@@ -71,6 +72,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
   const [showHandoffBanner, setShowHandoffBanner] = useState(true);
   const [showErrorPattern, setShowErrorPattern] = useState(true);
   const [showCoachTip, setShowCoachTip] = useState(true);
+  const [hasBriefNotification, setHasBriefNotification] = useState(false);
   const {
     activeTab,
     setActiveTab,
@@ -100,6 +102,33 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
       window.removeEventListener('johnny5:openWorkflows', workflowsHandler);
     };
   }, []);
+
+  // Listen for morning brief Socket.IO event from cron service
+  useEffect(() => {
+    let cancelled = false;
+    let socketRef: Awaited<ReturnType<typeof getSocket>> | null = null;
+
+    const handler = () => {
+      if (!cancelled && activeTab !== 'morning-brief') {
+        setHasBriefNotification(true);
+      }
+    };
+
+    getSocket().then((sock) => {
+      if (cancelled) return;
+      socketRef = sock;
+      sock.on('johnny5:morning-brief', handler);
+    }).catch(() => {
+      // Socket not available — brief tab still works on-demand
+    });
+
+    return () => {
+      cancelled = true;
+      if (socketRef) {
+        socketRef.off('johnny5:morning-brief', handler);
+      }
+    };
+  }, [activeTab]);
 
   // Start intelligence services on mount (Phase 2 + 3 + 4)
   const servicesStarted = useRef(false);
@@ -366,6 +395,9 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
         activeTab={activeTab}
         onTabChange={(tab) => {
           setActiveTab(tab);
+          if (tab === 'morning-brief') {
+            setHasBriefNotification(false);
+          }
           // Mark setup as complete when user clicks any tab
           if (!setupStatus.isComplete) {
             setSetupStatus({ ...setupStatus, isComplete: true });
@@ -373,6 +405,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
         }}
         securityScore={security.score}
         hasAlerts={hasSecurityAlerts}
+        hasBriefNotification={hasBriefNotification}
       />
 
       {/* Rule Suggestion Banner (Phase 2) */}

@@ -15,6 +15,8 @@ import { getTasks, getTaskStats } from './task-tracker';
 import { getSessionSummaries } from './session-tracker';
 import { getAuditLog, getSecurityWarnings } from './security-tracker';
 import { getUsageStats } from './usage-tracker';
+import { getRecentFacts, getRecentPatterns } from '@/lib/johnny5-db';
+import { getRecentSnapshots } from '@/lib/living-files';
 
 // Storage path
 const DATA_DIR = path.join(process.cwd(), 'data', 'johnny5');
@@ -95,7 +97,7 @@ function saveBriefs(): void {
 /**
  * Generate morning brief from real data (async version)
  */
-export async function generateMorningBrief(targetDate: Date): Promise<Johnny5MorningBrief> {
+export async function generateMorningBrief(targetDate: Date, userId: string = 'default'): Promise<Johnny5MorningBrief> {
   const dateKey = formatDateKey(targetDate);
 
   // Check cache first
@@ -197,6 +199,59 @@ export async function generateMorningBrief(targetDate: Date): Promise<Johnny5Mor
     });
   }
 
+  // Memory integration - recent facts
+  let factItems: Johnny5BriefItem[] = [];
+  try {
+    const recentFacts = getRecentFacts(userId, 24);
+    factItems = recentFacts
+      .filter(f => f.confidence >= 0.8)
+      .slice(0, 5)
+      .map(f => ({
+        id: `fact-${f.id}`,
+        title: `Learned: ${f.fact_key}`,
+        description: f.fact_value,
+        priority: 'low' as const,
+        actionable: false,
+      }));
+  } catch (err) {
+    console.warn('[MorningBrief] Failed to load recent facts:', err);
+  }
+
+  // Memory integration - new patterns
+  let patternItems: Johnny5BriefItem[] = [];
+  try {
+    const newPatterns = getRecentPatterns(userId, 24);
+    patternItems = newPatterns
+      .filter(p => p.confidence >= 0.7)
+      .slice(0, 3)
+      .map(p => ({
+        id: `pattern-${p.id}`,
+        title: `Pattern: ${p.pattern_description}`,
+        description: p.suggested_action || 'No action suggested yet',
+        priority: p.actionable ? 'medium' as const : 'low' as const,
+        actionable: !!p.actionable,
+      }));
+  } catch (err) {
+    console.warn('[MorningBrief] Failed to load recent patterns:', err);
+  }
+
+  // Memory integration - living file changes
+  let changeItems: Johnny5BriefItem[] = [];
+  try {
+    const snapshots = getRecentSnapshots(24);
+    changeItems = snapshots
+      .slice(0, 3)
+      .map(s => ({
+        id: `change-${s.filename}-${Date.now()}`,
+        title: `Updated: ${s.filename}`,
+        description: `${s.filename} was modified`,
+        priority: 'low' as const,
+        actionable: false,
+      }));
+  } catch (err) {
+    console.warn('[MorningBrief] Failed to load recent snapshots:', err);
+  }
+
   // Generate summary
   const totalItems = builtOvernight.length + researchCompleted.length + trendsSpotted.length;
   let summary: string;
@@ -216,6 +271,12 @@ export async function generateMorningBrief(targetDate: Date): Promise<Johnny5Mor
     }
     if (needsAttention.length > 0) {
       parts.push(`flagged ${needsAttention.length} item${needsAttention.length > 1 ? 's' : ''} needing attention`);
+    }
+    if (factItems.length > 0) {
+      parts.push(`learned ${factItems.length} new fact${factItems.length > 1 ? 's' : ''}`);
+    }
+    if (patternItems.length > 0) {
+      parts.push(`detected ${patternItems.length} pattern${patternItems.length > 1 ? 's' : ''}`);
     }
     summary = `While you were away, Johnny5 ${parts.join(', ')}. ${totalItems > 2 ? 'Overall, a productive night!' : ''}`;
   }
@@ -237,6 +298,8 @@ export async function generateMorningBrief(targetDate: Date): Promise<Johnny5Mor
     researchCompleted,
     trendsSpotted,
     needsAttention,
+    learnings: [...factItems, ...patternItems],
+    livingFileChanges: changeItems,
     stats: {
       tokensUsed: usageStats.totalTokens,
       tasksCompleted: overnightTasks.filter(t => t.status === 'completed').length,

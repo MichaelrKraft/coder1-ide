@@ -172,6 +172,46 @@ export class CrewExecutor extends EventEmitter {
   }
 
   /**
+   * Load a user-defined agent-skill from DB and disk, constructing a CrewMember.
+   *
+   * @param skillId - The skill ID (without 'skill-agent-' prefix)
+   * @returns CrewMember and system prompt, or null if not found/disabled
+   */
+  private async loadAgentSkill(skillId: string): Promise<{ crewMember: CrewMember; systemPrompt: string } | null> {
+    try {
+      const { getSkillRecords } = await import('@/lib/johnny5-db');
+      const skills = getSkillRecords();
+      const skill = skills.find((s) => s.id === skillId && s.enabled);
+      if (!skill) return null;
+
+      // Load SKILL.md from disk for system prompt
+      const { DATA_DIR } = await import('@/lib/data-paths');
+      const path = await import('path');
+      const fs = await import('fs');
+      const skillMdPath = path.join(DATA_DIR, 'skills', skillId, 'SKILL.md');
+      let systemPrompt = skill.description || 'You are a specialized crew member.';
+      if (fs.existsSync(skillMdPath)) {
+        systemPrompt = fs.readFileSync(skillMdPath, 'utf-8');
+      }
+
+      const crewMember: CrewMember = {
+        id: `skill-agent-${skillId}`,
+        name: skill.name,
+        icon: 'Bot',
+        category: 'custom',
+        description: skill.description || '',
+        promptPrefix: systemPrompt,
+        exampleTasks: [],
+      };
+
+      return { crewMember, systemPrompt };
+    } catch (err) {
+      console.error('[CrewExecutor] Failed to load agent skill:', err);
+      return null;
+    }
+  }
+
+  /**
    * Execute a task with the specified crew member and model selection.
    *
    * @param task - The task description or prompt
@@ -181,8 +221,22 @@ export class CrewExecutor extends EventEmitter {
   async execute(task: string, options: ExecutionOptions): Promise<ExecutionResult> {
     const startTime = Date.now();
 
-    // Validate crew member
-    const crewMember = CREW_MEMBERS.get(options.crewMember);
+    let crewMember: CrewMember | undefined;
+
+    // Check if this is a user-defined agent-skill
+    if (options.crewMember.startsWith('skill-agent-')) {
+      const skillId = options.crewMember.replace('skill-agent-', '');
+      const agentData = await this.loadAgentSkill(skillId);
+      if (agentData) {
+        crewMember = agentData.crewMember;
+      }
+    }
+
+    // Fall back to hardcoded crew members
+    if (!crewMember) {
+      crewMember = CREW_MEMBERS.get(options.crewMember);
+    }
+
     if (!crewMember) {
       return {
         success: false,

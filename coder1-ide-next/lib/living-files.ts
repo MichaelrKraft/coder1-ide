@@ -30,7 +30,7 @@
  * ```
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, unlinkSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, unlinkSync, statSync } from 'fs';
 import { join, basename } from 'path';
 import { LIVING_FILES_DIR, LIVING_FILES_HISTORY_DIR, ensureDataDir } from './data-paths';
 import { logger } from './logger';
@@ -675,6 +675,32 @@ export function appendToLivingFile(filename: string, entry: string): boolean {
 }
 
 /**
+ * Get token usage statistics for all living files.
+ * Useful for auditing context bloat and identifying optimization opportunities.
+ *
+ * @returns Record mapping filename to stats (lines, chars, estimated tokens)
+ */
+export function getLivingFilesTokenStats(): Record<string, { lines: number; chars: number; estimatedTokens: number; writeMode: string }> {
+  const stats: Record<string, { lines: number; chars: number; estimatedTokens: number; writeMode: string }> = {};
+
+  for (const file of LIVING_FILES) {
+    const content = loadLivingFile(file.filename);
+    if (!content) {
+      stats[file.filename] = { lines: 0, chars: 0, estimatedTokens: 0, writeMode: file.writeMode };
+      continue;
+    }
+
+    const lines = content.split('\n').length;
+    const chars = content.length;
+    const estimatedTokens = Math.ceil(chars / 4);
+
+    stats[file.filename] = { lines, chars, estimatedTokens, writeMode: file.writeMode };
+  }
+
+  return stats;
+}
+
+/**
  * Get the writeMode for a given living file.
  *
  * @param filename - The filename to check (e.g., 'SOUL.md')
@@ -683,4 +709,41 @@ export function appendToLivingFile(filename: string, entry: string): boolean {
 export function getWriteMode(filename: string): string | null {
   const config = LIVING_FILES.find(f => f.filename === filename);
   return config?.writeMode ?? null;
+}
+
+/**
+ * Get living files that were recently modified (based on history snapshots)
+ */
+export function getRecentSnapshots(hoursAgo: number): Array<{ filename: string; modifiedAt: Date }> {
+  if (!existsSync(LIVING_FILES_HISTORY_DIR)) return [];
+
+  const cutoff = Date.now() - hoursAgo * 60 * 60 * 1000;
+  const results: Array<{ filename: string; modifiedAt: Date }> = [];
+
+  try {
+    const files = readdirSync(LIVING_FILES_HISTORY_DIR);
+    for (const file of files) {
+      if (!file.endsWith('.bak')) continue;
+      const filePath = join(LIVING_FILES_HISTORY_DIR, file);
+      const stat = statSync(filePath);
+      if (stat.mtimeMs >= cutoff) {
+        // Extract original filename from backup name: "USER.md.2026-02-15T09-00-00.bak"
+        const originalName = file.split('.').slice(0, 2).join('.');
+        results.push({ filename: originalName, modifiedAt: stat.mtime });
+      }
+    }
+  } catch {
+    return [];
+  }
+
+  // Deduplicate by filename (keep most recent)
+  const seen = new Map<string, Date>();
+  for (const r of results) {
+    const existing = seen.get(r.filename);
+    if (!existing || r.modifiedAt > existing) {
+      seen.set(r.filename, r.modifiedAt);
+    }
+  }
+
+  return Array.from(seen.entries()).map(([filename, modifiedAt]) => ({ filename, modifiedAt }));
 }

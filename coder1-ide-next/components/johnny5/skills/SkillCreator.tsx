@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Hand,
   Code,
+  Bot,
   CheckCircle,
   AlertCircle,
   Loader2,
@@ -16,7 +17,7 @@ import {
 import type { Johnny5Skill } from '@/types/johnny5';
 
 type SkillCategory = 'productivity' | 'research' | 'monitoring' | 'communication' | 'development';
-type SkillTrigger = 'scheduled' | 'event' | 'manual' | 'trend';
+type SkillTrigger = 'scheduled' | 'event' | 'manual' | 'trend' | 'agent';
 
 interface SkillCreatorProps {
   isOpen: boolean;
@@ -78,6 +79,12 @@ export default function SkillCreator({
       icon: <TrendingUp className="w-4 h-4" />,
       description: 'Run when a trend is detected',
     },
+    {
+      value: 'agent',
+      label: 'Agent',
+      icon: <Bot className="w-4 h-4" />,
+      description: 'Custom crew member for task routing',
+    },
   ];
 
   // Category options
@@ -137,6 +144,13 @@ export default function SkillCreator({
 
   return { trend, analysis };
 }`,
+      agent: `You are a specialized crew member of Johnny5.
+Your expertise: [describe your area of expertise]
+
+## Instructions
+- Always provide actionable, specific responses.
+- Stay focused on your area of expertise.
+- Ask clarifying questions when the task is ambiguous.`,
     };
     return templates[triggerType];
   }
@@ -160,8 +174,11 @@ export default function SkillCreator({
     if (!description.trim()) {
       newErrors.push('Description is required');
     }
-    if (!code.includes('async function execute')) {
+    if (trigger !== 'agent' && !code.includes('async function execute')) {
       newErrors.push('Code must contain an async execute function');
+    }
+    if (trigger === 'agent' && !code.trim()) {
+      newErrors.push('System prompt is required for agent skills');
     }
 
     setErrors(newErrors);
@@ -339,33 +356,38 @@ export default function SkillCreator({
             </div>
           </div>
 
-          {/* Code Editor */}
+          {/* Code Editor / System Prompt */}
           <div>
             <label className="flex items-center gap-2 text-xs font-semibold text-text-secondary mb-1.5">
-              <Code className="w-3.5 h-3.5" />
-              Skill Code
+              {trigger === 'agent' ? <Bot className="w-3.5 h-3.5" /> : <Code className="w-3.5 h-3.5" />}
+              {trigger === 'agent' ? 'System Prompt' : 'Skill Code'}
             </label>
+            {trigger === 'agent' && (
+              <p className="text-[10px] text-text-muted mb-1.5">
+                Define the persona and instructions for this agent crew member.
+              </p>
+            )}
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
               rows={12}
-              spellCheck={false}
+              spellCheck={trigger === 'agent'}
               className="w-full px-3 py-2 bg-bg-tertiary border border-border-default rounded-lg
                 text-xs text-text-primary font-mono leading-relaxed resize-none
                 focus:outline-none focus:border-coder1-cyan/50 focus:ring-1 focus:ring-coder1-cyan/30"
             />
           </div>
 
-          {/* Dependencies */}
+          {/* Dependencies / Keywords */}
           <div>
             <label className="block text-xs font-semibold text-text-secondary mb-1.5">
-              Dependencies (comma-separated)
+              {trigger === 'agent' ? 'Routing Keywords (comma-separated)' : 'Dependencies (comma-separated)'}
             </label>
             <input
               type="text"
               value={dependencies}
               onChange={(e) => setDependencies(e.target.value)}
-              placeholder="e.g., calendar, email, github"
+              placeholder={trigger === 'agent' ? 'e.g., devops, deploy, infrastructure, kubernetes' : 'e.g., calendar, email, github'}
               className="w-full px-3 py-2 bg-bg-secondary border border-border-default rounded-lg
                 text-sm text-text-primary placeholder-text-muted
                 focus:outline-none focus:border-coder1-cyan/50 focus:ring-1 focus:ring-coder1-cyan/30"

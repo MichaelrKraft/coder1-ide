@@ -24,6 +24,7 @@ import {
   CheckCircle,
   Play,
   AlertTriangle,
+  History,
 } from 'lucide-react';
 import type { Johnny5Skill } from '@/types/johnny5';
 import SkillCard from './SkillCard';
@@ -569,6 +570,9 @@ export default function SkillsManager({
                 </div>
               )}
 
+              {/* Version History (Gap 2) */}
+              <SkillVersionHistory skillId={selectedSkill.id} />
+
               <div className="flex gap-2 pt-4 border-t border-border-default">
                 {selectedSkill.trigger === 'manual' && (
                   <button
@@ -605,6 +609,71 @@ export default function SkillsManager({
           'bg-coder1-cyan/20 text-coder1-cyan border-coder1-cyan/40'
         }`}>
           {toast.message}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ================================================================================
+// Skill Version History (Gap 2)
+// ================================================================================
+
+function SkillVersionHistory({ skillId }: { skillId: string }) {
+  const [versions, setVersions] = useState<Array<{
+    id: string;
+    version: number;
+    changeSummary?: string;
+    createdAt: string;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const fetchVersions = async () => {
+      try {
+        const res = await fetch(`/api/johnny5/skills/${skillId}/versions`);
+        if (res.ok) {
+          const json = await res.json();
+          setVersions(json.data || []);
+        }
+      } catch {
+        // Silent failure
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchVersions();
+  }, [skillId]);
+
+  if (loading || versions.length === 0) return null;
+
+  return (
+    <div className="pt-3 border-t border-border-default">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 text-xs text-text-secondary hover:text-text-primary w-full"
+      >
+        <History className="w-3.5 h-3.5" />
+        <span className="font-semibold">Version History</span>
+        <span className="px-1.5 py-0.5 bg-bg-tertiary rounded text-[10px] text-text-muted">
+          {versions.length}
+        </span>
+        <ChevronDown className={`w-3.5 h-3.5 ml-auto transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+      {expanded && (
+        <div className="mt-2 space-y-1.5">
+          {versions.map((v) => (
+            <div key={v.id} className="flex items-center gap-2 px-2 py-1.5 bg-bg-tertiary/50 rounded text-[11px]">
+              <span className="text-coder1-cyan font-mono font-semibold">v{v.version}</span>
+              <span className="text-text-muted truncate flex-1">
+                {v.changeSummary || 'No description'}
+              </span>
+              <span className="text-text-muted text-[10px] flex-shrink-0">
+                {new Date(v.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { promises as fs } from 'fs';
+import path from 'path';
 import type { Johnny5Skill, Johnny5APIResponse } from '@/types/johnny5';
 import { initializeSkillsService } from '@/lib/skills-service';
 import { getSkillRecords, upsertSkill, type SkillRecord } from '@/lib/johnny5-db';
 import { shouldUseSkills } from '@/lib/skills-integration-utils';
+import { DATA_DIR } from '@/lib/data-paths';
 
 /**
  * Convert a SkillRecord from the DB + SkillMetadata from SkillsService into a Johnny5Skill
@@ -150,6 +153,48 @@ export async function POST(request: NextRequest) {
       source: 'local',
       enabled: true,
     });
+
+    // Write skill to disk so SkillsService can discover it
+    const skillDir = path.join(DATA_DIR, 'skills', id);
+    try {
+      await fs.mkdir(skillDir, { recursive: true });
+
+      // Write metadata.json (Tier 1)
+      const skillMetadata = {
+        id,
+        name: body.name,
+        description: body.description,
+        category: body.category || 'productivity',
+        tools: body.dependencies || [],
+        version: '1.0.0',
+        estimatedTokens: Math.ceil((body.code || '').length / 4),
+        lastUpdated: new Date().toISOString(),
+        author: 'user',
+        tags: [],
+      };
+      await fs.writeFile(
+        path.join(skillDir, 'metadata.json'),
+        JSON.stringify(skillMetadata, null, 2),
+        'utf-8'
+      );
+
+      // Write SKILL.md (Tier 2)
+      const skillMd = `# ${body.name}\n\n${body.description}\n\n## Code\n\n\`\`\`javascript\n${body.code || ''}\n\`\`\`\n`;
+      await fs.writeFile(path.join(skillDir, 'SKILL.md'), skillMd, 'utf-8');
+
+      // Refresh SkillsService cache so the new skill is immediately discoverable
+      if (shouldUseSkills()) {
+        try {
+          const service = await initializeSkillsService();
+          await service.refreshSkills();
+        } catch {
+          // Non-fatal: skill is on disk, will be found on next restart
+        }
+      }
+    } catch (diskError) {
+      console.error('[Skills] Failed to write skill to disk:', diskError);
+      // Non-fatal: skill is in DB, disk write is best-effort
+    }
 
     const newSkill: Johnny5Skill = {
       id,
