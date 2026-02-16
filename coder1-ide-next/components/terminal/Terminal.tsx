@@ -5456,14 +5456,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             {voiceListening ? <MicOff className="w-4 h-4 text-red-500" /> : <Mic className="w-4 h-4" />}
           </button>
 
-          {/* MCP Manager Button - HIDDEN for alpha (causes freeze, see POST-ALPHA-mcp-manager-fix.md) */}
-          {/* TODO: Fix render loop in useMCPManager hooks before re-enabling
+          {/* MCP Manager Button */}
           <button
-            onClick={() => {
-              console.log('[MCP] Button clicked! Current isOpen:', isMCPOverlayOpen);
-              toggleMCPOverlay();
-              console.log('[MCP] toggleMCPOverlay called');
-            }}
+            onClick={() => toggleMCPOverlay()}
             className={`terminal-control-btn p-1.5 rounded-md transition-all relative ${
               isMCPOverlayOpen
                 ? 'terminal-btn-active-orange'
@@ -5478,7 +5473,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               </span>
             )}
           </button>
-          */}
 
           {/* Compose Icon Button - Only show when staged composer is enabled */}
           {ENABLE_STAGED_COMPOSER && (

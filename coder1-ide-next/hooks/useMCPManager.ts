@@ -7,131 +7,168 @@
 
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useMCPStore } from '@/stores/useMCPStore';
 
 /**
  * Main MCP Manager hook
- * Provides all MCP management functionality with auto-loading
+ * Provides all MCP management functionality with auto-loading.
+ *
+ * Uses individual Zustand selectors to avoid render loops caused by
+ * subscribing to the entire store object (which creates unstable references).
  */
 export function useMCPManager(options: { autoLoad?: boolean } = {}) {
   const { autoLoad = true } = options;
 
-  const store = useMCPStore();
+  // State — individual selectors (stable, only re-render when specific value changes)
+  const servers = useMCPStore(s => s.servers);
+  const profiles = useMCPStore(s => s.profiles);
+  const activeProfileId = useMCPStore(s => s.activeProfileId);
+  const tokenUsage = useMCPStore(s => s.tokenUsage);
+  const suggestions = useMCPStore(s => s.suggestions);
+
+  // Loading states
+  const isLoadingServers = useMCPStore(s => s.isLoadingServers);
+  const isLoadingProfiles = useMCPStore(s => s.isLoadingProfiles);
+  const isAnalyzing = useMCPStore(s => s.isAnalyzing);
+  const isOptimizing = useMCPStore(s => s.isOptimizing);
+  const isServersInitialized = useMCPStore(s => s.isServersInitialized);
+  const isProfilesInitialized = useMCPStore(s => s.isProfilesInitialized);
+
+  // Errors
+  const serversError = useMCPStore(s => s.serversError);
+  const profilesError = useMCPStore(s => s.profilesError);
+  const analysisError = useMCPStore(s => s.analysisError);
+  const optimizeError = useMCPStore(s => s.optimizeError);
+
+  // UI state
+  const isOverlayOpen = useMCPStore(s => s.isOverlayOpen);
+  const filterTab = useMCPStore(s => s.filterTab);
+  const searchQuery = useMCPStore(s => s.searchQuery);
+  const selectedServers = useMCPStore(s => s.selectedServers);
+
+  // Actions — Zustand actions are stable references (never change between renders)
+  const fetchServers = useMCPStore(s => s.fetchServers);
+  const fetchProfiles = useMCPStore(s => s.fetchProfiles);
+  const analyzeUsage = useMCPStore(s => s.analyzeUsage);
+  const toggleServer = useMCPStore(s => s.toggleServer);
+  const toggleSelectedServers = useMCPStore(s => s.toggleSelectedServers);
+  const createProfile = useMCPStore(s => s.createProfile);
+  const applyProfile = useMCPStore(s => s.applyProfile);
+  const deleteProfile = useMCPStore(s => s.deleteProfile);
+  const saveCurrentAsProfile = useMCPStore(s => s.saveCurrentAsProfile);
+  const createDefaultProfiles = useMCPStore(s => s.createDefaultProfiles);
+  const optimizeForTask = useMCPStore(s => s.optimizeForTask);
+  const applySuggestion = useMCPStore(s => s.applySuggestion);
+  const applyAllSuggestions = useMCPStore(s => s.applyAllSuggestions);
+  const openOverlay = useMCPStore(s => s.openOverlay);
+  const closeOverlay = useMCPStore(s => s.closeOverlay);
+  const toggleOverlay = useMCPStore(s => s.toggleOverlay);
+  const setFilterTab = useMCPStore(s => s.setFilterTab);
+  const setSearchQuery = useMCPStore(s => s.setSearchQuery);
+  const toggleServerSelection = useMCPStore(s => s.toggleServerSelection);
+  const selectAllServers = useMCPStore(s => s.selectAllServers);
+  const clearSelection = useMCPStore(s => s.clearSelection);
+  const getFilteredServers = useMCPStore(s => s.getFilteredServers);
+  const getEnabledCount = useMCPStore(s => s.getEnabledCount);
+  const getTotalTokens = useMCPStore(s => s.getTotalTokens);
 
   // Auto-load servers and profiles on mount
   useEffect(() => {
-    // Only fetch if we haven't initialized yet, aren't loading, AND haven't already failed
-    const shouldFetchServers = 
-      autoLoad && 
-      !store.isServersInitialized && 
-      !store.isLoadingServers;
-      
-    const shouldFetchProfiles = 
-      autoLoad && 
-      !store.isProfilesInitialized && 
-      !store.isLoadingProfiles;
-
-    if (shouldFetchServers) {
-      store.fetchServers();
+    if (autoLoad && !isServersInitialized && !isLoadingServers) {
+      fetchServers();
     }
-    
-    if (shouldFetchProfiles) {
-      store.fetchProfiles();
+    if (autoLoad && !isProfilesInitialized && !isLoadingProfiles) {
+      fetchProfiles();
     }
-  }, [
-    autoLoad, 
-    store.isServersInitialized, 
-    store.isLoadingServers,
-    store.isProfilesInitialized,
-    store.isLoadingProfiles,
-  ]);
+  }, [autoLoad, isServersInitialized, isLoadingServers, isProfilesInitialized, isLoadingProfiles, fetchServers, fetchProfiles]);
 
-  // Refresh all data
+  // Stable refresh callback
   const refresh = useCallback(async () => {
-    await Promise.all([
-      store.fetchServers(),
-      store.fetchProfiles(),
-      store.analyzeUsage(),
-    ]);
-  }, [store]);
+    await Promise.all([fetchServers(), fetchProfiles(), analyzeUsage()]);
+  }, [fetchServers, fetchProfiles, analyzeUsage]);
 
-  // Quick actions
+  // Stable disable/enable all callbacks
   const disableAll = useCallback(async () => {
-    for (const server of store.servers) {
+    for (const server of servers) {
       if (server.enabled) {
-        await store.toggleServer(server.name, false);
+        await toggleServer(server.name, false);
       }
     }
-  }, [store]);
+  }, [servers, toggleServer]);
 
   const enableAll = useCallback(async () => {
-    for (const server of store.servers) {
+    for (const server of servers) {
       if (!server.enabled) {
-        await store.toggleServer(server.name, true);
+        await toggleServer(server.name, true);
       }
     }
-  }, [store]);
+  }, [servers, toggleServer]);
+
+  // Computed values — memoized to avoid creating new arrays/values each render
+  const filteredServers = useMemo(() => getFilteredServers(), [getFilteredServers, servers, filterTab, searchQuery]);
+  const enabledCount = useMemo(() => getEnabledCount(), [getEnabledCount, servers]);
+  const totalTokens = useMemo(() => getTotalTokens(), [getTotalTokens, tokenUsage]);
 
   return {
     // State
-    servers: store.servers,
-    profiles: store.profiles,
-    activeProfileId: store.activeProfileId,
-    tokenUsage: store.tokenUsage,
-    suggestions: store.suggestions,
+    servers,
+    profiles,
+    activeProfileId,
+    tokenUsage,
+    suggestions,
 
     // Loading states
-    isLoadingServers: store.isLoadingServers,
-    isLoadingProfiles: store.isLoadingProfiles,
-    isAnalyzing: store.isAnalyzing,
-    isOptimizing: store.isOptimizing,
-    isServersInitialized: store.isServersInitialized,
-    isProfilesInitialized: store.isProfilesInitialized,
+    isLoadingServers,
+    isLoadingProfiles,
+    isAnalyzing,
+    isOptimizing,
+    isServersInitialized,
+    isProfilesInitialized,
 
     // Errors
-    serversError: store.serversError,
-    profilesError: store.profilesError,
-    analysisError: store.analysisError,
-    optimizeError: store.optimizeError,
+    serversError,
+    profilesError,
+    analysisError,
+    optimizeError,
 
     // UI state
-    isOverlayOpen: store.isOverlayOpen,
-    filterTab: store.filterTab,
-    searchQuery: store.searchQuery,
-    selectedServers: store.selectedServers,
+    isOverlayOpen,
+    filterTab,
+    searchQuery,
+    selectedServers,
 
     // Computed
-    filteredServers: store.getFilteredServers(),
-    enabledCount: store.getEnabledCount(),
-    totalTokens: store.getTotalTokens(),
+    filteredServers,
+    enabledCount,
+    totalTokens,
 
     // Server actions
-    toggleServer: store.toggleServer,
-    toggleSelectedServers: store.toggleSelectedServers,
+    toggleServer,
+    toggleSelectedServers,
 
     // Profile actions
-    createProfile: store.createProfile,
-    applyProfile: store.applyProfile,
-    deleteProfile: store.deleteProfile,
-    saveCurrentAsProfile: store.saveCurrentAsProfile,
-    createDefaultProfiles: store.createDefaultProfiles,
+    createProfile,
+    applyProfile,
+    deleteProfile,
+    saveCurrentAsProfile,
+    createDefaultProfiles,
 
     // Analysis actions
-    analyzeUsage: store.analyzeUsage,
-    optimizeForTask: store.optimizeForTask,
-    applySuggestion: store.applySuggestion,
-    applyAllSuggestions: store.applyAllSuggestions,
+    analyzeUsage,
+    optimizeForTask,
+    applySuggestion,
+    applyAllSuggestions,
 
     // UI actions
-    openOverlay: store.openOverlay,
-    closeOverlay: store.closeOverlay,
-    toggleOverlay: store.toggleOverlay,
-    setFilterTab: store.setFilterTab,
-    setSearchQuery: store.setSearchQuery,
-    toggleServerSelection: store.toggleServerSelection,
-    selectAllServers: store.selectAllServers,
-    clearSelection: store.clearSelection,
+    openOverlay,
+    closeOverlay,
+    toggleOverlay,
+    setFilterTab,
+    setSearchQuery,
+    toggleServerSelection,
+    selectAllServers,
+    clearSelection,
 
     // Convenience actions
     refresh,
