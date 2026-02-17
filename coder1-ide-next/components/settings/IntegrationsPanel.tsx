@@ -305,11 +305,13 @@ export default function IntegrationsPanel() {
   // Fetch connection status on mount
   // -------------------------------------------------------------------------
 
-  const fetchStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async (deep: boolean = false) => {
     try {
       setIsFetching(true);
       setError(null);
-      const res = await fetch('/api/composio/status');
+      // Use ?deep=true to check Composio global connections (slower)
+      const url = deep ? '/api/composio/status?deep=true' : '/api/composio/status';
+      const res = await fetch(url);
       if (!res.ok) {
         throw new Error(`Failed to fetch status (${res.status})`);
       }
@@ -386,10 +388,10 @@ export default function IntegrationsPanel() {
         throw new Error(data.error || `Failed to get OAuth URL (${res.status})`);
       }
 
-      // Handle already connected case
+      // Handle already connected case (detected via Composio global check)
       if (data.alreadyConnected) {
-        // Refresh status to show connected state
-        await fetchStatus();
+        // Refresh status with deep check to show connected state
+        await fetchStatus(true);
         setLoadingPlatforms((prev) => ({ ...prev, [platformId]: false }));
         return;
       }
