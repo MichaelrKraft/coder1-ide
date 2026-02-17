@@ -547,7 +547,7 @@ export async function POST(
       );
     }
 
-    const { message, sessionId, enableMemoryInjection = true, terminalContext, crewContext } = body;
+    const { message, sessionId, enableMemoryInjection = true, terminalContext, crewContext, previousMode } = body;
 
     // Track reasoning steps for transparency
     const reasoningSteps: string[] = [];
@@ -1214,7 +1214,7 @@ export async function POST(
     // 7.5. Smart Query Routing - Classify query to determine optimal provider
     // Personal queries → Gemini (respects memory context)
     // Coding queries → Bridge (project awareness via Claude Code CLI)
-    const queryClassification: ClassificationResult = classifyQuery(message);
+    const queryClassification: ClassificationResult = classifyQuery(message, previousMode);
     console.log('[Johnny5] Query classification:', {
       category: queryClassification.category,
       confidence: queryClassification.confidence.toFixed(2),
@@ -1363,6 +1363,10 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
           || /\b(can you|please|i need you to)\s+(do|build|research|fix|monitor)\b/i.test(message);
         const geminiTools = isTaskCreationQuery ? functionCallingTools : searchTools;
 
+        // Timeout to prevent indefinite hangs that block the event loop
+        const geminiAbort = new AbortController();
+        const geminiTimeout = setTimeout(() => geminiAbort.abort(), 60000);
+
         const apiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
           {
@@ -1374,8 +1378,10 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
               contents: geminiContents,
               tools: geminiTools,
             }),
+            signal: geminiAbort.signal,
           }
         );
+        clearTimeout(geminiTimeout);
 
         if (!apiResponse.ok) {
           const errorText = await apiResponse.text();
@@ -1482,14 +1488,19 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
               },
             ];
 
+            const followUpAbort = new AbortController();
+            const followUpTimeout = setTimeout(() => followUpAbort.abort(), 60000);
+
             const followUpResponse = await fetch(
               `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: functionResponseContents, tools: geminiTools }),
+                signal: followUpAbort.signal,
               }
             );
+            clearTimeout(followUpTimeout);
 
             if (followUpResponse.ok) {
               const followUpData = await followUpResponse.json();
@@ -1641,6 +1652,9 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
       if (!result.success && process.env.ANTHROPIC_API_KEY) {
         console.log('[Johnny5] CLI failed, falling back to Anthropic API (pay-per-use)');
         try {
+          const anthropicAbort = new AbortController();
+          const anthropicTimeout = setTimeout(() => anthropicAbort.abort(), 60000);
+
           const oauthResponse = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
@@ -1660,7 +1674,9 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
                 { role: 'user', content: finalMessage },
               ],
             }),
+            signal: anthropicAbort.signal,
           });
+          clearTimeout(anthropicTimeout);
 
           if (!oauthResponse.ok) {
             const errorText = await oauthResponse.text();

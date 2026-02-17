@@ -211,13 +211,37 @@ function calculateConfidence(matches: string[], messageLength: number): number {
 }
 
 /**
+ * Short confirmation patterns — these inherit the previous message's mode
+ * to maintain conversation continuity (e.g., user says "ok" after Johnny5
+ * offers to do something in bridge mode → stay in bridge mode)
+ */
+const CONFIRMATION_PATTERNS = [
+  /^(ok|okay|yes|yeah|yep|yup|sure|go ahead|do it|please|go for it|sounds good|let's do it|lets do it|proceed|confirm|affirmative|alright|right|got it|cool|perfect|great|awesome|absolutely|definitely|for sure|why not|bet)\.?!?$/i,
+];
+
+/**
  * Classify a user query to determine optimal routing
  *
  * @param message - The user's message to classify
+ * @param previousMode - The mode used for the previous response (for conversation continuity)
  * @returns Classification result with routing recommendation
  */
-export function classifyQuery(message: string): ClassificationResult {
+export function classifyQuery(message: string, previousMode?: 'bridge' | 'gemini' | 'j5'): ClassificationResult {
   const normalizedMessage = message.toLowerCase().trim();
+
+  // Short confirmations inherit the previous mode to maintain conversation continuity.
+  // Without this, "ok" gets classified as 'general' and rerouted to Gemini even when
+  // the user is confirming a bridge-mode action.
+  if (previousMode && CONFIRMATION_PATTERNS.some(p => p.test(normalizedMessage))) {
+    const useBridge = previousMode === 'bridge' || previousMode === 'j5';
+    return {
+      category: useBridge ? 'coding' : 'general',
+      confidence: 0.8,
+      shouldUseBridge: useBridge,
+      reasoning: `Short confirmation — continuing in ${previousMode} mode from previous message.`,
+      matchedPatterns: [normalizedMessage],
+    };
+  }
 
   // Match against all pattern categories
   const personalMatches = matchPatterns(normalizedMessage, PERSONAL_PATTERNS);
