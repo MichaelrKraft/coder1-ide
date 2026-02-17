@@ -47,14 +47,14 @@ interface PlatformConfig {
 
 const PLATFORM_CONFIGS: Record<SSHPlatform, PlatformConfig> = {
   render: {
-    label: 'Render',
+    label: 'Render SSH',
     icon: 'R',
     color: 'text-purple-400',
     borderColor: 'border-purple-500',
     hostPlaceholder: 'srv-abc123.render.com',
     usernamePlaceholder: 'root',
     workingDirDefault: '/app',
-    helpText: 'Find in Render Dashboard > Service > Shell',
+    helpText: 'SSH shell access only. For env vars, use Deployment Integrations.',
   },
   railway: {
     label: 'Railway',
@@ -301,7 +301,10 @@ export function SSHSetupModal({
       <div>
         <h3 className="text-xl font-semibold text-white mb-2">Select Your Platform</h3>
         <p className="text-gray-400 text-sm">
-          Choose your hosting platform for optimized defaults, or select Generic for any SSH server.
+          SSH connections are for <strong className="text-white">remote development</strong> (coding on a server).
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          For env vars and deployments, use <strong className="text-gray-400">Deployment Integrations</strong> in Settings.
         </p>
       </div>
 
@@ -337,6 +340,17 @@ export function SSHSetupModal({
         <h3 className="text-xl font-semibold text-white mb-1">Connection Details</h3>
         <p className="text-gray-400 text-sm">{platformConfig.helpText}</p>
       </div>
+
+      {/* Render-specific warning */}
+      {platform === 'render' && (
+        <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+          <p className="text-xs text-yellow-300">
+            <strong>Note:</strong> This is for SSH shell access (remote coding).
+            To set environment variables or trigger deploys, go to{' '}
+            <strong>Settings → Deployment Integrations → Render</strong> instead.
+          </p>
+        </div>
+      )}
 
       {/* Connection Name */}
       <FieldGroup label="Connection Name" error={errors.name}>

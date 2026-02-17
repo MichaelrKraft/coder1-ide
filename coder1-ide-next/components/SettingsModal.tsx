@@ -8,6 +8,7 @@ import { useAPIKeyStatus } from '@/hooks/useAPIKeyStatus';
 import { APIKeyStorage, APIProvider } from '@/lib/api-key-storage';
 import { APIKeySetupModal } from '@/components/settings/APIKeySetupModal';
 import RemoteConnectionsTab from './settings/RemoteConnectionsTab';
+import IntegrationsPanel from './settings/IntegrationsPanel';
 import { SSHSetupModal } from './settings/SSHSetupModal';
 import { SSHConnectionStorage } from '@/lib/ssh-connection-storage';
 import type { SSHConnection } from '@/types/ssh';
@@ -1083,15 +1084,24 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
             )}
 
             {activeTab === 'remote' && (
-              <RemoteConnectionsTab
-                connections={sshConnections}
-                activeConnectionId={activeSSHConnectionId}
-                onAdd={handleAddSSHConnection}
-                onEdit={handleEditSSHConnection}
-                onDelete={handleDeleteSSHConnection}
-                onConnect={handleSSHConnect}
-                onDisconnect={handleSSHDisconnect}
-              />
+              <div className="space-y-8">
+                {/* Deployment Integrations (Composio) */}
+                <IntegrationsPanel />
+
+                {/* Divider */}
+                <div className="border-t border-border-default" />
+
+                {/* SSH Remote Connections */}
+                <RemoteConnectionsTab
+                  connections={sshConnections}
+                  activeConnectionId={activeSSHConnectionId}
+                  onAdd={handleAddSSHConnection}
+                  onEdit={handleEditSSHConnection}
+                  onDelete={handleDeleteSSHConnection}
+                  onConnect={handleSSHConnect}
+                  onDisconnect={handleSSHDisconnect}
+                />
+              </div>
             )}
 
             {activeTab === 'account' && (
