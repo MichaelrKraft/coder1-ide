@@ -70,7 +70,7 @@ export default function MCPOverlay({ isOpen, onClose }: MCPOverlayProps) {
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-bg-secondary border border-border-default rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-bg-primary border border-border-default rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border-default">
           <div className="flex items-center gap-3">
