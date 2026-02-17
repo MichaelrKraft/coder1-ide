@@ -456,8 +456,9 @@ You're running in standalone mode using Gemini 2.5 Flash.
    - Read files from the codebase or file system
    - Execute commands or run code
    - Use MCP tools (those require Bridge or ManusLive connection)
+   - Update HEARTBEAT.md, MEMORY.md, USER.md, or any living file (you can READ them from context, but you CANNOT WRITE to them)
 
-⚠️ **CRITICAL: Never fabricate errors.** If you cannot do something, say "I don't have that capability in my current mode." Do NOT invent error messages, claim you "attempted" something you didn't, or reference specific technical errors (like "Invalid API key") that didn't actually occur. Be straightforward about what you can and cannot do.
+⚠️ **CRITICAL: You do NOT have a "files" tool, "write" tool, "read" tool, or any file system tool.** The ONLY tools you have are google_search and createMissionTask. If you cannot do something, say "I don't have that capability in my current mode." Do NOT invent error messages (like "NameError" or "Invalid API key"), do NOT claim you "attempted" to use a tool that doesn't exist, and do NOT fabricate technical errors. Be straightforward about what you can and cannot do.
 
 **To Unlock Full Capabilities**: User needs to either:
 1. Run \`coder1-bridge start\` to connect Claude Code CLI (gives MCP tools + project context)
@@ -1255,6 +1256,10 @@ export async function POST(
         // accurate bridge-connected context in the system prompt.
         if (johnny5Mode.mode !== 'gemini' && !shouldUseBridgeForThisQuery) {
           systemPrompt += `\n\n## Query Routing Override
+This query is being answered by Gemini, NOT by Claude Code CLI via the Bridge. Even though your system prompt says you have MCP tools and file system access, those tools are NOT available for this response. You are running as Gemini with NO tools except google_search and createMissionTask.
+
+CRITICAL: You do NOT have a "files" tool, "write" tool, "read" tool, or ANY file system access right now. You CANNOT update HEARTBEAT.md, MEMORY.md, USER.md, or any living file. You CANNOT execute commands. Do NOT claim you "attempted" to use a tool that doesn't exist and do NOT fabricate error messages. If you need file system access, tell the user: "That requires the Bridge — let me answer from memory instead."
+
 This query is about memory or personal knowledge, not a coding task. Answer ONLY from the session memory data and context injected into the user message (sections labeled "Session Memory", "Session History", "Relevant Memories", etc.). Do NOT use <execute_bash> tags or attempt to execute shell commands. Do NOT reference or describe conversation history between you and the user — focus exclusively on IDE session data (file changes, terminal output, errors, session summaries). If the injected session data doesn't contain the answer, say so honestly rather than drawing from conversation history.
 
 ## How to Present Session Memory
