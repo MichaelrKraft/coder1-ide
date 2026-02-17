@@ -28,6 +28,7 @@ import {
 import {
   Johnny5BridgeService,
   ChatMessage,
+  getAvailableMcpTools,
 } from '@/services/johnny5-bridge-service';
 import { trackUsage } from '@/services/johnny5/usage-tracker';
 import {
@@ -398,6 +399,12 @@ ${livingContext}`;
 
   let capabilitiesSection = '';
 
+  // Dynamic MCP tool list from ~/.mcp.json
+  const mcpTools = getAvailableMcpTools();
+  const mcpList = mcpTools.length > 0
+    ? mcpTools.map(t => `   - ${t}`).join('\n')
+    : '   - (none detected - check ~/.mcp.json)';
+
   if (mode.mode === 'j5') {
     capabilitiesSection = `
 
@@ -405,12 +412,8 @@ ${livingContext}`;
 
 You're connected to ManusLive daemon with FULL autonomous capabilities:
 
-✅ **MCP Tools Available**: You have access to Zapier MCP integrations including:
-   - Google Calendar, Gmail, Google Drive
-   - Slack, Discord, messaging platforms
-   - Notion, Trello, Asana
-   - GitHub, Linear, Jira
-   - And any other MCPs the user has configured
+✅ **MCP Tools Available**:
+${mcpList}
 
 ✅ **24/7 Operation**: You can work while the user sleeps
 
@@ -424,11 +427,8 @@ You're connected to ManusLive daemon with FULL autonomous capabilities:
 
 You're connected via coder1-bridge with Claude Code CLI integration:
 
-✅ **MCP Tools Available**: You have access to any MCPs configured in Claude Code CLI, typically:
-   - File system operations
-   - Git operations
-   - Browser automation
-   - And user-configured MCPs
+✅ **MCP Tools Available**:
+${mcpList}
 
 ✅ **Project Context**: Full awareness of the codebase through Claude Code CLI
 
@@ -1226,7 +1226,12 @@ export async function POST(
     // Key insight: Even when Bridge is connected, personal queries should use Gemini
     // because Claude Code CLI ignores injected memory context
     const forceGemini = /\buse gemini\b/i.test(message);
-    const shouldUseBridgeForThisQuery = bridgeConnected && queryClassification.shouldUseBridge && !forceGemini;
+    // When MCP is enabled, Bridge has strictly more capabilities than Gemini.
+    // Only fall back to Gemini for memory-critical queries (personal, hybrid, session_recall)
+    // and deployment queries (use Composio/Gemini, not Bridge).
+    const mcpEnabled = process.env.JOHNNY5_BRIDGE_MCP_ENABLED === 'true';
+    const isGeminiOnlyQuery = ['personal', 'hybrid', 'session_recall', 'deployment'].includes(queryClassification.category);
+    const shouldUseBridgeForThisQuery = bridgeConnected && (queryClassification.shouldUseBridge || (mcpEnabled && !isGeminiOnlyQuery)) && !forceGemini;
 
     if (shouldUseBridgeForThisQuery) {
       // Use Bridge for coding queries (benefits from project context)
@@ -1354,13 +1359,37 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
               },
               required: ['title', 'description', 'type']
             }
+          },
+          {
+            name: 'generateTikTokContent',
+            description: 'Generate a TikTok photo carousel with AI-generated images to promote Coder1 IDE. Use when the user asks to create TikTok content, make a carousel, or generate social media content. Extract the hook/story from their message.',
+            parameters: {
+              type: 'OBJECT',
+              properties: {
+                hook: {
+                  type: 'STRING',
+                  description: 'The hook text for slide 1 and the story angle. Extract this from the user message. It should follow the pattern: [Person] + [conflict/skepticism] → showed them Coder1 → reaction. Example: "My tech lead said AI can\'t write production code, so I showed him this"'
+                },
+                quality: {
+                  type: 'STRING',
+                  enum: ['low', 'medium', 'high'],
+                  description: 'Image quality. Default to medium. Only use high if user specifically asks for high quality.'
+                },
+                captionContext: {
+                  type: 'STRING',
+                  description: 'Optional extra context for caption generation, extracted from the user\'s message.'
+                }
+              },
+              required: ['hook']
+            }
           }]
         }];
         const searchTools = [{ google_search: {} }];
 
         // Use google_search for general/informational queries, functionDeclarations for task-oriented
         const isTaskCreationQuery = /\b(create|add|make|schedule|set up|track)\s+(a\s+)?(task|job|cron|mission|todo|reminder)\b/i.test(message)
-          || /\b(can you|please|i need you to)\s+(do|build|research|fix|monitor)\b/i.test(message);
+          || /\b(can you|please|i need you to)\s+(do|build|research|fix|monitor)\b/i.test(message)
+          || /\b(tiktok|make.*tiktok|create.*tiktok|generate.*tiktok|tiktok.*about|carousel|slideshow)\b/i.test(message);
         const geminiTools = isTaskCreationQuery ? functionCallingTools : searchTools;
 
         // Timeout to prevent indefinite hangs that block the event loop
@@ -1395,7 +1424,8 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
         } else {
           const data = await apiResponse.json();
           const parts = data.candidates?.[0]?.content?.parts || [];
-          const firstPart = parts[0]; // Still needed for functionCall check
+          const firstPart = parts[0];
+          const functionCallPart = parts.find((p: { functionCall?: unknown }) => p.functionCall);
           const allText = parts
             .filter((p: { text?: string }) => p.text)
             .map((p: { text: string }) => p.text)
@@ -1404,17 +1434,17 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
 
           // Debug: Log what Gemini returned
           const hasGrounding = !!groundingMetadata?.groundingChunks?.length;
-          console.log('[Johnny5] Gemini response type:', firstPart?.functionCall ? 'FUNCTION_CALL' : 'TEXT', hasGrounding ? '(grounded)' : '');
-          if (firstPart?.functionCall) {
-            console.log('[Johnny5] Function call details:', JSON.stringify(firstPart.functionCall));
+          console.log('[Johnny5] Gemini response type:', functionCallPart ? 'FUNCTION_CALL' : 'TEXT', hasGrounding ? '(grounded)' : '', `(${parts.length} parts)`);
+          if (functionCallPart?.functionCall) {
+            console.log('[Johnny5] Function call details:', JSON.stringify(functionCallPart.functionCall));
           }
 
-          // Check if Gemini wants to call a function
-          if (firstPart?.functionCall) {
-            const functionCall = firstPart.functionCall;
+          // Check if Gemini wants to call a function (scan all parts, not just parts[0])
+          if (functionCallPart?.functionCall) {
+            const functionCall = functionCallPart.functionCall;
             console.log('[Johnny5] Function call requested:', functionCall.name, functionCall.args);
 
-            let functionResult: { success: boolean; task?: any; error?: string } = { success: false };
+            let functionResult: Record<string, unknown> = { success: false };
 
             if (functionCall.name === 'createMissionTask') {
               try {
@@ -1467,6 +1497,35 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
               } catch (err) {
                 console.error('[Johnny5] Failed to create task:', err);
                 functionResult = { success: false, error: err instanceof Error ? err.message : 'Task creation failed' };
+              }
+            } else if (functionCall.name === 'generateTikTokContent') {
+              try {
+                const args = functionCall.args;
+                console.log('[Johnny5] TikTok content requested:', { hook: args.hook, quality: args.quality });
+
+                const port = process.env.PORT || '3001';
+                const tiktokResponse = await fetch(`http://localhost:${port}/api/johnny5/tiktok`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    hook: args.hook,
+                    quality: args.quality || 'medium',
+                    captionContext: args.captionContext,
+                    triggeredBy: 'conversation',
+                  }),
+                });
+
+                const tiktokData = await tiktokResponse.json();
+                functionResult = {
+                  success: tiktokData.success,
+                  taskId: tiktokData.taskId,
+                  message: tiktokData.message,
+                  config: tiktokData.config,
+                };
+                console.log('[Johnny5] TikTok generation triggered:', tiktokData.taskId);
+              } catch (err) {
+                console.error('[Johnny5] Failed to trigger TikTok generation:', err);
+                functionResult = { success: false, error: err instanceof Error ? err.message : 'TikTok generation failed' };
               }
             }
 

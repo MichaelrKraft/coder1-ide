@@ -8,6 +8,9 @@
  * included usage rather than paying separately for API calls.
  */
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 import { bridgeManager } from './bridge-manager';
 import {
   getPermissions,
@@ -15,6 +18,38 @@ import {
   Johnny5Permissions,
 } from '@/lib/johnny5-config';
 import { getProfile, UserProfile } from '@/lib/johnny5-db';
+
+// ============================================================================
+// MCP Discovery
+// ============================================================================
+
+/**
+ * Read MCP servers configured for Claude Code CLI (~/.claude.json → mcpServers).
+ * Falls back to ~/.mcp.json (Claude Desktop/VS Code config) if CLI config has none.
+ * Returns empty array if neither file exists or is malformed.
+ */
+export function getAvailableMcpTools(): string[] {
+  // Primary: Claude Code CLI config (what `claude --print` actually uses)
+  try {
+    const cliConfigPath = join(homedir(), '.claude.json');
+    const content = readFileSync(cliConfigPath, 'utf-8');
+    const config = JSON.parse(content);
+    const servers = Object.keys(config.mcpServers || {});
+    if (servers.length > 0) return servers;
+  } catch {
+    // Fall through to secondary config
+  }
+
+  // Fallback: ~/.mcp.json (Claude Desktop / VS Code MCP config)
+  try {
+    const mcpPath = join(homedir(), '.mcp.json');
+    const content = readFileSync(mcpPath, 'utf-8');
+    const mcpConfig = JSON.parse(content);
+    return Object.keys(mcpConfig.mcpServers || {});
+  } catch {
+    return [];
+  }
+}
 
 // ============================================================================
 // Types
@@ -63,6 +98,13 @@ export class Johnny5BridgeService {
     }
     if (permissions.externalRequests) {
       capabilityLines.push('- Can make external API requests for research');
+    }
+
+    // Add dynamic MCP tool list from ~/.mcp.json
+    const mcpTools = getAvailableMcpTools();
+    if (mcpTools.length > 0) {
+      capabilityLines.push(`- MCP tools available: ${mcpTools.join(', ')}`);
+      capabilityLines.push('- You CAN and SHOULD use these tools proactively when relevant');
     }
 
     const capabilities =
@@ -401,11 +443,18 @@ Only mention code/git status if the user explicitly asks about it.
       // Escape prompt for shell - use single quotes and escape any single quotes in the prompt
       const escapedPrompt = prompt.replace(/'/g, "'\\''");
 
+      // Build command with optional MCP permission bypass (gated by kill switch)
+      const mcpEnabled = process.env.JOHNNY5_BRIDGE_MCP_ENABLED === 'true';
+      const permissionFlag = mcpEnabled ? ' --permission-mode bypassPermissions' : '';
+      const command = `claude --print${permissionFlag} '${escapedPrompt}'`;
+
+      console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, command prefix: claude --print${permissionFlag}`);
+
       // Execute command via Bridge
       bridgeManager.executeCommand(this.userId, {
         sessionId: 'johnny5-chat',
         commandId,
-        command: `claude --print '${escapedPrompt}'`,
+        command,
         context: {
           workingDirectory: '/tmp',
         },

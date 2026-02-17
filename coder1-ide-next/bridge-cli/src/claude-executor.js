@@ -521,6 +521,20 @@ class ClaudeExecutor extends EventEmitter {
         shellCommand = this.claudePath + ' --model ' + options.context.selectedClaudeModel + afterPath;
       }
 
+      // When MCP permission bypass is active (server opted in via JOHNNY5_BRIDGE_MCP_ENABLED),
+      // inject --add-dir with the bridge's CWD so Claude can access project files.
+      // CWD stays /tmp to prevent CLAUDE.md auto-loading and "Prompt too long" errors.
+      if (shellCommand.includes('--permission-mode')) {
+        const bridgeCwd = process.cwd();
+        if (bridgeCwd && bridgeCwd !== '/tmp' && bridgeCwd !== '/') {
+          // Escape single quotes in path to prevent shell injection
+          const escapedPath = bridgeCwd.replace(/'/g, "'\\''");
+          const addDirFlag = `--add-dir '${escapedPath}'`;
+          shellCommand = shellCommand.replace('--print', `--print ${addDirFlag}`);
+          this.log(`Injecting project access: --add-dir '${bridgeCwd}'`);
+        }
+      }
+
       this.log(`Executing non-interactive: ${shellCommand.substring(0, 200)}...`);
 
       // Spawn via /bin/sh -c to pass the pre-escaped command directly to the shell.
