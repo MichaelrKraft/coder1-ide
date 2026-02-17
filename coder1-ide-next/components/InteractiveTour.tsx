@@ -23,7 +23,7 @@ interface TourStep {
   title: string;
   content: string;
   target: string;
-  position?: 'center' | 'auto' | 'middle-top' | 'center-monaco' | 'right-terminal' | 'center-terminal' | 'right-preview';
+  position?: 'center' | 'auto' | 'middle-top' | 'center-monaco' | 'right-terminal' | 'center-terminal' | 'right-preview' | 'left-preview';
   highlightColor?: 'turquoise' | 'orange';
   hasSubSteps?: boolean;
   subSteps?: SubStep[];
@@ -79,9 +79,9 @@ const tourSteps: TourStep[] = [
   {
     id: 'johnny5-assistant',
     title: 'Johnny5 AI Assistant',
-    content: 'Meet Johnny5 - your AI employee that works while you sleep. Assign tasks, track progress, and wake up to completed work. Your own developer who never stops.',
+    content: 'Meet Johnny5, your autonomous AI employee that works while you sleep. Assign tasks, track progress, and wake up to completed work. Your own developer who never stops.',
     target: 'johnny5-panel',
-    position: 'right-preview',
+    position: 'left-preview',
     highlightColor: 'orange' // Orange glow for Johnny5 - the wow factor
   },
   {
@@ -791,7 +791,15 @@ coder1-bridge start
             y: viewportHeight * 0.25 // Upper portion of the screen
           });
           break;
-          
+
+        case 'left-preview':
+          // Position on the left side of the screen (for Johnny5 panel highlighting)
+          setTooltipPosition({
+            x: viewportWidth * 0.25, // Left side with margin
+            y: viewportHeight * 0.35 // Middle-upper portion of the screen
+          });
+          break;
+
         default: // 'auto'
           const targetRect = isOnSubStep && subHighlightRect ? subHighlightRect : highlightRect;
           if (targetRect) {

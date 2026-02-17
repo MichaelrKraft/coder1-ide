@@ -239,7 +239,11 @@ export default function RemoteConnectionsTab({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold text-white mb-2">Remote Connections</h3>
+        <h3 className="text-lg font-semibold text-white mb-1">SSH Remote Connections</h3>
+        <p className="text-xs text-gray-500 mb-2">
+          For remote development (coding on a server). For deployments, use{' '}
+          <strong className="text-gray-400">Deployment Integrations</strong> above.
+        </p>
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <span>Current Environment:</span>
           {activeConnection ? (
