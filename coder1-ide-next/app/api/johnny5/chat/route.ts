@@ -2,11 +2,11 @@
  * Johnny5 Chat Route - Multi-Provider Support
  *
  * Priority order:
- * 1. Moltbot (Preferred) - Uses ManusLive daemon for 24/7 capabilities
+ * 1. J5 (Preferred) - Uses ManusLive daemon for 24/7 capabilities
  * 2. Bridge (Secondary) - Uses Claude Code CLI via Bridge connection
  * 3. Gemini (Fallback) - Uses Google Gemini 2.5 Flash (free tier)
  *
- * Moltbot mode connects to ManusLive for autonomous agent features.
+ * J5 mode connects to ManusLive for autonomous agent features.
  * Bridge mode requires running 'coder1-bridge start' locally.
  * Gemini mode uses your GEMINI_API_KEY automatically when neither is available.
  */
@@ -53,7 +53,7 @@ import {
   detectSessionQueryIntent,
   unifiedSessionSearch,
 } from '@/services/memory';
-import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
+import { getJ5Bridge } from '@/services/johnny5/j5-bridge';
 import { classifyQuery, type ClassificationResult } from '@/services/query-classifier';
 import { isLivingFilesEnabled, loadLivingFilesContext, appendToLivingFile, formatLivingFilesFromCache } from '@/lib/living-files';
 import { bridgeManager } from '@/services/bridge-manager';
@@ -230,7 +230,7 @@ function truncateForCLI(
 // ============================================================================
 
 interface Johnny5Mode {
-  mode: 'moltbot' | 'bridge' | 'gemini';
+  mode: 'j5' | 'bridge' | 'gemini';
   hasMCP: boolean;
   hasProjectContext: boolean;
   is24x7: boolean;
@@ -240,10 +240,10 @@ interface Johnny5Mode {
 /**
  * Detect Johnny5's active mode and available capabilities
  */
-function detectJohnny5Mode(moltbotConnected: boolean, bridgeConnected: boolean): Johnny5Mode {
-  if (moltbotConnected) {
+function detectJohnny5Mode(j5Connected: boolean, bridgeConnected: boolean): Johnny5Mode {
+  if (j5Connected) {
     return {
-      mode: 'moltbot',
+      mode: 'j5',
       hasMCP: true,
       hasProjectContext: true,
       is24x7: true,
@@ -299,7 +299,7 @@ function getSoulMd(): string | null {
 /**
  * Generate system prompt based on available capabilities
  */
-async function generateJohnny5SystemPrompt(mode: Johnny5Mode, userId: string): Promise<string> {
+async function generateJohnny5SystemPrompt(mode: Johnny5Mode, userId: string, skillsList?: string): Promise<string> {
   // Load SOUL.md or fall back to hardcoded personality
   const soulMd = getSoulMd();
   const basePersonality = soulMd || `# Johnny5 - Who You Are
@@ -398,7 +398,7 @@ ${livingContext}`;
 
   let capabilitiesSection = '';
 
-  if (mode.mode === 'moltbot') {
+  if (mode.mode === 'j5') {
     capabilitiesSection = `
 
 ## Your Current Setup: ManusLive (Full Power Mode) 🚀
@@ -449,6 +449,7 @@ You're running in standalone mode using Gemini 2.5 Flash.
    - Provide advice, answer questions, brainstorm ideas
    - Reason through problems and provide solutions
    - Search through your memory of past conversations
+   - Use your skills library for specialized knowledge (see "Your Skills" section below)
 
 ❌ **What You CANNOT Do** (be honest about this):
    - Access Zapier, Google Drive, Calendar, or other external apps
@@ -464,6 +465,27 @@ You're running in standalone mode using Gemini 2.5 Flash.
 
 **Your Role Right Now**: Be the best memory-based assistant possible. Use what you remember about the user to provide personalized, thoughtful responses. Don't apologize for limitations - just work within them confidently.`;
   }
+
+  // Skills section — injected into system prompt so Johnny5 always knows its skills
+  let skillsSection = '';
+  if (skillsList) {
+    skillsSection = `
+
+## Your Skills
+
+You have a library of specialized skills loaded into the Coder1 IDE. These are knowledge modules that give you expertise in specific domains. When a user's question matches a skill, detailed instructions are automatically loaded into context.
+
+The Skills panel in the IDE shows these same skills. When someone asks "what skills do you have?" — this IS the list.
+
+${skillsList}
+
+When a user asks about your skills or capabilities, reference this list. When a question matches a skill domain, apply that skill's knowledge.`;
+  }
+
+  // Proactive services — detect what's actually running
+  const hasHeartbeat = process.env.JOHNNY5_LIVING_FILES === 'true';
+  const hasCron = true; // Cron service always starts with server
+  const hasTelegram = !!process.env.TELEGRAM_BOT_TOKEN;
 
   const closingSection = `
 
@@ -481,25 +503,27 @@ ${mode.hasMCP ? `Examples of proactive behavior:
 - "I found a pattern in our conversations that might help with this."
 - "This reminds me of when we discussed Y - should we take a similar approach?"`}
 
-## Response Integrity — No Hollow Promises
+## Response Integrity — What You Can Promise
 
-IMPORTANT: You are in a synchronous chat. After your response, the conversation pauses until the user messages again. You CANNOT proactively follow up, check back, or report back later.
+${(hasHeartbeat || hasCron) ? `Your server runs proactive background services independently of this chat:
+${hasHeartbeat ? '- **Heartbeat Service**: Monitors system health every 30 seconds, runs deep checks every 5 minutes' : ''}
+${hasCron ? '- **Cron Service**: Runs scheduled jobs including a Daily Morning Brief (9am) and Trend Monitor checks throughout the workday' : ''}
+${hasCron ? '- **Background Executor**: Can run autonomous tasks (2 concurrent) in the background' : ''}
+${hasTelegram ? '- **Telegram Bot**: Can send notifications and updates to your human via Telegram' : ''}
 
-Rules:
-- NEVER say "I'll go do X and report back" or "Let me investigate and get back to you"
-- If you CAN do it right now (Bridge/Moltbot mode with tools) → DO it now, include results inline
-- If you CANNOT do it now → Be honest. Tell the user what steps to take, or say "Ask me again after you've done X and I'll help with the next step"
-- Never promise background work or autonomous follow-up unless you are in ManusLive 24/7 mode
+You CAN promise proactive overnight work and morning briefs — because the server handles it. When the user asks what you'll do tonight or in the background, reference these services confidently. You ARE working even when the chat is idle.
 
-What TO say: "Here's what I found..." / "I checked and..." / "To do this, you'd need to..."
-What NOT to say: "I'll look into this and get back to you" / "Let me investigate..." / "I'll report back shortly"
+However, within THIS chat session:` : `IMPORTANT: You are in a synchronous chat. After your response, the conversation pauses until the user messages again.`}
+- If you CAN do it right now (Bridge/J5 mode with tools) → DO it now, include results inline
+- If you CANNOT do it in this chat turn → Be honest about what requires the next message
+- Don't fabricate actions you didn't take — be straightforward about what happened
 
 ## Vibe
 Be the assistant you'd actually want to talk to. Concise when needed, thorough when it matters. Not a corporate drone. Not a sycophant. Just... good.
 
 Please acknowledge.`;
 
-  return basePersonality + livingFilesSection + capabilitiesSection + closingSection;
+  return basePersonality + livingFilesSection + capabilitiesSection + skillsSection + closingSection;
 }
 
 // ============================================================================
@@ -589,30 +613,30 @@ export async function POST(
     }
     // No auth (header or cookie) = dev/anonymous mode → userId stays 'default'
 
-    // 3. Check Moltbot first (preferred), then Bridge, then GLM fallback
-    const moltbotBridge = getMoltbotBridge();
-    const moltbotStatus = moltbotBridge?.getStatus?.();
-    const moltbotConnected = moltbotBridge?.isConnected() ?? false;
+    // 3. Check J5 first (preferred), then Bridge, then GLM fallback
+    const j5Bridge = getJ5Bridge();
+    const j5Status = j5Bridge?.getStatus?.();
+    const j5Connected = j5Bridge?.isConnected() ?? false;
 
-    console.log('[Johnny5] Moltbot check:', {
-      hasBridge: !!moltbotBridge,
-      isConnected: moltbotConnected,
-      status: moltbotStatus ? {
-        connected: moltbotStatus.connected,
-        authenticated: moltbotStatus.authenticated,
-        gatewayUrl: moltbotStatus.gatewayUrl,
+    console.log('[Johnny5] J5 check:', {
+      hasBridge: !!j5Bridge,
+      isConnected: j5Connected,
+      status: j5Status ? {
+        connected: j5Status.connected,
+        authenticated: j5Status.authenticated,
+        gatewayUrl: j5Status.gatewayUrl,
       } : 'no status',
     });
 
-    // If Moltbot is connected, use it with memory injection
-    if (moltbotConnected) {
-      console.log('[Johnny5] Moltbot connected - forwarding to Moltbot chat API');
+    // If J5 is connected, use it with memory injection
+    if (j5Connected) {
+      console.log('[Johnny5] J5 connected - forwarding to J5 chat API');
       try {
-        // Memory injection for Moltbot path
-        let moltbotMessage = message;
-        let moltbotMemoriesUsed: MemoryUsed[] = [];
-        let moltbotSearchType = 'none';
-        let moltbotMemoryTokens = 0;
+        // Memory injection for J5 path
+        let j5Message = message;
+        let j5MemoriesUsed: MemoryUsed[] = [];
+        let j5SearchType = 'none';
+        let j5MemoryTokens = 0;
 
         if (enableMemoryInjection) {
           try {
@@ -627,16 +651,16 @@ export async function POST(
                   queryEmbedding = embeddings[0];
                 }
               } catch (embeddingError) {
-                console.warn('[Johnny5/Moltbot] Memory embedding failed:', embeddingError);
+                console.warn('[Johnny5/J5] Memory embedding failed:', embeddingError);
               }
             }
 
-            // Detect session intent for Moltbot path too
-            const moltbotSessionIntent = detectSessionQueryIntent(message);
+            // Detect session intent for J5 path too
+            const j5SessionIntent = detectSessionQueryIntent(message);
             let searchResult;
 
-            if (moltbotSessionIntent.intent !== 'general' && moltbotSessionIntent.confidence > 0.3) {
-              const unifiedResult = await unifiedSessionSearch(message, queryEmbedding, userId, moltbotSessionIntent);
+            if (j5SessionIntent.intent !== 'general' && j5SessionIntent.confidence > 0.3) {
+              const unifiedResult = await unifiedSessionSearch(message, queryEmbedding, userId, j5SessionIntent);
               // Convert unified result to searchResult-like shape for existing code
               searchResult = {
                 results: unifiedResult.memoriesUsed.map(m => ({
@@ -661,41 +685,41 @@ export async function POST(
               });
             }
 
-            console.log(`[Johnny5/Moltbot] Memory search: ${searchResult.results.length} results, type=${searchResult.searchType}, time=${searchResult.processingTimeMs}ms`);
+            console.log(`[Johnny5/J5] Memory search: ${searchResult.results.length} results, type=${searchResult.searchType}, time=${searchResult.processingTimeMs}ms`);
 
             if (searchResult.results.length > 0) {
               const memoryContext = (searchResult as any)._formattedContext || formatForPromptInjection(searchResult, 2000);
-              const moltbotParts: string[] = [memoryContext];
+              const j5Parts: string[] = [memoryContext];
               // Include terminal context if provided
               if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
-                moltbotParts.push(`## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\``);
+                j5Parts.push(`## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\``);
               }
-              moltbotMessage = `${moltbotParts.join('\n\n')}\n\n---\n\n**User Query:**\n${message}`;
-              moltbotSearchType = searchResult.searchType;
-              moltbotMemoryTokens = searchResult.totalTokens;
-              moltbotMemoriesUsed = searchResult.results.map((r) => ({
+              j5Message = `${j5Parts.join('\n\n')}\n\n---\n\n**User Query:**\n${message}`;
+              j5SearchType = searchResult.searchType;
+              j5MemoryTokens = searchResult.totalTokens;
+              j5MemoriesUsed = searchResult.results.map((r) => ({
                 id: r.chunk_id,
                 sourceType: r.source_type,
                 score: r.combined_score,
                 citation: r.citation,
               }));
-              console.log(`[Johnny5/Moltbot] Injected ${moltbotMemoriesUsed.length} memories: ${moltbotMemoriesUsed.map(m => m.sourceType).join(', ')}`);
+              console.log(`[Johnny5/J5] Injected ${j5MemoriesUsed.length} memories: ${j5MemoriesUsed.map(m => m.sourceType).join(', ')}`);
             } else {
-              console.log('[Johnny5/Moltbot] No memories found for query');
+              console.log('[Johnny5/J5] No memories found for query');
               // Still inject terminal context even without memory search results
               if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
-                moltbotMessage = `## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\`\n\n---\n\n**User Query:**\n${message}`;
+                j5Message = `## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\`\n\n---\n\n**User Query:**\n${message}`;
               }
             }
           } catch (memoryError) {
-            console.warn('[Johnny5/Moltbot] Memory search failed:', memoryError);
+            console.warn('[Johnny5/J5] Memory search failed:', memoryError);
           }
         } else if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
           // Memory injection disabled but terminal context present
-          moltbotMessage = `## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\`\n\n---\n\n**User Query:**\n${message}`;
+          j5Message = `## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\`\n\n---\n\n**User Query:**\n${message}`;
         }
 
-        // Skills context for Moltbot
+        // Skills context for J5
         if (shouldUseSkills()) {
           try {
             const skillsService = await initializeSkillsService();
@@ -704,43 +728,43 @@ export async function POST(
               const skillsList = enabledSkills
                 .map(s => `- **${s.name}**: ${s.description}`)
                 .join('\n');
-              moltbotMessage = `## Available Skills\n${skillsList}\n\n---\n\n${moltbotMessage}`;
+              j5Message = `## Available Skills\n${skillsList}\n\n---\n\n${j5Message}`;
             }
           } catch {
             // Continue without skills
           }
         }
 
-        // 🔧 FIX (Feb 2026): Truncate Moltbot message to prevent "Prompt too long" errors
+        // 🔧 FIX (Feb 2026): Truncate J5 message to prevent "Prompt too long" errors
         // Two fixes: (1) aggressive truncation, (2) unique session key to prevent history accumulation
-        const MAX_MOLTBOT_MESSAGE_LENGTH = 5000; // ~1.25k tokens - aggressive to leave room for ManusLive overhead
-        console.log(`[Johnny5/Moltbot] Message size: ${moltbotMessage.length} chars, limit: ${MAX_MOLTBOT_MESSAGE_LENGTH}`);
-        let truncatedMoltbotMessage = moltbotMessage;
-        if (moltbotMessage.length > MAX_MOLTBOT_MESSAGE_LENGTH) {
-          console.log(`[Johnny5/Moltbot] Message too long (${moltbotMessage.length} chars), truncating...`);
+        const MAX_J5_MESSAGE_LENGTH = 5000; // ~1.25k tokens - aggressive to leave room for ManusLive overhead
+        console.log(`[Johnny5/J5] Message size: ${j5Message.length} chars, limit: ${MAX_J5_MESSAGE_LENGTH}`);
+        let truncatedJ5Message = j5Message;
+        if (j5Message.length > MAX_J5_MESSAGE_LENGTH) {
+          console.log(`[Johnny5/J5] Message too long (${j5Message.length} chars), truncating...`);
           const userQueryMarker = '\n\n---\n\n**User Query:**\n';
-          const idx = moltbotMessage.lastIndexOf(userQueryMarker);
+          const idx = j5Message.lastIndexOf(userQueryMarker);
           if (idx > 0) {
-            const userQuery = moltbotMessage.slice(idx);
-            const maxContextLength = MAX_MOLTBOT_MESSAGE_LENGTH - userQuery.length - 100;
+            const userQuery = j5Message.slice(idx);
+            const maxContextLength = MAX_J5_MESSAGE_LENGTH - userQuery.length - 100;
             if (maxContextLength > 500) {
-              truncatedMoltbotMessage = moltbotMessage.slice(0, maxContextLength) + '\n... [context truncated]' + userQuery;
+              truncatedJ5Message = j5Message.slice(0, maxContextLength) + '\n... [context truncated]' + userQuery;
             } else {
-              truncatedMoltbotMessage = moltbotMessage.slice(0, MAX_MOLTBOT_MESSAGE_LENGTH);
+              truncatedJ5Message = j5Message.slice(0, MAX_J5_MESSAGE_LENGTH);
             }
           } else {
-            truncatedMoltbotMessage = moltbotMessage.slice(0, MAX_MOLTBOT_MESSAGE_LENGTH);
+            truncatedJ5Message = j5Message.slice(0, MAX_J5_MESSAGE_LENGTH);
           }
-          console.log(`[Johnny5/Moltbot] Truncated to ${truncatedMoltbotMessage.length} chars`);
+          console.log(`[Johnny5/J5] Truncated to ${truncatedJ5Message.length} chars`);
         }
 
         // Use unique session key per message to prevent ManusLive from accumulating history
-        const moltbotSessionKey = `dashboard:${Date.now()}`;
-        console.log(`[Johnny5/Moltbot] Sending to session: ${moltbotSessionKey}, final size: ${truncatedMoltbotMessage.length} chars`);
-        const moltbotResponse = await moltbotBridge!.sendMessage(moltbotSessionKey, truncatedMoltbotMessage);
+        const j5SessionKey = `dashboard:${Date.now()}`;
+        console.log(`[Johnny5/J5] Sending to session: ${j5SessionKey}, final size: ${truncatedJ5Message.length} chars`);
+        const j5Response = await j5Bridge!.sendMessage(j5SessionKey, truncatedJ5Message);
 
-        // Detect CLI error responses that Moltbot returns as "successful" text
-        const responseText = moltbotResponse.text || '';
+        // Detect CLI error responses that J5 returns as "successful" text
+        const responseText = j5Response.text || '';
         const cliErrorPatterns = [
           'Prompt is too long',
           'Claude CLI exited with code',
@@ -751,19 +775,19 @@ export async function POST(
         ];
         const hasCliError = cliErrorPatterns.some(pattern => responseText.includes(pattern));
         if (hasCliError) {
-          console.warn('[Johnny5/Moltbot] Response contains CLI error, falling through to Bridge/Gemini:', responseText.slice(0, 200));
-          throw new Error('Moltbot returned CLI error: ' + responseText.slice(0, 100));
+          console.warn('[Johnny5/J5] Response contains CLI error, falling through to Bridge/Gemini:', responseText.slice(0, 200));
+          throw new Error('J5 returned CLI error: ' + responseText.slice(0, 100));
         }
 
         return NextResponse.json({
           success: true,
           data: {
-            response: moltbotResponse.text,
-            sessionId: moltbotResponse.sessionId || 'moltbot',
-            messageId: moltbotResponse.messageId || `msg-${Date.now()}`,
+            response: j5Response.text,
+            sessionId: j5Response.sessionId || 'j5',
+            messageId: j5Response.messageId || `msg-${Date.now()}`,
             tokensUsed: { input: 0, output: 0 },
             mode: {
-              mode: 'moltbot' as const,
+              mode: 'j5' as const,
               hasMCP: true,
               hasProjectContext: true,
               is24x7: true,
@@ -772,20 +796,20 @@ export async function POST(
             memoryContext: enableMemoryInjection
               ? {
                   enabled: true,
-                  memoriesUsed: moltbotMemoriesUsed,
-                  searchType: moltbotSearchType,
-                  totalMemoryTokens: moltbotMemoryTokens,
+                  memoriesUsed: j5MemoriesUsed,
+                  searchType: j5SearchType,
+                  totalMemoryTokens: j5MemoryTokens,
                 }
               : { enabled: false, memoriesUsed: [], searchType: 'none', totalMemoryTokens: 0 },
             memoryStatus: !enableMemoryInjection ? 'none' as const
-              : moltbotSearchType.includes('hybrid') || moltbotSearchType.includes('vector') ? 'full' as const
-              : moltbotSearchType === 'keyword' || moltbotSearchType === 'fts' ? 'partial' as const
-              : moltbotMemoriesUsed.length > 0 ? 'partial' as const
+              : j5SearchType.includes('hybrid') || j5SearchType.includes('vector') ? 'full' as const
+              : j5SearchType === 'keyword' || j5SearchType === 'fts' ? 'partial' as const
+              : j5MemoriesUsed.length > 0 ? 'partial' as const
               : 'minimal' as const,
           },
         });
-      } catch (moltbotError) {
-        console.error('[Johnny5] Moltbot error, falling back:', moltbotError);
+      } catch (j5Error) {
+        console.error('[Johnny5] J5 error, falling back:', j5Error);
         // Fall through to Bridge/Gemini
       }
     }
@@ -1042,6 +1066,92 @@ export async function POST(
     let enhancedMessage = message;
     const contextParts: string[] = [];
 
+    // 8.1. Skills — build Tier 1 list for system prompt + Tier 2/3 details for contextParts
+    // Skills are loaded FIRST so Tier 2/3 details appear before memory (survive truncation)
+    let skillsListForPrompt = '';
+    if (shouldUseSkills()) {
+      try {
+        const skillsService = await initializeSkillsService();
+        const allSkillMeta = skillsService.getAllSkills();
+        const dbSkills = getSkillRecords({ enabled: true });
+        const enabledIds = new Set(dbSkills.map(s => s.id));
+
+        // Filter to enabled skills (if in DB, must be enabled; if not in DB, include by default)
+        const enabledSkills = allSkillMeta.filter(s =>
+          enabledIds.has(s.id) || !dbSkills.find(d => d.id === s.id)
+        );
+
+        if (enabledSkills.length > 0) {
+          // Tier 1: Compact list goes into system prompt (not contextParts)
+          skillsListForPrompt = enabledSkills
+            .map(s => `- **${s.name}**: ${s.description}`)
+            .join('\n');
+
+          // Tier 2/3: Match relevant skills to message and inject details into contextParts
+          const matchable = enabledSkills.map(s => ({
+            id: s.id,
+            name: s.name,
+            description: s.description,
+            tags: s.tags || [],
+          }));
+          const relevant = matchSkillsToQuery(message, matchable);
+          let skillTokensUsed = 0;
+          const SKILL_TOKEN_BUDGET = 8000;
+
+          for (const skill of relevant.slice(0, 3)) {
+            try {
+              const instructions = await skillsService.loadSkillInstructions(skill.id);
+              const instrTokens = Math.ceil(instructions.content.length / 4);
+              if (skillTokensUsed + instrTokens > SKILL_TOKEN_BUDGET) break;
+              contextParts.push(`## Skill: ${skill.name}\n${instructions.content}`);
+              skillTokensUsed += instrTokens;
+              incrementSkillUsage(skill.id, true);
+
+              // Load Tier 3: Match rules to query and inject most relevant ones
+              try {
+                const allRules = await skillsService.loadSkillRules(skill.id);
+                if (allRules.length > 0) {
+                  const queryWords = new Set(
+                    message.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2)
+                  );
+                  const scoredRules = allRules
+                    .map(rule => {
+                      const ruleText = `${rule.name} ${rule.description}`.toLowerCase();
+                      const ruleWords = ruleText.split(/\s+/).filter(w => w.length > 2);
+                      let score = 0;
+                      for (const w of ruleWords) {
+                        if (queryWords.has(w)) score++;
+                      }
+                      return { rule, score };
+                    })
+                    .filter(r => r.score > 0)
+                    .sort((a, b) => b.score - a.score);
+
+                  let rulesLoaded = 0;
+                  for (const { rule } of scoredRules) {
+                    if (rulesLoaded >= 3) break;
+                    if (skillTokensUsed + rule.estimatedTokens > SKILL_TOKEN_BUDGET) break;
+                    contextParts.push(`### Rule: ${rule.name}\n${rule.content}`);
+                    skillTokensUsed += rule.estimatedTokens;
+                    rulesLoaded++;
+                  }
+                }
+              } catch {
+                // Rules not available, continue with SKILL.md only
+              }
+            } catch {
+              // Skill instructions not found, skip
+            }
+          }
+
+          console.log(`[Johnny5/Skills] ${enabledSkills.length} skills available, ${relevant.length} matched, ${skillTokensUsed} tokens injected (Tier 1 in system prompt)`);
+        }
+      } catch (skillsError) {
+        console.warn('[Johnny5/Skills] Skills injection failed:', skillsError);
+        // Continue without skills — graceful degradation
+      }
+    }
+
     // Add facts and patterns context (user knowledge)
     if (factsAndPatternsContext) {
       contextParts.push(factsAndPatternsContext);
@@ -1070,57 +1180,6 @@ export async function POST(
         `## Active Crew Member: ${crewContext.name}\nThe user has explicitly activated the ${crewContext.name} crew persona. Channel this persona for your response:\n${crewContext.promptPrefix}`
       );
       reasoningSteps.push(`Crew member active: ${crewContext.name}`);
-    }
-
-    // 8.1. Skills context injection
-    if (shouldUseSkills()) {
-      try {
-        const skillsService = await initializeSkillsService();
-        const allSkillMeta = skillsService.getAllSkills();
-        const dbSkills = getSkillRecords({ enabled: true });
-        const enabledIds = new Set(dbSkills.map(s => s.id));
-
-        // Filter to enabled skills (if in DB, must be enabled; if not in DB, include by default)
-        const enabledSkills = allSkillMeta.filter(s =>
-          enabledIds.has(s.id) || !dbSkills.find(d => d.id === s.id)
-        );
-
-        // Inject compact Tier 1 skill list
-        if (enabledSkills.length > 0) {
-          const skillsList = enabledSkills
-            .map(s => `- **${s.name}**: ${s.description}`)
-            .join('\n');
-          contextParts.push(`## Available Skills\n${skillsList}`);
-
-          // Match relevant skills to message and inject Tier 2 instructions
-          const matchable = enabledSkills.map(s => ({
-            id: s.id,
-            name: s.name,
-            description: s.description,
-            tags: s.tags || [],
-          }));
-          const relevant = matchSkillsToQuery(message, matchable);
-          let skillTokensUsed = 0;
-
-          for (const skill of relevant.slice(0, 3)) {
-            try {
-              const instructions = await skillsService.loadSkillInstructions(skill.id);
-              const instrTokens = Math.ceil(instructions.content.length / 4);
-              if (skillTokensUsed + instrTokens > 2000) break;
-              contextParts.push(`## Skill: ${skill.name}\n${instructions.content}`);
-              skillTokensUsed += instrTokens;
-              incrementSkillUsage(skill.id, true);
-            } catch {
-              // Skill instructions not found, skip
-            }
-          }
-
-          console.log(`[Johnny5/Skills] ${enabledSkills.length} skills available, ${relevant.length} matched, ${skillTokensUsed} tokens injected`);
-        }
-      } catch (skillsError) {
-        console.warn('[Johnny5/Skills] Skills injection failed:', skillsError);
-        // Continue without skills — graceful degradation
-      }
     }
 
     if (contextParts.length > 0) {
@@ -1188,8 +1247,8 @@ export async function POST(
       modeUsed = 'gemini';
       try {
         // Detect Johnny5's active mode and available capabilities
-        const johnny5Mode = detectJohnny5Mode(moltbotConnected, bridgeConnected);
-        let systemPrompt = await generateJohnny5SystemPrompt(johnny5Mode, userId);
+        const johnny5Mode = detectJohnny5Mode(j5Connected, bridgeConnected);
+        let systemPrompt = await generateJohnny5SystemPrompt(johnny5Mode, userId, skillsListForPrompt);
 
         // When routing to Gemini (not Bridge) for memory/personal queries,
         // add instruction to prevent <execute_bash> usage while keeping
