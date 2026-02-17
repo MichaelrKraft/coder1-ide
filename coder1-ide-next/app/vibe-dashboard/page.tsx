@@ -1,14 +1,21 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function VibeDashboardPage() {
-  const router = useRouter();
-  
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
   useEffect(() => {
-    // Redirect to the CANONICAL vibe-dashboard.html
-    window.location.href = '/vibe-dashboard.html';
+    // Set state first to prevent React cleanup conflicts
+    setIsRedirecting(true);
+
+    // Use a small delay to let React finish its render cycle
+    // before triggering the full page navigation
+    const timer = setTimeout(() => {
+      window.location.replace('/vibe-dashboard.html');
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
