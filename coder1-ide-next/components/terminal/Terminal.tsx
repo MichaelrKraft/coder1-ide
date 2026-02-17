@@ -16,9 +16,7 @@ if (typeof window !== 'undefined') {
 }
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
 import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus, Users } from '@/lib/icons';
-import { Edit3, GitBranch, X, Stethoscope, Boxes, Loader2 } from 'lucide-react';
-import { useMCPOverlay, useMCPServers } from '@/hooks/useMCPManager';
-import MCPOverlay from '@/components/MCPManager/MCPOverlay';
+import { Edit3, GitBranch, X, Stethoscope, Loader2 } from 'lucide-react';
 import SandboxPanel from '@/components/sandbox/SandboxPanel';
 import { useModelStore } from '@/stores/useModelStore';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
@@ -227,10 +225,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const terminalHistory = useTerminalStore((state) => state.history);
   const workingDirectory = useTerminalStore((state) => state.workingDirectory);
 
-  // MCP Manager hooks
-  const { isOpen: isMCPOverlayOpen, toggle: toggleMCPOverlay, close: closeMCPOverlay } = useMCPOverlay();
-  const { servers: mcpServers } = useMCPServers();
-  const mcpEnabledCount = mcpServers.filter(s => s.enabled).length;
 
   // Auto-switch terminal mode based on selected model
   useEffect(() => {
@@ -5490,23 +5484,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             {voiceListening ? <MicOff className="w-4 h-4 text-red-500" /> : <Mic className="w-4 h-4" />}
           </button>
 
-          {/* MCP Manager Button */}
-          <button
-            onClick={() => toggleMCPOverlay()}
-            className={`terminal-control-btn p-1.5 rounded-md transition-all relative ${
-              isMCPOverlayOpen
-                ? 'terminal-btn-active-orange'
-                : 'hover:bg-bg-tertiary'
-            }`}
-            title="MCP Servers"
-          >
-            <Boxes className={`w-4 h-4 ${isMCPOverlayOpen ? 'text-orange-400' : 'text-text-secondary'}`} />
-            {mcpEnabledCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 text-[9px] font-medium bg-orange-500 text-white rounded-full flex items-center justify-center">
-                {mcpEnabledCount}
-              </span>
-            )}
-          </button>
 
           {/* Compose Icon Button - Only show when staged composer is enabled */}
           {ENABLE_STAGED_COMPOSER && (
@@ -6159,8 +6136,6 @@ Context: Running in Coder1 IDE development environment`;
         </div>
       )}
 
-      {/* MCP Manager Overlay */}
-      <MCPOverlay isOpen={isMCPOverlayOpen} onClose={closeMCPOverlay} />
     </div>
   );
 }

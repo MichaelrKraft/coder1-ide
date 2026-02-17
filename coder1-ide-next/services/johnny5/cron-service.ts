@@ -25,7 +25,8 @@ export type CronSchedule =
 
 export interface CronPayload {
   message: string;
-  action?: 'morning_brief' | 'trend_check' | 'build_check' | 'custom';
+  action?: 'morning_brief' | 'trend_check' | 'build_check' | 'tiktok_content' | 'custom';
+  hook?: string; // Pre-queued hook text (for tiktok_content action)
   deliver?: boolean;  // Send notification?
 }
 
@@ -670,7 +671,26 @@ export function getCronService(config?: CronServiceConfig): CronService {
       storePath: path.join(process.cwd(), 'data', 'johnny5', 'cron-jobs.json'),
       onJobRun: async (job) => {
         console.log(`[CronService] Executing job action: ${job.payload.action || 'custom'}`);
-        // Default implementation - can be overridden
+
+        // Handle tiktok_content action
+        if (job.payload.action === 'tiktok_content') {
+          try {
+            const port = process.env.PORT || '3001';
+            const response = await fetch(`http://localhost:${port}/api/johnny5/tiktok`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                hook: job.payload.hook || job.payload.message,
+                triggeredBy: 'schedule',
+              }),
+            });
+            const data = await response.json();
+            console.log(`[CronService] TikTok content triggered: taskId=${data.taskId}`);
+          } catch (err) {
+            console.error('[CronService] TikTok content trigger failed:', err);
+            throw err;
+          }
+        }
       },
       onNotify: (message, job) => {
         console.log(`[CronService] Notification: ${message}`);
