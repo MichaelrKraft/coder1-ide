@@ -252,6 +252,7 @@ const initialSettings: Johnny5Settings = {
   apiKeyEncryption: true,
   sessionHistoryDays: 90,
   analyticsDataDays: 30,
+  showTerminalObservations: false, // Disabled by default - no observation boxes in chat
   morningBrief: {
     deliveryTime: '07:00',
     includeWeather: true,

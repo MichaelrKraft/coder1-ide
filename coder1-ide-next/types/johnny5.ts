@@ -489,20 +489,23 @@ export interface Johnny5Settings {
   autoActionsAllowed: boolean;
   askBeforeExternalActions: boolean;
   logAllActions: boolean;
-  
+
   // Security
   promptInjectionDetection: boolean;
   blockSuspiciousInputs: boolean;
   auditLogRetentionDays: number;
   apiKeyEncryption: boolean;
-  
+
   // Data & Privacy
   sessionHistoryDays: number;
   analyticsDataDays: number;
-  
+
+  // Chat Display
+  showTerminalObservations: boolean; // Show terminal observation boxes in Johnny5 chat
+
   // Morning Brief
   morningBrief: Johnny5MorningBriefSettings;
-  
+
   // Trend Monitor
   trendMonitor: Johnny5TrendMonitorConfig;
 }
