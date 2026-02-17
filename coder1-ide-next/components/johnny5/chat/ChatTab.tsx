@@ -214,6 +214,7 @@ export default function ChatTab() {
     moltbotStatus,
     setMoltbotStatus,
     activeCrewMember,
+    settings,
   } = useJohnny5Store();
 
   // Aliases for compatibility with existing code
@@ -402,8 +403,10 @@ export default function ChatTab() {
         });
 
         // Listen for Johnny5 context ready for Claude sessions
+        // Note: These notifications are hidden when showTerminalObservations is false
         socket.on('johnny5:claude-context-ready', (data: { sessionId: string; context: string; factCount: number }) => {
-          if (data.factCount > 0) {
+          // Context notifications are controlled by the same setting as terminal observations
+          if (data.factCount > 0 && useJohnny5Store.getState().settings.showTerminalObservations) {
             addChatMessage({
               id: `ctx-${Date.now()}`,
               role: 'system' as const,
@@ -498,15 +501,17 @@ export default function ChatTab() {
       // Only show errors, completion, and session events (skip routine commands/file changes)
       if (event.type === 'command') return;
 
-      // Add observation as a system message
-      addChatMessage({
-        id: `obs-${now}`,
-        role: 'system' as const,
-        content: event.summary,
-        timestamp: new Date(event.timestamp),
-      });
+      // Only add observation as a system message if setting is enabled
+      if (settings.showTerminalObservations) {
+        addChatMessage({
+          id: `obs-${now}`,
+          role: 'system' as const,
+          content: event.summary,
+          timestamp: new Date(event.timestamp),
+        });
+      }
 
-      // Store observation for context
+      // Store observation for context (always store, just don't show in chat)
       setObservations(prev => [...prev.slice(-10), event]); // Keep last 10
     });
 
@@ -514,7 +519,7 @@ export default function ChatTab() {
       unsubscribe();
       terminalObserver.disconnect();
     };
-  }, []);
+  }, [settings.showTerminalObservations]);
 
   // Abort in-flight request on unmount
   useEffect(() => {

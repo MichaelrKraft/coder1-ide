@@ -176,8 +176,9 @@ export class SkillsService {
 
   constructor(skillsDirs?: string[]) {
     this.skillsDirs = skillsDirs || [
-      path.join(process.cwd(), 'skills'),       // bundled local skills
+      path.join(process.cwd(), 'skills'),        // bundled local skills
       path.join(homedir(), '.coder1', 'skills'), // user-installed skills (including ClawHub)
+      path.join(homedir(), '.claude', 'skills'), // Claude Code skills (SKILL.md format)
     ];
     this.metadataCache = new Map();
     this.skillPathMap = new Map();
@@ -226,7 +227,10 @@ export class SkillsService {
 
   /**
    * Discover all skills across all configured directories.
-   * Supports both flat (skill-id/metadata.json) and nested (category/skill-id/metadata.json) structures.
+   * Supports multiple structures:
+   * - flat (skill-id/metadata.json)
+   * - nested (category/skill-id/metadata.json)
+   * - Claude Code format (skill-id/SKILL.md with YAML frontmatter)
    */
   private async discoverSkills(): Promise<string[]> {
     const skillPaths: string[] = [];
@@ -253,10 +257,20 @@ export class SkillsService {
             skillPaths.push(entryPath);
             continue; // Found at flat level, skip category scanning
           } catch {
-            // Not flat, try category structure
+            // Not metadata.json, try SKILL.md (Claude Code format)
           }
 
-          // Check for nested structure: baseDir/category/skill-id/metadata.json
+          // Check for Claude Code format: baseDir/skill-id/SKILL.md
+          const skillMd = path.join(entryPath, 'SKILL.md');
+          try {
+            await fs.access(skillMd);
+            skillPaths.push(entryPath);
+            continue; // Found SKILL.md, this is a Claude Code skill
+          } catch {
+            // Not SKILL.md either, try nested category structure
+          }
+
+          // Check for nested structure: baseDir/category/skill-id/metadata.json or SKILL.md
           const subEntries = await fs.readdir(entryPath);
           for (const subEntry of subEntries) {
             const subPath = path.join(entryPath, subEntry);
@@ -264,11 +278,18 @@ export class SkillsService {
             if (!subStat.isDirectory()) continue;
 
             const nestedMetadata = path.join(subPath, 'metadata.json');
+            const nestedSkillMd = path.join(subPath, 'SKILL.md');
             try {
               await fs.access(nestedMetadata);
               skillPaths.push(subPath);
             } catch {
-              // No metadata.json, skip
+              // No metadata.json, try SKILL.md
+              try {
+                await fs.access(nestedSkillMd);
+                skillPaths.push(subPath);
+              } catch {
+                // No skill files, skip
+              }
             }
           }
         }
@@ -282,11 +303,56 @@ export class SkillsService {
 
   /**
    * Load Tier 1 metadata from a skill directory
+   * Supports both metadata.json and SKILL.md with YAML frontmatter
    */
   private async loadMetadata(skillPath: string): Promise<SkillMetadata> {
     const metadataPath = path.join(skillPath, 'metadata.json');
-    const content = await fs.readFile(metadataPath, 'utf-8');
-    return JSON.parse(content);
+    const skillMdPath = path.join(skillPath, 'SKILL.md');
+
+    // Try metadata.json first
+    try {
+      const content = await fs.readFile(metadataPath, 'utf-8');
+      return JSON.parse(content);
+    } catch {
+      // No metadata.json, try SKILL.md with YAML frontmatter
+    }
+
+    // Parse SKILL.md frontmatter (Claude Code format)
+    const skillMd = await fs.readFile(skillMdPath, 'utf-8');
+    const frontmatterMatch = skillMd.match(/^---\n([\s\S]*?)\n---/);
+
+    if (!frontmatterMatch) {
+      throw new Error(`No metadata.json or valid SKILL.md frontmatter found in ${skillPath}`);
+    }
+
+    // Parse YAML frontmatter (simple key: value parsing)
+    const frontmatter = frontmatterMatch[1];
+    const parsed: Record<string, string> = {};
+    for (const line of frontmatter.split('\n')) {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx > 0) {
+        const key = line.slice(0, colonIdx).trim();
+        const value = line.slice(colonIdx + 1).trim();
+        parsed[key] = value;
+      }
+    }
+
+    // Generate skill ID from directory name
+    const skillId = path.basename(skillPath);
+
+    // Convert to SkillMetadata format
+    return {
+      id: skillId,
+      name: parsed.name || skillId,
+      description: parsed.description || '',
+      category: 'productivity' as const, // Default category for Claude Code skills
+      tools: [],
+      version: parsed.version || '1.0.0',
+      estimatedTokens: Math.ceil(skillMd.length / 4),
+      lastUpdated: new Date().toISOString(),
+      author: 'user',
+      tags: ['claude-code'],
+    };
   }
 
   /**
