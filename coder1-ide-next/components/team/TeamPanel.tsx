@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Cloud, UserPlus, RefreshCw, Trash2, Copy, Check, GitBranch, X } from 'lucide-react';
+import { Cloud, UserPlus, RefreshCw, Trash2, Copy, Check, GitBranch, X, Monitor } from 'lucide-react';
 import { useTeamStore } from '@/stores/useTeamStore';
+import { useSpectatorStore } from '@/stores/useSpectatorStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { getSocket } from '@/lib/socket';
 
 interface TeamMember {
   id: string;
@@ -94,6 +97,7 @@ function timeAgo(timestamp: string): string {
 
 export default function TeamPanel() {
   const { syncTeam, syncStatus, createTeam, inviteMember, triggerSync, teams, selectTeam, onlineMembers, fetchTeams } = useTeamStore();
+  const { sharedTerminals } = useSpectatorStore();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [facts, setFacts] = useState<TeamFact[]>([]);
   const [newTeamName, setNewTeamName] = useState('');
@@ -425,6 +429,43 @@ export default function TeamPanel() {
           })}
         </div>
       </div>
+
+      {/* Live Terminals (Spectator Mode) */}
+      {(() => {
+        const currentUser = useAuthStore.getState().user;
+        const viewableTerminals = sharedTerminals.filter(st => st.userId !== currentUser?.id);
+        if (viewableTerminals.length === 0) return null;
+        return (
+          <div>
+            <h4 className="text-xs font-medium text-text-muted uppercase tracking-wide mb-2">
+              Live Terminals ({viewableTerminals.length})
+            </h4>
+            <div className="space-y-1.5">
+              {viewableTerminals.map(st => (
+                <button
+                  key={st.sessionId}
+                  onClick={async () => {
+                    const user = useAuthStore.getState().user;
+                    if (!user || !syncTeam) return;
+                    const socket = await getSocket();
+                    socket?.emit('spectator:join', {
+                      sessionId: st.sessionId,
+                      teamId: syncTeam.id,
+                      userId: user.id,
+                      username: user.username,
+                    });
+                  }}
+                  className="w-full flex items-center gap-2 p-2 text-sm bg-bg-tertiary rounded hover:bg-orange-500/10 border border-transparent hover:border-orange-500/30 transition-colors"
+                >
+                  <Monitor className="w-4 h-4 text-orange-400" />
+                  <span className="text-text-primary">{st.username}&apos;s terminal</span>
+                  <span className="ml-auto text-[10px] text-orange-400 font-medium spectator-live-pulse">LIVE</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Invite */}
       <div>

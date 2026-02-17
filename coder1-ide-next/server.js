@@ -581,6 +581,82 @@ const collabWriteRateLimiter = new Map(); // userId -> { count, resetTime }
 // if the doc has newer updates, skip the stale queued content.
 // Key: `${userId}::${filePath}` -> { content, fileId, teamId, docVersion, queuedAt }
 const pendingCollabSyncs = new Map();
+
+// ═══════════════════════════════════════════════════════════════
+// Terminal Spectator Mode - Read-only terminal sharing for teams
+// ═══════════════════════════════════════════════════════════════
+const sharedTerminals = new Map(); // sessionId -> { userId, username, teamId, sharerSocketId, scrollbackBuffer: string[], startedAt }
+const spectatorViewers = new Map(); // sessionId -> Set<{ socketId, userId, username }>
+const spectatorBatchBuffers = new Map(); // sessionId -> string (throttle accumulator)
+const spectatorThrottleTimers = new Map(); // sessionId -> setTimeout ref
+const SPECTATOR_SCROLLBACK_MAX_CHARS = 50000; // 50KB cap per shared session
+
+function broadcastToSpectators(sessionId, data) {
+  if (!sharedTerminals.has(sessionId)) return;
+
+  // Accumulate data
+  const current = spectatorBatchBuffers.get(sessionId) || '';
+  spectatorBatchBuffers.set(sessionId, current + data);
+
+  // Update scrollback buffer
+  const shared = sharedTerminals.get(sessionId);
+  if (shared) {
+    shared.scrollbackBuffer.push(data);
+    // Trim scrollback to cap
+    let totalLen = shared.scrollbackBuffer.reduce((sum, chunk) => sum + chunk.length, 0);
+    while (totalLen > SPECTATOR_SCROLLBACK_MAX_CHARS && shared.scrollbackBuffer.length > 1) {
+      totalLen -= shared.scrollbackBuffer.shift().length;
+    }
+  }
+
+  // Throttle broadcasts to ~30fps
+  if (!spectatorThrottleTimers.has(sessionId)) {
+    spectatorThrottleTimers.set(sessionId, setTimeout(() => {
+      const batch = spectatorBatchBuffers.get(sessionId);
+      if (batch && batch.length > 0) {
+        io.to(`spectator:${sessionId}`).emit('spectator:data', { sessionId, data: batch });
+      }
+      spectatorBatchBuffers.set(sessionId, '');
+      spectatorThrottleTimers.delete(sessionId);
+    }, 33));
+  }
+}
+
+function cleanupSpectatorSession(sessionId, reason) {
+  const shared = sharedTerminals.get(sessionId);
+  if (!shared) return;
+
+  // Notify spectators
+  io.to(`spectator:${sessionId}`).emit('spectator:share:stopped', {
+    sessionId, userId: shared.userId, reason
+  });
+
+  // Notify team room
+  io.to(`team:${shared.teamId}`).emit('spectator:share:stopped', {
+    sessionId, userId: shared.userId, reason
+  });
+
+  // Force all spectators out of room
+  const viewers = spectatorViewers.get(sessionId);
+  if (viewers) {
+    for (const viewer of viewers) {
+      const viewerSocket = io.sockets.sockets.get(viewer.socketId);
+      if (viewerSocket) {
+        viewerSocket.leave(`spectator:${sessionId}`);
+      }
+    }
+  }
+
+  // Cleanup maps
+  sharedTerminals.delete(sessionId);
+  spectatorViewers.delete(sessionId);
+  spectatorBatchBuffers.delete(sessionId);
+  if (spectatorThrottleTimers.has(sessionId)) {
+    clearTimeout(spectatorThrottleTimers.get(sessionId));
+    spectatorThrottleTimers.delete(sessionId);
+  }
+}
+
 function checkCollabWriteRateLimit(userId) {
   const now = Date.now();
   const entry = collabWriteRateLimiter.get(userId);
@@ -1024,6 +1100,15 @@ function getOrCreateSession(sessionId, userId = 'default', cols = 80, rows = 30)
         sessionSocket.emit('terminal:error', {
           message: 'Terminal session not found'
         });
+      }
+
+      // Spectator Mode: Stop sharing if this terminal's PTY exited
+      try {
+        if (sharedTerminals.has(sessionId)) {
+          cleanupSpectatorSession(sessionId, 'pty_exit');
+        }
+      } catch (spectatorErr) {
+        console.error('[Spectator] PTY exit cleanup error (non-fatal):', spectatorErr.message);
       }
 
       terminalSessions.delete(sessionId);
@@ -1912,6 +1997,13 @@ app.prepare().then(() => {
             }
           }
         }
+
+        // Spectator Mode: Also broadcast bridge output to spectators
+        try {
+          broadcastToSpectators(data.sessionId, data.data);
+        } catch (spectatorErr) {
+          console.error('[Spectator] Bridge broadcast error (non-fatal):', spectatorErr.message);
+        }
       });
 
       bridgeManager.on('command:complete', (data) => {
@@ -2202,6 +2294,227 @@ app.prepare().then(() => {
         ? Array.from(members.values()).map(m => ({ userId: m.userId, username: m.username }))
         : [];
       socket.emit('team:presence:update', { teamId, online: onlineList });
+    });
+
+    // ===============================================
+    // TERMINAL SPECTATOR MODE
+    // ===============================================
+
+    // Start sharing a terminal with your team
+    socket.on('spectator:share:start', ({ sessionId, userId, username, teamId }) => {
+      try {
+        console.log(`[Spectator] 📺 Share start request: session=${sessionId}, user=${username}, team=${teamId}`);
+
+        // Validate session exists
+        const session = terminalSessions.get(sessionId);
+        if (!session) {
+          socket.emit('spectator:error', { message: 'Terminal session not found' });
+          return;
+        }
+
+        // Validate team membership
+        const teamMembers = teamPresence.get(teamId);
+        if (!teamMembers || !teamMembers.has(userId)) {
+          socket.emit('spectator:error', { message: 'Not a member of this team' });
+          return;
+        }
+
+        // Already sharing this session
+        if (sharedTerminals.has(sessionId)) {
+          socket.emit('spectator:error', { message: 'This terminal is already being shared' });
+          return;
+        }
+
+        // Build scrollback from terminal history buffer
+        const historyBuffer = terminalHistoryBuffers.get(sessionId) || [];
+        const scrollbackBuffer = [...historyBuffer];
+
+        // Trim to cap
+        let totalLen = scrollbackBuffer.reduce((sum, chunk) => sum + chunk.length, 0);
+        while (totalLen > SPECTATOR_SCROLLBACK_MAX_CHARS && scrollbackBuffer.length > 1) {
+          totalLen -= scrollbackBuffer.shift().length;
+        }
+
+        // Get terminal dimensions
+        const cols = session.cols || 80;
+        const rows = session.rows || 24;
+
+        // Create shared terminal entry
+        sharedTerminals.set(sessionId, {
+          userId,
+          username,
+          teamId,
+          sharerSocketId: socket.id,
+          scrollbackBuffer,
+          startedAt: Date.now()
+        });
+
+        // Initialize viewers set
+        spectatorViewers.set(sessionId, new Set());
+
+        // Notify the team
+        io.to(`team:${teamId}`).emit('spectator:share:started', {
+          sessionId, userId, username, cols, rows
+        });
+
+        console.log(`[Spectator] ✅ Terminal shared: session=${sessionId}, user=${username}`);
+      } catch (err) {
+        console.error('[Spectator] Share start error:', err.message);
+        socket.emit('spectator:error', { message: 'Failed to start sharing' });
+      }
+    });
+
+    // Stop sharing a terminal
+    socket.on('spectator:share:stop', ({ sessionId }) => {
+      try {
+        console.log(`[Spectator] 🛑 Share stop request: session=${sessionId}`);
+        const shared = sharedTerminals.get(sessionId);
+        if (!shared) {
+          socket.emit('spectator:error', { message: 'Terminal is not being shared' });
+          return;
+        }
+
+        // Only the sharer can stop sharing
+        if (shared.sharerSocketId !== socket.id) {
+          socket.emit('spectator:error', { message: 'Only the sharer can stop sharing' });
+          return;
+        }
+
+        cleanupSpectatorSession(sessionId, 'sharer_stopped');
+        console.log(`[Spectator] ✅ Sharing stopped: session=${sessionId}`);
+      } catch (err) {
+        console.error('[Spectator] Share stop error:', err.message);
+      }
+    });
+
+    // Join as a spectator (read-only viewer)
+    socket.on('spectator:join', ({ sessionId, userId, username, teamId }) => {
+      try {
+        console.log(`[Spectator] 👀 Join request: session=${sessionId}, viewer=${username}`);
+
+        const shared = sharedTerminals.get(sessionId);
+        if (!shared) {
+          socket.emit('spectator:error', { message: 'Terminal is not being shared' });
+          return;
+        }
+
+        // Validate team membership
+        const teamMembers = teamPresence.get(shared.teamId);
+        if (!teamMembers || !teamMembers.has(userId)) {
+          socket.emit('spectator:error', { message: 'Not a member of this team' });
+          return;
+        }
+
+        // Prevent self-spectate
+        if (shared.userId === userId) {
+          socket.emit('spectator:error', { message: 'Cannot spectate your own terminal' });
+          return;
+        }
+
+        // Join the spectator room
+        socket.join(`spectator:${sessionId}`);
+
+        // Add to viewers set
+        const viewers = spectatorViewers.get(sessionId) || new Set();
+        viewers.add({ socketId: socket.id, userId, username });
+        spectatorViewers.set(sessionId, viewers);
+
+        // Get terminal dimensions from the session
+        const session = terminalSessions.get(sessionId);
+        const cols = session?.cols || 80;
+        const rows = session?.rows || 24;
+
+        // Send scrollback + dimensions to the joining spectator
+        const scrollback = shared.scrollbackBuffer.join('');
+        socket.emit('spectator:joined', {
+          sessionId,
+          scrollback,
+          cols,
+          rows,
+          sharerUsername: shared.username,
+          sharerUserId: shared.userId
+        });
+
+        // Notify other spectators and the sharer
+        io.to(`spectator:${sessionId}`).emit('spectator:viewer:joined', {
+          sessionId, userId, username, count: viewers.size
+        });
+        const sharerSocket = io.sockets.sockets.get(shared.sharerSocketId);
+        if (sharerSocket) {
+          sharerSocket.emit('spectator:viewer:joined', {
+            sessionId, userId, username, count: viewers.size
+          });
+        }
+
+        console.log(`[Spectator] ✅ Viewer joined: session=${sessionId}, viewer=${username}, total=${viewers.size}`);
+      } catch (err) {
+        console.error('[Spectator] Join error:', err.message);
+        socket.emit('spectator:error', { message: 'Failed to join spectator session' });
+      }
+    });
+
+    // Leave spectator mode
+    socket.on('spectator:leave', ({ sessionId, userId, username }) => {
+      try {
+        console.log(`[Spectator] 👋 Leave request: session=${sessionId}, viewer=${username}`);
+
+        socket.leave(`spectator:${sessionId}`);
+
+        // Remove from viewers set
+        const viewers = spectatorViewers.get(sessionId);
+        if (viewers) {
+          for (const viewer of viewers) {
+            if (viewer.socketId === socket.id) {
+              viewers.delete(viewer);
+              break;
+            }
+          }
+
+          // Notify remaining spectators and the sharer
+          io.to(`spectator:${sessionId}`).emit('spectator:viewer:left', {
+            sessionId, userId, username, count: viewers.size
+          });
+          const shared = sharedTerminals.get(sessionId);
+          if (shared) {
+            const sharerSocket = io.sockets.sockets.get(shared.sharerSocketId);
+            if (sharerSocket) {
+              sharerSocket.emit('spectator:viewer:left', {
+                sessionId, userId, username, count: viewers.size
+              });
+            }
+          }
+        }
+
+        console.log(`[Spectator] ✅ Viewer left: session=${sessionId}, viewer=${username}`);
+      } catch (err) {
+        console.error('[Spectator] Leave error:', err.message);
+      }
+    });
+
+    // List shared terminals in a team
+    socket.on('spectator:list', ({ teamId, userId }) => {
+      try {
+        const list = [];
+        for (const [sessionId, shared] of sharedTerminals.entries()) {
+          if (shared.teamId === teamId) {
+            const session = terminalSessions.get(sessionId);
+            const viewers = spectatorViewers.get(sessionId);
+            list.push({
+              sessionId,
+              userId: shared.userId,
+              username: shared.username,
+              cols: session?.cols || 80,
+              rows: session?.rows || 24,
+              viewerCount: viewers ? viewers.size : 0,
+              startedAt: shared.startedAt
+            });
+          }
+        }
+        socket.emit('spectator:list:response', { teamId, terminals: list });
+      } catch (err) {
+        console.error('[Spectator] List error:', err.message);
+        socket.emit('spectator:list:response', { teamId, terminals: [] });
+      }
     });
 
     // ===============================================
@@ -2683,7 +2996,14 @@ app.prepare().then(() => {
                 connectedSocket.emit('terminal:data', { id: sessionId, data });
               }
             });
-            
+
+            // Spectator Mode: Broadcast to spectators (try/catch to never interrupt normal flow)
+            try {
+              broadcastToSpectators(sessionId, data);
+            } catch (spectatorErr) {
+              console.error('[Spectator] Broadcast error (non-fatal):', spectatorErr.message);
+            }
+
             // 🎯 CRITICAL FIX (Oct 28, 2025): Buffer ALL terminal output for history restoration
             // Keep ANSI codes for proper rendering, only filter problematic focus codes
             // IMPORTANT: Check for ANSI escape sequences \x1b[I and \x1b[O, not just [I and [O
@@ -2788,6 +3108,39 @@ app.prepare().then(() => {
 
         // Clean up socket reference when it disconnects
         socket.on('disconnect', () => {
+          // Spectator Mode: Clean up if this socket was sharing a terminal
+          try {
+            for (const [sharedSessionId, shared] of sharedTerminals.entries()) {
+              if (shared.sharerSocketId === socket.id) {
+                cleanupSpectatorSession(sharedSessionId, 'sharer_disconnected');
+              }
+            }
+            // Also remove this socket from any spectator viewer sets
+            for (const [sharedSessionId, viewers] of spectatorViewers.entries()) {
+              for (const viewer of viewers) {
+                if (viewer.socketId === socket.id) {
+                  viewers.delete(viewer);
+                  socket.leave(`spectator:${sharedSessionId}`);
+                  const shared = sharedTerminals.get(sharedSessionId);
+                  if (shared) {
+                    io.to(`spectator:${sharedSessionId}`).emit('spectator:viewer:left', {
+                      sessionId: sharedSessionId, userId: viewer.userId, username: viewer.username, count: viewers.size
+                    });
+                    const sharerSocket = io.sockets.sockets.get(shared.sharerSocketId);
+                    if (sharerSocket) {
+                      sharerSocket.emit('spectator:viewer:left', {
+                        sessionId: sharedSessionId, userId: viewer.userId, username: viewer.username, count: viewers.size
+                      });
+                    }
+                  }
+                  break;
+                }
+              }
+            }
+          } catch (spectatorErr) {
+            console.error('[Spectator] Disconnect cleanup error (non-fatal):', spectatorErr.message);
+          }
+
           // 🔧 FIX (Oct 24, 2025): Use sessionId from closure (always available)
           // socketToSession.get() can return undefined if socket wasn't properly registered
           const disconnectSessionId = sessionId; // Use closure variable (guaranteed to exist)
@@ -3768,6 +4121,15 @@ app.prepare().then(() => {
       if (session) {
         session.resize(cols, rows);
         // REMOVED: // REMOVED: // REMOVED: console.log(`[Terminal] Resized session ${id} to ${cols}x${rows}`);
+
+        // Spectator Mode: Forward resize to spectators
+        try {
+          if (sharedTerminals.has(sessionId)) {
+            io.to(`spectator:${sessionId}`).emit('spectator:resize', { sessionId, cols, rows });
+          }
+        } catch (spectatorErr) {
+          console.error('[Spectator] Resize broadcast error (non-fatal):', spectatorErr.message);
+        }
       }
     });
     
@@ -3790,10 +4152,19 @@ app.prepare().then(() => {
           memoryDebounceTimers.delete(sessionId);
         }
         
+        // Spectator Mode: Stop sharing if this terminal was shared
+        try {
+          if (sharedTerminals.has(sessionId)) {
+            cleanupSpectatorSession(sessionId, 'terminal_destroyed');
+          }
+        } catch (spectatorErr) {
+          console.error('[Spectator] Destroy cleanup error (non-fatal):', spectatorErr.message);
+        }
+
         socket.emit('terminal:destroyed', { id: sessionId });
       }
     });
-    
+
     // Agent Terminal Handlers (Phase 2: Interactive Agent Terminals)
     if (agentTerminalManager) {
       // Create agent terminal session
