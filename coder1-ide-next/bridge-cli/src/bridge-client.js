@@ -34,7 +34,7 @@ class BridgeClient extends EventEmitter {
     this.token = null;
     this.connected = false;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = null; // Infinite reconnection attempts
+    this.maxReconnectAttempts = 10; // Limit reconnection attempts to prevent infinite loops
 
     // Production command queue - prevents overwhelming Claude CLI
     this.commandQueue = new PQueue({
@@ -78,6 +78,7 @@ class BridgeClient extends EventEmitter {
 
     // Heartbeat interval
     this.heartbeatInterval = null;
+    this.keepAliveInterval = null;
     this.lastHeartbeat = Date.now();
 
     // Enhanced statistics for production monitoring
@@ -194,8 +195,9 @@ class BridgeClient extends EventEmitter {
       // Step 2: Connect WebSocket with token
       await this.connectWebSocket();
       
-      // Step 3: Start heartbeat
+      // Step 3: Start heartbeat and keep-alive
       this.startHeartbeat();
+      this.startKeepAlive();
       
       this.connected = true;
       this.emit('connected', { bridgeId: this.bridgeId, userId: this.userId });
@@ -236,6 +238,7 @@ class BridgeClient extends EventEmitter {
     try {
       await this.connectWebSocket();
       this.startHeartbeat();
+      this.startKeepAlive();
       this.connected = true;
       this.emit('connected', { bridgeId: this.bridgeId, userId: this.userId });
       this.log('Auto-connect successful!');
@@ -611,8 +614,15 @@ class BridgeClient extends EventEmitter {
 
       // Connection error
       this.socket.on('connect_error', (error) => {
-        this.error('Connection error:', error.message);
         this.reconnectAttempts++;
+
+        // Only log the first error and then every 5th attempt to reduce noise
+        if (this.reconnectAttempts === 1) {
+          this.error('Connection error:', error.message);
+          reject(error);
+        } else if (this.reconnectAttempts <= 3 || this.reconnectAttempts % 5 === 0) {
+          console.log(`\x1b[33m[Bridge]\x1b[0m Reconnecting... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        }
 
         // Clear credentials if authentication failed (token expired/invalid)
         if (error.message?.includes('authentication') ||
@@ -620,10 +630,6 @@ class BridgeClient extends EventEmitter {
             error.message?.includes('unauthorized')) {
           clearCredentials();
           this.log('Credentials cleared due to auth failure');
-        }
-
-        if (this.reconnectAttempts === 1) {
-          reject(error);
         }
       });
       
@@ -639,6 +645,40 @@ class BridgeClient extends EventEmitter {
         this.log(`Reconnected after ${attemptNumber} attempts`);
         this.connected = true;
         this.emit('reconnected');
+      });
+
+      // Reconnection failed (max attempts reached)
+      this.socket.on('reconnect_failed', () => {
+        console.log('\n\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m');
+        console.log('\x1b[33m  Connection Lost\x1b[0m');
+        console.log('\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m');
+        console.log('');
+        console.log('  The connection to Coder1 IDE was lost after multiple reconnection attempts.');
+        console.log('  This usually happens when:');
+        console.log('    • The Claude CLI session timed out (60 min inactivity)');
+        console.log('    • The Coder1 IDE server was restarted');
+        console.log('    • Network connectivity was lost');
+        console.log('');
+        console.log('  \x1b[36mTo reconnect:\x1b[0m');
+        console.log('    1. Stop this bridge (Ctrl+C)');
+        console.log('    2. Run: coder1-bridge start');
+        console.log('');
+        console.log('\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\n');
+
+        this.emit('reconnect_failed');
+
+        // Clean exit instead of endless error spam
+        this.stopHeartbeat();
+        if (this.socket) {
+          this.socket.disconnect();
+          this.socket = null;
+        }
+        this.connected = false;
+
+        // Give user time to read the message, then exit
+        setTimeout(() => {
+          process.exit(0);
+        }, 1000);
       });
       
       // Set timeout for initial connection
@@ -703,11 +743,18 @@ class BridgeClient extends EventEmitter {
         }
 
         // Common execution options
+        // DEBUG: Log incoming dimensions from server
+        const receivedCols = context?.cols;
+        const receivedRows = context?.rows;
+        const finalCols = receivedCols || 120;
+        const finalRows = receivedRows || 30;
+        console.log(`🔍 [BRIDGE-DEBUG] Claude PTY dimensions: received=${receivedCols}x${receivedRows}, using=${finalCols}x${finalRows}`);
+
         const executeOptions = {
           commandId, // Pass commandId for session tracking
           context,   // Pass full context including selectedClaudeModel
-          cols: context?.cols || 120,
-          rows: context?.rows || 30,
+          cols: finalCols,
+          rows: finalRows,
           onData: (chunk) => {
             // Stream output back to server
             this.socket.emit('claude:output', {
@@ -1128,13 +1175,45 @@ class BridgeClient extends EventEmitter {
   }
 
   /**
+   * Start keep-alive to prevent Claude CLI 60-minute inactivity timeout
+   * Sends invisible escape sequence every 25 minutes to active sessions
+   */
+  startKeepAlive() {
+    // Every 25 minutes (safe margin before 60 min timeout)
+    this.keepAliveInterval = setInterval(() => {
+      if (this.activeInteractiveSessions.size > 0) {
+        logger.debug('Sending keep-alive to active sessions', {
+          sessionCount: this.activeInteractiveSessions.size
+        });
+
+        for (const [sessionId, commandId] of this.activeInteractiveSessions) {
+          // Send SGR Reset - completely invisible, harmless escape sequence
+          // Just resets text formatting to default (no-op if already default)
+          this.claudeExecutor.writeToSession(commandId, '\x1b[0m');
+        }
+      }
+    }, 25 * 60 * 1000); // 25 minutes
+  }
+
+  /**
+   * Stop keep-alive interval
+   */
+  stopKeepAlive() {
+    if (this.keepAliveInterval) {
+      clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
+    }
+  }
+
+  /**
    * Disconnect from server
    */
   async disconnect() {
     this.log('Disconnecting...');
-    
+
     this.stopHeartbeat();
-    
+    this.stopKeepAlive();
+
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
