@@ -890,6 +890,9 @@ class TerminalSession {
     this.userId = userId;
     this.created = new Date();
     this.lastActivity = new Date();
+    // Store initial dimensions for reliable retrieval
+    this.cols = cols;
+    this.rows = rows;
     
     try {
       // Create PTY process
@@ -983,6 +986,9 @@ class TerminalSession {
   resize(cols, rows) {
     if (this.pty) {
       this.pty.resize(cols, rows);
+      // Store dimensions explicitly since node-pty doesn't always expose them
+      this.cols = cols;
+      this.rows = rows;
     }
   }
   
@@ -3237,11 +3243,16 @@ app.prepare().then(() => {
               
               // 🧠 ETERNAL MEMORY: Inject previous session context (unified function)
               let commandToExecute = await injectEternalMemoryContext(buffer.trim(), sessionId, socket);
-              
+
               // Execute command through bridge (with eternal memory context if available)
-              // FIX (Jan 27, 2026): Get terminal dimensions from PTY for proper Claude Code rendering
-              const terminalCols = session?.pty?.cols || 120;
-              const terminalRows = session?.pty?.rows || 30;
+              // FIX (Jan 27, 2026): Get terminal dimensions from session (stored on resize)
+              // FIX (Feb 16, 2026): Use session.cols/rows instead of pty.cols/rows for reliability
+              const terminalCols = session?.cols || session?.pty?.cols || 120;
+              const terminalRows = session?.rows || session?.pty?.rows || 30;
+
+              // DEBUG: Log dimensions being sent to bridge
+              console.log(`🔍 [SERVER-DEBUG] Terminal ${sessionId} dimensions: session.cols=${session?.cols}, pty.cols=${session?.pty?.cols}`);
+              console.log(`🔍 [SERVER-DEBUG] Sending to bridge: ${terminalCols}x${terminalRows}`);
 
               const commandRequest = {
                 sessionId,

@@ -739,10 +739,20 @@ function BetaTerminal({
     fitAddonRef.current = fitAddon;
 
     term.open(terminalRef.current);
-    
-    setTimeout(() => {
+
+    // Fit synchronously after opening so dimensions are ready for connectToBackend()
+    // But defer focus to next tick so the DOM element is fully rendered first
+    try {
       fitAddon.fit();
-      // Force focus after opening (like working Terminal)
+    } catch (e) {
+      // May fail if container isn't fully rendered yet
+      // connectToBackend() will retry fit() before emitting terminal:create
+      console.warn('Initial fitAddon.fit() failed, will retry on connect:', e);
+    }
+
+    // IMPORTANT: Focus must be deferred - calling synchronously after term.open()
+    // can silently fail because the DOM element may not be fully rendered yet
+    setTimeout(() => {
       term.focus();
     }, 0);
 
@@ -821,7 +831,20 @@ function BetaTerminal({
       if (isConnected && sessionId && hasEmittedCreate) {
         // Only re-emit on ACTUAL reconnection (not initial connection)
         console.log('🔄 Beta Terminal: Reconnected - re-establishing terminal session');
-        socket.emit('terminal:create', { id: sessionId });
+
+        // Re-measure dimensions before reconnection
+        if (fitAddonRef.current && xtermRef.current) {
+          try {
+            fitAddonRef.current.fit();
+          } catch (e) {
+            console.warn('fitAddon.fit() failed on reconnect:', e);
+          }
+        }
+
+        const reconnectCols = xtermRef.current?.cols ?? 80;
+        const reconnectRows = xtermRef.current?.rows ?? 24;
+
+        socket.emit('terminal:create', { id: sessionId, cols: reconnectCols, rows: reconnectRows });
         focusOnConnect();
       }
     });
@@ -837,12 +860,31 @@ function BetaTerminal({
       console.error('❌ Beta Terminal: Socket.IO CONNECTION ERROR:', error);
     });
 
-    // Join the terminal session with actual measured dimensions
-    console.log('📡 Beta Terminal: Emitting terminal:create for session:', sessionId);
+    // CRITICAL: Measure actual dimensions BEFORE emitting terminal:create
+    // fitAddon.fit() calculates dimensions based on current container size
+    if (fitAddonRef.current && xtermRef.current) {
+      try {
+        fitAddonRef.current.fit();
+      } catch (e) {
+        console.warn('fitAddon.fit() failed before terminal:create:', e);
+      }
+    }
+
+    // Get measured dimensions with validation
+    const measuredCols = xtermRef.current?.cols ?? 0;
+    const measuredRows = xtermRef.current?.rows ?? 0;
+
+    // Validate: use measured dimensions only if they look reasonable
+    // If container is hidden/minimized, fall back to safe defaults
+    const cols = measuredCols >= 10 ? measuredCols : 80;
+    const rows = measuredRows >= 5 ? measuredRows : 24;
+
+    console.log('📡 Beta Terminal: Emitting terminal:create with measured dimensions:',
+      { cols, rows, raw: { measuredCols, measuredRows } });
     socket.emit('terminal:create', {
       id: sessionId,
-      cols: xtermRef.current?.cols || 80,
-      rows: xtermRef.current?.rows || 30,
+      cols,
+      rows,
     });
     hasEmittedCreate = true; // 🔧 FIX: Mark that initial create has been emitted
 
@@ -993,12 +1035,41 @@ function BetaTerminal({
       }
     };
 
-    // Set up single resize observer with proper debouncing (clean up previous if reconnecting)
+    // Only resize terminal on actual WINDOW resizes, not sidebar/panel drags.
+    // Sidebar drags change the container size but shouldn't reflow terminal text -
+    // Claude Code's TUI gets garbled when dimensions change during panel resizing.
+    // The terminal keeps its dimensions and the container clips overflow.
     if (terminalRef.current && terminalRef.current.parentElement) {
       resizeObserverRef.current?.disconnect();
+
+      let isFirstResize = true;
+      let lastWindowWidth = window.innerWidth;
+      let lastWindowHeight = window.innerHeight;
+
       const resizeObserver = new ResizeObserver(() => {
+        const currentWindowWidth = window.innerWidth;
+        const currentWindowHeight = window.innerHeight;
+        const isWindowResize = (
+          currentWindowWidth !== lastWindowWidth ||
+          currentWindowHeight !== lastWindowHeight
+        );
+        lastWindowWidth = currentWindowWidth;
+        lastWindowHeight = currentWindowHeight;
+
+        // Only reflow on actual window resize or first resize after connect.
+        // Panel/sidebar drags are ignored - terminal keeps its dimensions.
+        if (!isWindowResize && !isFirstResize) {
+          return;
+        }
+
         if (resizeTimerRef.current) clearTimeout(resizeTimerRef.current);
-        resizeTimerRef.current = setTimeout(handleResize, 250);
+
+        const debounceMs = isFirstResize ? 50 : 250;
+
+        resizeTimerRef.current = setTimeout(() => {
+          handleResize();
+          isFirstResize = false;
+        }, debounceMs);
       });
       resizeObserver.observe(terminalRef.current.parentElement);
       resizeObserverRef.current = resizeObserver;
