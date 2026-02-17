@@ -105,7 +105,7 @@ function extractTraceFromPayload(payload) {
  * Format: trace_{timestamp}_{random}
  */
 function generateServerTraceId() {
-  return `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `trace_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}`;
 }
 
 /**
@@ -197,25 +197,25 @@ try {
   claudePuppeteer = null;
 }
 
-// Moltbot Bridge for Johnny5 autonomous agent integration
+// J5 Bridge for Johnny5 autonomous agent integration
 // Uses .ts file directly since tsx loader is enabled
-let moltbotBridge;
+let j5Bridge;
 try {
-  const { getMoltbotBridge } = require('./services/johnny5/moltbot-bridge.ts');
-  moltbotBridge = getMoltbotBridge();
-  console.log('✅ Moltbot Bridge service loaded');
+  const { getJ5Bridge } = require('./services/johnny5/j5-bridge.ts');
+  j5Bridge = getJ5Bridge();
+  console.log('✅ J5 Bridge service loaded');
 
-  if (process.env.MOLTBOT_ENABLED !== 'true') {
-    console.log('ℹ️ Moltbot integration disabled (set MOLTBOT_ENABLED=true to enable)');
+  if (process.env.J5_ENABLED !== 'true') {
+    console.log('ℹ️ J5 integration disabled (set J5_ENABLED=true to enable)');
   }
   // NOTE: Actual connection happens later (line ~1844) AFTER Socket.IO event listeners are configured
 } catch (error) {
-  console.warn('⚠️ Moltbot Bridge not available:', error.message);
-  moltbotBridge = null;
+  console.warn('⚠️ J5 Bridge not available:', error.message);
+  j5Bridge = null;
 }
 
 /**
- * Ensure ManusLive daemon is running before connecting Moltbot
+ * Ensure ManusLive daemon is running before connecting J5
  * Auto-starts the daemon if not already running
  */
 async function ensureManusLiveRunning() {
@@ -833,7 +833,7 @@ async function routeSlashCommandToClaudeCode(sessionId, slashCommand, claudeProm
     // Execute the slash command through bridge as a properly formatted Claude command
     const commandRequest = {
       sessionId,
-      commandId: `slash_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      commandId: `slash_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}`,
       command: `claude ${claudePrompt}`,  // Format as proper Claude CLI command
       context: {
         workingDirectory: process.cwd(),
@@ -2049,41 +2049,41 @@ app.prepare().then(() => {
     }
   };
 
-  // Forward Moltbot events to Socket.IO clients for Johnny5 dashboard
+  // Forward J5 events to Socket.IO clients for Johnny5 dashboard
   // NOTE: Set up event listeners BEFORE calling connect() to avoid race conditions
-  if (moltbotBridge) {
-    moltbotBridge.on('message', (data) => {
+  if (j5Bridge) {
+    j5Bridge.on('message', (data) => {
       if (io && data.sessionId) {
         io.to(`johnny5:${data.sessionId}`).emit('johnny5:message', data);
       }
     });
 
-    moltbotBridge.on('session-update', (session) => {
+    j5Bridge.on('session-update', (session) => {
       if (io) {
         io.emit('johnny5:session-update', session);
       }
     });
 
-    moltbotBridge.on('connected', () => {
-      console.log('🎉 [MoltbotBridge] Connected event received, emitting to Socket.IO');
+    j5Bridge.on('connected', () => {
+      console.log('🎉 [J5Bridge] Connected event received, emitting to Socket.IO');
       if (io) {
-        io.emit('johnny5:moltbot-connected');
+        io.emit('johnny5:j5-connected');
       }
     });
 
-    moltbotBridge.on('disconnected', (reason) => {
-      console.log('⚠️ [MoltbotBridge] Disconnected event received:', reason);
+    j5Bridge.on('disconnected', (reason) => {
+      console.log('⚠️ [J5Bridge] Disconnected event received:', reason);
       if (io) {
-        io.emit('johnny5:moltbot-disconnected', { reason });
+        io.emit('johnny5:j5-disconnected', { reason });
       }
     });
 
-    console.log('🔗 Moltbot event forwarding configured');
+    console.log('🔗 J5 event forwarding configured');
   }
 
-  // Connect to Moltbot if enabled (Johnny5 autonomous agent)
+  // Connect to J5 if enabled (Johnny5 autonomous agent)
   // NOTE: This MUST come AFTER setting up event listeners above
-  if (moltbotBridge && process.env.MOLTBOT_ENABLED === 'true' && process.env.MOLTBOT_GATEWAY_URL) {
+  if (j5Bridge && process.env.J5_ENABLED === 'true' && process.env.J5_GATEWAY_URL) {
     // Ensure ManusLive daemon is running before connecting
     ensureManusLiveRunning().then((result) => {
       if (!result.success) {
@@ -2093,14 +2093,14 @@ app.prepare().then(() => {
         return;
       }
 
-      // Connect to Moltbot Gateway
-      console.log('🤖 Initializing Moltbot connection...');
+      // Connect to J5 Gateway
+      console.log('🤖 Initializing J5 connection...');
       try {
-        moltbotBridge.connect(process.env.MOLTBOT_GATEWAY_URL)
-          .then(() => console.log('✅ Connected to Moltbot Gateway'))
-          .catch(err => console.warn('⚠️ Moltbot connection failed (will retry):', err.message));
+        j5Bridge.connect(process.env.J5_GATEWAY_URL)
+          .then(() => console.log('✅ Connected to J5 Gateway'))
+          .catch(err => console.warn('⚠️ J5 connection failed (will retry):', err.message));
       } catch (err) {
-        console.warn('⚠️ Moltbot connection error:', err.message);
+        console.warn('⚠️ J5 connection error:', err.message);
       }
     });
   }
@@ -3960,12 +3960,12 @@ app.prepare().then(() => {
       }
     });
 
-    // Johnny5 / Moltbot handlers for autonomous agent dashboard
+    // Johnny5 / J5 handlers for autonomous agent dashboard
     socket.on('johnny5:status', () => {
-      if (moltbotBridge) {
-        socket.emit('johnny5:status', moltbotBridge.getStatus());
+      if (j5Bridge) {
+        socket.emit('johnny5:status', j5Bridge.getStatus());
       } else {
-        socket.emit('johnny5:status', { connected: false, error: 'Moltbot Bridge not loaded' });
+        socket.emit('johnny5:status', { connected: false, error: 'J5 Bridge not loaded' });
       }
     });
 

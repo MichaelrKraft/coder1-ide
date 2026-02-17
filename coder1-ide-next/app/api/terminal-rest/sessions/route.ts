@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
 import { contextProcessor } from '@/services/context-processor';
 import { logger } from '@/lib/logger';
 import { handleError, errors } from '@/lib/error-handler';
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Generate session ID for REST API compatibility
     const { cols, rows } = body;
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    const sessionId = `session_${Date.now()}_${randomBytes(6).toString('hex')}`;
 
     // 🔍 DEBUG: Log REST API session creation
     console.log('[REST-SESSION-CREATE] New session ID:', sessionId);

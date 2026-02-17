@@ -2,7 +2,7 @@
  * Johnny5 Session Tracker Service
  *
  * Tracks and persists session data for real session intelligence.
- * Works with Moltbot sessions and direct Claude API sessions.
+ * Works with J5 sessions and direct Claude API sessions.
  *
  * Now uses SQLite database instead of file-based storage.
  */
@@ -27,7 +27,7 @@ interface SessionMetadata {
   thinkingLevel: 'low' | 'medium' | 'high';
   toolCalls: number;
   filesModified: string[];
-  source: 'moltbot' | 'direct' | 'mock' | 'fallback';
+  source: 'j5' | 'direct' | 'mock' | 'fallback';
 }
 const metadataCache = new Map<string, SessionMetadata>();
 
@@ -36,7 +36,7 @@ const metadataCache = new Map<string, SessionMetadata>();
  */
 export async function getOrCreateSession(
   sessionId: string,
-  source: 'moltbot' | 'direct' | 'mock' | 'fallback'
+  source: 'j5' | 'direct' | 'mock' | 'fallback'
 ): Promise<{
   id: string;
   name: string;
@@ -47,7 +47,7 @@ export async function getOrCreateSession(
   filesModified: string[];
   tokensUsed: number;
   thinkingLevel: 'low' | 'medium' | 'high';
-  source: 'moltbot' | 'direct' | 'mock' | 'fallback';
+  source: 'j5' | 'direct' | 'mock' | 'fallback';
 }> {
   await initializeDb();
 
@@ -103,7 +103,7 @@ export async function addMessageToSession(params: {
   content: string;
   inputTokens?: number;
   outputTokens?: number;
-  source: 'moltbot' | 'direct' | 'mock' | 'fallback';
+  source: 'j5' | 'direct' | 'mock' | 'fallback';
   toolCalls?: Array<{ name: string; input?: unknown; output?: unknown }>;
   thinking?: string;
 }): Promise<void> {

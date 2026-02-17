@@ -1,11 +1,11 @@
 /**
- * Johnny5 Moltbot Chat Route
+ * Johnny5 J5 Chat Route
  *
- * Uses the MoltbotBridge to send messages to ManusLive gateway.
+ * Uses the J5Bridge to send messages to ManusLive gateway.
  * This allows Johnny5 to communicate with the autonomous AI daemon
  * for 24/7 capabilities, session persistence, and cross-device sync.
  *
- * POST /api/johnny5/moltbot/chat
+ * POST /api/johnny5/j5/chat
  * {
  *   "message": "Hello Johnny5!",
  *   "sessionKey": "dashboard:main"  // Optional, defaults to "dashboard:main"
@@ -13,8 +13,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
-import type { Johnny5APIResponse, MoltbotResponse } from '@/types/johnny5';
+import { getJ5Bridge } from '@/services/johnny5/j5-bridge';
+import type { Johnny5APIResponse, J5Response } from '@/types/johnny5';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -47,15 +47,15 @@ export async function POST(
   request: NextRequest
 ): Promise<NextResponse<Johnny5APIResponse<ChatSuccessResponse>>> {
   try {
-    // 0. Check if Moltbot is enabled
-    const moltbotEnabled = process.env.MOLTBOT_ENABLED !== 'false';
-    if (!moltbotEnabled) {
-      console.log('[Moltbot Chat] Moltbot disabled via MOLTBOT_ENABLED=false, returning error to trigger fallback');
+    // 0. Check if J5 is enabled
+    const j5Enabled = process.env.J5_ENABLED !== 'false';
+    if (!j5Enabled) {
+      console.log('[J5 Chat] J5 disabled via J5_ENABLED=false, returning error to trigger fallback');
       return NextResponse.json(
         {
           success: false,
-          error: 'Moltbot is disabled. Please use /api/johnny5/chat instead.',
-          code: 'MOLTBOT_DISABLED',
+          error: 'J5 is disabled. Please use /api/johnny5/chat instead.',
+          code: 'J5_DISABLED',
           timestamp: new Date(),
         },
         { status: 503 }
@@ -113,8 +113,8 @@ export async function POST(
       );
     }
 
-    // 2. Get MoltbotBridge singleton
-    const bridge = getMoltbotBridge();
+    // 2. Get J5Bridge singleton
+    const bridge = getJ5Bridge();
 
     // 3. Check connection status
     if (!bridge.isConnected()) {
@@ -123,14 +123,14 @@ export async function POST(
 
       // Try to connect if not connected
       if (!status.connected) {
-        console.log('[Moltbot Chat] Bridge not connected, attempting connection...');
+        console.log('[J5 Chat] Bridge not connected, attempting connection...');
         try {
           await bridge.connect(config.gatewayUrl);
 
           // CRITICAL FIX: Wait for authentication to complete
           // The connect() promise resolves when WebSocket opens, but auth is async
           // We need to wait up to 5 seconds for the authenticated event
-          console.log('[Moltbot Chat] Waiting for authentication to complete...');
+          console.log('[J5 Chat] Waiting for authentication to complete...');
 
           await new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
@@ -154,15 +154,15 @@ export async function POST(
             bridge.on('authenticated', onAuth);
           });
 
-          console.log('[Moltbot Chat] Authentication complete, bridge ready');
+          console.log('[J5 Chat] Authentication complete, bridge ready');
         } catch (connectError) {
-          console.error('[Moltbot Chat] Connection/auth failed:', connectError);
+          console.error('[J5 Chat] Connection/auth failed:', connectError);
           return NextResponse.json(
             {
               success: false,
               error: connectError instanceof Error && connectError.message.includes('timeout')
-                ? 'Connected to Moltbot but authentication timed out. Check MOLTBOT_AUTH_TOKEN.'
-                : `Moltbot gateway not available. Please ensure ManusLive is running at ${config.gatewayUrl}`,
+                ? 'Connected to J5 but authentication timed out. Check J5_AUTH_TOKEN.'
+                : `J5 gateway not available. Please ensure ManusLive is running at ${config.gatewayUrl}`,
               timestamp: new Date(),
             },
             { status: connectError instanceof Error && connectError.message.includes('timeout') ? 401 : 503 }
@@ -183,25 +183,25 @@ export async function POST(
       }
     }
 
-    // 4. Send message via MoltbotBridge
-    console.log(`[Moltbot Chat] Sending message to session ${sessionKey}: ${message.substring(0, 100)}...`);
+    // 4. Send message via J5Bridge
+    console.log(`[J5 Chat] Sending message to session ${sessionKey}: ${message.substring(0, 100)}...`);
 
-    let response: MoltbotResponse;
+    let response: J5Response;
     try {
       response = await bridge.sendMessage(sessionKey, message);
     } catch (sendError) {
-      console.error('[Moltbot Chat] Send error:', sendError);
+      console.error('[J5 Chat] Send error:', sendError);
       return NextResponse.json(
         {
           success: false,
-          error: sendError instanceof Error ? sendError.message : 'Failed to send message to Moltbot',
+          error: sendError instanceof Error ? sendError.message : 'Failed to send message to J5',
           timestamp: new Date(),
         },
         { status: 502 }
       );
     }
 
-    console.log(`[Moltbot Chat] Response received: ${response.text.substring(0, 100)}...`);
+    console.log(`[J5 Chat] Response received: ${response.text.substring(0, 100)}...`);
 
     // 4.5 Detect CLI error text returned as "successful" response — trigger frontend fallback
     const cliErrorPatterns = [
@@ -214,9 +214,9 @@ export async function POST(
     ];
     const hasCliError = cliErrorPatterns.some(pattern => response.text.includes(pattern));
     if (hasCliError) {
-      console.warn('[Moltbot Chat] Response contains CLI error, triggering fallback:', response.text.slice(0, 200));
+      console.warn('[J5 Chat] Response contains CLI error, triggering fallback:', response.text.slice(0, 200));
       return NextResponse.json(
-        { success: false, error: 'Moltbot CLI error', code: 'MOLTBOT_DISABLED', timestamp: new Date() },
+        { success: false, error: 'J5 CLI error', code: 'J5_DISABLED', timestamp: new Date() },
         { status: 503 }
       );
     }
@@ -235,7 +235,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('[Moltbot Chat] Unexpected error:', error);
+    console.error('[J5 Chat] Unexpected error:', error);
     return NextResponse.json(
       {
         success: false,

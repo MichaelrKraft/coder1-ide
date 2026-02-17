@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser, requireTeamMember } from '@/lib/auth/team-middleware';
+import { getAuthUser, requireTeamMember, requireTeamAdmin } from '@/lib/auth/team-middleware';
 import { getTeamById, getTeamMembers, deleteTeam } from '@/lib/auth/db';
 
 /**
@@ -49,7 +49,7 @@ export async function GET(
 
 /**
  * DELETE /api/team/[teamId]
- * Delete a team. Requires team membership (admin role ideally, but allowing any member for now).
+ * Delete a team. Requires admin or owner role.
  */
 export async function DELETE(
   request: NextRequest,
@@ -59,8 +59,8 @@ export async function DELETE(
     const user = await getAuthUser(request);
     const { teamId } = await params;
 
-    // Verify membership
-    await requireTeamMember(user.id, teamId);
+    // Verify admin or owner role
+    await requireTeamAdmin(user.id, teamId);
 
     const team = getTeamById(teamId);
     if (!team) {
@@ -77,7 +77,8 @@ export async function DELETE(
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     const status = message.includes('Not authenticated') ? 401
-                 : message.includes('Not a team member') ? 403 : 500;
+                 : message.includes('Not a team member') ? 403
+                 : message.includes('Admin access required') ? 403 : 500;
     return NextResponse.json({ success: false, error: message }, { status });
   }
 }

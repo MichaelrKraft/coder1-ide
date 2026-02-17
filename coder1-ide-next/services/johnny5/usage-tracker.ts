@@ -19,7 +19,7 @@ export interface UsageRecord {
   id: string;
   timestamp: Date;
   sessionId: string;
-  source: 'moltbot' | 'direct' | 'mock' | 'fallback';
+  source: 'j5' | 'direct' | 'mock' | 'fallback';
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
@@ -34,7 +34,7 @@ export interface UsageStats {
   totalCost: number;
   messageCount: number;
   bySource: {
-    moltbot: number;
+    j5: number;
     direct: number;
     mock: number;
     fallback: number;
@@ -76,7 +76,7 @@ function calculateCost(inputTokens: number, outputTokens: number): number {
  */
 export async function trackUsage(params: {
   sessionId: string;
-  source: 'moltbot' | 'direct' | 'mock' | 'fallback';
+  source: 'j5' | 'direct' | 'mock' | 'fallback';
   inputTokens: number;
   outputTokens: number;
   model?: string;
@@ -182,7 +182,7 @@ export async function getUsageStats(params: {
   // Get source breakdown from in-memory cache
   const records = getUsageRecords(params);
   const bySource = {
-    moltbot: 0,
+    j5: 0,
     direct: 0,
     mock: 0,
     fallback: 0,
@@ -365,7 +365,7 @@ export async function getEfficiencyMetrics(days: number = 7): Promise<{
 
   // Success rate (non-mock, non-fallback)
   const successfulMessages = records.filter(r =>
-    r.source === 'moltbot' || r.source === 'direct'
+    r.source === 'j5' || r.source === 'direct'
   ).length;
   const successRate = records.length > 0
     ? Math.round((successfulMessages / records.length) * 100)

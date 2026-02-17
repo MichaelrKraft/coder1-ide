@@ -4994,31 +4994,63 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       const visionImages = images.filter(i => i.mode === 'vision');
 
       let enrichedCommand = command;
+      let ocrSuccessCount = 0; // Track successful OCR extractions
 
       // Process OCR images - extract text and append to command
       if (ocrImages.length > 0) {
         xtermRef.current?.writeln('\r\n\x1b[36m🔤 Extracting text from ' + ocrImages.length + ' image(s)...\x1b[0m');
 
+        // Image size limit (5MB raw, ~6.7MB base64)
+        const MAX_IMAGE_SIZE_MB = 5;
+        const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+        const OCR_FETCH_TIMEOUT_MS = 15000; // 15 second timeout for fetch
+
         for (let i = 0; i < ocrImages.length; i++) {
           const img = ocrImages[i];
           try {
+            // Check image size before processing (base64 is ~33% larger than raw)
+            const estimatedRawSize = img.base64 ? Math.floor(img.base64.length * 0.75) : 0;
+            if (estimatedRawSize > MAX_IMAGE_SIZE_BYTES) {
+              xtermRef.current?.writeln(`  ⚠️ Image ${i + 1} too large (${Math.round(estimatedRawSize / 1024 / 1024)}MB > ${MAX_IMAGE_SIZE_MB}MB). Skipping OCR.`);
+              continue;
+            }
+
             if (img.extractedText) {
               // Use cached OCR result
               enrichedCommand += `\n\n[Text extracted from image ${i + 1}]:\n${img.extractedText}`;
+              ocrSuccessCount++;
             } else {
-              // Perform OCR via API
+              // Perform OCR via API with timeout
               xtermRef.current?.writeln(`  📄 Processing image ${i + 1}/${ocrImages.length}...`);
-              const res = await fetch('/api/ocr/extract', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ base64: img.base64, mimeType: img.mimeType })
-              });
-              const result = await res.json();
-              if (result.success && result.text) {
-                enrichedCommand += `\n\n[Text extracted from image ${i + 1} (${Math.round(result.confidence)}% confidence)]:\n${result.text}`;
-                xtermRef.current?.writeln(`  ✅ Extracted ${result.text.length} characters`);
-              } else {
-                xtermRef.current?.writeln(`  ⚠️ Could not extract text from image ${i + 1}`);
+
+              // Create abort controller for fetch timeout
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), OCR_FETCH_TIMEOUT_MS);
+
+              try {
+                const res = await fetch('/api/ocr/extract', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ base64: img.base64, mimeType: img.mimeType }),
+                  signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                const result = await res.json();
+                if (result.success && result.text) {
+                  enrichedCommand += `\n\n[Text extracted from image ${i + 1} (${Math.round(result.confidence)}% confidence)]:\n${result.text}`;
+                  xtermRef.current?.writeln(`  ✅ Extracted ${result.text.length} characters`);
+                  ocrSuccessCount++;
+                } else {
+                  xtermRef.current?.writeln(`  ⚠️ Could not extract text from image ${i + 1}${result.error ? `: ${result.error}` : ''}`);
+                }
+              } catch (fetchErr) {
+                clearTimeout(timeoutId);
+                if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
+                  xtermRef.current?.writeln(`  ⚠️ OCR timed out for image ${i + 1} (>${OCR_FETCH_TIMEOUT_MS / 1000}s)`);
+                } else {
+                  throw fetchErr;
+                }
               }
             }
           } catch (err) {
@@ -5074,7 +5106,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       // If only OCR (no vision), continue with enriched command to CLI
       if (visionImages.length === 0 && ocrImages.length > 0) {
         command = enrichedCommand;
-        xtermRef.current?.writeln('\r\n\x1b[32m✅ Text extracted, sending to Claude...\x1b[0m\r\n');
+        if (ocrSuccessCount > 0) {
+          xtermRef.current?.writeln(`\r\n\x1b[32m✅ Text extracted from ${ocrSuccessCount}/${ocrImages.length} image(s), sending to Claude...\x1b[0m\r\n`);
+        } else {
+          xtermRef.current?.writeln('\r\n\x1b[33m⚠️ Could not extract text from images. Sending command anyway...\x1b[0m\r\n');
+        }
       }
     }
 
@@ -5112,11 +5148,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       id: sessionId,
       data: command + '\r', // Include Enter key to execute command
       selectedClaudeModel,
-      skipPermissions: terminalSettings.skipPermissions,
-      // Include image metadata if present
-      ...(images && images.length > 0 ? { 
-        attachedImages: images 
-      } : {})
+      skipPermissions: terminalSettings.skipPermissions
+      // NOTE: Images already processed via OCR/Vision HTTP APIs above
+      // Don't send base64 data via socket (exceeds 1MB maxHttpBufferSize limit)
     });
     
     // Increment command counter for metrics

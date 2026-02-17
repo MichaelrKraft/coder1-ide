@@ -81,9 +81,9 @@ function TypewriterText({
 }
 
 // Mode indicator component for showing Johnny5's current operational mode
-function ModeIndicator({ mode }: { mode: 'moltbot' | 'bridge' | 'gemini' | null }) {
+function ModeIndicator({ mode }: { mode: 'j5' | 'bridge' | 'gemini' | null }) {
   const modeInfo: Record<string, { label: string; description: string; colorClass: string; dotClass: string }> = {
-    moltbot: {
+    j5: {
       label: 'Full Autonomy',
       description: 'MCP tools, 24/7 operation',
       colorClass: 'text-green-400',
@@ -173,7 +173,7 @@ type ChatMessage = Johnny5ChatMessage;
 type ToolCall = Johnny5ChatToolCall;
 
 interface Johnny5Mode {
-  mode: 'moltbot' | 'bridge' | 'gemini';
+  mode: 'j5' | 'bridge' | 'gemini';
   capabilities: string[];
   hasMCP: boolean;
   provider: string;
@@ -211,8 +211,8 @@ export default function ChatTab() {
     clearChat,
     setChatSessionId,
     markWelcomeAnimationPlayed,
-    moltbotStatus,
-    setMoltbotStatus,
+    j5Status,
+    setJ5Status,
     activeCrewMember,
     settings,
   } = useJohnny5Store();
@@ -374,7 +374,7 @@ export default function ChatTab() {
     return () => clearInterval(interval);
   }, [fetchJohnny5Mode]);
 
-  // Subscribe to Moltbot status updates via Socket.IO
+  // Subscribe to J5 status updates via Socket.IO
   useEffect(() => {
     let socket: any = null;
 
@@ -387,18 +387,18 @@ export default function ChatTab() {
 
         // Listen for status updates
         socket.on('johnny5:status', (status: any) => {
-          setMoltbotStatus(status);
+          setJ5Status(status);
           useIDEStore.getState().setConnectionStatus('ai', !!status?.connected);
         });
 
         // Listen for connection events
-        socket.on('johnny5:moltbot-connected', () => {
-          setMoltbotStatus({ ...moltbotStatus, connected: true, error: null } as any);
+        socket.on('johnny5:j5-connected', () => {
+          setJ5Status({ ...j5Status, connected: true, error: null } as any);
           useIDEStore.getState().setConnectionStatus('ai', true);
         });
 
-        socket.on('johnny5:moltbot-disconnected', ({ reason }: { reason: string }) => {
-          setMoltbotStatus({ ...moltbotStatus, connected: false, error: reason } as any);
+        socket.on('johnny5:j5-disconnected', ({ reason }: { reason: string }) => {
+          setJ5Status({ ...j5Status, connected: false, error: reason } as any);
           useIDEStore.getState().setConnectionStatus('ai', false);
         });
 
@@ -449,15 +449,15 @@ export default function ChatTab() {
     return () => {
       if (socket) {
         socket.off('johnny5:status');
-        socket.off('johnny5:moltbot-connected');
-        socket.off('johnny5:moltbot-disconnected');
+        socket.off('johnny5:j5-connected');
+        socket.off('johnny5:j5-disconnected');
         socket.off('johnny5:claude-context-ready');
         socket.off('johnny5:chat-push');
         socket.off('terminal:session-created');
         socket.off('terminal:session-attached');
       }
     };
-  }, [setMoltbotStatus, fetchJohnny5Mode]);
+  }, [setJ5Status, fetchJohnny5Mode]);
 
   // Listen for setup wizard completion to refresh mode and clear Limited Mode banner
   useEffect(() => {
@@ -530,18 +530,18 @@ export default function ChatTab() {
 
   // Helper function to get connection status display
   const getConnectionStatus = () => {
-    if (!moltbotStatus) {
+    if (!j5Status) {
       return { color: 'bg-gray-400', text: 'Unknown', tooltip: 'Checking connection...' };
     }
-    if (moltbotStatus.connected) {
+    if (j5Status.connected) {
       return { color: 'bg-green-500', text: 'Connected', tooltip: 'Connected to Johnny5 daemon' };
     }
     // Fallback mode is active and working - show as connected since chat works
-    if (moltbotStatus.fallbackActive) {
+    if (j5Status.fallbackActive) {
       return { color: 'bg-green-500', text: 'Connected', tooltip: 'Using Claude API directly' };
     }
-    if (moltbotStatus.reconnectAttempts > 0) {
-      return { color: 'bg-yellow-500', text: 'Reconnecting', tooltip: `Reconnecting... (attempt ${moltbotStatus.reconnectAttempts})` };
+    if (j5Status.reconnectAttempts > 0) {
+      return { color: 'bg-yellow-500', text: 'Reconnecting', tooltip: `Reconnecting... (attempt ${j5Status.reconnectAttempts})` };
     }
     return { color: 'bg-red-500', text: 'Disconnected', tooltip: 'Johnny5 unavailable' };
   };
@@ -668,7 +668,7 @@ export default function ChatTab() {
     }
   };
 
-  // Send message - prefers Moltbot when connected, falls back to Bridge CLI
+  // Send message - prefers J5 when connected, falls back to Bridge CLI
   const handleSend = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -966,14 +966,14 @@ export default function ChatTab() {
     abortControllerRef.current = controller;
 
     try {
-      // Determine which API to use based on Moltbot connection status
-      // Prefer Moltbot for 24/7 daemon capabilities, fall back to Bridge CLI
-      const useMoltbot = moltbotStatus?.connected === true;
-      const apiEndpoint = useMoltbot
-        ? '/api/johnny5/moltbot/chat'
+      // Determine which API to use based on J5 connection status
+      // Prefer J5 for 24/7 daemon capabilities, fall back to Bridge CLI
+      const useJ5 = j5Status?.connected === true;
+      const apiEndpoint = useJ5
+        ? '/api/johnny5/j5/chat'
         : '/api/johnny5/chat';
 
-      console.log(`[ChatTab] Using ${useMoltbot ? 'Moltbot' : 'Bridge'} chat API`);
+      console.log(`[ChatTab] Using ${useJ5 ? 'J5' : 'Bridge'} chat API`);
 
       // Get auth token from localStorage if available
       const authToken = typeof window !== 'undefined'
@@ -987,7 +987,7 @@ export default function ChatTab() {
           'Content-Type': 'application/json',
           ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
         },
-        body: useMoltbot
+        body: useJ5
           ? JSON.stringify({
               message: userMessage.content,
               sessionKey: 'dashboard:main', // Default session for dashboard chat
@@ -1004,9 +1004,9 @@ export default function ChatTab() {
 
       let data = await response.json();
 
-      // Handle MOLTBOT_DISABLED error - retry with main chat endpoint
-      if (data.code === 'MOLTBOT_DISABLED' && useMoltbot) {
-        console.log('[ChatTab] Moltbot disabled, retrying with main chat endpoint');
+      // Handle J5_DISABLED error - retry with main chat endpoint
+      if (data.code === 'J5_DISABLED' && useJ5) {
+        console.log('[ChatTab] J5 disabled, retrying with main chat endpoint');
         response = await fetch('/api/johnny5/chat', {
           method: 'POST',
           headers: {
@@ -1038,7 +1038,7 @@ export default function ChatTab() {
         return; // Don't throw, just show the upgrade prompt
       }
 
-      // Handle specific error codes from both Bridge-based and Moltbot chat
+      // Handle specific error codes from both Bridge-based and J5 chat
       if (!response.ok || !data.success) {
         const errorCode = data.code;
         let errorMessage = "Sorry, I encountered an error. Please try again.";
@@ -1064,7 +1064,7 @@ export default function ChatTab() {
         } else if (response.status === 503) {
           errorMessage = "🔌 Johnny5 daemon not available. Please ensure ManusLive is running.";
         } else if (response.status === 401) {
-          errorMessage = "🔑 Authentication failed. Please check your MOLTBOT_AUTH_TOKEN.";
+          errorMessage = "🔑 Authentication failed. Please check your J5_AUTH_TOKEN.";
         } else if (data.error) {
           errorMessage = `Error: ${data.error}`;
         }

@@ -1988,7 +1988,7 @@ export async function upsertMemoryChunk(chunk: {
   const stmt = database.prepare(`
     INSERT INTO memory_chunks (id, user_id, source_type, source_id, content, content_hash, start_line, end_line, token_count, heading, section_type, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(user_id, source_id, content_hash) DO UPDATE SET
+    ON CONFLICT(source_id, content_hash) DO UPDATE SET
       content = excluded.content,
       start_line = excluded.start_line,
       end_line = excluded.end_line,

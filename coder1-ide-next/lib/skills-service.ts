@@ -58,6 +58,17 @@ export interface SkillReference {
 }
 
 /**
+ * Rule file from a skill's rules/ directory
+ */
+export interface SkillRuleFile {
+  filename: string;
+  name: string;
+  description: string;
+  content: string;
+  estimatedTokens: number;
+}
+
+/**
  * Context for skill execution
  */
 export interface SkillContext {
@@ -474,6 +485,92 @@ export class SkillsService {
     });
 
     return reference;
+  }
+
+  /**
+   * Load all rule files from a skill's rules/ directory.
+   * Returns parsed rule files with name, description, and content.
+   * Falls back gracefully if no rules/ directory exists.
+   */
+  async loadSkillRules(skillId: string): Promise<SkillRuleFile[]> {
+    const metadata = this.metadataCache.get(skillId);
+    if (!metadata) return [];
+
+    const skillPath = this.getSkillPath(metadata);
+    const rulesDir = path.join(skillPath, 'rules');
+
+    try {
+      await fs.access(rulesDir);
+    } catch {
+      return []; // No rules directory
+    }
+
+    const entries = await fs.readdir(rulesDir);
+    const mdFiles = entries.filter(e => e.endsWith('.md'));
+    const rules: SkillRuleFile[] = [];
+
+    for (const file of mdFiles) {
+      const cacheKey = `${skillId}:rules/${file}`;
+      const cached = this.referenceCache.get(cacheKey);
+
+      if (cached) {
+        // Extract name/description from cached content frontmatter
+        const { name, description } = this.parseFrontmatter(cached.content);
+        rules.push({
+          filename: file,
+          name: name || file.replace('.md', ''),
+          description: description || '',
+          content: cached.content,
+          estimatedTokens: cached.estimatedTokens,
+        });
+        continue;
+      }
+
+      try {
+        const content = await fs.readFile(path.join(rulesDir, file), 'utf-8');
+        const tokens = this.estimateTokens(content);
+        const { name, description } = this.parseFrontmatter(content);
+
+        this.referenceCache.set(cacheKey, {
+          skillId,
+          referencePath: `rules/${file}`,
+          content,
+          estimatedTokens: tokens,
+        });
+
+        rules.push({
+          filename: file,
+          name: name || file.replace('.md', ''),
+          description: description || '',
+          content,
+          estimatedTokens: tokens,
+        });
+      } catch {
+        // Skip unreadable files
+      }
+    }
+
+    return rules;
+  }
+
+  /**
+   * Parse YAML frontmatter to extract name and description
+   */
+  private parseFrontmatter(content: string): { name: string; description: string } {
+    const match = content.match(/^---\n([\s\S]*?)\n---/);
+    if (!match) return { name: '', description: '' };
+
+    let name = '';
+    let description = '';
+    for (const line of match[1].split('\n')) {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx <= 0) continue;
+      const key = line.slice(0, colonIdx).trim();
+      const value = line.slice(colonIdx + 1).trim();
+      if (key === 'name') name = value;
+      if (key === 'description') description = value;
+    }
+    return { name, description };
   }
 
   /**

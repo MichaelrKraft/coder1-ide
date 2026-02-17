@@ -367,7 +367,7 @@ export interface Johnny5PaginatedResponse<T> {
     pageSize: number;
     hasMore: boolean;
 }
-export interface MoltbotConfig {
+export interface J5Config {
     gatewayUrl: string;
     enabled: boolean;
     reconnectInterval: number;
@@ -375,7 +375,7 @@ export interface MoltbotConfig {
     connectionTimeout: number;
     fallbackToDirect: boolean;
 }
-export interface MoltbotConnectionStatus {
+export interface J5ConnectionStatus {
     connected: boolean;
     gatewayUrl: string | null;
     lastPingAt: Date | null;
@@ -384,20 +384,20 @@ export interface MoltbotConnectionStatus {
     error: string | null;
     fallbackActive: boolean;
 }
-export interface MoltbotMessage {
+export interface J5Message {
     id: string;
     sessionId: string;
     role: 'user' | 'assistant' | 'system';
     content: string;
     timestamp: Date;
-    toolCalls?: MoltbotToolCall[];
+    toolCalls?: J5ToolCall[];
     thinking?: string;
     tokenUsage?: {
         input: number;
         output: number;
     };
 }
-export interface MoltbotToolCall {
+export interface J5ToolCall {
     id: string;
     name: string;
     input: Record<string, unknown>;
@@ -407,19 +407,19 @@ export interface MoltbotToolCall {
     completedAt?: Date;
     error?: string;
 }
-export interface MoltbotSession {
+export interface J5Session {
     id: string;
     name?: string;
     createdAt: Date;
     lastActivityAt: Date;
-    messages: MoltbotMessage[];
+    messages: J5Message[];
     context: Record<string, unknown>;
     tokenCount: number;
     status: 'active' | 'idle' | 'completed' | 'error';
 }
-export interface MoltbotResponse {
+export interface J5Response {
     text: string;
-    toolCalls?: MoltbotToolCall[];
+    toolCalls?: J5ToolCall[];
     thinking?: string;
     sessionId: string;
     messageId: string;
@@ -428,7 +428,7 @@ export interface MoltbotResponse {
         output: number;
     };
 }
-export interface MoltbotSkill {
+export interface J5Skill {
     id: string;
     name: string;
     description: string;
@@ -440,7 +440,7 @@ export interface MoltbotSkill {
     enabled: boolean;
     source: 'local' | 'molthub';
 }
-export interface MoltbotGatewayEvent {
+export interface J5GatewayEvent {
     type: 'message' | 'session_update' | 'session_list' | 'tool_call' | 'error' | 'ping' | 'pong';
     payload: unknown;
     timestamp: Date;

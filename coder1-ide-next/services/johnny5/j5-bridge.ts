@@ -1,24 +1,24 @@
 /**
- * Moltbot Bridge Service
+ * J5 Bridge Service
  *
- * CRITICAL service that connects Coder1 IDE to a Moltbot daemon running on a
+ * CRITICAL service that connects Coder1 IDE to a J5 daemon running on a
  * separate laptop. Provides robust WebSocket connectivity with:
  * - Automatic reconnection with exponential backoff
  * - Health monitoring via ping/pong heartbeat
  * - Session management and message routing
- * - Graceful degradation when Moltbot is unavailable
+ * - Graceful degradation when J5 is unavailable
  *
  * "No disassemble!" - Johnny5
  */
 
 import { EventEmitter } from 'events';
 import type {
-  MoltbotConfig,
-  MoltbotConnectionStatus,
-  MoltbotMessage,
-  MoltbotSession,
-  MoltbotResponse,
-  MoltbotGatewayEvent,
+  J5Config,
+  J5ConnectionStatus,
+  J5Message,
+  J5Session,
+  J5Response,
+  J5GatewayEvent,
 } from '../../types/johnny5';
 
 // ============================================================================
@@ -35,13 +35,13 @@ async function loadWebSocket(): Promise<typeof import('ws').default | null> {
     // Dynamic import for server-side Node.js environment
     const wsModule = await import('ws');
     WebSocket = wsModule.default;
-    console.log('[MoltbotBridge] WebSocket (ws) package loaded successfully');
+    console.log('[J5Bridge] WebSocket (ws) package loaded successfully');
     return WebSocket;
   } catch (error) {
     console.warn(
-      '[MoltbotBridge] WebSocket (ws) package not available. Install with: npm install ws'
+      '[J5Bridge] WebSocket (ws) package not available. Install with: npm install ws'
     );
-    console.warn('[MoltbotBridge] Moltbot bridge will operate in fallback mode');
+    console.warn('[J5Bridge] J5 bridge will operate in fallback mode');
     return null;
   }
 }
@@ -50,45 +50,45 @@ async function loadWebSocket(): Promise<typeof import('ws').default | null> {
 // Types
 // ============================================================================
 
-export interface MoltbotBridgeState {
-  config: MoltbotConfig;
-  status: MoltbotConnectionStatus;
-  sessions: Map<string, MoltbotSession>;
+export interface J5BridgeState {
+  config: J5Config;
+  status: J5ConnectionStatus;
+  sessions: Map<string, J5Session>;
   pendingMessages: Map<string, {
-    resolve: (value: MoltbotResponse) => void;
+    resolve: (value: J5Response) => void;
     reject: (error: Error) => void;
     timeout: NodeJS.Timeout;
   }>;
 }
 
-export interface MoltbotBridgeEvents {
+export interface J5BridgeEvents {
   connected: () => void;
   disconnected: (reason: string) => void;
-  message: (message: MoltbotMessage) => void;
-  'session-update': (session: MoltbotSession) => void;
+  message: (message: J5Message) => void;
+  'session-update': (session: J5Session) => void;
   error: (error: Error) => void;
-  'connection-status': (status: MoltbotConnectionStatus) => void;
+  'connection-status': (status: J5ConnectionStatus) => void;
 }
 
 // ============================================================================
 // Default Configuration
 // ============================================================================
 
-const DEFAULT_CONFIG: MoltbotConfig = {
-  gatewayUrl: process.env.MOLTBOT_GATEWAY_URL || 'ws://localhost:55413',
+const DEFAULT_CONFIG: J5Config = {
+  gatewayUrl: process.env.J5_GATEWAY_URL || 'ws://localhost:55413',
   enabled: true,
-  reconnectInterval: parseInt(process.env.MOLTBOT_RECONNECT_INTERVAL || '5000', 10),
-  maxRetries: parseInt(process.env.MOLTBOT_MAX_RETRIES || '10', 10),
-  connectionTimeout: parseInt(process.env.MOLTBOT_CONNECTION_TIMEOUT || '30000', 10),
-  fallbackToDirect: process.env.MOLTBOT_FALLBACK_TO_DIRECT === 'true',
+  reconnectInterval: parseInt(process.env.J5_RECONNECT_INTERVAL || '5000', 10),
+  maxRetries: parseInt(process.env.J5_MAX_RETRIES || '10', 10),
+  connectionTimeout: parseInt(process.env.J5_CONNECTION_TIMEOUT || '30000', 10),
+  fallbackToDirect: process.env.J5_FALLBACK_TO_DIRECT === 'true',
 };
 
 // ============================================================================
-// Moltbot Bridge Service Class
+// J5 Bridge Service Class
 // ============================================================================
 
-class MoltbotBridgeService extends EventEmitter {
-  private state: MoltbotBridgeState;
+class J5BridgeService extends EventEmitter {
+  private state: J5BridgeState;
   private ws: InstanceType<typeof import('ws').default> | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private pingTimer: NodeJS.Timeout | null = null;
@@ -120,13 +120,13 @@ class MoltbotBridgeService extends EventEmitter {
         return obj.content.map(item => this.extractTextContent(item)).join('');
       }
       // Last resort - don't stringify to avoid [object Object]
-      console.warn('[MoltbotBridge] Unable to extract text from:', JSON.stringify(obj).substring(0, 200));
+      console.warn('[J5Bridge] Unable to extract text from:', JSON.stringify(obj).substring(0, 200));
       return '';
     }
     return String(value);
   }
 
-  constructor(config?: Partial<MoltbotConfig>) {
+  constructor(config?: Partial<J5Config>) {
     super();
 
     this.state = {
@@ -144,7 +144,7 @@ class MoltbotBridgeService extends EventEmitter {
       pendingMessages: new Map(),
     };
 
-    console.log('[MoltbotBridge] Service initialized', {
+    console.log('[J5Bridge] Service initialized', {
       gatewayUrl: this.state.config.gatewayUrl,
       enabled: this.state.config.enabled,
     });
@@ -155,12 +155,12 @@ class MoltbotBridgeService extends EventEmitter {
   // -------------------------------------------------------------------------
 
   /**
-   * Connect to the Moltbot gateway
+   * Connect to the J5 gateway
    */
   async connect(gatewayUrl?: string): Promise<void> {
     const url = gatewayUrl || this.state.config.gatewayUrl;
 
-    console.log(`[MoltbotBridge] Connecting to ${url}...`);
+    console.log(`[J5Bridge] Connecting to ${url}...`);
 
     // Load WebSocket package
     const WS = await loadWebSocket();
@@ -183,7 +183,7 @@ class MoltbotBridgeService extends EventEmitter {
       }, this.state.config.connectionTimeout);
 
       try {
-        // Connect to /dashboard path for Moltbot protocol (auth via connect handshake)
+        // Connect to /dashboard path for J5 protocol (auth via connect handshake)
         const dashboardUrl = url.replace(/\/?$/, '/dashboard');
         this.ws = new WS(dashboardUrl);
 
@@ -220,10 +220,10 @@ class MoltbotBridgeService extends EventEmitter {
   }
 
   /**
-   * Disconnect from the Moltbot gateway
+   * Disconnect from the J5 gateway
    */
   disconnect(): void {
-    console.log('[MoltbotBridge] Disconnecting...');
+    console.log('[J5Bridge] Disconnecting...');
 
     // Reset authentication state
     this.authenticated = false;
@@ -245,7 +245,7 @@ class MoltbotBridgeService extends EventEmitter {
       try {
         this.ws.close(1000, 'Client disconnect');
       } catch (error) {
-        console.warn('[MoltbotBridge] Error during disconnect:', error);
+        console.warn('[J5Bridge] Error during disconnect:', error);
       }
       this.ws = null;
     }
@@ -266,7 +266,7 @@ class MoltbotBridgeService extends EventEmitter {
    * Reconnect to the gateway (with optional new URL)
    */
   async reconnect(gatewayUrl?: string): Promise<void> {
-    console.log('[MoltbotBridge] Reconnecting...');
+    console.log('[J5Bridge] Reconnecting...');
     this.disconnect();
     await this.connect(gatewayUrl);
   }
@@ -276,7 +276,7 @@ class MoltbotBridgeService extends EventEmitter {
   // -------------------------------------------------------------------------
 
   private handleConnectionOpen(url: string): void {
-    console.log(`[MoltbotBridge] Connected to ${url}`);
+    console.log(`[J5Bridge] Connected to ${url}`);
 
     this.reconnectAttempts = 0;
 
@@ -298,7 +298,7 @@ class MoltbotBridgeService extends EventEmitter {
     // This handles ManusLive with auth mode "none" which doesn't send connect.challenge
     setTimeout(() => {
       if (!this.authenticated && this.state.status.connected) {
-        console.log('[MoltbotBridge] No auth challenge received, auto-authenticating (auth mode: none)');
+        console.log('[J5Bridge] No auth challenge received, auto-authenticating (auth mode: none)');
         this.authenticated = true;
         this.emit('authenticated');
       }
@@ -306,7 +306,7 @@ class MoltbotBridgeService extends EventEmitter {
   }
 
   private handleConnectionClose(code: number, reason: string): void {
-    console.log(`[MoltbotBridge] Connection closed (code: ${code}, reason: ${reason})`);
+    console.log(`[J5Bridge] Connection closed (code: ${code}, reason: ${reason})`);
 
     // Stop heartbeat
     if (this.pingTimer) {
@@ -328,7 +328,7 @@ class MoltbotBridgeService extends EventEmitter {
   }
 
   private handleConnectionError(error: Error): void {
-    console.error('[MoltbotBridge] Connection error:', error.message);
+    console.error('[J5Bridge] Connection error:', error.message);
 
     this.updateStatus({
       connected: false,
@@ -352,7 +352,7 @@ class MoltbotBridgeService extends EventEmitter {
 
     if (pastMaxRetries) {
       if (this.state.config.fallbackToDirect && !this.state.status.fallbackActive) {
-        console.log('[MoltbotBridge] Activating fallback mode (will keep trying to reconnect)');
+        console.log('[J5Bridge] Activating fallback mode (will keep trying to reconnect)');
         this.updateStatus({
           fallbackActive: true,
         });
@@ -375,7 +375,7 @@ class MoltbotBridgeService extends EventEmitter {
       : `${this.reconnectAttempts}/${this.state.config.maxRetries}`;
 
     console.log(
-      `[MoltbotBridge] Scheduling reconnection attempt ${attemptDisplay} in ${delay}ms`
+      `[J5Bridge] Scheduling reconnection attempt ${attemptDisplay} in ${delay}ms`
     );
 
     this.updateStatus({
@@ -419,9 +419,9 @@ class MoltbotBridgeService extends EventEmitter {
       this.updateStatus({
         lastPingAt: new Date(),
       });
-      console.log('[MoltbotBridge] Ping sent');
+      console.log('[J5Bridge] Ping sent');
     } catch (error) {
-      console.warn('[MoltbotBridge] Failed to send ping:', error);
+      console.warn('[J5Bridge] Failed to send ping:', error);
     }
   }
 
@@ -429,7 +429,7 @@ class MoltbotBridgeService extends EventEmitter {
     this.updateStatus({
       lastPongAt: new Date(),
     });
-    console.log('[MoltbotBridge] Pong received');
+    console.log('[J5Bridge] Pong received');
   }
 
   /**
@@ -442,7 +442,7 @@ class MoltbotBridgeService extends EventEmitter {
   /**
    * Get current connection status
    */
-  getStatus(): MoltbotConnectionStatus {
+  getStatus(): J5ConnectionStatus {
     return { ...this.state.status };
   }
 
@@ -454,25 +454,25 @@ class MoltbotBridgeService extends EventEmitter {
     try {
       const raw = typeof data === 'string' ? data : data.toString('utf-8');
 
-      // Debug: Log raw message to understand Moltbot protocol
+      // Debug: Log raw message to understand J5 protocol
       // Log more chars for agent/chat events to capture content
       const isAgentOrChat = raw.includes('"event":"agent"') || raw.includes('"event":"chat"');
-      console.log(`[MoltbotBridge] Raw message received (first ${isAgentOrChat ? 1000 : 200} chars): ${raw.substring(0, isAgentOrChat ? 1000 : 200)}`);
+      console.log(`[J5Bridge] Raw message received (first ${isAgentOrChat ? 1000 : 200} chars): ${raw.substring(0, isAgentOrChat ? 1000 : 200)}`);
 
       const parsed = JSON.parse(raw);
 
-      // Moltbot uses nested event format: {"type":"event"|"evt","event":"...", "payload": {...}}
+      // J5 uses nested event format: {"type":"event"|"evt","event":"...", "payload": {...}}
       // Handle both direct events and nested event format
       let eventType = parsed.type;
       let payload = parsed.payload;
 
-      // Johnny5 sends type: "evt", Moltbot sends type: "event"
+      // Johnny5 sends type: "evt", J5 sends type: "event"
       if ((parsed.type === 'event' || parsed.type === 'evt') && parsed.event) {
-        // Nested event format from Moltbot
+        // Nested event format from J5
         eventType = parsed.event;
-        console.log(`[MoltbotBridge] Received Moltbot event: ${eventType}`);
+        console.log(`[J5Bridge] Received J5 event: ${eventType}`);
 
-        // Handle Moltbot-specific events
+        // Handle J5-specific events
         switch (eventType) {
           case 'connect.challenge':
             // Respond to challenge to complete authentication
@@ -480,13 +480,13 @@ class MoltbotBridgeService extends EventEmitter {
             return;
 
           case 'connect.success':
-            console.log('[MoltbotBridge] Authentication successful');
+            console.log('[J5Bridge] Authentication successful');
             return;
 
           case 'message':
           case 'response':
-            // Handle message/response from Moltbot
-            this.handleMoltbotResponse(payload);
+            // Handle message/response from J5
+            this.handleJ5Response(payload);
             return;
 
           case 'error':
@@ -510,7 +510,7 @@ class MoltbotBridgeService extends EventEmitter {
 
           case 'chat.running':
             // ManusLive sends this when chat starts
-            console.log(`[MoltbotBridge] chat.running: runId=${payload?.runId}, sessionKey=${payload?.sessionKey}`);
+            console.log(`[J5Bridge] chat.running: runId=${payload?.runId}, sessionKey=${payload?.sessionKey}`);
             return;
 
           case 'chat.error':
@@ -519,27 +519,27 @@ class MoltbotBridgeService extends EventEmitter {
             return;
 
           default:
-            console.log(`[MoltbotBridge] Unhandled Moltbot event: ${eventType}`);
+            console.log(`[J5Bridge] Unhandled J5 event: ${eventType}`);
             return;
         }
       }
 
-      console.log(`[MoltbotBridge] Received event: ${eventType}`);
+      console.log(`[J5Bridge] Received event: ${eventType}`);
 
       switch (eventType) {
         case 'res':
           // Handle response to our requests
           // Log full response for debugging available methods
-          console.log(`[MoltbotBridge] Full response: ${JSON.stringify(parsed).substring(0, 2000)}`);
+          console.log(`[J5Bridge] Full response: ${JSON.stringify(parsed).substring(0, 2000)}`);
           this.handleResponse(parsed);
           break;
 
         case 'message':
-          this.handleIncomingMessage(payload as MoltbotMessage);
+          this.handleIncomingMessage(payload as J5Message);
           break;
 
         case 'session_update':
-          this.handleSessionUpdate(payload as MoltbotSession);
+          this.handleSessionUpdate(payload as J5Session);
           break;
 
         case 'tool_call':
@@ -565,30 +565,30 @@ class MoltbotBridgeService extends EventEmitter {
           break;
 
         default:
-          console.log(`[MoltbotBridge] Unknown event type: ${eventType}`);
+          console.log(`[J5Bridge] Unknown event type: ${eventType}`);
       }
 
     } catch (error) {
-      console.error('[MoltbotBridge] Failed to parse message:', error);
+      console.error('[J5Bridge] Failed to parse message:', error);
     }
   }
 
   private handleConnectChallenge(payload: { nonce: string; ts: number }): void {
-    console.log('[MoltbotBridge] Responding to connect challenge...');
-    console.log('[MoltbotBridge] Challenge payload:', JSON.stringify(payload));
+    console.log('[J5Bridge] Responding to connect challenge...');
+    console.log('[J5Bridge] Challenge payload:', JSON.stringify(payload));
 
     // Get auth token from environment (configured by user)
     // Try multiple env var sources for Next.js compatibility
     const authToken =
-      process.env.MOLTBOT_AUTH_TOKEN ||       // Standard server env
-      process.env.NEXT_PUBLIC_MOLTBOT_AUTH_TOKEN ||  // Client-accessible env
+      process.env.J5_AUTH_TOKEN ||       // Standard server env
+      process.env.NEXT_PUBLIC_J5_AUTH_TOKEN ||  // Client-accessible env
       '';  // Fallback to empty string for auth mode "none"
 
-    console.log(`[MoltbotBridge] Auth token available: ${authToken !== undefined ? 'Yes' : 'No'}`);
-    console.log(`[MoltbotBridge] Auth token length: ${authToken.length}`);
-    console.log(`[MoltbotBridge] Auth token preview: ${authToken.substring(0, 8)}${authToken.length > 8 ? '...' : ''}`);
+    console.log(`[J5Bridge] Auth token available: ${authToken !== undefined ? 'Yes' : 'No'}`);
+    console.log(`[J5Bridge] Auth token length: ${authToken.length}`);
+    console.log(`[J5Bridge] Auth token preview: ${authToken.substring(0, 8)}${authToken.length > 8 ? '...' : ''}`);
 
-    // Exact format - Moltbot requires protocol 3
+    // Exact format - J5 requires protocol 3
     const response = {
       type: 'req',
       id: '1',
@@ -610,19 +610,19 @@ class MoltbotBridgeService extends EventEmitter {
 
     if (this.ws && this.ws.readyState === 1) {
       const responseJson = JSON.stringify(response);
-      console.log('[MoltbotBridge] Sending auth response:', responseJson.substring(0, 150));
+      console.log('[J5Bridge] Sending auth response:', responseJson.substring(0, 150));
       this.ws.send(responseJson);
-      console.log('[MoltbotBridge] Auth response sent');
+      console.log('[J5Bridge] Auth response sent');
     } else {
-      console.warn('[MoltbotBridge] Cannot send auth response - WebSocket not ready');
+      console.warn('[J5Bridge] Cannot send auth response - WebSocket not ready');
     }
   }
 
-  private handleMoltbotResponse(payload: any): void {
-    console.log('[MoltbotBridge] Received Moltbot response:', JSON.stringify(payload).substring(0, 200));
+  private handleJ5Response(payload: any): void {
+    console.log('[J5Bridge] Received J5 response:', JSON.stringify(payload).substring(0, 200));
 
-    // Extract message content from Moltbot response using helper to avoid [object Object]
-    const message: MoltbotMessage = {
+    // Extract message content from J5 response using helper to avoid [object Object]
+    const message: J5Message = {
       id: payload.id || payload.messageId || `msg-${Date.now()}`,
       sessionId: payload.sessionId || payload.session_id || 'default',
       role: 'assistant',
@@ -638,20 +638,20 @@ class MoltbotBridgeService extends EventEmitter {
 
   private handleResponse(response: { id: string; ok?: boolean; result?: any; payload?: any; error?: any }): void {
     // ENHANCED DEBUG LOGGING
-    console.log('[MoltbotBridge] ===== RESPONSE DEBUG =====');
-    console.log('[MoltbotBridge] Response ID:', response.id);
-    console.log('[MoltbotBridge] Response OK:', response.ok);
-    console.log('[MoltbotBridge] Response Result:', response.result ? 'Present' : 'None');
-    console.log('[MoltbotBridge] Response Payload:', response.payload ? 'Present' : 'None');
-    console.log('[MoltbotBridge] Response Error:', response.error);
-    console.log('[MoltbotBridge] Full Response:', JSON.stringify(response, null, 2).substring(0, 500));
-    console.log('[MoltbotBridge] =========================');
+    console.log('[J5Bridge] ===== RESPONSE DEBUG =====');
+    console.log('[J5Bridge] Response ID:', response.id);
+    console.log('[J5Bridge] Response OK:', response.ok);
+    console.log('[J5Bridge] Response Result:', response.result ? 'Present' : 'None');
+    console.log('[J5Bridge] Response Payload:', response.payload ? 'Present' : 'None');
+    console.log('[J5Bridge] Response Error:', response.error);
+    console.log('[J5Bridge] Full Response:', JSON.stringify(response, null, 2).substring(0, 500));
+    console.log('[J5Bridge] =========================');
 
-    // Johnny5 returns "result" while Moltbot uses "ok"
+    // Johnny5 returns "result" while J5 uses "ok"
     const success = response.ok === true || !!response.result;
-    console.log(`[MoltbotBridge] Response received for id=${response.id}, success=${success}`);
+    console.log(`[J5Bridge] Response received for id=${response.id}, success=${success}`);
     if (!success && response.error) {
-      console.error(`[MoltbotBridge] Error details:`, JSON.stringify(response.error));
+      console.error(`[J5Bridge] Error details:`, JSON.stringify(response.error));
     }
 
     // Check if this is the connect handshake response (id="1")
@@ -660,10 +660,10 @@ class MoltbotBridgeService extends EventEmitter {
       const authSuccess = response.ok === true || !!response.result;
       if (authSuccess) {
         this.authenticated = true;
-        console.log('[MoltbotBridge] Authentication complete - ready for chat');
+        console.log('[J5Bridge] Authentication complete - ready for chat');
         this.emit('authenticated');
       } else {
-        console.error('[MoltbotBridge] Authentication failed. Response:', JSON.stringify(response));
+        console.error('[J5Bridge] Authentication failed. Response:', JSON.stringify(response));
       }
     }
 
@@ -677,7 +677,7 @@ class MoltbotBridgeService extends EventEmitter {
           // This is the initial acknowledgment - DON'T resolve yet
           // Track runId -> messageId so we can resolve when chat event arrives
           const runId = responsePayload.runId;
-          console.log(`[MoltbotBridge] Async chat started, runId=${runId}, waiting for completion...`);
+          console.log(`[J5Bridge] Async chat started, runId=${runId}, waiting for completion...`);
           this.runIdToMessageId.set(runId, response.id);
           this.agentResponses.set(runId, { content: '', sessionKey: '' });
           // Keep the pending message - we'll resolve when chat event with state:"final" arrives
@@ -690,7 +690,7 @@ class MoltbotBridgeService extends EventEmitter {
         const extractedText = this.extractTextContent(
           responsePayload.content || responsePayload.text || responsePayload.message
         );
-        const moltbotResponse: MoltbotResponse = {
+        const j5Response: J5Response = {
           text: extractedText || 'Response received but no text content found.',
           toolCalls: responsePayload.toolCalls,
           thinking: responsePayload.thinking,
@@ -698,26 +698,26 @@ class MoltbotBridgeService extends EventEmitter {
           messageId: response.id,
           tokenUsage: responsePayload.usage,
         };
-        pending.resolve(moltbotResponse);
+        pending.resolve(j5Response);
       } else if (response.error) {
         // Error response
         clearTimeout(pending.timeout);
         this.state.pendingMessages.delete(response.id);
-        pending.reject(new Error(response.error.message || 'Unknown Moltbot error'));
+        pending.reject(new Error(response.error.message || 'Unknown J5 error'));
       } else {
         clearTimeout(pending.timeout);
         this.state.pendingMessages.delete(response.id);
-        pending.reject(new Error('Invalid response from Moltbot'));
+        pending.reject(new Error('Invalid response from J5'));
       }
     } else {
-      console.log(`[MoltbotBridge] No pending request for id=${response.id}`);
+      console.log(`[J5Bridge] No pending request for id=${response.id}`);
     }
   }
 
   /**
-   * Handle agent events (streamed content from Moltbot agent)
+   * Handle agent events (streamed content from J5 agent)
    *
-   * NOTE: Moltbot can send either incremental deltas OR cumulative content.
+   * NOTE: J5 can send either incremental deltas OR cumulative content.
    * To avoid duplication, we detect cumulative content (when new text starts with
    * or contains our existing content) and replace instead of append.
    */
@@ -726,7 +726,7 @@ class MoltbotBridgeService extends EventEmitter {
     if (!runId) return;
 
     // Log agent event data for debugging
-    console.log(`[MoltbotBridge] Agent event: runId=${runId}, stream=${payload.stream}, data=${JSON.stringify(payload.data || {}).substring(0, 300)}`);
+    console.log(`[J5Bridge] Agent event: runId=${runId}, stream=${payload.stream}, data=${JSON.stringify(payload.data || {}).substring(0, 300)}`);
 
     // Track session key
     if (payload.sessionKey && this.agentResponses.has(runId)) {
@@ -748,30 +748,30 @@ class MoltbotBridgeService extends EventEmitter {
       // If new text is longer and starts with our existing content, it's cumulative - replace
       if (newText.length > resp.content.length && newText.startsWith(resp.content)) {
         resp.content = newText;
-        console.log(`[MoltbotBridge] Cumulative update: ${resp.content.length} chars`);
+        console.log(`[J5Bridge] Cumulative update: ${resp.content.length} chars`);
       }
       // If new text is shorter but our content starts with it, ignore (stale data)
       else if (resp.content.startsWith(newText)) {
-        console.log(`[MoltbotBridge] Ignoring stale data (already have longer content)`);
+        console.log(`[J5Bridge] Ignoring stale data (already have longer content)`);
       }
       // If new text doesn't overlap, it's incremental - append
       else if (!resp.content.includes(newText)) {
         resp.content += newText;
-        console.log(`[MoltbotBridge] Incremental append: ${resp.content.length} chars`);
+        console.log(`[J5Bridge] Incremental append: ${resp.content.length} chars`);
       }
       // Already have this exact text, skip
       else {
-        console.log(`[MoltbotBridge] Skipping duplicate content`);
+        console.log(`[J5Bridge] Skipping duplicate content`);
       }
     };
 
-    // Text stream contains assistant responses (Moltbot format)
+    // Text stream contains assistant responses (J5 format)
     if (payload.stream === 'text' && payload.data) {
       const text = payload.data.text || payload.data.content || payload.data.delta || '';
       updateContent(text);
     }
 
-    // Also check for content in data object directly (Moltbot format)
+    // Also check for content in data object directly (J5 format)
     if (payload.data?.content || payload.data?.text) {
       const text = payload.data.content || payload.data.text || '';
       updateContent(text);
@@ -782,7 +782,7 @@ class MoltbotBridgeService extends EventEmitter {
       const text = payload.delta.text || payload.delta.content || '';
       if (text) {
         updateContent(text);
-        console.log(`[MoltbotBridge] Johnny5 delta: ${text.length} chars`);
+        console.log(`[J5Bridge] Johnny5 delta: ${text.length} chars`);
       }
     }
 
@@ -790,7 +790,7 @@ class MoltbotBridgeService extends EventEmitter {
     if (payload.type === 'done' && payload.content) {
       // Done event has the full response - replace
       resp.content = payload.content;
-      console.log(`[MoltbotBridge] Johnny5 done: ${resp.content.length} chars`);
+      console.log(`[J5Bridge] Johnny5 done: ${resp.content.length} chars`);
 
       // Resolve pending message if we have one
       const messageId = this.runIdToMessageId.get(runId);
@@ -801,18 +801,18 @@ class MoltbotBridgeService extends EventEmitter {
           this.state.pendingMessages.delete(messageId);
           this.runIdToMessageId.delete(runId);
 
-          const moltbotResponse: MoltbotResponse = {
+          const j5Response: J5Response = {
             text: resp.content,
             sessionId: resp.sessionKey || 'dashboard:main',
             messageId: messageId,
           };
-          pending.resolve(moltbotResponse);
-          console.log(`[MoltbotBridge] Resolved message ${messageId} with ${resp.content.length} chars`);
+          pending.resolve(j5Response);
+          console.log(`[J5Bridge] Resolved message ${messageId} with ${resp.content.length} chars`);
         }
       }
     }
 
-    // Check for response in lifecycle end event (Moltbot format)
+    // Check for response in lifecycle end event (J5 format)
     if (payload.stream === 'lifecycle' && payload.data?.phase === 'end') {
       // Sometimes the final response is in the end event
       if (payload.data.response || payload.data.result || payload.data.output) {
@@ -820,7 +820,7 @@ class MoltbotBridgeService extends EventEmitter {
         if (text && typeof text === 'string') {
           // Lifecycle end is authoritative - always replace
           resp.content = text;
-          console.log(`[MoltbotBridge] Lifecycle end response: ${resp.content.length} chars`);
+          console.log(`[J5Bridge] Lifecycle end response: ${resp.content.length} chars`);
         }
       }
     }
@@ -833,7 +833,7 @@ class MoltbotBridgeService extends EventEmitter {
     const runId = payload.runId;
     if (!runId) return;
 
-    console.log(`[MoltbotBridge] Chat event: runId=${runId}, state=${payload.state}, sessionKey=${payload.sessionKey}`);
+    console.log(`[J5Bridge] Chat event: runId=${runId}, state=${payload.state}, sessionKey=${payload.sessionKey}`);
 
     // Handle streaming delta events
     if (payload.state === 'delta' && payload.message) {
@@ -855,7 +855,7 @@ class MoltbotBridgeService extends EventEmitter {
           const newContent = this.extractTextContent(payload.message);
           if (newContent) {
             resp.content = newContent;
-            console.log(`[MoltbotBridge] Chat delta: content length=${resp.content.length}`);
+            console.log(`[J5Bridge] Chat delta: content length=${resp.content.length}`);
           }
         }
       }
@@ -898,13 +898,13 @@ class MoltbotBridgeService extends EventEmitter {
     if (payload.state === 'final') {
       const messageId = this.runIdToMessageId.get(runId);
       if (!messageId) {
-        console.log(`[MoltbotBridge] No messageId found for runId=${runId}`);
+        console.log(`[J5Bridge] No messageId found for runId=${runId}`);
         return;
       }
 
       const pending = this.state.pendingMessages.get(messageId);
       if (!pending) {
-        console.log(`[MoltbotBridge] No pending request for messageId=${messageId}`);
+        console.log(`[J5Bridge] No pending request for messageId=${messageId}`);
         return;
       }
 
@@ -920,7 +920,7 @@ class MoltbotBridgeService extends EventEmitter {
 
       // If no content from deltas, try using agent.wait to get the response
       if (!responseText && this.ws) {
-        console.log(`[MoltbotBridge] No delta content, trying agent.wait for runId=${runId}`);
+        console.log(`[J5Bridge] No delta content, trying agent.wait for runId=${runId}`);
         try {
           const waitId = `wait-${Date.now()}`;
           const waitPayload = {
@@ -946,7 +946,7 @@ class MoltbotBridgeService extends EventEmitter {
           responseText = await new Promise<string>((resolve) => {
             const timeout = setTimeout(() => {
               this.ws?.off('message', handler);
-              console.log(`[MoltbotBridge] sessions.preview timeout`);
+              console.log(`[J5Bridge] sessions.preview timeout`);
               resolve('');
             }, 5000);
 
@@ -957,7 +957,7 @@ class MoltbotBridgeService extends EventEmitter {
                 if (parsed.type === 'res' && parsed.id === previewId) {
                   clearTimeout(timeout);
                   this.ws?.off('message', handler);
-                  console.log(`[MoltbotBridge] sessions.preview response: ${JSON.stringify(parsed).substring(0, 1000)}`);
+                  console.log(`[J5Bridge] sessions.preview response: ${JSON.stringify(parsed).substring(0, 1000)}`);
                   if (parsed.ok && parsed.payload) {
                     // Extract content from preview response using helper
                     const p = parsed.payload;
@@ -979,7 +979,7 @@ class MoltbotBridgeService extends EventEmitter {
                     }
                     resolve('');
                   } else if (parsed.error) {
-                    console.log(`[MoltbotBridge] sessions.preview error: ${parsed.error.message}`);
+                    console.log(`[J5Bridge] sessions.preview error: ${parsed.error.message}`);
                     resolve('');
                   } else {
                     resolve('');
@@ -991,13 +991,13 @@ class MoltbotBridgeService extends EventEmitter {
             this.ws?.on('message', handler);
           });
         } catch (err) {
-          console.error('[MoltbotBridge] agent.wait error:', err);
+          console.error('[J5Bridge] agent.wait error:', err);
         }
       }
 
       // If still no content, try fetching history as last resort
       if (!responseText && this.ws) {
-        console.log(`[MoltbotBridge] Still no content, fetching chat.history for sessionKey=${sessionKey}`);
+        console.log(`[J5Bridge] Still no content, fetching chat.history for sessionKey=${sessionKey}`);
         try {
           const historyId = `history-${Date.now()}`;
           const historyPayload = {
@@ -1024,19 +1024,19 @@ class MoltbotBridgeService extends EventEmitter {
                   clearTimeout(timeout);
                   this.ws?.off('message', handler);
                   const messages = parsed.payload?.messages || [];
-                  console.log(`[MoltbotBridge] History returned ${messages.length} messages`);
+                  console.log(`[J5Bridge] History returned ${messages.length} messages`);
                   // Get last assistant message
                   const lastAssistant = [...messages].reverse().find((m: any) => m.role === 'assistant');
                   if (lastAssistant) {
                     // Check for error
                     if (lastAssistant.errorMessage || lastAssistant.stopReason === 'error') {
                       const error = lastAssistant.errorMessage || 'Unknown error';
-                      console.log(`[MoltbotBridge] Agent error: ${error}`);
-                      resolve(`[Moltbot Error] ${error}`);
+                      console.log(`[J5Bridge] Agent error: ${error}`);
+                      resolve(`[J5 Error] ${error}`);
                     } else if (lastAssistant.content) {
                       // Use extractTextContent to safely handle all formats (array, object, string)
                       const content = this.extractTextContent(lastAssistant.content);
-                      console.log(`[MoltbotBridge] Found assistant message: ${content.substring(0, 100)}`);
+                      console.log(`[J5Bridge] Found assistant message: ${content.substring(0, 100)}`);
                       resolve(content || '');
                     } else {
                       resolve('');
@@ -1051,13 +1051,13 @@ class MoltbotBridgeService extends EventEmitter {
             this.ws?.on('message', handler);
           });
         } catch (err) {
-          console.error('[MoltbotBridge] History fetch error:', err);
+          console.error('[J5Bridge] History fetch error:', err);
         }
       }
 
       // Build the response
-      const response: MoltbotResponse = {
-        text: responseText || '[Moltbot] Agent completed but no response content was captured. The response may have been sent to configured messaging channels.',
+      const response: J5Response = {
+        text: responseText || '[J5] Agent completed but no response content was captured. The response may have been sent to configured messaging channels.',
         sessionId: sessionKey,
         messageId: messageId,
         thinking: payload.thinking,
@@ -1074,12 +1074,12 @@ class MoltbotBridgeService extends EventEmitter {
       this.runIdToMessageId.delete(runId);
       this.agentResponses.delete(runId);
 
-      console.log(`[MoltbotBridge] Chat completed for runId=${runId}, response length=${response.text.length}`);
+      console.log(`[J5Bridge] Chat completed for runId=${runId}, response length=${response.text.length}`);
     }
   }
 
-  private handleIncomingMessage(message: MoltbotMessage): void {
-    console.log(`[MoltbotBridge] Message received for session ${message.sessionId}`);
+  private handleIncomingMessage(message: J5Message): void {
+    console.log(`[J5Bridge] Message received for session ${message.sessionId}`);
 
     // Check if this is a response to a pending request
     const pending = this.state.pendingMessages.get(message.id);
@@ -1087,7 +1087,7 @@ class MoltbotBridgeService extends EventEmitter {
       clearTimeout(pending.timeout);
       this.state.pendingMessages.delete(message.id);
 
-      const response: MoltbotResponse = {
+      const response: J5Response = {
         text: message.content,
         toolCalls: message.toolCalls,
         thinking: message.thinking,
@@ -1103,14 +1103,14 @@ class MoltbotBridgeService extends EventEmitter {
     this.emit('message', message);
   }
 
-  private handleSessionUpdate(session: MoltbotSession): void {
-    console.log(`[MoltbotBridge] Session updated: ${session.id}`);
+  private handleSessionUpdate(session: J5Session): void {
+    console.log(`[J5Bridge] Session updated: ${session.id}`);
     this.state.sessions.set(session.id, session);
     this.emit('session-update', session);
   }
 
   private handleErrorEvent(error: { message: string; code?: string }): void {
-    console.error(`[MoltbotBridge] Error from gateway: ${error.message}`);
+    console.error(`[J5Bridge] Error from gateway: ${error.message}`);
     this.emit('error', new Error(error.message));
   }
 
@@ -1120,17 +1120,17 @@ class MoltbotBridgeService extends EventEmitter {
    */
   private handleChatDoneEvent(payload: { runId: string; sessionKey: string; finalState?: string }): void {
     const { runId, sessionKey } = payload;
-    console.log(`[MoltbotBridge] chat.done: runId=${runId}, sessionKey=${sessionKey}, finalState=${payload.finalState}`);
+    console.log(`[J5Bridge] chat.done: runId=${runId}, sessionKey=${sessionKey}, finalState=${payload.finalState}`);
 
     const messageId = this.runIdToMessageId.get(runId);
     if (!messageId) {
-      console.log(`[MoltbotBridge] chat.done: No messageId found for runId=${runId}`);
+      console.log(`[J5Bridge] chat.done: No messageId found for runId=${runId}`);
       return;
     }
 
     const pending = this.state.pendingMessages.get(messageId);
     if (!pending) {
-      console.log(`[MoltbotBridge] chat.done: No pending request for messageId=${messageId}`);
+      console.log(`[J5Bridge] chat.done: No pending request for messageId=${messageId}`);
       return;
     }
 
@@ -1138,7 +1138,7 @@ class MoltbotBridgeService extends EventEmitter {
     const accumulated = this.agentResponses.get(runId);
     const responseText = accumulated?.content || 'Response completed but no content captured.';
 
-    console.log(`[MoltbotBridge] chat.done: Resolving with ${responseText.length} chars`);
+    console.log(`[J5Bridge] chat.done: Resolving with ${responseText.length} chars`);
 
     clearTimeout(pending.timeout);
     this.state.pendingMessages.delete(messageId);
@@ -1159,7 +1159,7 @@ class MoltbotBridgeService extends EventEmitter {
   private handleChatErrorEvent(payload: { runId: string; error?: string; message?: string }): void {
     const { runId } = payload;
     const errorMessage = payload.error || payload.message || 'Unknown chat error';
-    console.error(`[MoltbotBridge] chat.error: runId=${runId}, error=${errorMessage}`);
+    console.error(`[J5Bridge] chat.error: runId=${runId}, error=${errorMessage}`);
 
     const messageId = this.runIdToMessageId.get(runId);
     if (!messageId) return;
@@ -1180,16 +1180,16 @@ class MoltbotBridgeService extends EventEmitter {
   // -------------------------------------------------------------------------
 
   /**
-   * Send a message to Moltbot and wait for response
+   * Send a message to J5 and wait for response
    * First tries sessions.list to find available sessions, then routes message
    */
-  async sendMessage(sessionId: string, message: string): Promise<MoltbotResponse> {
+  async sendMessage(sessionId: string, message: string): Promise<J5Response> {
     if (!this.isConnected()) {
       // Check fallback mode
       if (this.state.status.fallbackActive) {
         return this.handleFallbackMessage(sessionId, message);
       }
-      throw new Error('Not connected to Moltbot gateway');
+      throw new Error('Not connected to J5 gateway');
     }
 
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -1221,9 +1221,9 @@ class MoltbotBridgeService extends EventEmitter {
 
       try {
         const payloadStr = JSON.stringify(payload);
-        console.log(`[MoltbotBridge] Sending via chat.send: ${payloadStr.substring(0, 200)}`);
+        console.log(`[J5Bridge] Sending via chat.send: ${payloadStr.substring(0, 200)}`);
         this.ws!.send(payloadStr);
-        console.log(`[MoltbotBridge] Message sent: ${messageId}`);
+        console.log(`[J5Bridge] Message sent: ${messageId}`);
       } catch (error) {
         clearTimeout(timeout);
         this.state.pendingMessages.delete(messageId);
@@ -1233,11 +1233,11 @@ class MoltbotBridgeService extends EventEmitter {
   }
 
   /**
-   * Query available sessions from Moltbot
+   * Query available sessions from J5
    */
   async listSessions(): Promise<any> {
     if (!this.isConnected()) {
-      throw new Error('Not connected to Moltbot gateway');
+      throw new Error('Not connected to J5 gateway');
     }
 
     const requestId = `req-${Date.now()}`;
@@ -1249,7 +1249,7 @@ class MoltbotBridgeService extends EventEmitter {
       }, 10000);
 
       this.state.pendingMessages.set(requestId, {
-        resolve: (r: MoltbotResponse) => resolve(r),
+        resolve: (r: J5Response) => resolve(r),
         reject,
         timeout
       });
@@ -1261,7 +1261,7 @@ class MoltbotBridgeService extends EventEmitter {
         params: {},
       };
 
-      console.log(`[MoltbotBridge] Querying sessions.list`);
+      console.log(`[J5Bridge] Querying sessions.list`);
       this.ws!.send(JSON.stringify(payload));
     });
   }
@@ -1272,15 +1272,15 @@ class MoltbotBridgeService extends EventEmitter {
   private async handleFallbackMessage(
     sessionId: string,
     message: string
-  ): Promise<MoltbotResponse> {
-    console.log('[MoltbotBridge] Using fallback mode for message');
+  ): Promise<J5Response> {
+    console.log('[J5Bridge] Using fallback mode for message');
 
     // In fallback mode, we return a response indicating the limitation
     return {
-      text: '[Moltbot Unavailable] The Moltbot daemon is not connected. Message was not sent. Please ensure the Moltbot daemon is running on your local machine.',
+      text: '[J5 Unavailable] The J5 daemon is not connected. Message was not sent. Please ensure the J5 daemon is running on your local machine.',
       sessionId,
       messageId: `fallback-${Date.now()}`,
-      thinking: 'Fallback mode active - Moltbot daemon unreachable',
+      thinking: 'Fallback mode active - J5 daemon unreachable',
     };
   }
 
@@ -1301,7 +1301,7 @@ class MoltbotBridgeService extends EventEmitter {
   /**
    * Get all known sessions
    */
-  async getSessions(): Promise<MoltbotSession[]> {
+  async getSessions(): Promise<J5Session[]> {
     if (!this.isConnected()) {
       // Return cached sessions
       return Array.from(this.state.sessions.values());
@@ -1318,12 +1318,12 @@ class MoltbotBridgeService extends EventEmitter {
       const handleResponse = (data: Buffer | string) => {
         try {
           const raw = typeof data === 'string' ? data : data.toString('utf-8');
-          const event: MoltbotGatewayEvent = JSON.parse(raw);
+          const event: J5GatewayEvent = JSON.parse(raw);
 
           if (event.type === 'session_list') {
             clearTimeout(timeout);
             this.ws?.off('message', handleResponse);
-            const sessions = event.payload as MoltbotSession[];
+            const sessions = event.payload as J5Session[];
             // Update cache
             for (const session of sessions) {
               this.state.sessions.set(session.id, session);
@@ -1338,7 +1338,7 @@ class MoltbotBridgeService extends EventEmitter {
       this.ws?.on('message', handleResponse);
 
       // Send request
-      const payload: MoltbotGatewayEvent = {
+      const payload: J5GatewayEvent = {
         type: 'list_sessions' as any,
         payload: { requestId },
         timestamp: new Date(),
@@ -1357,7 +1357,7 @@ class MoltbotBridgeService extends EventEmitter {
   /**
    * Get a specific session by ID
    */
-  async getSession(sessionId: string): Promise<MoltbotSession | null> {
+  async getSession(sessionId: string): Promise<J5Session | null> {
     // Check cache first
     const cached = this.state.sessions.get(sessionId);
     if (cached) {
@@ -1376,9 +1376,9 @@ class MoltbotBridgeService extends EventEmitter {
   /**
    * Create a new session
    */
-  async createSession(name?: string): Promise<MoltbotSession> {
+  async createSession(name?: string): Promise<J5Session> {
     if (!this.isConnected()) {
-      throw new Error('Not connected to Moltbot gateway');
+      throw new Error('Not connected to J5 gateway');
     }
 
     return new Promise((resolve, reject) => {
@@ -1391,12 +1391,12 @@ class MoltbotBridgeService extends EventEmitter {
       const handleResponse = (data: Buffer | string) => {
         try {
           const raw = typeof data === 'string' ? data : data.toString('utf-8');
-          const event: MoltbotGatewayEvent = JSON.parse(raw);
+          const event: J5GatewayEvent = JSON.parse(raw);
 
           if (event.type === 'session_created' as any) {
             clearTimeout(timeout);
             this.ws?.off('message', handleResponse);
-            const session = event.payload as MoltbotSession;
+            const session = event.payload as J5Session;
             this.state.sessions.set(session.id, session);
             resolve(session);
           }
@@ -1408,7 +1408,7 @@ class MoltbotBridgeService extends EventEmitter {
       this.ws?.on('message', handleResponse);
 
       // Send request
-      const payload: MoltbotGatewayEvent = {
+      const payload: J5GatewayEvent = {
         type: 'create_session' as any,
         payload: { requestId, name },
         timestamp: new Date(),
@@ -1431,23 +1431,23 @@ class MoltbotBridgeService extends EventEmitter {
   /**
    * Get current configuration
    */
-  getConfig(): MoltbotConfig {
+  getConfig(): J5Config {
     return { ...this.state.config };
   }
 
   /**
    * Update configuration
    */
-  updateConfig(config: Partial<MoltbotConfig>): void {
+  updateConfig(config: Partial<J5Config>): void {
     this.state.config = { ...this.state.config, ...config };
-    console.log('[MoltbotBridge] Configuration updated:', this.state.config);
+    console.log('[J5Bridge] Configuration updated:', this.state.config);
   }
 
   // -------------------------------------------------------------------------
   // Status Helper
   // -------------------------------------------------------------------------
 
-  private updateStatus(updates: Partial<MoltbotConnectionStatus>): void {
+  private updateStatus(updates: Partial<J5ConnectionStatus>): void {
     this.state.status = { ...this.state.status, ...updates };
   }
 }
@@ -1461,32 +1461,32 @@ class MoltbotBridgeService extends EventEmitter {
 
 declare global {
   // eslint-disable-next-line no-var
-  var __moltbotBridgeInstance: MoltbotBridgeService | undefined;
+  var __j5BridgeInstance: J5BridgeService | undefined;
 }
 
 /**
- * Get the singleton Moltbot Bridge instance
+ * Get the singleton J5 Bridge instance
  * Uses globalThis to share instance across CommonJS and ES module systems
  */
-export function getMoltbotBridge(): MoltbotBridgeService {
-  if (!globalThis.__moltbotBridgeInstance) {
-    globalThis.__moltbotBridgeInstance = new MoltbotBridgeService();
-    console.log('[MoltbotBridge] Created new global singleton instance');
+export function getJ5Bridge(): J5BridgeService {
+  if (!globalThis.__j5BridgeInstance) {
+    globalThis.__j5BridgeInstance = new J5BridgeService();
+    console.log('[J5Bridge] Created new global singleton instance');
   }
-  return globalThis.__moltbotBridgeInstance;
+  return globalThis.__j5BridgeInstance;
 }
 
 /**
- * Create a new Moltbot Bridge instance (for testing or custom configs)
+ * Create a new J5 Bridge instance (for testing or custom configs)
  */
-export function createMoltbotBridge(
-  config?: Partial<MoltbotConfig>
-): MoltbotBridgeService {
-  return new MoltbotBridgeService(config);
+export function createJ5Bridge(
+  config?: Partial<J5Config>
+): J5BridgeService {
+  return new J5BridgeService(config);
 }
 
 // Export the class for testing and type inference
-export { MoltbotBridgeService };
+export { J5BridgeService };
 
 // Default export is the singleton getter
-export default getMoltbotBridge;
+export default getJ5Bridge;

@@ -27,7 +27,7 @@ Johnny5 does not remember anything - when asked "what is my favorite color?", he
 ### What Works ✅
 - Database has 16 chunks indexed (ManusLive MEMORY.md, USER.md, sessions)
 - FTS5 search works via SQLite CLI: `SELECT * FROM memory_fts WHERE memory_fts MATCH 'favorite OR color'` returns 5 results
-- Gemini fallback is active (MOLTBOT_ENABLED=false)
+- Gemini fallback is active (J5_ENABLED=false)
 - Chat route `/api/johnny5/chat` receives messages successfully
 - Gemini responds (just without memory context)
 
@@ -75,19 +75,19 @@ function sanitizeFTS5Query(query: string): string {
 }
 ```
 
-### 2. `/app/api/johnny5/moltbot/chat/route.ts` - Moltbot Bypass
+### 2. `/app/api/johnny5/j5/chat/route.ts` - J5 Bypass
 
 **Location**: Line 49 (inside POST handler)
 
 ```typescript
 // Added at the start of POST handler:
-const moltbotEnabled = process.env.MOLTBOT_ENABLED !== 'false';
-if (!moltbotEnabled) {
-  console.log('[Moltbot Chat] Moltbot disabled via MOLTBOT_ENABLED=false');
+const j5Enabled = process.env.J5_ENABLED !== 'false';
+if (!j5Enabled) {
+  console.log('[J5 Chat] J5 disabled via J5_ENABLED=false');
   return NextResponse.json({
     success: false,
-    error: 'Moltbot is disabled. Please use /api/johnny5/chat instead.',
-    code: 'MOLTBOT_DISABLED',
+    error: 'J5 is disabled. Please use /api/johnny5/chat instead.',
+    code: 'J5_DISABLED',
     timestamp: new Date(),
   }, { status: 503 });
 }
@@ -103,8 +103,8 @@ let response = await fetch(apiEndpoint, {...});
 let data = await response.json();
 
 // Added retry logic:
-if (data.code === 'MOLTBOT_DISABLED' && useMoltbot) {
-  console.log('[ChatTab] Moltbot disabled, retrying with main chat endpoint');
+if (data.code === 'J5_DISABLED' && useJ5) {
+  console.log('[ChatTab] J5 disabled, retrying with main chat endpoint');
   response = await fetch('/api/johnny5/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -247,7 +247,7 @@ sqlite3 ~/.coder1/johnny5.db "SELECT source_type, substr(content, 1, 100) FROM m
 
 ```env
 # In /coder1-ide-next/.env.local
-MOLTBOT_ENABLED=false                    # Bypass Moltbot, use Gemini
+J5_ENABLED=false                    # Bypass J5, use Gemini
 GEMINI_API_KEY=AIzaSyC9H2FDdY24...       # For embeddings
 CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-... # For API calls (not being used currently)
 ```

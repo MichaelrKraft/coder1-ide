@@ -26,7 +26,7 @@ import {
   Johnny5UserIntegration,
   Johnny5Settings,
   Johnny5SetupStatus,
-  MoltbotConnectionStatus,
+  J5ConnectionStatus,
   CrewMemberStatus,
   CrewActivityEntry,
   Johnny5ChatMessage,
@@ -85,8 +85,8 @@ interface Johnny5Store {
   settings: Johnny5Settings;
   setupStatus: Johnny5SetupStatus;
 
-  // Moltbot connection state
-  moltbotStatus: MoltbotConnectionStatus | null;
+  // J5 connection state
+  j5Status: J5ConnectionStatus | null;
 
   // Crew state
   activeCrewMember: string | null;
@@ -199,10 +199,10 @@ interface Johnny5Store {
   markWelcomeAnimationPlayed: () => void;
 
   // ================================================================================
-  // Moltbot Actions
+  // J5 Actions
   // ================================================================================
 
-  setMoltbotStatus: (status: MoltbotConnectionStatus | null) => void;
+  setJ5Status: (status: J5ConnectionStatus | null) => void;
 
   // ================================================================================
   // Crew Actions
@@ -324,14 +324,14 @@ const initialState = {
   settings: initialSettings,
   setupStatus: initialSetupStatus,
 
-  // Moltbot - default to fallback active since chat works via Claude API
-  moltbotStatus: {
+  // J5 - default to fallback active since chat works via Claude API
+  j5Status: {
     connected: false,
     fallbackActive: true, // Chat works via direct Claude API by default
     reconnectAttempts: 0,
     lastConnected: null,
     error: null,
-  } as MoltbotConnectionStatus,
+  } as J5ConnectionStatus,
 
   // Crew state
   activeCrewMember: null as string | null,
@@ -726,10 +726,10 @@ export const useJohnny5Store = create<Johnny5Store>()(
         ),
 
         // ================================================================================
-        // Moltbot Actions
+        // J5 Actions
         // ================================================================================
 
-        setMoltbotStatus: (status) => set({ moltbotStatus: status }, false, 'setMoltbotStatus'),
+        setJ5Status: (status) => set({ j5Status: status }, false, 'setJ5Status'),
 
         // ================================================================================
         // Crew Actions

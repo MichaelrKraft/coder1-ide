@@ -580,12 +580,12 @@ export interface Johnny5PaginatedResponse<T> {
 }
 
 // ================================================================================
-// Moltbot Integration Types
+// J5 Integration Types
 // ================================================================================
-// Types for connecting Johnny5 Dashboard to Moltbot daemon
-// Moltbot provides 24/7 autonomous capabilities, session persistence, and skills
+// Types for connecting Johnny5 Dashboard to J5 daemon
+// J5 provides 24/7 autonomous capabilities, session persistence, and skills
 
-export interface MoltbotConfig {
+export interface J5Config {
   gatewayUrl: string;
   enabled: boolean;
   reconnectInterval: number;
@@ -594,7 +594,7 @@ export interface MoltbotConfig {
   fallbackToDirect: boolean;
 }
 
-export interface MoltbotConnectionStatus {
+export interface J5ConnectionStatus {
   connected: boolean;
   gatewayUrl: string | null;
   lastPingAt: Date | null;
@@ -604,13 +604,13 @@ export interface MoltbotConnectionStatus {
   fallbackActive: boolean;
 }
 
-export interface MoltbotMessage {
+export interface J5Message {
   id: string;
   sessionId: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
-  toolCalls?: MoltbotToolCall[];
+  toolCalls?: J5ToolCall[];
   thinking?: string;
   tokenUsage?: {
     input: number;
@@ -618,7 +618,7 @@ export interface MoltbotMessage {
   };
 }
 
-export interface MoltbotToolCall {
+export interface J5ToolCall {
   id: string;
   name: string;
   input: Record<string, unknown>;
@@ -629,20 +629,20 @@ export interface MoltbotToolCall {
   error?: string;
 }
 
-export interface MoltbotSession {
+export interface J5Session {
   id: string;
   name?: string;
   createdAt: Date;
   lastActivityAt: Date;
-  messages: MoltbotMessage[];
+  messages: J5Message[];
   context: Record<string, unknown>;
   tokenCount: number;
   status: 'active' | 'idle' | 'completed' | 'error';
 }
 
-export interface MoltbotResponse {
+export interface J5Response {
   text: string;
-  toolCalls?: MoltbotToolCall[];
+  toolCalls?: J5ToolCall[];
   thinking?: string;
   sessionId: string;
   messageId: string;
@@ -652,7 +652,7 @@ export interface MoltbotResponse {
   };
 }
 
-export interface MoltbotSkill {
+export interface J5Skill {
   id: string;
   name: string;
   description: string;
@@ -665,7 +665,7 @@ export interface MoltbotSkill {
   source: 'local' | 'molthub';
 }
 
-export interface MoltbotGatewayEvent {
+export interface J5GatewayEvent {
   type: 'message' | 'session_update' | 'session_list' | 'tool_call' | 'error' | 'ping' | 'pong';
   payload: unknown;
   timestamp: Date;

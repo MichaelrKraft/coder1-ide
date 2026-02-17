@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
+import { getJ5Bridge } from '@/services/johnny5/j5-bridge';
 
 export async function GET() {
-  const moltbotBridge = getMoltbotBridge();
-  const moltbotConnected = moltbotBridge?.isConnected() ?? false;
+  const j5Bridge = getJ5Bridge();
+  const j5Connected = j5Bridge?.isConnected() ?? false;
 
   // Use global.bridgeManager set by server.js (line ~2019)
   // Direct module import creates a SEPARATE singleton that doesn't have connections
@@ -22,11 +22,11 @@ export async function GET() {
     bridgeConnected
   });
 
-  let mode: 'moltbot' | 'bridge' | 'gemini';
+  let mode: 'j5' | 'bridge' | 'gemini';
   let capabilities: string[];
 
-  if (moltbotConnected) {
-    mode = 'moltbot';
+  if (j5Connected) {
+    mode = 'j5';
     capabilities = ['MCP Tools', 'Project Context', '24/7 Operation', 'Full Autonomy', 'ManusLive Integration'];
   } else if (bridgeConnected) {
     mode = 'bridge';
@@ -40,7 +40,7 @@ export async function GET() {
     mode,
     capabilities,
     hasMCP: mode !== 'gemini',
-    provider: mode === 'moltbot' ? 'ManusLive' : mode === 'bridge' ? 'Claude Code CLI' : 'Gemini 2.5 Flash',
+    provider: mode === 'j5' ? 'ManusLive' : mode === 'bridge' ? 'Claude Code CLI' : 'Gemini 2.5 Flash',
     isLimitedMode: mode === 'gemini',
     // Debug info (temporary)
     _debug: {
