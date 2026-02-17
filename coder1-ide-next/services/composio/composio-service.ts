@@ -80,6 +80,18 @@ function getServiceCacheKey(userId: string, platform: ComposioPlatform): string 
 }
 
 // ---------------------------------------------------------------------------
+// Global accounts cache (prevents multiple API calls during page load)
+// ---------------------------------------------------------------------------
+
+interface GlobalAccountsCacheEntry {
+  accounts: Map<string, { connected: boolean; accountId?: string }>;
+  cachedAt: number;
+}
+
+const GLOBAL_ACCOUNTS_CACHE_TTL_MS = 30 * 1000; // 30 seconds - short TTL, just for page load
+let globalAccountsCache: GlobalAccountsCacheEntry | null = null;
+
+// ---------------------------------------------------------------------------
 // Service class
 // ---------------------------------------------------------------------------
 
@@ -152,30 +164,57 @@ export class ComposioService {
   // -------------------------------------------------------------------------
 
   /**
-   * Check if there's an active connection in Composio for this platform.
-   * This checks Composio's connected accounts directly, bypassing our local DB.
+   * Fetch all global connections from Composio and cache them.
+   * This makes ONE API call and caches results for all platforms.
    */
-  async checkGlobalConnection(
-    platform: ComposioPlatform,
-  ): Promise<{ connected: boolean; accountId?: string }> {
+  async fetchAllGlobalConnections(): Promise<Map<string, { connected: boolean; accountId?: string }>> {
+    // Check cache first
+    if (globalAccountsCache) {
+      const age = Date.now() - globalAccountsCache.cachedAt;
+      if (age < GLOBAL_ACCOUNTS_CACHE_TTL_MS) {
+        return globalAccountsCache.accounts;
+      }
+    }
+
+    // Fetch from Composio API
+    const accountsMap = new Map<string, { connected: boolean; accountId?: string }>();
+
     try {
       const client = await this.ensureClient();
       const accounts = await client.connectedAccounts.list({});
 
-      const platformAccount = accounts.items?.find(
-        (a: { appName?: string; status?: string }) =>
-          a.appName === platform && a.status === 'ACTIVE',
-      );
-
-      if (platformAccount) {
-        return { connected: true, accountId: platformAccount.id };
+      // Build map of platform -> connection status
+      for (const account of accounts.items || []) {
+        if (account.appName && account.status === 'ACTIVE') {
+          accountsMap.set(account.appName, {
+            connected: true,
+            accountId: account.id,
+          });
+        }
       }
 
-      return { connected: false };
+      // Cache the results
+      globalAccountsCache = {
+        accounts: accountsMap,
+        cachedAt: Date.now(),
+      };
+
+      return accountsMap;
     } catch (err) {
-      console.error('[ComposioService] checkGlobalConnection error:', err);
-      return { connected: false };
+      console.error('[ComposioService] fetchAllGlobalConnections error:', err);
+      return accountsMap;
     }
+  }
+
+  /**
+   * Check if there's an active connection in Composio for this platform.
+   * Uses cached data when available to avoid multiple API calls.
+   */
+  async checkGlobalConnection(
+    platform: ComposioPlatform,
+  ): Promise<{ connected: boolean; accountId?: string }> {
+    const allConnections = await this.fetchAllGlobalConnections();
+    return allConnections.get(platform) || { connected: false };
   }
 
   // -------------------------------------------------------------------------

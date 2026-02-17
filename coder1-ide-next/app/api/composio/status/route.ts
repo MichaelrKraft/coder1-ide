@@ -17,14 +17,18 @@ export const dynamic = 'force-dynamic';
 const ALL_PLATFORMS: ComposioPlatform[] = ['render', 'vercel', 'supabase'];
 
 /**
- * Get status for a single platform, checking both local DB and Composio global connections.
+ * Get status for a single platform.
+ *
+ * By default, only checks local DB for fast page loads.
+ * Pass ?deep=true to also check Composio global connections (slower).
  */
 async function getFullStatus(
   service: ReturnType<typeof getComposioService>,
   userId: string,
   platform: ComposioPlatform,
+  checkGlobal: boolean = false,
 ): Promise<ConnectionStatus> {
-  // First check local DB
+  // First check local DB (fast)
   const localStatus = await service.getConnectionStatus(userId, platform);
 
   // If already connected in local DB, return that
@@ -32,21 +36,23 @@ async function getFullStatus(
     return localStatus;
   }
 
-  // If not in local DB, check Composio global connections
-  // (handles connections made directly in Composio dashboard)
-  const globalStatus = await service.checkGlobalConnection(platform);
+  // Only check Composio global connections if requested (slow API call)
+  // This is triggered by ?deep=true or after Connect button click
+  if (checkGlobal) {
+    const globalStatus = await service.checkGlobalConnection(platform);
 
-  if (globalStatus.connected) {
-    return {
-      platform,
-      connected: true,
-      status: 'connected',
-      connectedAt: undefined, // Unknown - connected via Composio dashboard
-      lastUsedAt: undefined,
-    };
+    if (globalStatus.connected) {
+      return {
+        platform,
+        connected: true,
+        status: 'connected',
+        connectedAt: undefined, // Unknown - connected via Composio dashboard
+        lastUsedAt: undefined,
+      };
+    }
   }
 
-  // Not connected anywhere
+  // Not connected
   return localStatus;
 }
 
@@ -54,6 +60,7 @@ export async function GET(request: NextRequest) {
   try {
     const userId = extractUserId(request);
     const platform = request.nextUrl.searchParams.get('platform') as ComposioPlatform | null;
+    const checkGlobal = request.nextUrl.searchParams.get('deep') === 'true';
     const service = getComposioService();
 
     if (platform) {
@@ -64,13 +71,13 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const status = await getFullStatus(service, userId, platform);
+      const status = await getFullStatus(service, userId, platform, checkGlobal);
       return NextResponse.json({ success: true, data: status });
     }
 
     // Return status for all platforms
     const statuses: ConnectionStatus[] = await Promise.all(
-      ALL_PLATFORMS.map((p) => getFullStatus(service, userId, p)),
+      ALL_PLATFORMS.map((p) => getFullStatus(service, userId, p, checkGlobal)),
     );
 
     return NextResponse.json({ success: true, data: statuses });
