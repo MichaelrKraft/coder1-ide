@@ -996,6 +996,7 @@ export default function ChatTab() {
               message: userMessage.content,
               sessionId: sessionId,  // Pass session ID for conversation continuity
               history: messages.slice(-10), // Send last 10 messages for context
+              previousMode: johnny5Mode?.mode || undefined,  // For query classifier continuity
               terminalContext: terminalObserver.getRecentContext(1500),
               ...(activeCrewInfo ? { crewContext: { name: activeCrewInfo.name, promptPrefix: activeCrewInfo.promptPrefix } } : {}),
             }),
@@ -1017,6 +1018,7 @@ export default function ChatTab() {
             message: userMessage.content,
             sessionId: sessionId,
             history: messages.slice(-10),
+            previousMode: johnny5Mode?.mode || undefined,
           }),
           signal: controller.signal,
         });
