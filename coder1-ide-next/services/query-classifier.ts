@@ -14,7 +14,7 @@
 // Types
 // ============================================================================
 
-export type QueryCategory = 'personal' | 'coding' | 'hybrid' | 'general' | 'session_recall';
+export type QueryCategory = 'personal' | 'coding' | 'hybrid' | 'general' | 'session_recall' | 'deployment' | 'browser';
 
 export interface ClassificationResult {
   category: QueryCategory;
@@ -124,6 +124,59 @@ const SESSION_RECALL_PATTERNS = [
   /\b(my|our|recent|last)\s+(commit|commits)\b/i,
 ];
 
+/**
+ * Patterns that indicate deployment/platform management queries
+ * These use the deployment-assistant skill via Composio
+ */
+const DEPLOYMENT_PATTERNS = [
+  // Environment variables
+  /\b(set|update|change|add|create)\s+(the\s+)?(env|environment)\s*(var|variable)?s?\b/i,
+  /\b(env|environment)\s*(var|variable)?s?\s*(on|for|to)\b/i,
+  /\bset\s+[A-Z_][A-Z0-9_]*\s*=/i, // Matches "set DATABASE_URL="
+  /\b[A-Z_][A-Z0-9_]*\s*=\s*\S/i, // Matches "DATABASE_URL=value"
+
+  // Platform names
+  /\b(render|vercel|railway|supabase|fly\.io|heroku)\s+(service|dashboard|deploy|env)/i,
+  /\b(on|to|from)\s+(my\s+)?(render|vercel|railway|supabase)\b/i,
+  /\b(configure|setup|connect)\s+(render|vercel|railway|supabase)\b/i,
+
+  // Deployment actions
+  /\b(trigger|start|initiate)\s+(a\s+)?(deploy|deployment|redeploy)\b/i,
+  /\bdeploy\s+(to|on)\s+(render|vercel|production|staging)\b/i,
+  /\bredeploy\s+(the\s+)?(service|app|application)\b/i,
+
+  // Service management
+  /\b(list|show|view)\s+(my\s+)?(render|vercel)?\s*services?\b/i,
+  /\b(show|list|view)\s+(env|environment)\s*(vars?|variables?)?\b/i,
+  /\b(delete|remove|clear)\s+(env|environment)\s*(var|variable)?\b/i,
+
+  // Visual mode triggers
+  /\b(show me|let me watch|do it visually)\b/i,
+  /\b(open|show)\s+(the\s+)?(render|vercel)\s+dashboard\b/i,
+];
+
+/**
+ * Patterns that indicate browser automation queries
+ * These require Bridge mode for claude-in-chrome MCP tools
+ */
+const BROWSER_PATTERNS = [
+  // Navigation commands
+  /\b(go to|navigate to|visit|open|browse)\s+(https?:\/\/)?[\w.-]+/i,
+  /\b(open|show me|check out)\s+(the\s+)?(website|site|page)\b/i,
+
+  // Interaction commands
+  /\b(click|tap|press)\s+(on\s+)?(the\s+)?\w+/i,
+  /\b(fill|type|enter)\s+(in\s+)?(the\s+)?\w+/i,
+  /\b(screenshot|capture|snap)\s*(the\s+)?(page|screen|website)?\b/i,
+  /\btake\s+a?\s*screenshot\b/i,
+
+  // General browser context
+  /\b(in the browser|on the page|web page|webpage)\b/i,
+  /\b(browser automation|automate the browser)\b/i,
+  /\bwhat('s| is) on\s+(the\s+)?(page|site|website)\b/i,
+  /\b(scrape|extract)\s+(data\s+)?(from\s+)?(the\s+)?(page|site|website)\b/i,
+];
+
 // ============================================================================
 // Classification Functions
 // ============================================================================
@@ -171,18 +224,26 @@ export function classifyQuery(message: string): ClassificationResult {
   const codingMatches = matchPatterns(normalizedMessage, CODING_PATTERNS);
   const hybridMatches = matchPatterns(normalizedMessage, HYBRID_PATTERNS);
   const sessionRecallMatches = matchPatterns(normalizedMessage, SESSION_RECALL_PATTERNS);
+  const deploymentMatches = matchPatterns(normalizedMessage, DEPLOYMENT_PATTERNS);
+  const browserMatches = matchPatterns(normalizedMessage, BROWSER_PATTERNS);
 
   // Calculate confidence scores
   const personalConfidence = calculateConfidence(personalMatches, message.length);
   const codingConfidence = calculateConfidence(codingMatches, message.length);
   const hybridConfidence = calculateConfidence(hybridMatches, message.length);
   const sessionRecallConfidence = calculateConfidence(sessionRecallMatches, message.length);
+  const deploymentConfidence = calculateConfidence(deploymentMatches, message.length);
+  const browserConfidence = calculateConfidence(browserMatches, message.length);
 
   console.log('[QueryClassifier] Scores:', {
+    browser: browserConfidence.toFixed(2),
+    deployment: deploymentConfidence.toFixed(2),
     sessionRecall: sessionRecallConfidence.toFixed(2),
     personal: personalConfidence.toFixed(2),
     coding: codingConfidence.toFixed(2),
     hybrid: hybridConfidence.toFixed(2),
+    browserMatches,
+    deploymentMatches,
     sessionRecallMatches,
     personalMatches,
     codingMatches,
@@ -197,6 +258,28 @@ export function classifyQuery(message: string): ClassificationResult {
       shouldUseBridge: false, // MUST use Gemini - Bridge ignores memory context
       reasoning: 'Session recall query. Using Gemini to search and present session history.',
       matchedPatterns: sessionRecallMatches,
+    };
+  }
+
+  // Check deployment queries (manages env vars, deploys via Composio)
+  if (deploymentConfidence > 0.3) {
+    return {
+      category: 'deployment',
+      confidence: deploymentConfidence,
+      shouldUseBridge: false, // Uses Composio/Gemini, not Bridge
+      reasoning: 'Deployment platform query. Using deployment-assistant skill to manage env vars and deploys.',
+      matchedPatterns: deploymentMatches,
+    };
+  }
+
+  // Check browser queries - route to Bridge for claude-in-chrome MCP tools
+  if (browserConfidence > 0.3) {
+    return {
+      category: 'browser',
+      confidence: browserConfidence,
+      shouldUseBridge: true, // Bridge has claude-in-chrome MCP tools
+      reasoning: 'Browser automation query. Using Bridge mode for claude-in-chrome MCP tools.',
+      matchedPatterns: browserMatches,
     };
   }
 
@@ -278,4 +361,39 @@ export function isDefinitelyCodingQuery(message: string): boolean {
   ];
 
   return strongCodingPatterns.some(p => p.test(normalizedMessage));
+}
+
+/**
+ * Quick check if a query is definitely deployment-related
+ */
+export function isDefinitelyDeploymentQuery(message: string): boolean {
+  const normalizedMessage = message.toLowerCase().trim();
+
+  // Very strong deployment indicators
+  const strongDeploymentPatterns = [
+    /\bset\s+[A-Z_][A-Z0-9_]*\s*=/i, // "set DATABASE_URL="
+    /\b(env|environment)\s*(var|variable)s?\s+(on|for)\s+(render|vercel|supabase)/i,
+    /\b(deploy|redeploy)\s+(to|on)\s+(render|vercel|production)/i,
+    /\b(connect|configure)\s+(my\s+)?(render|vercel|supabase)\s+account/i,
+    /\bshow\s+(my\s+)?(env|environment)\s*(vars?|variables?)/i,
+  ];
+
+  return strongDeploymentPatterns.some(p => p.test(normalizedMessage));
+}
+
+/**
+ * Quick check if a query is definitely browser-related
+ */
+export function isDefinitelyBrowserQuery(message: string): boolean {
+  const normalizedMessage = message.toLowerCase().trim();
+
+  // Very strong browser indicators
+  const strongBrowserPatterns = [
+    /\b(go to|navigate to|visit)\s+(https?:\/\/)?[\w.-]+\.(com|org|net|io|dev|app|co)/i,
+    /\btake\s+a?\s*screenshot\b/i,
+    /\bopen\s+(the\s+)?(url|website|link)\b/i,
+    /\b(click|fill|type)\s+(on\s+)?(the\s+)?[\w]+\s+(button|input|field|form)\b/i,
+  ];
+
+  return strongBrowserPatterns.some(p => p.test(normalizedMessage));
 }

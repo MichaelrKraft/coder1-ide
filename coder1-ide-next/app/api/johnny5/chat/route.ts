@@ -60,6 +60,7 @@ import { bridgeManager } from '@/services/bridge-manager';
 import { shouldUseSkills, matchSkillsToQuery } from '@/lib/skills-integration-utils';
 import { initializeSkillsService } from '@/lib/skills-service';
 import { createTask } from '@/services/johnny5/task-tracker';
+import { containsSecret, maskSensitiveValue } from '@/lib/env-var-parser';
 
 // Log memory feature status on module load
 console.log('[Johnny5] Memory features status:', {
@@ -162,6 +163,26 @@ function errorResponse(
   status: number = 400
 ): NextResponse<ChatErrorResponse> {
   return NextResponse.json({ success: false, error, code }, { status });
+}
+
+/**
+ * Mask secrets in messages before storage.
+ * Finds KEY=VALUE patterns where VALUE looks like a secret and masks it.
+ * This prevents sensitive data from being stored in chat history.
+ */
+function maskSecretsInMessage(message: string): string {
+  // Pattern: KEY=VALUE where KEY looks like an env var name
+  // VALUE is everything after = until whitespace, comma, or end
+  const envVarPattern = /\b([A-Z_][A-Z0-9_]*)\s*=\s*(['"]?)([^\s,'"]+|[^'"]*)\2/gi;
+
+  return message.replace(envVarPattern, (match, key, quote, value) => {
+    // Check if this looks like a secret
+    if (containsSecret(value, key)) {
+      const masked = maskSensitiveValue(value);
+      return `${key}=${quote}${masked}${quote}`;
+    }
+    return match;
+  });
 }
 
 /**
@@ -423,6 +444,7 @@ You're connected via coder1-bridge with Claude Code CLI integration:
 You're running in standalone mode using Gemini 2.5 Flash.
 
 ✅ **What You CAN Do**:
+   - Search the web for current information (Google Search is available)
    - Remember everything about your human (memory system active)
    - Provide advice, answer questions, brainstorm ideas
    - Reason through problems and provide solutions
@@ -433,6 +455,8 @@ You're running in standalone mode using Gemini 2.5 Flash.
    - Read files from the codebase or file system
    - Execute commands or run code
    - Use MCP tools (those require Bridge or ManusLive connection)
+
+⚠️ **CRITICAL: Never fabricate errors.** If you cannot do something, say "I don't have that capability in my current mode." Do NOT invent error messages, claim you "attempted" something you didn't, or reference specific technical errors (like "Invalid API key") that didn't actually occur. Be straightforward about what you can and cannot do.
 
 **To Unlock Full Capabilities**: User needs to either:
 1. Run \`coder1-bridge start\` to connect Claude Code CLI (gives MCP tools + project context)
@@ -817,9 +841,16 @@ export async function POST(
     }
 
     // 5. Save user message to database
+    // SECURITY: Mask secrets in messages before storage to prevent sensitive data leakage
+    const messageForStorage = containsSecret(message)
+      ? maskSecretsInMessage(message)
+      : message;
     const estimatedInputTokens = Math.ceil(message.length / 4);
     try {
-      await addMessage(session.id, 'user', message, estimatedInputTokens);
+      await addMessage(session.id, 'user', messageForStorage, estimatedInputTokens);
+      if (messageForStorage !== message) {
+        console.log('[Johnny5] Message stored with secrets masked');
+      }
     } catch (msgError) {
       console.error('[Johnny5] Failed to save user message:', msgError);
       // Continue anyway - non-critical
@@ -1230,8 +1261,8 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
           },
         ];
 
-        // Define function calling tools for Mission Control task creation
-        const geminiTools = [{
+        // Define tools - functionDeclarations and google_search cannot be in the same request
+        const functionCallingTools = [{
           functionDeclarations: [{
             name: 'createMissionTask',
             description: 'Create a task in Mission Control when the user asks you to do something that requires autonomous work, research, building, or any task that should be tracked. IMPORTANT: Extract the actual task details from what the user is asking for - do NOT use generic placeholders like "test task".',
@@ -1261,6 +1292,12 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
             }
           }]
         }];
+        const searchTools = [{ google_search: {} }];
+
+        // Use google_search for general/informational queries, functionDeclarations for task-oriented
+        const isTaskCreationQuery = /\b(create|add|make|schedule|set up|track)\s+(a\s+)?(task|job|cron|mission|todo|reminder)\b/i.test(message)
+          || /\b(can you|please|i need you to)\s+(do|build|research|fix|monitor)\b/i.test(message);
+        const geminiTools = isTaskCreationQuery ? functionCallingTools : searchTools;
 
         const apiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
@@ -1287,10 +1324,17 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
           };
         } else {
           const data = await apiResponse.json();
-          const firstPart = data.candidates?.[0]?.content?.parts?.[0];
+          const parts = data.candidates?.[0]?.content?.parts || [];
+          const firstPart = parts[0]; // Still needed for functionCall check
+          const allText = parts
+            .filter((p: { text?: string }) => p.text)
+            .map((p: { text: string }) => p.text)
+            .join('');
+          const groundingMetadata = data.candidates?.[0]?.groundingMetadata;
 
           // Debug: Log what Gemini returned
-          console.log('[Johnny5] Gemini response type:', firstPart?.functionCall ? 'FUNCTION_CALL' : 'TEXT');
+          const hasGrounding = !!groundingMetadata?.groundingChunks?.length;
+          console.log('[Johnny5] Gemini response type:', firstPart?.functionCall ? 'FUNCTION_CALL' : 'TEXT', hasGrounding ? '(grounded)' : '');
           if (firstPart?.functionCall) {
             console.log('[Johnny5] Function call details:', JSON.stringify(firstPart.functionCall));
           }
@@ -1379,7 +1423,7 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: functionResponseContents }),
+                body: JSON.stringify({ contents: functionResponseContents, tools: geminiTools }),
               }
             );
 
@@ -1405,11 +1449,12 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
               };
             }
           } else {
-            // Regular text response (no function call)
-            const responseText = firstPart?.text || '';
+            // Regular text response (no function call) - may include grounding
+            const responseText = allText || firstPart?.text || '';
             result = {
               success: true,
               response: responseText,
+              groundingMetadata: groundingMetadata || undefined,
             };
           }
         }
@@ -1732,6 +1777,13 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
     const capturedUserId = userId;
     setImmediate(async () => {
       try {
+        // SECURITY: Skip fact extraction if message contains secrets (env vars, API keys, passwords)
+        // This prevents sensitive values from being stored in memory/facts
+        if (containsSecret(message)) {
+          console.log('[Johnny5] Skipping fact extraction - message contains secrets');
+          return;
+        }
+
         // Build conversation history for extraction
         const fullHistory: MemoryConversationMessage[] = [
           ...history.map((m) => ({
