@@ -14,12 +14,16 @@ if (process.env.NODE_ENV === 'development' && !process.env.JWT_SECRET) {
   console.warn('⚠️  Using generated JWT secret. Set JWT_SECRET in .env for production');
 }
 
-if (process.env.NODE_ENV === 'production') {
-  if (!process.env.JWT_SECRET) {
-    throw new Error('FATAL: JWT_SECRET environment variable is required in production. Set it to a secure random string (e.g., openssl rand -hex 32).');
-  }
-  if (!process.env.JWT_REFRESH_SECRET) {
-    throw new Error('FATAL: JWT_REFRESH_SECRET environment variable is required in production. Set it to a secure random string (e.g., openssl rand -hex 32).');
+// Validate production secrets at runtime (not module-level) to avoid crashing next build.
+// next build imports all route modules with NODE_ENV=production to collect page data.
+function validateProductionSecrets(): void {
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.JWT_SECRET) {
+      throw new Error('FATAL: JWT_SECRET environment variable is required in production. Set it to a secure random string (e.g., openssl rand -hex 32).');
+    }
+    if (!process.env.JWT_REFRESH_SECRET) {
+      throw new Error('FATAL: JWT_REFRESH_SECRET environment variable is required in production. Set it to a secure random string (e.g., openssl rand -hex 32).');
+    }
   }
 }
 
@@ -43,6 +47,8 @@ export function generateTokens(payload: TokenPayload): {
   refreshToken: string;
   expiresAt: Date;
 } {
+  validateProductionSecrets();
+
   const accessToken = jwt.sign(payload, JWT_SECRET, {
     expiresIn: ACCESS_TOKEN_EXPIRES_IN,
   });
