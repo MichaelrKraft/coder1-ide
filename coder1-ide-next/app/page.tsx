@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
  *
  * Set LANDING_VERSION environment variable to switch:
  *   - "1" or "alpha"    → /alpha (Version 1: "The only IDE built for Claude Code users")
- *   - "2" or "alpha-v2" → /alpha-v2 (Version 2: "You've Heard Of Moltbot")
+ *   - "2" or "alpha-v2" → /alpha-v2 (Version 2: "You've Heard Of J5")
  *   - "3" or "alpha-v3" → /alpha-v3 (Version 3: "Build Software While You Sleep")
  *
  * Default: Version 1

@@ -17,7 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { existsSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
-import { getMoltbotBridge } from '@/services/johnny5/moltbot-bridge';
+import { getJ5Bridge } from '@/services/johnny5/j5-bridge';
 import type { Johnny5APIResponse } from '@/types/johnny5';
 
 // Force dynamic rendering - connection status changes frequently
@@ -60,7 +60,7 @@ function isJohnny5Configured(): boolean {
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    const bridge = getMoltbotBridge();
+    const bridge = getJ5Bridge();
     const status = bridge.getStatus();
     const config = bridge.getConfig();
 
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const bridge = getMoltbotBridge();
+    const bridge = getJ5Bridge();
 
     // Parse request body
     let body: { gatewayUrl?: string; action?: string } = {};

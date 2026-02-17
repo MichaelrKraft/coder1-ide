@@ -721,15 +721,18 @@ export function removeTeamMember(teamId: string, userId: string): void {
 export function deleteTeam(teamId: string): void {
   const db = getAuthDatabase();
 
-  // Delete in order: knowledge facts (if exists), invitations, members, then team
-  try {
-    db.prepare('DELETE FROM team_knowledge_facts WHERE team_id = ?').run(teamId);
-  } catch {
-    // Table may not exist yet - this is fine
-  }
-  db.prepare('DELETE FROM team_invitations WHERE team_id = ?').run(teamId);
-  db.prepare('DELETE FROM team_members WHERE team_id = ?').run(teamId);
-  db.prepare('DELETE FROM teams WHERE id = ?').run(teamId);
+  const deleteAll = db.transaction((id: string) => {
+    // Clean up knowledge facts if table exists
+    try {
+      db.prepare('DELETE FROM team_knowledge_facts WHERE team_id = ?').run(id);
+    } catch {
+      // Table may not exist yet - this is fine
+    }
+    // Delete team — CASCADE handles members and invitations
+    db.prepare('DELETE FROM teams WHERE id = ?').run(id);
+  });
+
+  deleteAll(teamId);
 }
 
 export function getTeamMembers(teamId: string): (User & { role: string })[] {
@@ -772,20 +775,16 @@ export function getTeamInvitationByToken(token: string): TeamInvitation | undefi
 export function acceptTeamInvitation(token: string, userId: string): void {
   const db = getAuthDatabase();
 
-  // Find valid, non-expired, pending invitation
+  // Atomic: UPDATE only if still pending and not expired, return the row
   const invitation = db.prepare(`
-    SELECT * FROM team_invitations
+    UPDATE team_invitations SET status = 'accepted'
     WHERE token = ? AND status = 'pending' AND expires_at > CURRENT_TIMESTAMP
+    RETURNING *
   `).get(token) as TeamInvitation | undefined;
 
   if (!invitation) {
     throw new Error('Invalid or expired invitation');
   }
-
-  // Update invitation status
-  db.prepare(`
-    UPDATE team_invitations SET status = 'accepted' WHERE token = ?
-  `).run(token);
 
   // Add user as team member
   addTeamMember(invitation.team_id, userId, 'member');

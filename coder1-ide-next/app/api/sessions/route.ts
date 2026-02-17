@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, description, metadata, userId, type = 'general' } = body;
     
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    const sessionId = `session_${Date.now()}_${randomBytes(6).toString('hex')}`;
     const now = new Date().toISOString();
     
     const session: Session = {

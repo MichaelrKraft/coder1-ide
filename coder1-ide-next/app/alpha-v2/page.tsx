@@ -920,7 +920,7 @@ export default function AlphaLandingPage() {
           {/* Subtitle - Version 2: Claudebot hook */}
           <div className="mb-6 subtitle-fade-in">
             <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
-              You&apos;ve Heard Of <span className="text-coder1-cyan">Moltbot</span>.
+              You&apos;ve Heard Of <span className="text-coder1-cyan">J5</span>.
             </p>
             <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
               What If It Lived In Your <span className="text-coder1-cyan">IDE</span>?
@@ -929,7 +929,7 @@ export default function AlphaLandingPage() {
 
           {/* Description */}
           <p className="text-lg text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
-            <span className="text-white font-semibold">Johnny5</span> is a clone of Moltbot and works autonomously
+            <span className="text-white font-semibold">Johnny5</span> is a clone of J5 and works autonomously
             within your <span className="text-coder1-cyan">ADE</span> (Agentic Development Environment) built for
             <span className="text-coder1-cyan"> Claude Code</span> Power Users.
           </p>

@@ -1,16 +1,16 @@
 #!/usr/bin/env npx tsx
 /**
- * Moltbot Bridge Connection Test Script
+ * J5 Bridge Connection Test Script
  *
  * Tests the WebSocket connection to ManusLive gateway.
- * Run with: npx tsx scripts/test-moltbot-connection.ts
+ * Run with: npx tsx scripts/test-j5-connection.ts
  *
  * Environment variables required:
- * - MOLTBOT_GATEWAY_URL: WebSocket URL (e.g., ws://192.168.1.100:55413)
- * - MOLTBOT_AUTH_TOKEN: Authentication token from ManusLive
+ * - J5_GATEWAY_URL: WebSocket URL (e.g., ws://192.168.1.100:55413)
+ * - J5_AUTH_TOKEN: Authentication token from ManusLive
  */
 
-import { getMoltbotBridge, MoltbotBridgeService } from '../services/johnny5/moltbot-bridge';
+import { getJ5Bridge, J5BridgeService } from '../services/johnny5/j5-bridge';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -33,28 +33,28 @@ function log(message: string, color: keyof typeof colors = 'reset') {
 
 async function runTests() {
   log('\n========================================', 'cyan');
-  log('   Moltbot Bridge Connection Test', 'cyan');
+  log('   J5 Bridge Connection Test', 'cyan');
   log('========================================\n', 'cyan');
 
   // Check environment variables
-  const gatewayUrl = process.env.MOLTBOT_GATEWAY_URL || 'ws://localhost:55413';
-  const authToken = process.env.MOLTBOT_AUTH_TOKEN || '';
+  const gatewayUrl = process.env.J5_GATEWAY_URL || 'ws://localhost:55413';
+  const authToken = process.env.J5_AUTH_TOKEN || '';
 
   log('Environment Configuration:', 'blue');
-  log(`  MOLTBOT_GATEWAY_URL: ${gatewayUrl}`);
-  log(`  MOLTBOT_AUTH_TOKEN: ${authToken ? `${authToken.substring(0, 8)}...` : '(not set)'}`);
+  log(`  J5_GATEWAY_URL: ${gatewayUrl}`);
+  log(`  J5_AUTH_TOKEN: ${authToken ? `${authToken.substring(0, 8)}...` : '(not set)'}`);
   log('');
 
   if (!authToken) {
-    log('WARNING: MOLTBOT_AUTH_TOKEN is not set!', 'yellow');
+    log('WARNING: J5_AUTH_TOKEN is not set!', 'yellow');
     log('  Authentication may fail without a valid token.', 'yellow');
     log('  Get your token from ManusLive: Settings > Gateway > Auth Token', 'yellow');
     log('');
   }
 
   // Get bridge instance
-  log('Creating MoltbotBridge instance...', 'blue');
-  const bridge = getMoltbotBridge();
+  log('Creating J5Bridge instance...', 'blue');
+  const bridge = getJ5Bridge();
   const config = bridge.getConfig();
   log(`  Gateway URL from config: ${config.gatewayUrl}`);
   log(`  Connection timeout: ${config.connectionTimeout}ms`);
@@ -119,7 +119,7 @@ async function runTests() {
   }).catch((err) => {
     log(`  [FAIL] Authentication failed: ${err.message}`, 'red');
     if (!authToken) {
-      log('  Hint: Set MOLTBOT_AUTH_TOKEN in your .env.local file', 'yellow');
+      log('  Hint: Set J5_AUTH_TOKEN in your .env.local file', 'yellow');
     }
   });
 
@@ -171,10 +171,10 @@ async function runTests() {
   log('   Test Complete', 'cyan');
   log('========================================', 'cyan');
   log('');
-  log('If all tests passed, your Moltbot connection is working!', 'green');
+  log('If all tests passed, your J5 connection is working!', 'green');
   log('');
   log('Next steps:', 'blue');
-  log('  1. Set MOLTBOT_ENABLED=true in .env.local');
+  log('  1. Set J5_ENABLED=true in .env.local');
   log('  2. Restart the Coder1 IDE server');
   log('  3. Open the Johnny5 dashboard to chat with your AI');
   log('');
