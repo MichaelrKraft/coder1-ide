@@ -31,6 +31,78 @@
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
   --text-muted: #6b7280;
+
+  /* Borders */
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-primary: rgba(255, 255, 255, 0.06);
+}
+
+/* Light Theme - Paper Studio */
+.light {
+  /* Backgrounds - warm off-whites */
+  --bg-primary: #fafafa;
+  --bg-secondary: #f0f1f3;
+  --bg-tertiary: rgba(0, 0, 0, 0.02);
+  --bg-float: rgba(0, 0, 0, 0.03);
+
+  /* Glass Morphism - Light */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-backdrop: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(0, 0, 0, 0.06);
+
+  /* Text - rich, readable */
+  --text-primary: #1a1a1a;
+  --text-secondary: #52525b;
+  --text-muted: #71717a;
+
+  /* Borders - subtle definition */
+  --border-default: rgba(0, 0, 0, 0.1);
+  --border-primary: rgba(0, 0, 0, 0.06);
+
+  /* Orange Glow - adjusted for light */
+  --glow-orange: rgba(234, 88, 12, 0.15);
+  --glow-orange-hover: rgba(234, 88, 12, 0.25);
+}
+
+/* Light mode button text overrides */
+.light button[class*="bg-"] {
+  color: #1a1a1a;
+}
+
+/* Override hardcoded text-white on buttons and elements */
+.light button.text-white,
+.light [role="button"].text-white,
+.light [class*="text-white"] {
+  color: #1a1a1a !important;
+}
+
+/* Feedback button - override bg-black in light mode */
+.light button[class*="bg-black"] {
+  background-color: #f0f1f3 !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Terminal header buttons and other colored buttons */
+.light [class*="bg-cyan-"] {
+  color: #1a1a1a !important;
+}
+
+.light [class*="bg-green-"] {
+  color: #1a1a1a !important;
+}
+
+.light [class*="bg-orange-"] {
+  color: #1a1a1a !important;
+}
+
+.light [class*="bg-blue-"] {
+  color: #1a1a1a !important;
+}
+
+/* Accent buttons use cyan text in light mode */
+.light .glow-button,
+.light .glass-button {
+  color: #0891b2;
 }
 
 * {

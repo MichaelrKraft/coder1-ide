@@ -27,6 +27,22 @@ export default function RootLayout({
         {/* Temporarily disabled Socket.IO CDN to fix hydration issues */}
         {/* 🔧 FIX (Nov 22, 2025): Disable companion health checks BEFORE React hydration */}
         <script dangerouslySetInnerHTML={{__html: `window.__DISABLE_COMPANION = true;`}} />
+        {/* Theme initialization - prevents flash of wrong theme */}
+        <script dangerouslySetInnerHTML={{__html: `
+          (function() {
+            try {
+              var theme = 'dark';
+              var settings = localStorage.getItem('coder1-settings');
+              if (settings) {
+                var parsed = JSON.parse(settings);
+                if (parsed.theme) theme = parsed.theme;
+              }
+              document.documentElement.classList.add(theme);
+            } catch (e) {
+              document.documentElement.classList.add('dark');
+            }
+          })();
+        `}} />
       </head>
       <body className={inter.className}>
         <ErrorBoundary>
