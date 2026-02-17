@@ -809,7 +809,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     
     // Update immediately and then every second
     updateBlockTimer();
-    const interval = setInterval(updateBlockTimer, 1000);
+    const interval = setInterval(updateBlockTimer, 5000); // Reduced from 1s to prevent unnecessary re-renders
     
     return () => clearInterval(interval);
   }, [terminalSettings.statusLine.enabled]);
@@ -835,7 +835,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
     };
     
-    const interval = setInterval(pollAgents, 3000); // Poll every 3 seconds
+    const interval = setInterval(pollAgents, 30000); // Poll every 30 seconds (reduced from 3s to prevent memory pressure)
     pollAgents(); // Initial check
     return () => clearInterval(interval);
   }, []);
@@ -5260,7 +5260,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     pollSessionUsage();
 
     // Set up polling interval
-    sessionUsagePollerRef.current = setInterval(pollSessionUsage, 5000);
+    sessionUsagePollerRef.current = setInterval(pollSessionUsage, 30000); // Reduced from 5s to prevent memory pressure
 
     return () => {
       if (sessionUsagePollerRef.current) {
