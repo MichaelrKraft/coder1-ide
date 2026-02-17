@@ -52,6 +52,18 @@
   transform: translateY(0);
 }
 
+/* Light mode - dark text for terminal control buttons */
+.light .terminal-control-btn {
+  color: #1a1a1a;
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+  border-color: rgba(0, 217, 255, 0.4);
+}
+
+.light .terminal-control-btn:hover {
+  color: #1a1a1a;
+  border-color: rgba(251, 146, 60, 0.6);
+}
+
 /* Stop button special style - same glass effect as others */
 .terminal-stop-btn {
   background: linear-gradient(135deg, rgba(125, 211, 252, 0.1) 0%, rgba(187, 154, 247, 0.1) 100%);
@@ -98,6 +110,17 @@
 
 .terminal-stop-btn:hover::before {
   left: 100%;
+}
+
+/* Light mode - dark text for stop button */
+.light .terminal-stop-btn {
+  color: #1a1a1a;
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+  border-color: rgba(0, 217, 255, 0.4);
+}
+
+.light .terminal-stop-btn:hover {
+  color: #1a1a1a;
 }
 
 /* Active button states with glowing borders */

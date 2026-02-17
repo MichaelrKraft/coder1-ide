@@ -19,18 +19,18 @@ const config: Config = {
   				'orange-hover': 'rgba(251, 146, 60, 0.6)'
   			},
   			bg: {
-  				primary: '#0a0a0a',
-  				secondary: '#1a1a1a',
-  				tertiary: 'rgba(255, 255, 255, 0.03)',
-  				glass: 'rgba(255, 255, 255, 0.05)'
+  				primary: 'var(--bg-primary)',
+  				secondary: 'var(--bg-secondary)',
+  				tertiary: 'var(--bg-tertiary)',
+  				glass: 'var(--glass-bg)'
   			},
   			border: 'hsl(var(--border))',
 			'border-default': 'var(--border-default)',
 			'border-primary': 'var(--border-primary)',
   			text: {
-  				primary: '#ffffff',
-  				secondary: '#a0a0a0',
-  				muted: '#6b7280'
+  				primary: 'var(--text-primary)',
+  				secondary: 'var(--text-secondary)',
+  				muted: 'var(--text-muted)'
   			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

@@ -399,7 +399,17 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
                     </label>
                     <select
                       value={settings.theme}
-                      onChange={(e) => updateSetting('theme', e.target.value as 'dark' | 'light')}
+                      onChange={(e) => {
+                        const newTheme = e.target.value as 'dark' | 'light';
+                        updateSetting('theme', newTheme);
+                        // Apply to DOM immediately
+                        document.documentElement.classList.remove('dark', 'light');
+                        document.documentElement.classList.add(newTheme);
+                        // Persist immediately for fast page load (don't wait for Save)
+                        const currentSettings = JSON.parse(localStorage.getItem('coder1-settings') || '{}');
+                        currentSettings.theme = newTheme;
+                        localStorage.setItem('coder1-settings', JSON.stringify(currentSettings));
+                      }}
                       className="w-full px-3 py-2 bg-bg-primary border border-border-default rounded text-text-primary"
                     >
                       <option value="dark">Dark</option>
