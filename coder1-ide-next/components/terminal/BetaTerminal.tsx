@@ -28,6 +28,11 @@ import { universalAIWrapper } from '@/services/ai-platform/universal-ai-wrapper-
 import { cliDetector, CLIInfo } from '@/services/ai-platform/cli-detector-client';
 import { useSessionMemory } from '@/hooks/useSessionMemory';
 import SimpleDragDropOverlay from './SimpleDragDropOverlay';
+import { useSpectatorStore } from '@/stores/useSpectatorStore';
+import { useTeamStore } from '@/stores/useTeamStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import SpectatorTerminal from './SpectatorTerminal';
+import { Monitor } from 'lucide-react';
 
 /**
  * Remove emojis from terminal text
@@ -88,7 +93,14 @@ function BetaTerminal({
   const [voiceListening, setVoiceListening] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [terminalReady, setTerminalReady] = useState(false);
-  
+
+  // Spectator Mode state
+  const [spectatorScrollback, setSpectatorScrollback] = useState<string>('');
+  const [spectatorDims, setSpectatorDims] = useState<{ cols: number; rows: number }>({ cols: 80, rows: 24 });
+  const { isSharingTerminal, isSpectating, spectatingSessionId, spectatingUsername, spectatorCount, sharedTerminals } = useSpectatorStore();
+  const teamStore = useTeamStore();
+  const authStore = useAuthStore();
+
   // Multi-AI Platform State
   const [availablePlatforms, setAvailablePlatforms] = useState<CLIInfo[]>([]);
   const [activePlatform, setActivePlatform] = useState<CLIInfo | null>(null);
@@ -948,6 +960,41 @@ function BetaTerminal({
       }
     });
 
+    // Spectator Mode: Listen for spectator events
+    // Remove previous listeners first to prevent duplicates on reconnect
+    socket.off('spectator:share:started');
+    socket.off('spectator:share:stopped');
+    socket.off('spectator:viewer:joined');
+    socket.off('spectator:viewer:left');
+    socket.off('spectator:joined');
+
+    socket.on('spectator:share:started', (data: { sessionId: string; userId: string; username: string; cols: number; rows: number }) => {
+      useSpectatorStore.getState().addSharedTerminal(data);
+    });
+
+    socket.on('spectator:share:stopped', ({ sessionId: stoppedId }: { sessionId: string }) => {
+      useSpectatorStore.getState().removeSharedTerminal(stoppedId);
+      // If currently spectating this terminal, exit spectator mode
+      const { spectatingSessionId, stopSpectating } = useSpectatorStore.getState();
+      if (spectatingSessionId === stoppedId) {
+        stopSpectating();
+      }
+    });
+
+    socket.on('spectator:viewer:joined', ({ count }: { count: number }) => {
+      useSpectatorStore.getState().setSpectatorCount(count);
+    });
+
+    socket.on('spectator:viewer:left', ({ count }: { count: number }) => {
+      useSpectatorStore.getState().setSpectatorCount(count);
+    });
+
+    socket.on('spectator:joined', ({ sessionId: sid, scrollback, cols, rows, sharerUsername }: { sessionId: string; scrollback: string; cols: number; rows: number; sharerUsername: string }) => {
+      setSpectatorScrollback(scrollback || '');
+      setSpectatorDims({ cols, rows });
+      useSpectatorStore.getState().startSpectating(sid, sharerUsername);
+    });
+
     // Handle errors
     socket.on('terminal:error', ({ message }: { message: string }) => {
       console.error('Beta Terminal error:', message);
@@ -1594,6 +1641,44 @@ function BetaTerminal({
             <span>Stop</span>
           </button>
 
+          {/* Share Terminal toggle (Spectator Mode) */}
+          {teamStore.syncTeam && (
+            <button
+              onClick={() => {
+                const socket = socketRef.current;
+                if (!socket) return;
+                const spectator = useSpectatorStore.getState();
+                if (spectator.isSharingTerminal) {
+                  socket.emit('spectator:share:stop', { sessionId });
+                  spectator.stopSharing();
+                } else {
+                  const user = useAuthStore.getState().user;
+                  if (!user) return;
+                  socket.emit('spectator:share:start', {
+                    sessionId,
+                    teamId: teamStore.syncTeam?.id,
+                    userId: user.id,
+                    username: user.username,
+                  });
+                  spectator.startSharing(sessionId!);
+                }
+              }}
+              disabled={!isMounted || !sessionId}
+              className={`terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md ${
+                isSharingTerminal ? 'terminal-btn-active-orange' : ''
+              } ${(!isMounted || !sessionId) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={isSharingTerminal ? `Sharing terminal (${spectatorCount} viewers)` : 'Share terminal with team'}
+            >
+              <Monitor className="w-4 h-4" />
+              <span>{isSharingTerminal ? 'Sharing' : 'Share'}</span>
+              {isSharingTerminal && spectatorCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-orange-500/20 text-orange-400 text-[10px] rounded-full font-medium">
+                  {spectatorCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* Platform Selector Dropdown */}
           <div className="relative" ref={platformDropdownRef}>
             <button
@@ -1823,6 +1908,21 @@ function BetaTerminal({
           className="h-full w-full"
           onClick={handleTerminalClick}
         />
+        {/* Spectator Mode overlay */}
+        {isSpectating && spectatingSessionId && (
+          <SpectatorTerminal
+            sessionId={spectatingSessionId}
+            sharerUsername={spectatingUsername || 'Unknown'}
+            scrollback={spectatorScrollback}
+            cols={spectatorDims.cols}
+            rows={spectatorDims.rows}
+            onExit={() => {
+              socketRef.current?.emit('spectator:leave', { sessionId: spectatingSessionId });
+              useSpectatorStore.getState().stopSpectating();
+            }}
+            socketRef={socketRef}
+          />
+        )}
       </div>
 
       {/* Status Bar */}
