@@ -393,7 +393,7 @@ function ComparisonSection() {
     { name: 'Transparent Reasoning', values: [true, false, false, false, false] },
     { name: 'Morning Briefs', values: [true, false, false, false, false] },
   ];
-  const prices = ['$29/mo', '$20/mo', '$15/mo', '$10/mo', '$500/mo'];
+  const prices = ['$19/mo', '$20/mo', '$15/mo', '$10/mo', '$500/mo'];
 
   return (
     <section id="comparison" className="py-24 bg-gray-900">
@@ -535,7 +535,7 @@ function PricingSection() {
     },
     {
       name: 'Pro',
-      price: '$29',
+      price: '$19',
       period: '/month',
       description: 'For serious builders',
       features: [

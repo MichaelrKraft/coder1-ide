@@ -96,7 +96,7 @@ export default function UpgradePrompt({
             ) : (
               <>
                 <Zap className="w-4 h-4" />
-                Upgrade to Pro - $29/mo
+                Upgrade to Pro - $19/mo
               </>
             )}
           </a>

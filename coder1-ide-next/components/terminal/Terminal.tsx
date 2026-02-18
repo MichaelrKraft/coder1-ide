@@ -4363,38 +4363,62 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     socket.on('ai-team:complete', aiTeamCompleteHandler);
 
     // Spectator Mode socket listeners
-    socket.off('spectator:share:started');
-    socket.on('spectator:share:started', (data: any) => {
-      useSpectatorStore.getState().addSharedTerminal(data);
-    });
-
-    socket.off('spectator:share:stopped');
-    socket.on('spectator:share:stopped', (data: any) => {
-      const stoppedId = data?.sessionId;
-      useSpectatorStore.getState().removeSharedTerminal(stoppedId);
-      const { spectatingSessionId: currentlySpectating, stopSpectating } = useSpectatorStore.getState();
-      if (currentlySpectating === stoppedId) {
-        stopSpectating();
+    // ⚡ PERFORMANCE FIX (Feb 17, 2026): Use named handlers with socketHandlersRef for proper cleanup
+    // Only register spectator listeners if user is in a team (reduces overhead for solo users)
+    if (teamStore.syncTeam) {
+      const spectatorShareStartedHandler = (data: any) => {
+        useSpectatorStore.getState().addSharedTerminal(data);
+      };
+      if (socketHandlersRef.current.spectatorShareStarted) {
+        socket.off('spectator:share:started', socketHandlersRef.current.spectatorShareStarted);
       }
-    });
+      socketHandlersRef.current.spectatorShareStarted = spectatorShareStartedHandler;
+      socket.on('spectator:share:started', spectatorShareStartedHandler);
 
-    socket.off('spectator:viewer:joined');
-    socket.on('spectator:viewer:joined', (data: any) => {
-      useSpectatorStore.getState().setSpectatorCount(data?.viewerCount ?? 0);
-    });
-
-    socket.off('spectator:viewer:left');
-    socket.on('spectator:viewer:left', (data: any) => {
-      useSpectatorStore.getState().setSpectatorCount(data?.viewerCount ?? 0);
-    });
-
-    socket.off('spectator:joined');
-    socket.on('spectator:joined', (data: any) => {
-      if (data) {
-        setSpectatorScrollback(data.scrollback || '');
-        setSpectatorDims({ cols: data.cols || 80, rows: data.rows || 24 });
+      const spectatorShareStoppedHandler = (data: any) => {
+        const stoppedId = data?.sessionId;
+        useSpectatorStore.getState().removeSharedTerminal(stoppedId);
+        const { spectatingSessionId: currentlySpectating, stopSpectating } = useSpectatorStore.getState();
+        if (currentlySpectating === stoppedId) {
+          stopSpectating();
+        }
+      };
+      if (socketHandlersRef.current.spectatorShareStopped) {
+        socket.off('spectator:share:stopped', socketHandlersRef.current.spectatorShareStopped);
       }
-    });
+      socketHandlersRef.current.spectatorShareStopped = spectatorShareStoppedHandler;
+      socket.on('spectator:share:stopped', spectatorShareStoppedHandler);
+
+      const spectatorViewerJoinedHandler = (data: any) => {
+        useSpectatorStore.getState().setSpectatorCount(data?.viewerCount ?? 0);
+      };
+      if (socketHandlersRef.current.spectatorViewerJoined) {
+        socket.off('spectator:viewer:joined', socketHandlersRef.current.spectatorViewerJoined);
+      }
+      socketHandlersRef.current.spectatorViewerJoined = spectatorViewerJoinedHandler;
+      socket.on('spectator:viewer:joined', spectatorViewerJoinedHandler);
+
+      const spectatorViewerLeftHandler = (data: any) => {
+        useSpectatorStore.getState().setSpectatorCount(data?.viewerCount ?? 0);
+      };
+      if (socketHandlersRef.current.spectatorViewerLeft) {
+        socket.off('spectator:viewer:left', socketHandlersRef.current.spectatorViewerLeft);
+      }
+      socketHandlersRef.current.spectatorViewerLeft = spectatorViewerLeftHandler;
+      socket.on('spectator:viewer:left', spectatorViewerLeftHandler);
+
+      const spectatorJoinedHandler = (data: any) => {
+        if (data) {
+          setSpectatorScrollback(data.scrollback || '');
+          setSpectatorDims({ cols: data.cols || 80, rows: data.rows || 24 });
+        }
+      };
+      if (socketHandlersRef.current.spectatorJoined) {
+        socket.off('spectator:joined', socketHandlersRef.current.spectatorJoined);
+      }
+      socketHandlersRef.current.spectatorJoined = spectatorJoinedHandler;
+      socket.on('spectator:joined', spectatorJoinedHandler);
+    }
 
     // Handle team:summary event - display formatted summary in main terminal
     const teamSummaryHandler = (data: any) => {

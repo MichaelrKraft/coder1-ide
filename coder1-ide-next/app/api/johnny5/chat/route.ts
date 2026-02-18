@@ -57,7 +57,11 @@ import {
 import { getJ5Bridge } from '@/services/johnny5/j5-bridge';
 import { classifyQuery, type ClassificationResult } from '@/services/query-classifier';
 import { isLivingFilesEnabled, loadLivingFilesContext, appendToLivingFile, formatLivingFilesFromCache } from '@/lib/living-files';
-import { bridgeManager } from '@/services/bridge-manager';
+import { bridgeManager as _importedBridgeManager } from '@/services/bridge-manager';
+// FIX: Same as /api/bridge/status - use global.bridgeManager (server.js) not the module import
+function getActiveBridgeManager(): typeof _importedBridgeManager {
+  return ((global as Record<string, unknown>).bridgeManager as typeof _importedBridgeManager) || _importedBridgeManager;
+}
 import { shouldUseSkills, matchSkillsToQuery } from '@/lib/skills-integration-utils';
 import { initializeSkillsService } from '@/lib/skills-service';
 import { createTask } from '@/services/johnny5/task-tracker';
@@ -333,8 +337,8 @@ CRITICAL: When you see memory context, facts, or profile information in the mess
       let livingContext: string | null = null;
 
       // Try Bridge cache first (authenticated user's machine files)
-      if (userId !== 'default' && bridgeManager?.hasBridgeForUser(userId)) {
-        const cached = await bridgeManager.getLivingFilesContext(userId);
+      if (userId !== 'default' && getActiveBridgeManager()?.hasBridgeForUser(userId)) {
+        const cached = await getActiveBridgeManager().getLivingFilesContext(userId);
         if (cached) {
           livingContext = formatLivingFilesFromCache(cached);
           console.log('[Johnny5] Living files loaded via Bridge cache:', livingContext.length, 'chars');
@@ -1823,8 +1827,8 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
         const memoryEntry = `\n### ${timestamp}\n- User asked: ${message.slice(0, 100)}${message.length > 100 ? '...' : ''}\n- Topic: ${session.id || 'general'}\n`;
 
         // Write via Bridge for authenticated users (files live on their machine)
-        if (userId !== 'default' && bridgeManager?.hasBridgeForUser(userId)) {
-          await bridgeManager.writeLivingFile(userId, 'MEMORY.md', memoryEntry, 'append');
+        if (userId !== 'default' && getActiveBridgeManager()?.hasBridgeForUser(userId)) {
+          await getActiveBridgeManager().writeLivingFile(userId, 'MEMORY.md', memoryEntry, 'append');
         } else {
           // Dev mode fallback: write to local disk
           appendToLivingFile('MEMORY.md', memoryEntry);

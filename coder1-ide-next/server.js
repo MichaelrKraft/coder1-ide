@@ -594,18 +594,25 @@ const SPECTATOR_SCROLLBACK_MAX_CHARS = 50000; // 50KB cap per shared session
 function broadcastToSpectators(sessionId, data) {
   if (!sharedTerminals.has(sessionId)) return;
 
-  // Accumulate data
-  const current = spectatorBatchBuffers.get(sessionId) || '';
-  spectatorBatchBuffers.set(sessionId, current + data);
+  // ⚡ PERFORMANCE FIX (Feb 17, 2026): Use array accumulation instead of string concatenation
+  // Accumulate data as array chunks (avoids repeated string creation)
+  const current = spectatorBatchBuffers.get(sessionId) || [];
+  current.push(data);
+  spectatorBatchBuffers.set(sessionId, current);
 
   // Update scrollback buffer
   const shared = sharedTerminals.get(sessionId);
   if (shared) {
     shared.scrollbackBuffer.push(data);
-    // Trim scrollback to cap
+    // ⚡ PERFORMANCE FIX: Use O(n) splice instead of O(n²) shift loop
     let totalLen = shared.scrollbackBuffer.reduce((sum, chunk) => sum + chunk.length, 0);
-    while (totalLen > SPECTATOR_SCROLLBACK_MAX_CHARS && shared.scrollbackBuffer.length > 1) {
-      totalLen -= shared.scrollbackBuffer.shift().length;
+    if (totalLen > SPECTATOR_SCROLLBACK_MAX_CHARS && shared.scrollbackBuffer.length > 1) {
+      let removed = 0;
+      while (removed < shared.scrollbackBuffer.length - 1 && totalLen > SPECTATOR_SCROLLBACK_MAX_CHARS) {
+        totalLen -= shared.scrollbackBuffer[removed].length;
+        removed++;
+      }
+      if (removed > 0) shared.scrollbackBuffer.splice(0, removed);
     }
   }
 
@@ -613,10 +620,11 @@ function broadcastToSpectators(sessionId, data) {
   if (!spectatorThrottleTimers.has(sessionId)) {
     spectatorThrottleTimers.set(sessionId, setTimeout(() => {
       const batch = spectatorBatchBuffers.get(sessionId);
+      // Join array chunks only at broadcast time
       if (batch && batch.length > 0) {
-        io.to(`spectator:${sessionId}`).emit('spectator:data', { sessionId, data: batch });
+        io.to(`spectator:${sessionId}`).emit('spectator:data', { sessionId, data: batch.join('') });
       }
-      spectatorBatchBuffers.set(sessionId, '');
+      spectatorBatchBuffers.set(sessionId, []);
       spectatorThrottleTimers.delete(sessionId);
     }, 33));
   }
@@ -2329,10 +2337,15 @@ app.prepare().then(() => {
         const historyBuffer = terminalHistoryBuffers.get(sessionId) || [];
         const scrollbackBuffer = [...historyBuffer];
 
-        // Trim to cap
+        // ⚡ PERFORMANCE FIX (Feb 17, 2026): Use O(n) splice instead of O(n²) shift loop
         let totalLen = scrollbackBuffer.reduce((sum, chunk) => sum + chunk.length, 0);
-        while (totalLen > SPECTATOR_SCROLLBACK_MAX_CHARS && scrollbackBuffer.length > 1) {
-          totalLen -= scrollbackBuffer.shift().length;
+        if (totalLen > SPECTATOR_SCROLLBACK_MAX_CHARS && scrollbackBuffer.length > 1) {
+          let removed = 0;
+          while (removed < scrollbackBuffer.length - 1 && totalLen > SPECTATOR_SCROLLBACK_MAX_CHARS) {
+            totalLen -= scrollbackBuffer[removed].length;
+            removed++;
+          }
+          if (removed > 0) scrollbackBuffer.splice(0, removed);
         }
 
         // Get terminal dimensions
