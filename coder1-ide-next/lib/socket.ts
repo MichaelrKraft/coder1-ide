@@ -109,7 +109,7 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
           path: '/socket.io/',
           transports: ['websocket'], // FIXED: Force WebSocket to bypass polling/upgrade issues
           reconnection: true,
-          reconnectionAttempts: 15, // INCREASED: More retry attempts
+          reconnectionAttempts: Infinity, // Never give up - keep reconnecting
           reconnectionDelay: 1000,
           reconnectionDelayMax: 10000, // INCREASED: Max backoff to 10 seconds
           timeout: 45000, // INCREASED: Match server connectTimeout
@@ -297,6 +297,14 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       newSocket.on('johnny5:notification', (data: any) => {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('johnny5:notification', { detail: data }));
+        }
+      });
+
+      // Server shutdown notification - allows UI to show "Server restarting..."
+      newSocket.on('server:shutdown', (data: any) => {
+        console.log('🔄 Server shutdown notification received:', data);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('server:shutdown', { detail: data }));
         }
       });
 

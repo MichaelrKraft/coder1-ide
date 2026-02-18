@@ -34,7 +34,7 @@ class BridgeClient extends EventEmitter {
     this.token = null;
     this.connected = false;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 10; // Limit reconnection attempts to prevent infinite loops
+    this.maxReconnectAttempts = Infinity; // Never give up - keep reconnecting until server is back
 
     // Production command queue - prevents overwhelming Claude CLI
     this.commandQueue = new PQueue({
@@ -647,38 +647,13 @@ class BridgeClient extends EventEmitter {
         this.emit('reconnected');
       });
 
-      // Reconnection failed (max attempts reached)
-      this.socket.on('reconnect_failed', () => {
-        console.log('\n\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m');
-        console.log('\x1b[33m  Connection Lost\x1b[0m');
-        console.log('\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m');
-        console.log('');
-        console.log('  The connection to Coder1 IDE was lost after multiple reconnection attempts.');
-        console.log('  This usually happens when:');
-        console.log('    • The Claude CLI session timed out (60 min inactivity)');
-        console.log('    • The Coder1 IDE server was restarted');
-        console.log('    • Network connectivity was lost');
-        console.log('');
-        console.log('  \x1b[36mTo reconnect:\x1b[0m');
-        console.log('    1. Stop this bridge (Ctrl+C)');
-        console.log('    2. Run: coder1-bridge start');
-        console.log('');
-        console.log('\x1b[33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\n');
-
-        this.emit('reconnect_failed');
-
-        // Clean exit instead of endless error spam
-        this.stopHeartbeat();
-        if (this.socket) {
-          this.socket.disconnect();
-          this.socket = null;
+      // Reconnection progress logging (infinite retry - never gives up)
+      this.socket.on('reconnect_attempt', (attemptNumber) => {
+        // Log progress at key intervals
+        if (attemptNumber === 1 || attemptNumber === 5 || attemptNumber === 10 || attemptNumber % 25 === 0) {
+          console.log(`\x1b[33m[Bridge]\x1b[0m Reconnecting to server... (attempt ${attemptNumber})`);
         }
-        this.connected = false;
-
-        // Give user time to read the message, then exit
-        setTimeout(() => {
-          process.exit(0);
-        }, 1000);
+        this.stats.reconnections++;
       });
       
       // Set timeout for initial connection
