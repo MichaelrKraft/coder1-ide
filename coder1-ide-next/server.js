@@ -2257,8 +2257,10 @@ app.prepare().then(() => {
 
     // Team presence: join
     socket.on('team:presence:join', ({ teamId, userId, username }) => {
+      console.log(`[TeamPresence] 👋 Join request: user=${username}, team=${teamId}, userId=${userId}`);
       if (!teamId || !userId) return;
       socket.join(`team:${teamId}`);
+      console.log(`[TeamPresence] ✅ User joined team room: team:${teamId}`);
       if (!teamPresence.has(teamId)) teamPresence.set(teamId, new Map());
       const members = teamPresence.get(teamId);
       socket._teamPresence = { teamId, userId, username };
@@ -2316,6 +2318,7 @@ app.prepare().then(() => {
         // Validate session exists
         const session = terminalSessions.get(sessionId);
         if (!session) {
+          console.log(`[Spectator] ❌ Session not found: ${sessionId}`);
           socket.emit('spectator:error', { message: 'Terminal session not found' });
           return;
         }
@@ -2323,12 +2326,14 @@ app.prepare().then(() => {
         // Validate team membership
         const teamMembers = teamPresence.get(teamId);
         if (!teamMembers || !teamMembers.has(userId)) {
+          console.log(`[Spectator] ❌ Not in team presence: userId=${userId}, teamId=${teamId}, teamMembers=${teamMembers ? Array.from(teamMembers.keys()) : 'none'}`);
           socket.emit('spectator:error', { message: 'Not a member of this team' });
           return;
         }
 
         // Already sharing this session
         if (sharedTerminals.has(sessionId)) {
+          console.log(`[Spectator] ❌ Already sharing: ${sessionId}`);
           socket.emit('spectator:error', { message: 'This terminal is already being shared' });
           return;
         }
@@ -5111,7 +5116,17 @@ setInterval(() => {
   // Graceful shutdown
   const gracefulShutdown = async (signal) => {
     console.log(`[Server] ${signal} received, shutting down gracefully...`);
-    
+
+    // Notify all connected clients that server is shutting down
+    // This allows clients to show "Server restarting..." and prepare for reconnection
+    if (io) {
+      console.log('[Shutdown] Notifying clients of server restart...');
+      io.emit('server:shutdown', {
+        reason: signal === 'SIGTERM' ? 'restart' : 'shutdown',
+        reconnectIn: 5000
+      });
+    }
+
     // Force exit after 2 seconds if cleanup hangs (common with open sockets)
     setTimeout(() => {
       console.error('[Shutdown] ⚠️  Force exiting after timeout');
