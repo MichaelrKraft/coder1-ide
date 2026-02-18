@@ -92,9 +92,17 @@ const SALT = 'johnny5-salt-v1';
 // ============================================================================
 
 /**
- * Derive encryption key from machine-specific identifier
+ * Derive encryption key.
+ * Prefers the JOHNNY5_ENCRYPTION_KEY env var (explicit, secure).
+ * Falls back to legacy username-derived key so existing encrypted data
+ * remains readable when the env var is not set.
  */
 function getEncryptionKey(): Buffer {
+  if (process.env.JOHNNY5_ENCRYPTION_KEY) {
+    // Use explicitly provided key (pad/truncate to 32 bytes)
+    return Buffer.from(process.env.JOHNNY5_ENCRYPTION_KEY.padEnd(32, '0').slice(0, 32));
+  }
+  // Legacy fallback — preserves ability to read existing encrypted data
   const identifier = process.env.USER || process.env.USERNAME || 'coder1';
   return scryptSync(identifier, SALT, 32);
 }
