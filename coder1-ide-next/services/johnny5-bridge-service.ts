@@ -11,7 +11,15 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
-import { bridgeManager } from './bridge-manager';
+import { bridgeManager as _importedBridgeManager } from './bridge-manager';
+
+// FIX: Always use global.bridgeManager set by server.js, which has actual WebSocket connections.
+// Next.js webpack bundles API routes in separate chunks with their own module scope,
+// so the module import may be a different BridgeManager instance with no registered connections.
+// (Same fix already applied to /api/bridge/status/route.ts in Feb 2026)
+function getActiveBridgeManager(): typeof _importedBridgeManager {
+  return ((global as Record<string, unknown>).bridgeManager as typeof _importedBridgeManager) || _importedBridgeManager;
+}
 import {
   getPermissions,
   getProactivityLevel,
@@ -272,10 +280,10 @@ Only mention code/git status if the user explicitly asks about it.
    * Check if Bridge is connected
    */
   isBridgeConnected(): boolean {
-    if (bridgeManager.hasBridgeForUser(this.userId)) {
+    if (getActiveBridgeManager().hasBridgeForUser(this.userId)) {
       return true;
     }
-    return !!bridgeManager.findAnyConnectedBridge();
+    return !!getActiveBridgeManager().findAnyConnectedBridge();
   }
 
   /**
@@ -335,7 +343,7 @@ Only mention code/git status if the user explicitly asks about it.
           cleanup();
           // Kill the running CLI process to prevent zombies
           try {
-            bridgeManager.cancelCommand(commandId);
+            getActiveBridgeManager().cancelCommand(commandId);
           } catch (e) {
             // Best effort - bridge may already be disconnected
           }
@@ -351,11 +359,11 @@ Only mention code/git status if the user explicitly asks about it.
       // Cleanup function to remove listeners
       const cleanup = () => {
         clearTimeout(timeout);
-        bridgeManager.off('command:output', outputHandler);
-        bridgeManager.off('command:complete', completeHandler);
-        bridgeManager.off('command:error', errorHandler);
-        bridgeManager.off('command:cancelled', cancelledHandler);
-        bridgeManager.off('command:timeout', timeoutHandler);
+        getActiveBridgeManager().off('command:output', outputHandler);
+        getActiveBridgeManager().off('command:complete', completeHandler);
+        getActiveBridgeManager().off('command:error', errorHandler);
+        getActiveBridgeManager().off('command:cancelled', cancelledHandler);
+        getActiveBridgeManager().off('command:timeout', timeoutHandler);
       };
 
       // Listen for output events
@@ -434,27 +442,25 @@ Only mention code/git status if the user explicitly asks about it.
       };
 
       // Register listeners
-      bridgeManager.on('command:output', outputHandler);
-      bridgeManager.on('command:complete', completeHandler);
-      bridgeManager.on('command:error', errorHandler);
-      bridgeManager.on('command:cancelled', cancelledHandler);
-      bridgeManager.on('command:timeout', timeoutHandler);
+      getActiveBridgeManager().on('command:output', outputHandler);
+      getActiveBridgeManager().on('command:complete', completeHandler);
+      getActiveBridgeManager().on('command:error', errorHandler);
+      getActiveBridgeManager().on('command:cancelled', cancelledHandler);
+      getActiveBridgeManager().on('command:timeout', timeoutHandler);
 
-      // Escape prompt for shell - use single quotes and escape any single quotes in the prompt
-      const escapedPrompt = prompt.replace(/'/g, "'\\''");
-
-      // Build command with optional MCP permission bypass (gated by kill switch)
+      // Build command WITHOUT the prompt — prompt delivered via stdin to avoid shell escaping issues
       const mcpEnabled = process.env.JOHNNY5_BRIDGE_MCP_ENABLED === 'true';
       const permissionFlag = mcpEnabled ? ' --permission-mode bypassPermissions' : '';
-      const command = `claude --print${permissionFlag} '${escapedPrompt}'`;
+      const command = `claude --print${permissionFlag}`;
 
-      console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, command prefix: claude --print${permissionFlag}`);
+      console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, command: ${command}, prompt via stdin (${prompt.length} chars)`);
 
-      // Execute command via Bridge
-      bridgeManager.executeCommand(this.userId, {
+      // Execute command via Bridge — prompt goes through stdinData, not shell argument
+      getActiveBridgeManager().executeCommand(this.userId, {
         sessionId: 'johnny5-chat',
         commandId,
         command,
+        stdinData: prompt,
         context: {
           workingDirectory: '/tmp',
         },

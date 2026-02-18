@@ -696,7 +696,7 @@ class BridgeClient extends EventEmitter {
    * FIXED (Dec 10, 2025): Interactive sessions don't await - run in background
    */
   async handleClaudeCommand(data) {
-    const { sessionId, commandId, command, context } = data;
+    const { sessionId, commandId, command, context, stdinData } = data;
 
     // Check if this will be an interactive session
     const isInteractive = this.claudeExecutor.needsInteractiveMode(command);
@@ -753,6 +753,7 @@ class BridgeClient extends EventEmitter {
         const executeOptions = {
           commandId, // Pass commandId for session tracking
           context,   // Pass full context including selectedClaudeModel
+          stdinData, // Prompt data to pipe via stdin (bypasses shell escaping)
           cols: finalCols,
           rows: finalRows,
           onData: (chunk) => {

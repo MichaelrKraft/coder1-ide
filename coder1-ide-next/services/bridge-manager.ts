@@ -36,6 +36,7 @@ interface CommandRequest {
   sessionId: string;
   commandId: string;
   command: string;
+  stdinData?: string;
   context: {
     workingDirectory: string;
     currentFile?: string;
@@ -412,7 +413,8 @@ export class BridgeManager extends EventEmitter {
       sessionId: request.sessionId,
       commandId: request.commandId,
       command: request.command,
-      context: request.context
+      context: request.context,
+      ...(request.stdinData && { stdinData: request.stdinData })
     });
 
     console.log(`[BridgeManager] Sent command ${request.commandId} to bridge ${bridgeId}`);

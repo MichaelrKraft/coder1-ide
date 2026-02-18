@@ -497,6 +497,17 @@ const CLAUDE_TRIAL_LIMIT = parseInt(process.env.JOHNNY5_CLAUDE_TRIAL_LIMIT || '1
  * Get the user's current Johnny5 quota status
  */
 export function getJohnny5Quota(userId: string): Johnny5Quota | null {
+  // Developer bypass — skips all quota limits when JOHNNY5_DEV_UNLIMITED=true
+  if (process.env.JOHNNY5_DEV_UNLIMITED === 'true') {
+    return {
+      messageCount: 0,
+      limit: Infinity,
+      remaining: Infinity,
+      isProSubscriber: true,
+      tierType: 'pro_unlimited',
+    };
+  }
+
   const db = getAuthDatabase();
 
   const user = db.prepare(`

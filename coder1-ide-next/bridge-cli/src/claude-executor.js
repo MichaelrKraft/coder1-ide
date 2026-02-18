@@ -537,11 +537,14 @@ class ClaudeExecutor extends EventEmitter {
 
       this.log(`Executing non-interactive: ${shellCommand.substring(0, 200)}...`);
 
-      // Spawn via /bin/sh -c to pass the pre-escaped command directly to the shell.
-      // stdin is ignored to prevent Claude CLI from hanging on auth prompts.
+      // Spawn via /bin/sh -c to pass the command to the shell.
+      // If stdinData is present, pipe stdin so we can deliver the prompt directly
+      // (bypasses shell argument escaping issues with large prompts).
+      // Otherwise, ignore stdin to prevent Claude CLI from hanging on auth prompts.
       // FIX (Feb 2026): Use /tmp as CWD to prevent Claude CLI from auto-loading
       // CLAUDE.md files from the user's home directory, which inflates prompt size
       // and causes "Prompt is too long" errors for one-shot commands.
+      const useStdin = !!options.stdinData;
       const claudeProcess = spawn('/bin/sh', ['-c', shellCommand], {
         cwd: '/tmp',
         env: {
@@ -549,8 +552,14 @@ class ClaudeExecutor extends EventEmitter {
           CODER1_BRIDGE: 'true',
           TERM: 'xterm-256color'
         },
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: [useStdin ? 'pipe' : 'ignore', 'pipe', 'pipe']
       });
+
+      // Write prompt via stdin if provided (bypasses shell argument escaping)
+      if (useStdin) {
+        claudeProcess.stdin.write(options.stdinData);
+        claudeProcess.stdin.end();
+      }
 
       // Emit process reference so callers can track/cancel it
       if (options.commandId) {
