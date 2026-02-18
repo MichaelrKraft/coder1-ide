@@ -17,7 +17,7 @@ import { generateMorningBrief } from '@/services/johnny5/morning-brief-generator
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-type ControlAction = 'start' | 'stop' | 'status' | 'init-defaults' | 'run-morning-brief';
+type ControlAction = 'start' | 'stop' | 'status' | 'init-defaults' | 'run-morning-brief' | 'run-content-factory';
 
 /**
  * POST handler - Control cron service
@@ -162,10 +162,24 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'run-content-factory': {
+        // Manually trigger Content Factory Scout (async — waits for completion)
+        const { runScout } = await import('@/services/johnny5/content-factory/scout-service');
+        const scoutResult = await runScout();
+        result = {
+          status: 'completed',
+          storyCount: scoutResult.stories.length,
+          runAt: scoutResult.runAt,
+          stories: scoutResult.stories.map(s => ({ title: s.title, category: s.category })),
+        };
+        console.log('[Johnny5 Cron Control] Content Factory Scout completed:', result);
+        break;
+      }
+
       default: {
         const response: Johnny5APIResponse<null> = {
           success: false,
-          error: `Unknown action: ${action}. Valid actions: start, stop, status, init-defaults, run-morning-brief`,
+          error: `Unknown action: ${action}. Valid actions: start, stop, status, init-defaults, run-morning-brief, run-content-factory`,
           timestamp: new Date(),
         };
         return NextResponse.json(response, { status: 400 });
