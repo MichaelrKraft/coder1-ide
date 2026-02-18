@@ -13,6 +13,7 @@ import {
   getAuditLog as dbGetAuditLog,
   saveSecurityWarning as dbSaveSecurityWarning,
   getSecurityWarnings as dbGetSecurityWarnings,
+  getInjectionAlerts as dbGetInjectionAlerts,  // ADD THIS LINE
 } from '@/lib/johnny5-db';
 import type {
   Johnny5AuditEntry,
@@ -105,6 +106,7 @@ export async function addSecurityWarning(params: {
   source?: string;
 }): Promise<Johnny5SecurityWarning> {
   await initializeDb();
+  await initializeCaches();
 
   const warning: Johnny5SecurityWarning = {
     id: generateId('warning'),
@@ -146,6 +148,7 @@ export async function checkForPromptInjection(
   source: Johnny5PromptInjectionAlert['source']
 ): Promise<Johnny5PromptInjectionAlert | null> {
   await initializeDb();
+  await initializeCaches();
 
   for (const pattern of INJECTION_PATTERNS) {
     const match = text.match(pattern);
@@ -399,32 +402,46 @@ export function clearSecurityData(): void {
 }
 
 /**
- * Load persisted security warnings from DB into in-memory cache
- * Called once at startup to restore warnings across restarts
+ * Load caches from SQLite on startup (called lazily on first use)
  */
-async function loadWarningsFromDb(): Promise<void> {
+let cachesInitialized = false;
+
+async function initializeCaches(): Promise<void> {
+  if (cachesInitialized) return;
+  cachesInitialized = true;
+
   try {
-    await initializeDb();
-    const dbWarnings = await dbGetSecurityWarnings(500);
-    if (dbWarnings.length > 0 && warningsCache.length === 0) {
-      warningsCache = dbWarnings.map(w => ({
-        id: w.id,
-        type: w.type as Johnny5SecurityWarning['type'],
-        message: w.message,
-        severity: w.severity as Johnny5SecurityWarning['severity'],
-        timestamp: new Date(w.timestamp),
-        dismissed: w.dismissed,
-        source: w.source,
-      }));
-      console.log(`[SecurityTracker] Loaded ${warningsCache.length} warnings from DB`);
-    }
+    // Restore warningsCache
+    const storedWarnings = await dbGetSecurityWarnings(500);
+    warningsCache = storedWarnings.map(w => ({
+      id: w.id,
+      type: w.type as Johnny5SecurityWarning['type'],
+      message: w.message,
+      severity: w.severity as Johnny5SecurityWarning['severity'],
+      timestamp: new Date(w.timestamp),
+      dismissed: w.dismissed,
+      source: w.source,
+    }));
+
+    // Restore alertsCache
+    const storedAlerts = await dbGetInjectionAlerts(200);
+    alertsCache = storedAlerts.map(a => ({
+      id: a.id,
+      timestamp: new Date(a.timestamp),
+      pattern: a.pattern,
+      text: a.text,
+      source: a.source as Johnny5PromptInjectionAlert['source'],
+      severity: a.severity as Johnny5PromptInjectionAlert['severity'],
+      blocked: a.blocked,
+      actionTaken: a.actionTaken,
+    }));
+
+    console.log(`[SecurityTracker] Restored ${warningsCache.length} warnings, ${alertsCache.length} alerts from DB`);
   } catch (err) {
-    console.warn('[SecurityTracker] Failed to load warnings from DB:', err);
+    cachesInitialized = false; // Allow retry on next call
+    console.warn('[SecurityTracker] Failed to restore caches from DB:', err);
   }
 }
-
-// Auto-load warnings from DB on module import
-loadWarningsFromDb();
 
 // Export singleton-style functions
 export const SecurityTracker = {
