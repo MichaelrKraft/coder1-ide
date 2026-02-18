@@ -4370,6 +4370,13 @@ app.prepare().then(() => {
 
     // Johnny5 → Claude Code task delegation
     socket.on('johnny5:delegate-task', async ({ sessionId, task }) => {
+      // P0 FIX: Token-based gate for Johnny5 internal events
+      const j5Token = process.env.JOHNNY5_SOCKET_TOKEN;
+      if (j5Token && socket.handshake.auth?.token !== j5Token) {
+        socket.emit('johnny5:delegate-result', { success: false, error: 'Unauthorized', sessionId });
+        socket.disconnect();
+        return;
+      }
       // Auth check: require authenticated socket with terminal permission
       if (socket.authenticated === false && !socket.userId) {
         socket.emit('johnny5:delegate-result', {

@@ -225,7 +225,7 @@ export function createSocketAuthMiddleware() {
       socket.userId = 'guest';
       socket.sessionId = `guest_${Date.now()}`;
       socket.bridgeAuth = false;
-      socket.permissions = ['terminal'];
+      socket.permissions = [];
       return next();
     }
 
