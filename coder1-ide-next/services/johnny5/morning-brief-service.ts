@@ -12,6 +12,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getDb } from '@/lib/johnny5-db';
 import { logger } from '@/lib/logger';
+import { IntervalRegistry } from '@/lib/interval-registry';
 
 // ============================================================================
 // Research prompt for Gemini
@@ -165,6 +166,7 @@ export function scheduleMorningBrief(): () => void {
   const initialTimer = setTimeout(() => {
     sendMorningBrief();
     dailyInterval = setInterval(sendMorningBrief, 24 * 60 * 60 * 1000);
+    IntervalRegistry.register('johnny5:morning-brief', dailyInterval);
   }, msToFirst);
 
   return () => {

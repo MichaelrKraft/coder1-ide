@@ -11,6 +11,7 @@
 
 import { logger } from '@/lib/logger';
 import { isLivingFilesEnabled, loadLivingFile, writeLivingFile } from '@/lib/living-files';
+import { IntervalRegistry } from '@/lib/interval-registry';
 
 // ============================================================================
 // Types
@@ -89,9 +90,11 @@ class HeartbeatService {
 
     // Start pulse timer (lightweight, frequent)
     this.pulseTimer = setInterval(() => this.pulse(), this.config.pulseIntervalMs);
+    IntervalRegistry.register('johnny5:heartbeat:pulse', this.pulseTimer);
 
     // Start deep check timer (heavy, infrequent)
     this.deepCheckTimer = setInterval(() => this.deepCheck(), this.config.deepCheckIntervalMs);
+    IntervalRegistry.register('johnny5:heartbeat:deep-check', this.deepCheckTimer);
 
     // Run initial deep check
     this.deepCheck();
