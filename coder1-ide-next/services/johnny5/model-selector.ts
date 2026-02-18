@@ -55,13 +55,13 @@ const CLAUDE_MODELS: Record<TaskComplexity, ModelDefinition> = {
     tier: 'haiku',
   },
   standard: {
-    id: 'claude-sonnet-4-20250514',
+    id: 'claude-sonnet-4-6-20250514',
     name: 'Claude Sonnet',
     maxTokens: 8192,
     tier: 'sonnet',
   },
   complex: {
-    id: 'claude-sonnet-4-20250514',
+    id: 'claude-sonnet-4-6-20250514',
     name: 'Claude Max',
     maxTokens: 16384,
     tier: 'max',
@@ -100,7 +100,7 @@ const GEMINI_FALLBACKS: Record<TaskComplexity, ModelDefinition> = {
  * ```typescript
  * const selector = new ModelSelector();
  * const config = selector.select('standard');
- * console.log(config.model); // 'claude-sonnet-4-20250514'
+ * console.log(config.model); // 'claude-sonnet-4-6-20250514'
  * ```
  */
 export class ModelSelector {

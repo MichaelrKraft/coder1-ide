@@ -9,7 +9,7 @@ interface CostEstimateProps {
   model?: string;
 }
 
-export function CostEstimate({ estimate, model = 'claude-sonnet-4-5-20250929' }: CostEstimateProps) {
+export function CostEstimate({ estimate, model = 'claude-sonnet-4-6-20250514' }: CostEstimateProps) {
   const formatted = costCalculator.formatCost(estimate);
   const tier = costCalculator.getCostTier(estimate);
 

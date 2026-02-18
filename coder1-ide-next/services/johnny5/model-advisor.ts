@@ -45,9 +45,9 @@ const MODELS: Record<string, ModelInfo> = {
     inputCostPer1M: 0.80,
     outputCostPer1M: 4.00,
   },
-  'claude-sonnet-4-5-20250929': {
-    id: 'claude-sonnet-4-5-20250929',
-    name: 'Sonnet 4.5',
+  'claude-sonnet-4-6-20250514': {
+    id: 'claude-sonnet-4-6-20250514',
+    name: 'Sonnet 4.6',
     costTier: '$$',
     inputCostPer1M: 3.00,
     outputCostPer1M: 15.00,
@@ -63,11 +63,11 @@ const MODELS: Record<string, ModelInfo> = {
 
 const MODEL_FOR_COMPLEXITY: Record<Complexity, string> = {
   simple: 'claude-haiku-3-5-20241022',
-  moderate: 'claude-sonnet-4-5-20250929',
+  moderate: 'claude-sonnet-4-6-20250514',
   complex: 'claude-opus-4-6',
 };
 
-const DEFAULT_MODEL = 'claude-sonnet-4-5-20250929';
+const DEFAULT_MODEL = 'claude-sonnet-4-6-20250514';
 
 // -- Keyword lists ----------------------------------------------------------
 

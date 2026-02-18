@@ -37,13 +37,11 @@ export interface CostSession {
   cost: number;
 }
 
-// Real-time pricing for cost projections
+// Real-time pricing for cost projections (Feb 2026)
 const LIVE_PRICING: Record<string, { input: number; output: number }> = {
+  'claude-sonnet-4.6': { input: 0.003, output: 0.015 },   // Default - Fast & Capable
   'claude-opus-4.6': { input: 0.015, output: 0.075 },
-  'claude-sonnet-4': { input: 0.003, output: 0.015 },
-  'claude-sonnet-3.7': { input: 0.003, output: 0.015 },
   'claude-3.5-haiku': { input: 0.00025, output: 0.00125 },
-  'claude-3.5-sonnet': { input: 0.003, output: 0.015 },
   'default': { input: 0.003, output: 0.015 }
 };
 

@@ -34,7 +34,7 @@ export class SimpleAPIExecutor {
   private model: string;
   private totalTokensUsed = { input: 0, output: 0, total: 0 };
   
-  constructor(apiKey: string, model = 'claude-sonnet-4-20250514') {
+  constructor(apiKey: string, model = 'claude-sonnet-4-6-20250514') {
     this.client = new Anthropic({ apiKey });
     this.model = model;
     console.error('[RENDER-DEBUG] SimpleAPIExecutor initialized with model:', model);

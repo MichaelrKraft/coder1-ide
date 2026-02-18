@@ -66,7 +66,7 @@ async function analyzeWithAI(error: string, model: string): Promise<string | nul
       }
       
       requestBody = {
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-6-20250514',
         max_tokens: 200,
         messages: [{
           role: 'user',

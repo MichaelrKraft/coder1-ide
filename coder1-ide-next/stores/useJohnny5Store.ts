@@ -700,7 +700,7 @@ export const useJohnny5Store = create<Johnny5Store>()(
             console.log('[Johnny5Store] Emitted johnny5:sessionComplete event');
           }
 
-          // Clear the chat and start fresh
+          // Clear the chat display but keep the same session (preserves unified session continuity)
           set({
             chatMessages: [{
               id: `welcome-${Date.now()}`,
@@ -709,7 +709,7 @@ export const useJohnny5Store = create<Johnny5Store>()(
               timestamp: new Date(),
               animationPlayed: false,
             }],
-            chatSessionId: `session-${Date.now()}`,
+            // Note: chatSessionId intentionally NOT reset — keeping the unified main session
           }, false, 'clearChat');
         },
 

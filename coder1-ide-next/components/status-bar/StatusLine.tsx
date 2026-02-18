@@ -10,9 +10,8 @@ import { ChevronDown, Bot, Clock, Hash, Brain } from 'lucide-react';
 import { useIDEStore } from '@/stores/useIDEStore';
 
 type AIModel =
+  | 'claude-sonnet-4.6'
   | 'claude-opus-4.6'
-  | 'claude-sonnet-4'
-  | 'claude-sonnet-3.7'
   | 'claude-3.5-haiku';
 
 interface ModelInfo {
@@ -23,9 +22,8 @@ interface ModelInfo {
 }
 
 const AI_MODELS: ModelInfo[] = [
+  { id: 'claude-sonnet-4.6', name: 'Claude Sonnet 4.6', icon: '🎭', color: 'text-indigo-400' },
   { id: 'claude-opus-4.6', name: 'Claude Opus 4.6', icon: '👑', color: 'text-purple-400' },
-  { id: 'claude-sonnet-4', name: 'Claude Sonnet 4', icon: '🎭', color: 'text-indigo-400' },
-  { id: 'claude-sonnet-3.7', name: 'Claude Sonnet 3.7', icon: '🎼', color: 'text-blue-400' },
   { id: 'claude-3.5-haiku', name: 'Claude 3.5 Haiku', icon: '🌸', color: 'text-pink-400' }
 ];
 
@@ -90,9 +88,8 @@ export default function StatusLine() {
   // Calculate estimated cost (updated pricing for current Claude models)
   const calculateCost = (model: AIModel, tokens: number) => {
     const costPer1kTokens: Record<AIModel, number> = {
-      'claude-opus-4.6': 0.015,     // Premium model
-      'claude-sonnet-4': 0.003,      // Balanced model
-      'claude-sonnet-3.7': 0.003,    // Hybrid reasoning model
+      'claude-sonnet-4.6': 0.003,    // Fast & capable (default)
+      'claude-opus-4.6': 0.015,      // Premium model
       'claude-3.5-haiku': 0.00025    // Fast & economical
     };
     

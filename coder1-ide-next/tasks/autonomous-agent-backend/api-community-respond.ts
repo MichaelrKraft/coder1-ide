@@ -307,7 +307,7 @@ Please provide a helpful response following your role as ${agent.name}.
 
   try {
     const message = await anthropic.messages.create({
-      model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+      model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6-20250514',
       max_tokens: 4096,
       system: agent.systemPrompt,
       messages: [
@@ -450,7 +450,7 @@ export async function GET() {
     agents: Object.keys(AGENTS).length,
     anthropicConfigured: !!process.env.ANTHROPIC_API_KEY,
     githubConfigured: !!process.env.GITHUB_TOKEN,
-    model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514'
+    model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6-20250514'
   };
 
   return NextResponse.json({

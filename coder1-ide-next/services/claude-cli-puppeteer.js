@@ -276,7 +276,7 @@ class ClaudeCLIPuppeteer extends EventEmitter {
       // 🔧 FIX (Nov 24, 2025): Add --dangerously-skip-permissions for autonomous agents
       // Agents need to create files without approval prompts to work fully autonomously
       const pty = spawn(this.claudeCliPath, [
-        '--model', 'claude-sonnet-4-5-20250929',
+        '--model', 'claude-sonnet-4-6-20250514',
         '--dangerously-skip-permissions'
       ], {
         name: 'xterm-color',

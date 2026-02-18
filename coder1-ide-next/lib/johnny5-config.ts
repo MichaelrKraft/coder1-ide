@@ -484,9 +484,15 @@ export function setTelegramIntegration(integration: TelegramIntegration): void {
 }
 
 /**
- * Get decrypted Telegram bot token
+ * Get decrypted Telegram bot token.
+ * Checks TELEGRAM_BOT_TOKEN env var first (for Render deployments),
+ * then falls back to the encrypted local config file (for dev).
  */
 export function getTelegramBotToken(): string | null {
+  // Env var preferred — persists across Render redeploys
+  const envToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  if (envToken) return envToken;
+
   const config = loadConfig();
   const telegram = config.integrations.telegram;
 
@@ -500,6 +506,19 @@ export function getTelegramBotToken(): string | null {
     logger.error('[Johnny5] Failed to decrypt Telegram token:', error);
     return null;
   }
+}
+
+/**
+ * Get the Telegram chat ID to send proactive messages to.
+ * Checks TELEGRAM_CHAT_ID env var first (for Render deployments),
+ * then falls back to the local config file.
+ */
+export function getTelegramChatId(): string | null {
+  // Env var preferred — persists across Render redeploys
+  const envChatId = process.env.TELEGRAM_CHAT_ID?.trim();
+  if (envChatId) return envChatId;
+
+  return loadConfig().integrations.telegram?.chatId ?? null;
 }
 
 // ============================================================================

@@ -22,7 +22,7 @@ export interface ClaudeResponse {
 
 class ClaudeAPIService {
   private apiKey: string | null = null;
-  private model: string = 'claude-sonnet-4-5-20250929';
+  private model: string = 'claude-sonnet-4-6-20250514';
   private baseURL: string = 'https://api.anthropic.com/v1';
   private conversationHistory: ClaudeMessage[] = [];
 

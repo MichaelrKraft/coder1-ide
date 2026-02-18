@@ -5,9 +5,8 @@ import { Hash, DollarSign } from 'lucide-react';
 import { useIDEStore } from '@/stores/useIDEStore';
 
 type AIModel =
+  | 'claude-sonnet-4.6'
   | 'claude-opus-4.6'
-  | 'claude-sonnet-4'
-  | 'claude-sonnet-3.7'
   | 'claude-3.5-haiku';
 
 export default function TerminalTokenStats() {
@@ -26,9 +25,8 @@ export default function TerminalTokenStats() {
   // Calculate estimated cost (same logic as StatusLine)
   const calculateCost = (model: AIModel, tokens: number) => {
     const costPer1kTokens: Record<AIModel, number> = {
-      'claude-opus-4.6': 0.015,     // Premium model
-      'claude-sonnet-4': 0.003,      // Balanced model
-      'claude-sonnet-3.7': 0.003,    // Hybrid reasoning model
+      'claude-sonnet-4.6': 0.003,    // Default - Fast & Capable
+      'claude-opus-4.6': 0.015,      // Premium model
       'claude-3.5-haiku': 0.00025    // Fast & economical
     };
     

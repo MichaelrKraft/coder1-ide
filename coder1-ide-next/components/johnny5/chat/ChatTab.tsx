@@ -482,11 +482,25 @@ export default function ChatTab() {
   // Initialize session ID only if not already set (store persists across tab switches)
   useEffect(() => {
     if (!chatSessionId) {
-      const newSessionId = `session-${Date.now()}`;
-      setChatSessionId(newSessionId);
-      console.log('[ChatTab] Starting fresh session:', newSessionId);
+      // Fetch the persistent main session from server so IDE and Telegram share history
+      fetch('/api/johnny5/session/main')
+        .then(r => r.json())
+        .then(({ sessionId }) => {
+          if (sessionId) {
+            setChatSessionId(sessionId);
+            console.log('[ChatTab] Using main session:', sessionId);
+          } else {
+            throw new Error('No sessionId in response');
+          }
+        })
+        .catch(() => {
+          // Fallback: generate a local session if server is unavailable
+          const fallbackId = `session-${Date.now()}`;
+          setChatSessionId(fallbackId);
+          console.log('[ChatTab] Fallback session:', fallbackId);
+        });
     }
-  }, [chatSessionId, setChatSessionId]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Subscribe to terminal events for observation
   useEffect(() => {
@@ -1592,17 +1606,20 @@ export default function ChatTab() {
           </div>
         ))}
 
-        {/* Typing indicator */}
+        {/* Thinking indicator - immediate visual feedback */}
         {isTyping && (
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
               <Bot className="w-4 h-4 text-purple-400" />
             </div>
             <div className="bg-bg-tertiary rounded-2xl rounded-tl-md px-4 py-3">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-text-muted">Johnny5 is thinking</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 bg-coder1-cyan rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 bg-coder1-cyan rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 bg-coder1-cyan rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
               </div>
             </div>
           </div>

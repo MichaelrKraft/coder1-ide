@@ -44,13 +44,11 @@ export interface CostEntry {
   requestId?: string;
 }
 
-// Model pricing (per 1K tokens) - updated for current Claude models
+// Model pricing (per 1K tokens) - updated for current Claude models (Feb 2026)
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-  'claude-opus-4.6': { input: 0.015, output: 0.075 },    // Premium
-  'claude-sonnet-4': { input: 0.003, output: 0.015 },     // Balanced
-  'claude-sonnet-3.7': { input: 0.003, output: 0.015 },   // Hybrid
+  'claude-sonnet-4.6': { input: 0.003, output: 0.015 },   // Default - Fast & Capable
+  'claude-opus-4.6': { input: 0.015, output: 0.075 },     // Premium
   'claude-3.5-haiku': { input: 0.00025, output: 0.00125 }, // Fast
-  'claude-3.5-sonnet': { input: 0.003, output: 0.015 },   // Legacy balanced
   // Fallback pricing
   'default': { input: 0.003, output: 0.015 }
 };
