@@ -34,6 +34,10 @@ import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTerminalStore } from '@/stores/useTerminalStore';
+import { useSpectatorStore } from '@/stores/useSpectatorStore';
+import { useTeamStore } from '@/stores/useTeamStore';
+import SpectatorTerminal from './SpectatorTerminal';
+import { Monitor } from 'lucide-react';
 import { parseClaudeTokenUsage } from '@/lib/claude-token-parser';
 import { filterThinkingAnimations, extractClaudeCommands } from '@/lib/checkpoint-utils';
 import { getCompanionClient } from '@/lib/companion-client';
@@ -225,6 +229,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const terminalHistory = useTerminalStore((state) => state.history);
   const workingDirectory = useTerminalStore((state) => state.workingDirectory);
 
+  // Spectator Mode state
+  const { isSharingTerminal, isSpectating, spectatingSessionId, spectatingUsername, spectatorCount } = useSpectatorStore();
+  const teamStore = useTeamStore();
+  const [spectatorScrollback, setSpectatorScrollback] = useState<string>('');
+  const [spectatorDims, setSpectatorDims] = useState<{ cols: number; rows: number }>({ cols: 80, rows: 24 });
 
   // Auto-switch terminal mode based on selected model
   useEffect(() => {
@@ -4353,6 +4362,40 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     socketHandlersRef.current.aiTeamComplete = aiTeamCompleteHandler;
     socket.on('ai-team:complete', aiTeamCompleteHandler);
 
+    // Spectator Mode socket listeners
+    socket.off('spectator:share:started');
+    socket.on('spectator:share:started', (data: any) => {
+      useSpectatorStore.getState().addSharedTerminal(data);
+    });
+
+    socket.off('spectator:share:stopped');
+    socket.on('spectator:share:stopped', (data: any) => {
+      const stoppedId = data?.sessionId;
+      useSpectatorStore.getState().removeSharedTerminal(stoppedId);
+      const { spectatingSessionId: currentlySpectating, stopSpectating } = useSpectatorStore.getState();
+      if (currentlySpectating === stoppedId) {
+        stopSpectating();
+      }
+    });
+
+    socket.off('spectator:viewer:joined');
+    socket.on('spectator:viewer:joined', (data: any) => {
+      useSpectatorStore.getState().setSpectatorCount(data?.viewerCount ?? 0);
+    });
+
+    socket.off('spectator:viewer:left');
+    socket.on('spectator:viewer:left', (data: any) => {
+      useSpectatorStore.getState().setSpectatorCount(data?.viewerCount ?? 0);
+    });
+
+    socket.off('spectator:joined');
+    socket.on('spectator:joined', (data: any) => {
+      if (data) {
+        setSpectatorScrollback(data.scrollback || '');
+        setSpectatorDims({ cols: data.cols || 80, rows: data.rows || 24 });
+      }
+    });
+
     // Handle team:summary event - display formatted summary in main terminal
     const teamSummaryHandler = (data: any) => {
       if (term && data) {
@@ -5587,6 +5630,43 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             <span>Sandbox</span>
           </button>
 
+          {/* Share Terminal toggle (Spectator Mode) */}
+          {teamStore.syncTeam && (
+            <button
+              onClick={() => {
+                const socket = socketRef.current;
+                if (!socket) return;
+                const spectator = useSpectatorStore.getState();
+                if (spectator.isSharingTerminal) {
+                  socket.emit('spectator:share:stop', { sessionId });
+                  spectator.stopSharing();
+                } else {
+                  if (!authUser) return;
+                  socket.emit('spectator:share:start', {
+                    sessionId,
+                    teamId: teamStore.syncTeam?.id,
+                    userId: authUser.id,
+                    username: authUser.username,
+                  });
+                  spectator.startSharing(sessionId!);
+                }
+              }}
+              disabled={!sessionId}
+              className={`terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md ${
+                isSharingTerminal ? 'terminal-btn-active-orange' : ''
+              } ${!sessionId ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={isSharingTerminal ? `Sharing terminal (${spectatorCount} viewers)` : 'Share terminal with team'}
+            >
+              <Monitor className="w-4 h-4" />
+              <span>{isSharingTerminal ? 'Sharing' : 'Share'}</span>
+              {isSharingTerminal && spectatorCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-orange-500/20 text-orange-400 text-[10px] rounded-full font-medium">
+                  {spectatorCount}
+                </span>
+              )}
+            </button>
+          )}
+
         </div>
       </div>
 
@@ -5656,8 +5736,8 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           }
         }}
       >
-        <div 
-          ref={terminalRef} 
+        <div
+          ref={terminalRef}
           data-tour="terminal-input"
           onContextMenu={handleContextMenu}
           style={{
@@ -5665,6 +5745,23 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             height: '100%'
           }}
         />
+
+        {/* Spectator Mode Overlay */}
+        {isSpectating && spectatingSessionId && spectatingUsername && (
+          <SpectatorTerminal
+            sessionId={spectatingSessionId}
+            sharerUsername={spectatingUsername}
+            scrollback={spectatorScrollback}
+            cols={spectatorDims.cols}
+            rows={spectatorDims.rows}
+            onExit={() => {
+              const socket = socketRef.current;
+              if (socket) socket.emit('spectator:leave', { sessionId: spectatingSessionId });
+              useSpectatorStore.getState().stopSpectating();
+            }}
+            socketRef={socketRef}
+          />
+        )}
       </div>
 
       {/* Claude Activity Indicator - Positioned directly under prompt box */}

@@ -9,11 +9,22 @@
 - [x] Add server-side spectator infrastructure to `server.js` (data structures, event handlers, hooks, cleanup)
 - [x] Create `stores/useSpectatorStore.ts` (Zustand store for spectator state)
 - [x] Create `components/terminal/SpectatorTerminal.tsx` (read-only xterm overlay)
-- [x] Integrate Share button into `BetaTerminal.tsx`
+- [x] Integrate Share button into `BetaTerminal.tsx` (WRONG FILE — BetaTerminal is unused)
 - [x] Integrate Live Terminals section into `TeamPanel.tsx`
 - [x] Add spectator CSS to `Terminal.css`
 - [x] Remove duplicate CSS class
 - [x] TypeScript compiles with zero errors in changed files
+
+## Fix: Port spectator integration to Terminal.tsx (the ACTIVE component)
+
+- [x] Add imports to Terminal.tsx (useSpectatorStore, useTeamStore, SpectatorTerminal, Monitor)
+- [x] Add spectator state hooks in Terminal.tsx
+- [x] Add 5 spectator socket listeners in Terminal.tsx connectToBackend
+- [x] Add Share button in Terminal.tsx header (right section, after Sandbox)
+- [x] Add SpectatorTerminal overlay in Terminal.tsx (after terminal content div)
+- [x] TypeScript compiles with zero errors
+- [ ] Test: Share button visible when in a team
+- [ ] Commit on feature/terminal-spectator branch
 
 ## Review
 
