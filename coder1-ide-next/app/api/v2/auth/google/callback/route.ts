@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoogleTokens, getGoogleUser } from '@/lib/auth/google-oauth';
-import { findOrCreateOAuthUser, createSession } from '@/lib/auth/db';
+import { findOrCreateOAuthUser, createSession } from '@/lib/auth';
 import { generateTokens } from '@/lib/auth/jwt';
 
 /**
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const googleUser = await getGoogleUser(tokens.access_token);
     
     // Find or create user in our database
-    const user = findOrCreateOAuthUser(
+    const user = await findOrCreateOAuthUser(
       'google',
       googleUser.sub,
       googleUser.email,
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days for refresh token
     
-    createSession({
+    await createSession({
       user_id: user.id,
       token: accessToken,
       refresh_token: refreshToken,

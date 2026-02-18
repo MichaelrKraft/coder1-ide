@@ -35,7 +35,7 @@ import {
   getJohnny5Quota,
   incrementJohnny5MessageCount,
   updateClaudeSubscriptionTier,
-} from '@/lib/auth/db';
+} from '@/lib/auth';
 import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 import { extractUserId } from '@/lib/auth/extract-user-id';
 import {
@@ -596,7 +596,7 @@ export async function POST(
     if (userId !== 'default') {
 
       // Check Johnny5 quota for authenticated users
-      const quota = getJohnny5Quota(userId);
+      const quota = await getJohnny5Quota(userId);
       if (quota && !quota.isProSubscriber && quota.messageCount >= quota.limit) {
         const upgradeUrl = quota.tierType === 'gemini_trial'
           ? 'https://claude.ai/download'
@@ -827,7 +827,7 @@ export async function POST(
     if (bridgeConnected && userId !== 'default') {
       try {
         // Bridge connection requires Claude Pro/Max subscription
-        updateClaudeSubscriptionTier(userId, 'pro');
+        await updateClaudeSubscriptionTier(userId, 'pro');
         console.log(`[Johnny5] Updated Claude tier for user ${userId}: pro (Bridge connected)`);
       } catch (tierError) {
         console.warn('[Johnny5] Failed to update Claude tier:', tierError);
@@ -1886,7 +1886,7 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
     // 12.6. Increment Johnny5 message counter for authenticated users
     if (userId !== 'default') {
       try {
-        const newCount = incrementJohnny5MessageCount(userId);
+        const newCount = await incrementJohnny5MessageCount(userId);
         console.log(`[Johnny5] Message count incremented for user ${userId}: ${newCount}`);
       } catch (counterError) {
         console.error('[Johnny5] Failed to increment message counter:', counterError);
@@ -1964,7 +1964,7 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
     // 13. Get updated quota for response
     let quotaInfo: ChatSuccessResponse['data']['quota'] = undefined;
     if (userId !== 'default') {
-      const updatedQuota = getJohnny5Quota(userId);
+      const updatedQuota = await getJohnny5Quota(userId);
       if (updatedQuota) {
         quotaInfo = {
           messageCount: updatedQuota.messageCount,

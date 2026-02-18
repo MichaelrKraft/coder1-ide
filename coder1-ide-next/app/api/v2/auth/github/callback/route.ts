@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGitHubTokens, getGitHubUser } from '@/lib/auth/github-oauth';
-import { findOrCreateOAuthUser, createSession } from '@/lib/auth/db';
+import { findOrCreateOAuthUser, createSession } from '@/lib/auth';
 import { generateTokens } from '@/lib/auth/jwt';
 
 /**
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find or create user in our database (E2-2 handled by findOrCreateOAuthUser)
-    const user = findOrCreateOAuthUser(
+    const user = await findOrCreateOAuthUser(
       'github',
       githubUser.id.toString(),
       githubUser.email,
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days for refresh token
 
-    createSession({
+    await createSession({
       user_id: user.id,
       token: accessToken,
       refresh_token: refreshToken,

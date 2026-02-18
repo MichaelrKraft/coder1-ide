@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { verifyAccessToken, verifyRefreshToken } from './jwt';
-import { getUserById, getTeamMembers } from './db';
-import type { User, TeamMember } from './db';
+import { getUserById, getTeamMembers } from '.';
+import type { User } from '.';
 
 export type AuthenticatedMember = User & { role: string };
 
@@ -16,7 +16,7 @@ export async function getAuthUser(request: NextRequest): Promise<User> {
   if (token) {
     const decoded = verifyAccessToken(token);
     if (decoded) {
-      const user = getUserById(decoded.userId);
+      const user = await getUserById(decoded.userId);
       if (!user) throw new Error('User not found');
       return user;
     }
@@ -27,7 +27,7 @@ export async function getAuthUser(request: NextRequest): Promise<User> {
   if (refreshToken) {
     const decoded = verifyRefreshToken(refreshToken);
     if (decoded) {
-      const user = getUserById(decoded.userId);
+      const user = await getUserById(decoded.userId);
       if (!user) throw new Error('User not found');
       return user;
     }
@@ -41,7 +41,7 @@ export async function getAuthUser(request: NextRequest): Promise<User> {
  * Looks up membership from the database (not from JWT)
  */
 export async function requireTeamMember(userId: string, teamId: string): Promise<AuthenticatedMember> {
-  const members = getTeamMembers(teamId);
+  const members = await getTeamMembers(teamId);
   const member = members.find(m => m.id === userId);
   if (!member) throw new Error('Not a team member');
   return member;

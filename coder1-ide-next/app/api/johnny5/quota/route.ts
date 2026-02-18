@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getJohnny5Quota } from '@/lib/auth/db';
+import { getJohnny5Quota } from '@/lib/auth';
 import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 
 export async function GET(request: NextRequest) {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get quota for user
-    const quota = getJohnny5Quota(decoded.userId);
+    const quota = await getJohnny5Quota(decoded.userId);
 
     if (!quota) {
       return NextResponse.json(

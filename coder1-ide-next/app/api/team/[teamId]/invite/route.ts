@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, requireTeamAdmin } from '@/lib/auth/team-middleware';
-import { createTeamInvitation } from '@/lib/auth/db';
+import { createTeamInvitation } from '@/lib/auth';
 
 /**
  * POST /api/team/[teamId]/invite
@@ -27,7 +27,7 @@ export async function POST(
       );
     }
 
-    const invitation = createTeamInvitation(teamId, email.trim(), user.id);
+    const invitation = await createTeamInvitation(teamId, email.trim(), user.id);
 
     const inviteLink = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/team/join?token=${invitation.token}`;
 

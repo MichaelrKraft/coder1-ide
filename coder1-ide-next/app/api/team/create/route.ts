@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth/team-middleware';
-import { createTeam, getTeamBySlug } from '@/lib/auth/db';
+import { createTeam, getTeamBySlug } from '@/lib/auth';
 
 /**
  * POST /api/team/create
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       .replace(/-+/g, '-');
 
     // Check for slug uniqueness
-    const existing = getTeamBySlug(slug);
+    const existing = await getTeamBySlug(slug);
     if (existing) {
       return NextResponse.json(
         { success: false, error: 'A team with this name already exists' },
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const team = createTeam(name.trim(), slug, user.id);
+    const team = await createTeam(name.trim(), slug, user.id);
 
     return NextResponse.json({ success: true, data: team });
   } catch (error) {

@@ -636,6 +636,14 @@ export function getUserByStripeCustomerId(stripeCustomerId: string): User | unde
   return stmt.get(stripeCustomerId) as User | undefined;
 }
 
+/**
+ * Update user's Stripe customer ID
+ */
+export function updateUserStripeCustomerId(userId: string, stripeCustomerId: string): void {
+  const db = getAuthDatabase();
+  db.prepare('UPDATE users SET stripe_customer_id = ? WHERE id = ?').run(stripeCustomerId, userId);
+}
+
 // ===========================================
 // Team Knowledge Sync
 // ===========================================

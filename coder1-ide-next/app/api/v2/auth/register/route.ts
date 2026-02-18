@@ -10,10 +10,9 @@ export async function POST(request: NextRequest) {
     const { email, username, password } = body;
     
     // Import dynamically to avoid issues
-    const { createUser, getUserByEmail, getUserByUsername } = await import('@/lib/auth/db');
+    const { createUser, getUserByEmail, getUserByUsername, createSession } = await import('@/lib/auth');
     const { hashPassword, validateEmail, validateUsername, validatePasswordStrength } = await import('@/lib/auth/bcrypt');
     const { generateTokens } = await import('@/lib/auth/jwt');
-    const { createSession } = await import('@/lib/auth/db');
     
     // Validate input
     if (!email || !username || !password) {
@@ -50,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if email already exists
-    const existingEmailUser = getUserByEmail(email);
+    const existingEmailUser = await getUserByEmail(email);
     if (existingEmailUser) {
       return NextResponse.json(
         { error: 'Email already registered' },
@@ -59,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if username already exists
-    const existingUsernameUser = getUserByUsername(username);
+    const existingUsernameUser = await getUserByUsername(username);
     if (existingUsernameUser) {
       return NextResponse.json(
         { error: 'Username already taken' },
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hashPassword(password);
     
     // Create user
-    const user = createUser({
+    const user = await createUser({
       email,
       username,
       password_hash: passwordHash,
@@ -89,7 +88,7 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || undefined;
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
     
-    createSession({
+    await createSession({
       user_id: user.id,
       token: accessToken,
       refresh_token: refreshToken,

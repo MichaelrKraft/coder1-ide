@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth/team-middleware';
-import { getTeamInvitationByToken, acceptTeamInvitation, getTeamById } from '@/lib/auth/db';
+import { getTeamInvitationByToken, acceptTeamInvitation, getTeamById } from '@/lib/auth';
 
 /**
  * GET /api/team/join?token=...
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?inviteError=notfound', request.url));
   }
 
-  const invitation = getTeamInvitationByToken(token);
+  const invitation = await getTeamInvitationByToken(token);
 
   if (!invitation) {
     return NextResponse.redirect(new URL('/login?inviteError=notfound', request.url));
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Look up team name for the login page display
-  const team = getTeamById(invitation.team_id);
+  const team = await getTeamById(invitation.team_id);
   const teamName = team?.name || 'your team';
 
   return NextResponse.redirect(
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check invitation exists
-    const invitation = getTeamInvitationByToken(token);
+    const invitation = await getTeamInvitationByToken(token);
     if (!invitation) {
       return NextResponse.json(
         { success: false, error: 'Invitation not found' },
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Accept the invitation (adds user as member)
-    acceptTeamInvitation(token, user.id);
+    await acceptTeamInvitation(token, user.id);
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { refreshAccessToken } from '@/lib/auth/jwt';
-import { refreshSessionToken } from '@/lib/auth/db';
+import { refreshSessionToken } from '@/lib/auth';
 
 /**
  * POST /api/v2/auth/refresh
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update the session in the database with the new access token
-    const session = refreshSessionToken(refreshToken, result.accessToken, result.expiresAt);
+    const session = await refreshSessionToken(refreshToken, result.accessToken, result.expiresAt);
     if (!session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 401 });
     }

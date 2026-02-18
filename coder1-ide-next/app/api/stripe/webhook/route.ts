@@ -5,8 +5,8 @@ import {
   getUserByEmail,
   activateCoder1Pro,
   deactivateCoder1Pro,
-  getAuthDatabase,
-} from '@/lib/auth/db';
+  updateUserStripeCustomerId,
+} from '@/lib/auth';
 
 // Initialize Stripe lazily to avoid build-time errors
 function getStripe(): Stripe | null {
@@ -71,16 +71,14 @@ export async function POST(request: NextRequest) {
 
         // Find user by email and activate Pro
         if (session.customer_email) {
-          const user = getUserByEmail(session.customer_email);
+          const user = await getUserByEmail(session.customer_email);
           if (user) {
             // Update stripe_customer_id if not set
             if (!user.stripe_customer_id && session.customer) {
-              const db = getAuthDatabase();
-              db.prepare('UPDATE users SET stripe_customer_id = ? WHERE id = ?')
-                .run(session.customer as string, user.id);
+              await updateUserStripeCustomerId(user.id, session.customer as string);
             }
             // Activate Coder1 Pro
-            activateCoder1Pro(user.id);
+            await activateCoder1Pro(user.id);
             console.log(`✅ Activated Coder1 Pro for user: ${user.email}`);
           } else {
             console.warn(`User not found for email: ${session.customer_email}`);
@@ -114,18 +112,18 @@ export async function POST(request: NextRequest) {
 
         // Handle subscription status changes
         if (customerId) {
-          const user = getUserByStripeCustomerId(customerId);
+          const user = await getUserByStripeCustomerId(customerId);
           if (user) {
             if (subscription.status === 'active') {
               // Subscription reactivated
-              activateCoder1Pro(user.id);
+              await activateCoder1Pro(user.id);
               console.log(`✅ Reactivated Coder1 Pro for user: ${user.email}`);
             } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
               // Grace period - keep Pro active but log warning
               console.warn(`⚠️ Subscription ${subscription.status} for user: ${user.email}`);
             } else if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') {
               // Deactivate Pro
-              deactivateCoder1Pro(user.id);
+              await deactivateCoder1Pro(user.id);
               console.log(`❌ Deactivated Coder1 Pro for user: ${user.email} (status: ${subscription.status})`);
             }
           }
@@ -146,9 +144,9 @@ export async function POST(request: NextRequest) {
 
         // Find user by Stripe customer ID and deactivate Pro
         if (customerId) {
-          const user = getUserByStripeCustomerId(customerId);
+          const user = await getUserByStripeCustomerId(customerId);
           if (user) {
-            deactivateCoder1Pro(user.id);
+            await deactivateCoder1Pro(user.id);
             console.log(`❌ Deactivated Coder1 Pro for user: ${user.email}`);
           } else {
             console.warn(`User not found for customer: ${customerId}`);
