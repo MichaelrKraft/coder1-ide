@@ -1614,17 +1614,15 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
       if (!result.success) {
         console.log('[Johnny5] Gemini failed, trying direct Claude CLI (uses your subscription)');
         try {
-          const { execSync, spawn: spawnAsync } = await import('child_process');
+          const { exec, spawn: spawnAsync } = await import('child_process');
           const fs = await import('fs');
           const os = await import('os');
           const path = await import('path');
 
-          // Check if claude CLI is available
-          try {
-            execSync('which claude', { encoding: 'utf-8', stdio: 'pipe' });
-          } catch {
-            throw new Error('Claude CLI not installed on server');
-          }
+          // Check if claude CLI is available (async to avoid blocking event loop)
+          await new Promise<void>((resolve, reject) => {
+            exec('which claude', (err) => err ? reject(new Error('Claude CLI not installed on server')) : resolve());
+          });
 
           // Build a simple prompt with context embedded
           // finalMessage is already truncated earlier, but apply additional CLI-specific truncation if needed
