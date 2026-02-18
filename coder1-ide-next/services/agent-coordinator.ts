@@ -294,6 +294,7 @@ export class AgentCoordinator extends EventEmitter {
   private activeWorkflows: Map<string, WorkflowSession>;
   private workflowTemplates: Map<string, WorkflowTemplate>;
   private agentRoleDefinitions: Map<AgentRoleId, AgentRoleDefinition>;
+  private stoppingWorkflows = new Set<string>(); // Lock: prevents concurrent stopWorkflow re-entrance
 
   // Performance tracking
   private stats: CoordinatorStats;
@@ -865,6 +866,10 @@ export class AgentCoordinator extends EventEmitter {
           if (newRetryCount >= this.MAX_PHASE_RETRIES) {
             throw phaseError;
           } else {
+            // Abort retry if stopWorkflow was called while this phase was running
+            if (workflowSession.status === 'stopping') {
+              throw new Error('Workflow stopped by user');
+            }
             console.warn(`🔄 Retrying phase "${phase.name}" (attempt ${newRetryCount + 1}/${this.MAX_PHASE_RETRIES})...`);
             i--;
             continue;
@@ -1294,45 +1299,60 @@ Please provide:
   }
 
   /**
-   * Stop a workflow and cleanup resources
+   * Stop a workflow and cleanup resources.
+   *
+   * Race-condition safe:
+   * - stoppingWorkflows Set prevents concurrent re-entrance
+   * - try/finally guarantees lock is always released even if cleanup throws
+   * - cleanupWorkflowAgents deletes from the map before any await so concurrent
+   *   callers see null and short-circuit — no agent gets stopAgent called twice
    */
   async stopWorkflow(sessionId: string): Promise<void> {
+    if (this.stoppingWorkflows.has(sessionId)) return; // already stopping — skip
     const workflow = this.activeWorkflows.get(sessionId);
-    if (!workflow) {
-      return;
-    }
+    if (!workflow) return;
 
+    this.stoppingWorkflows.add(sessionId);
+    workflow.status = 'stopping';
     console.log(`🛑 Stopping workflow: ${sessionId}`);
 
-    workflow.status = 'stopping';
+    try {
+      await this.cleanupWorkflowAgents(sessionId);
+      workflow.status = 'stopped';
+      workflow.endTime = new Date();
+      // Note: activeWorkflows entry already deleted inside cleanupWorkflowAgents
+    } finally {
+      // Always release lock — even if cleanupWorkflowAgents throws
+      this.stoppingWorkflows.delete(sessionId);
+    }
 
-    await this.cleanupWorkflowAgents(sessionId);
-
-    workflow.status = 'stopped';
-    workflow.endTime = new Date();
-
-    this.activeWorkflows.delete(sessionId);
-
+    // Emit outside try block so lock is fully released before any listener fires
     this.emit('workflowStopped', { sessionId });
   }
 
   /**
-   * Cleanup agents for a specific workflow
+   * Cleanup agents for a specific workflow.
+   *
+   * Deletes from activeWorkflows BEFORE awaiting stopAgent calls so that any
+   * concurrent caller (e.g. executeWorkflow success path + stopWorkflow racing)
+   * sees null on its map lookup and returns immediately — preventing double stopAgent.
    */
   private async cleanupWorkflowAgents(sessionId: string): Promise<void> {
     const workflow = this.activeWorkflows.get(sessionId);
     if (!workflow) {
-      return;
+      return; // Already cleaned up by a concurrent caller — safe to skip
     }
+
+    // Delete synchronously before any await to prevent concurrent callers from
+    // snapshotting the same agents and calling stopAgent twice
+    this.activeWorkflows.delete(sessionId);
+    console.log(`🧹 Workflow removed from active map: ${sessionId}`);
 
     const stopPromises = Array.from(workflow.agents.values()).map(agent =>
       this.puppeteer.stopAgent(agent.agentId)
     );
 
     await Promise.all(stopPromises);
-
-    this.activeWorkflows.delete(sessionId);
-    console.log(`🧹 Workflow removed from active map: ${sessionId}`);
   }
 
   /**

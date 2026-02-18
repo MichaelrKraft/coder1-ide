@@ -2387,7 +2387,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         }
       };
 
-      // Register new listener (only one will exist now due to removeAllListeners above)
+      // Register new listener (previous handler already removed via socket.off above)
       socket.on('agent:terminal:data', handleAgentTerminalData);
       console.log('✅ [AGENT-SETUP] Listener registered for agent:terminal:data, agentSession.id:', agentSession.id);
 
