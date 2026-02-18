@@ -86,20 +86,38 @@ export class DatabaseMigrationManager {
 
     try {
       console.log(`🔄 Applying migration: ${filename}`);
-      
+
       // Execute the SQL file
       this.db.exec(sql);
-      
+
       const executionTime = Date.now() - startTime;
-      
+
       // Record the migration
       this.db.prepare(`
         INSERT INTO schema_migrations (filename, checksum, execution_time_ms)
         VALUES (?, ?, ?)
       `).run(filename, checksum, executionTime);
-      
+
       console.log(`✅ Applied ${filename} in ${executionTime}ms`);
     } catch (error) {
+      // SQLite doesn't support ALTER TABLE ADD COLUMN IF NOT EXISTS.
+      // If the column already exists (e.g. schema.sql was updated to include it
+      // before this ALTER TABLE migration ran), treat it as a no-op and mark
+      // the migration applied so it doesn't block future server starts.
+      const isDuplicateColumn =
+        error instanceof Error &&
+        error.message.includes('duplicate column name');
+
+      if (isDuplicateColumn) {
+        const executionTime = Date.now() - startTime;
+        console.warn(`⚠️  ${filename}: column already exists — marking as applied`);
+        this.db.prepare(`
+          INSERT INTO schema_migrations (filename, checksum, execution_time_ms)
+          VALUES (?, ?, ?)
+        `).run(filename, checksum, executionTime);
+        return;
+      }
+
       console.error(`❌ Failed to apply migration ${filename}:`, error);
       throw error;
     }
@@ -126,6 +144,7 @@ export class DatabaseMigrationManager {
       'auth-schema.sql',                      // Additional auth tables
       'bridge-schema.sql',                    // Bridge pairing persistence
       'time-capsules-schema.sql',             // Time Capsules: AI session -> Git commit linking
+      'add-checkpoint-type.sql',              // Add type column (manual|auto) to checkpoints
     ];
 
     let appliedCount = 0;

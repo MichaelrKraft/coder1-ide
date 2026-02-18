@@ -35,7 +35,13 @@ export async function GET(
       .order('updated_at', { ascending: false })
       .limit(50);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Table hasn't been created in Supabase yet — degrade gracefully
+      if (error.message.includes('Could not find the table')) {
+        return NextResponse.json({ success: true, data: [], migrationRequired: true });
+      }
+      throw new Error(error.message);
+    }
 
     return NextResponse.json({ success: true, data: data ?? [] });
   } catch (error) {

@@ -87,6 +87,13 @@ const CODING_PATTERNS = [
   // Technical questions about code
   /\bhow (does|do)\s+(this|the|that)\s+(work|function|operate)\b/i,
   /\bexplain\s+(this|the|that)\s+(code|function|component|logic)\b/i,
+
+  // Video transcription (requires mcp__youtube__get_transcript via Bridge)
+  /\b(transcribe|transcription|transcript)\b/i,
+  /\byoutu(be|\.be)\b/i,
+  /youtube\.com\/watch\b/i,
+  /\b(summarize|analyze|summarise)\s+(this\s+)?(youtube|video)\b/i,
+  /\b(get|fetch|extract)\s+(the\s+)?(transcript|captions?)\b/i,
 ];
 
 /**
