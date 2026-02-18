@@ -310,8 +310,8 @@ export interface Johnny5MorningBrief {
   id: string;
   date: Date;
   weather?: {
-    temperature: number;
-    condition: string;
+    temperature: number | null;
+    condition: string | null;
     location: string;
   };
   builtOvernight: Johnny5BriefItem[];

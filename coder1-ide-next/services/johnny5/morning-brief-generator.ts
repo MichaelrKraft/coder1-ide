@@ -329,8 +329,8 @@ export async function generateMorningBrief(targetDate: Date, userId: string = 'd
     id: `brief-${dateKey}`,
     date: targetDate,
     weather: {
-      temperature: 65 + Math.floor(Math.random() * 15),
-      condition: ['Sunny', 'Partly Cloudy', 'Clear'][Math.floor(Math.random() * 3)],
+      temperature: null,
+      condition: null,
       location: 'Littleton, CO', // Could be made dynamic with weather API
     },
     summary,
