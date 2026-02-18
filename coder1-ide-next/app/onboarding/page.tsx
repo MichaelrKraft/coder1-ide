@@ -282,7 +282,7 @@ export default function OnboardingPage() {
                       <p className="text-gray-500 text-xs mt-1">Sessions expire daily</p>
                     </div>
                     <div className="p-3 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-lg">
-                      <p className="font-semibold text-cyan-400 mb-1">Pro ($29/mo)</p>
+                      <p className="font-semibold text-cyan-400 mb-1">Pro ($19/mo)</p>
                       <p className="text-gray-400">Infinite memory persistence</p>
                       <p className="text-gray-500 text-xs mt-1">Claude never forgets</p>
                     </div>

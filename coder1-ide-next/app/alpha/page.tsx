@@ -1808,7 +1808,7 @@ export default function AlphaLandingPage() {
 
               <PricingCard
                 tier="Pro"
-                price="$29"
+                price="$19"
                 period="per month"
                 features={[
                   'Everything in Free',

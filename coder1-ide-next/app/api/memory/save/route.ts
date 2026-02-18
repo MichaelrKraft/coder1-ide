@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * 
  * To use this feature:
  * 1. Start your 7-day free trial
- * 2. Or upgrade to Pro ($29/month)
+ * 2. Or upgrade to Pro ($19/month)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         message: 'Eternal Memory is a premium feature',
         action: 'start_trial',
         trialDays: 7,
-        proPrice: '$29/month'
+        proPrice: '$19/month'
       }, { status: 403 });
     }
     
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
           message: errorData.message || 'Eternal Memory requires active trial or Pro subscription',
           action: 'start_trial',
           trialDays: 7,
-          proPrice: '$29/month'
+          proPrice: '$19/month'
         }, { status: 403 });
       }
       
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       message: 'Eternal Memory is a premium feature. Start your 7-day trial to enable persistent memory.',
       action: 'start_trial',
       trialDays: 7,
-      proPrice: '$29/month',
+      proPrice: '$19/month',
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 403 });
   }

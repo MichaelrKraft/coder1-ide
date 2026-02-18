@@ -1459,7 +1459,7 @@ export default function LandingTeamV2Page() {
             <ScrollReveal delay={100}>
               <PricingCard
                 tier="Pro"
-                price="$29"
+                price="$19"
                 period="per month"
                 features={[
                   'Everything in Free',
