@@ -25,7 +25,7 @@ export type CronSchedule =
 
 export interface CronPayload {
   message: string;
-  action?: 'morning_brief' | 'trend_check' | 'build_check' | 'tiktok_content' | 'custom';
+  action?: 'morning_brief' | 'trend_check' | 'build_check' | 'tiktok_content' | 'content_factory' | 'custom';
   hook?: string; // Pre-queued hook text (for tiktok_content action)
   deliver?: boolean;  // Send notification?
 }
@@ -632,6 +632,22 @@ class CronService {
       );
       console.log('[CronService] Created default Trend Monitor job (business hours Mon-Fri)');
     }
+
+    // Content Factory: Scout at 8am Mountain Time daily
+    const scoutExists = existingJobs.some(j => j.name === 'Content Factory: Scout');
+    if (!scoutExists) {
+      await this.addJob(
+        'Content Factory: Scout',
+        { kind: 'cron', expr: '0 8 * * *', tz: 'America/Denver' },
+        {
+          message: 'Running Content Factory Scout — researching today\'s top AI/dev stories...',
+          action: 'content_factory',
+          deliver: false,
+        },
+        userId
+      );
+      console.log('[CronService] Created default Content Factory Scout job (8am Mountain Time daily)');
+    }
   }
 
   // ============ HELPERS ============
@@ -688,6 +704,18 @@ export function getCronService(config?: CronServiceConfig): CronService {
             console.log(`[CronService] TikTok content triggered: taskId=${data.taskId}`);
           } catch (err) {
             console.error('[CronService] TikTok content trigger failed:', err);
+            throw err;
+          }
+        }
+
+        // Handle content_factory action — runs Scout agent
+        if (job.payload.action === 'content_factory') {
+          try {
+            const { runScout } = await import('@/services/johnny5/content-factory/scout-service');
+            const result = await runScout();
+            console.log(`[CronService] Content Factory Scout completed: ${result.stories.length} stories at ${result.runAt}`);
+          } catch (err) {
+            console.error('[CronService] Content Factory Scout failed:', err);
             throw err;
           }
         }
