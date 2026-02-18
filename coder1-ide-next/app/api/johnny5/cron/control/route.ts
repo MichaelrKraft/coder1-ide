@@ -105,21 +105,11 @@ export async function POST(request: NextRequest) {
       case 'run-morning-brief': {
         // Manually trigger morning brief generation (async)
         const brief = await generateMorningBrief(new Date());
-        result = {
-          status: 'completed',
-          briefId: brief.id,
-          date: brief.date,
-          summary: brief.summary,
-          itemCount:
-            brief.builtOvernight.length +
-            brief.researchCompleted.length +
-            brief.trendsSpotted.length +
-            brief.needsAttention.length,
-        };
-        console.log('[Johnny5 Cron Control] Morning brief generated manually');
+        const debugInfo: Record<string, unknown> = {};
 
         // Push to IDE chat tab
         const io = (global as Record<string, unknown>).io as { emit: (event: string, data: unknown) => void } | undefined;
+        debugInfo.ioAvailable = !!io;
         if (io) {
           io.emit('johnny5:morning-brief', {
             type: 'morning_brief_ready',
@@ -132,20 +122,43 @@ export async function POST(request: NextRequest) {
             content: `📋 **Morning Brief**\n\n${brief.summary}`,
             timestamp: new Date().toISOString(),
           });
+          debugInfo.socketEmitted = true;
         }
 
-        // Send to Telegram
+        // Send to Telegram via Bot API HTTP (no bot instance needed)
         try {
-          const { getTelegramChatId } = await import('@/lib/johnny5-config');
+          const { getTelegramChatId, getTelegramBotToken } = await import('@/lib/johnny5-config');
           const chatId = getTelegramChatId();
-          const bot = (global as Record<string, unknown>).telegramBot as { sendMessage: (chatId: string, text: string, mode: string) => Promise<void> } | undefined;
-          if (chatId && bot) {
-            await bot.sendMessage(chatId, `📋 *Morning Brief*\n\n${brief.summary}`, 'Markdown');
-            console.log('[Johnny5 Cron Control] Morning brief sent to Telegram');
+          const token = getTelegramBotToken();
+          debugInfo.hasChatId = !!chatId;
+          debugInfo.hasToken = !!token;
+          if (chatId && token) {
+            const text = `📋 *Morning Brief*\n\n${brief.summary}`;
+            const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+            });
+            const tgData = await tgRes.json() as { ok: boolean; description?: string };
+            debugInfo.telegramOk = tgData.ok;
+            debugInfo.telegramError = tgData.description;
           }
         } catch (telegramErr) {
-          console.warn('[Johnny5 Cron Control] Telegram send failed (non-fatal):', telegramErr);
+          debugInfo.telegramException = String(telegramErr);
         }
+
+        result = {
+          status: 'completed',
+          briefId: brief.id,
+          date: brief.date,
+          summary: brief.summary,
+          itemCount:
+            brief.builtOvernight.length +
+            brief.researchCompleted.length +
+            brief.trendsSpotted.length +
+            brief.needsAttention.length,
+        };
+        console.log('[Johnny5 Cron Control] Morning brief delivered:', debugInfo);
         break;
       }
 

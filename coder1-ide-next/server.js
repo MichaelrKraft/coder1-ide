@@ -1201,10 +1201,10 @@ function parseCookies(req) {
 function validateAlphaAccess(req, res) {
   if (!isAlphaMode) return true;
 
-  // Check if user is authenticated (has auth-token cookie)
+  // Check if user is authenticated (has auth-token or refresh-token cookie)
   // Authenticated users bypass invite code requirement
   const cookies = parseCookies(req);
-  if (cookies['auth-token']) {
+  if (cookies['auth-token'] || cookies['refresh-token']) {
     return true; // Authenticated users can access without invite code
   }
 
@@ -4718,14 +4718,23 @@ app.prepare().then(() => {
                   timestamp: new Date().toISOString(),
                 });
 
-                // 3. Send to Telegram (in isolated try/catch so failures don't break the brief)
+                // 3. Send to Telegram via direct HTTP (no bot instance dependency)
                 try {
-                  const { telegramBot } = require('./services/johnny5/telegram-bot.ts');
-                  const { getTelegramChatId } = require('./lib/johnny5-config.ts');
+                  const { getTelegramChatId, getTelegramBotToken } = require('./lib/johnny5-config.ts');
                   const chatId = getTelegramChatId();
-                  if (chatId && telegramBot.getIsConnected()) {
-                    await telegramBot.sendMessage(chatId, `📋 *Morning Brief*\n\n${brief.summary}`, 'Markdown');
-                    console.log('[Johnny5 Cron] Morning brief sent to Telegram');
+                  const token = getTelegramBotToken();
+                  if (chatId && token) {
+                    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ chat_id: chatId, text: `📋 *Morning Brief*\n\n${brief.summary}`, parse_mode: 'Markdown' }),
+                    });
+                    const tgData = await tgRes.json();
+                    if (tgData.ok) {
+                      console.log('[Johnny5 Cron] Morning brief sent to Telegram ✅');
+                    } else {
+                      console.warn('[Johnny5 Cron] Telegram error:', tgData.description);
+                    }
                   }
                 } catch (telegramError) {
                   console.error('[Johnny5 Cron] Telegram morning brief failed:', telegramError.message);
