@@ -1347,6 +1347,43 @@ export async function getSecurityWarnings(limit: number = 100): Promise<Array<{
   });
 }
 
+/**
+ * Get prompt injection alerts from the audit_log table
+ */
+export async function getInjectionAlerts(limit: number = 200): Promise<Array<{
+  id: string;
+  timestamp: string;
+  pattern: string;
+  source: string;
+  severity: string;
+  blocked: boolean;
+  text: string;
+  actionTaken: string;
+}>> {
+  const database = getDb();
+  const stmt = database.prepare(`
+    SELECT id, details, timestamp FROM audit_log
+    WHERE action = 'prompt_injection_detected'
+    ORDER BY timestamp DESC
+    LIMIT ?
+  `);
+  const rows = stmt.all(limit) as Array<{ id: string; details: string; timestamp: string }>;
+
+  return rows.map(row => {
+    const d = JSON.parse(row.details);
+    return {
+      id: row.id,
+      timestamp: row.timestamp,
+      pattern: d.pattern || '',
+      source: d.source || 'unknown',
+      severity: d.severity || 'high',
+      blocked: d.blocked ?? true,
+      text: d.textPreview || '',
+      actionTaken: 'Input blocked and logged',
+    };
+  });
+}
+
 // ============================================================================
 // Usage Tracking
 // ============================================================================
