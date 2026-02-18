@@ -48,6 +48,7 @@ import {
   extractFactsFromConversation,
   saveFacts,
   getExistingFacts,
+  getRelevantFactsRanked,
   runPatternDetectionCycle,
   type ConversationMessage as MemoryConversationMessage,
   // Session Memory
@@ -1013,6 +1014,31 @@ export async function POST(
     if (isLivingFilesEnabled()) {
       console.log('[Johnny5] Living files enabled — skipping legacy buildMemoryContext()');
       reasoningSteps.push('Using living files context (skipped legacy memory)');
+
+      // Supplement living files with ranked facts from extracted_facts DB
+      try {
+        const rankedFacts = await getRelevantFactsRanked(message, 8, capturedUserId);
+        if (rankedFacts.length > 0) {
+          const currentFacts = rankedFacts.filter(f => !f.isStale);
+          const staleFacts = rankedFacts.filter(f => f.isStale);
+          const lines: string[] = [];
+          if (currentFacts.length > 0) {
+            lines.push('## Relevant Known Facts');
+            lines.push(...currentFacts.map(f => `- ${f.fact_key}: ${f.fact_value}`));
+          }
+          if (staleFacts.length > 0) {
+            lines.push('## Potentially Outdated Facts (>90 days old)');
+            lines.push(...staleFacts.map(f => `- ${f.fact_key}: ${f.fact_value} _(may be outdated)_`));
+          }
+          if (lines.length > 0) {
+            factsAndPatternsContext = lines.join('\n');
+            reasoningSteps.push(`Injected ${currentFacts.length} ranked facts (${staleFacts.length} stale)`);
+            console.log(`[Johnny5] Ranked facts injected: ${currentFacts.length} current, ${staleFacts.length} stale`);
+          }
+        }
+      } catch (rankedFactsError) {
+        console.warn('[Johnny5] Ranked facts injection failed:', rankedFactsError);
+      }
     } else {
     try {
       const intelligentMemory = await buildMemoryContext({
