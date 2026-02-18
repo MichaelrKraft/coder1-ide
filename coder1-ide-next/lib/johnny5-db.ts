@@ -883,6 +883,26 @@ function createTables(database: Database.Database): void {
     console.error('[Johnny5 DB] Interview sessions table creation error:', err);
   }
 
+  // Add user_id to self_improvement_log for multi-tenant isolation
+  try {
+    database.exec(
+      `ALTER TABLE self_improvement_log ADD COLUMN user_id TEXT DEFAULT 'default'`
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!msg.includes('duplicate column')) {
+      console.error('[Johnny5 DB] self_improvement_log migration error:', msg);
+    }
+  }
+  // Separate try/catch: CREATE INDEX IF NOT EXISTS must run even if column already exists
+  try {
+    database.exec(
+      `CREATE INDEX IF NOT EXISTS idx_improvement_user ON self_improvement_log(user_id)`
+    );
+  } catch (err) {
+    console.error('[Johnny5 DB] self_improvement_log index error:', err);
+  }
+
   // NOTE: Vector table (memory_embeddings) is now created by loadVectorExtension()
   // which runs after server startup to avoid blocking the event loop.
 }

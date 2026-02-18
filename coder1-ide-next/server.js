@@ -4948,6 +4948,15 @@ app.prepare().then(() => {
               process.once('SIGTERM', cancelBrief);
               process.once('SIGINT', cancelBrief);
             }
+
+            // Schedule self-improvement background tasks if enabled
+            if (process.env.JOHNNY5_SELF_IMPROVEMENT === 'true') {
+              const { schedulePatternMaintenance } = require('./services/johnny5/self-improvement-service.ts');
+              const cancelImprovement = schedulePatternMaintenance();
+              console.log('✅ Johnny5 Self-Improvement scheduler started (patterns every 6h, feedback every 24h)');
+              process.once('SIGTERM', cancelImprovement);
+              process.once('SIGINT', cancelImprovement);
+            }
           } else {
             console.warn('⚠️ Johnny5 Telegram Bot failed to connect');
           }
