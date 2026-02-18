@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
-import { getUserById, getSessionByToken } from '@/lib/auth/db';
+import { getUserById, getSessionByToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Check if session exists
-    const session = getSessionByToken(token);
+    const session = await getSessionByToken(token);
     if (!session) {
       return NextResponse.json(
         { error: 'Session not found' },
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Get user
-    const user = getUserById(decoded.userId);
+    const user = await getUserById(decoded.userId);
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },

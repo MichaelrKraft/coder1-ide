@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, requireTeamMember, requireTeamAdmin } from '@/lib/auth/team-middleware';
-import { getTeamMembers, getTeamById, removeTeamMember } from '@/lib/auth/db';
+import { getTeamMembers, getTeamById, removeTeamMember } from '@/lib/auth';
 
 /**
  * GET /api/team/[teamId]/members
@@ -16,7 +16,7 @@ export async function GET(
 
     await requireTeamMember(user.id, teamId);
 
-    const members = getTeamMembers(teamId);
+    const members = await getTeamMembers(teamId);
 
     return NextResponse.json({
       success: true,
@@ -61,7 +61,7 @@ export async function DELETE(
     }
 
     // Cannot remove the owner
-    const team = getTeamById(teamId);
+    const team = await getTeamById(teamId);
     if (team && team.owner_id === userId) {
       return NextResponse.json(
         { success: false, error: 'Cannot remove the team owner' },
@@ -69,7 +69,7 @@ export async function DELETE(
       );
     }
 
-    removeTeamMember(teamId, userId);
+    await removeTeamMember(teamId, userId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

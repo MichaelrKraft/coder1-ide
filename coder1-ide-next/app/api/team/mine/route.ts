@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth/team-middleware';
-import { getUserTeams } from '@/lib/auth/db';
+import { getUserTeams } from '@/lib/auth';
 
 /**
  * GET /api/team/mine
@@ -9,7 +9,7 @@ import { getUserTeams } from '@/lib/auth/db';
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser(request);
-    const teams = getUserTeams(user.id);
+    const teams = await getUserTeams(user.id);
 
     return NextResponse.json({ success: true, data: teams });
   } catch (error) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail, getUserByUsername, updateLastLogin, createSession, deleteUserSessions } from '@/lib/auth/db';
+import { getUserByEmail, getUserByUsername, updateLastLogin, createSession, deleteUserSessions } from '@/lib/auth';
 import { comparePassword } from '@/lib/auth/bcrypt';
 import { generateTokens } from '@/lib/auth/jwt';
 
@@ -19,9 +19,9 @@ export async function POST(request: NextRequest) {
     // Find user by email or username
     let user;
     if (emailOrUsername.includes('@')) {
-      user = getUserByEmail(emailOrUsername);
+      user = await getUserByEmail(emailOrUsername);
     } else {
-      user = getUserByUsername(emailOrUsername);
+      user = await getUserByUsername(emailOrUsername);
     }
     
     if (!user) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Update last login
-    updateLastLogin(user.id);
+    await updateLastLogin(user.id);
     
     // Sync login event to Go High Level - disabled for deployment
     try {
@@ -66,14 +66,14 @@ export async function POST(request: NextRequest) {
     
     // Delete old sessions if not remember me
     if (!rememberMe) {
-      deleteUserSessions(user.id);
+      await deleteUserSessions(user.id);
     }
     
     // Create new session
     const userAgent = request.headers.get('user-agent') || undefined;
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
     
-    createSession({
+    await createSession({
       user_id: user.id,
       token: accessToken,
       refresh_token: refreshToken,

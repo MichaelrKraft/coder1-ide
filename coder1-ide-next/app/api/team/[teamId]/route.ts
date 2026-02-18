@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, requireTeamMember, requireTeamAdmin } from '@/lib/auth/team-middleware';
-import { getTeamById, getTeamMembers, deleteTeam } from '@/lib/auth/db';
+import { getTeamById, getTeamMembers, deleteTeam } from '@/lib/auth';
 
 /**
  * GET /api/team/[teamId]
@@ -17,7 +17,7 @@ export async function GET(
     // Verify membership
     await requireTeamMember(user.id, teamId);
 
-    const team = getTeamById(teamId);
+    const team = await getTeamById(teamId);
     if (!team) {
       return NextResponse.json(
         { success: false, error: 'Team not found' },
@@ -25,7 +25,7 @@ export async function GET(
       );
     }
 
-    const members = getTeamMembers(teamId);
+    const members = await getTeamMembers(teamId);
 
     return NextResponse.json({
       success: true,
@@ -62,7 +62,7 @@ export async function DELETE(
     // Verify admin or owner role
     await requireTeamAdmin(user.id, teamId);
 
-    const team = getTeamById(teamId);
+    const team = await getTeamById(teamId);
     if (!team) {
       return NextResponse.json(
         { success: false, error: 'Team not found' },
@@ -71,7 +71,7 @@ export async function DELETE(
     }
 
     // Delete the team and all related data
-    deleteTeam(teamId);
+    await deleteTeam(teamId);
 
     return NextResponse.json({ success: true, message: 'Team deleted' });
   } catch (error) {

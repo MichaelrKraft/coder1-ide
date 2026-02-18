@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteSession } from '@/lib/auth/db';
+import { deleteSession } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     
     if (token) {
       // Delete session from database
-      deleteSession(token);
+      await deleteSession(token);
     }
     
     // Create response
