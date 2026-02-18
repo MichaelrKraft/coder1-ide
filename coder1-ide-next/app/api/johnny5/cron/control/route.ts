@@ -117,6 +117,35 @@ export async function POST(request: NextRequest) {
             brief.needsAttention.length,
         };
         console.log('[Johnny5 Cron Control] Morning brief generated manually');
+
+        // Push to IDE chat tab
+        const io = (global as Record<string, unknown>).io as { emit: (event: string, data: unknown) => void } | undefined;
+        if (io) {
+          io.emit('johnny5:morning-brief', {
+            type: 'morning_brief_ready',
+            briefId: brief.id,
+            summary: brief.summary,
+            timestamp: new Date().toISOString(),
+          });
+          io.emit('johnny5:chat-push', {
+            id: `brief-${Date.now()}`,
+            content: `📋 **Morning Brief**\n\n${brief.summary}`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // Send to Telegram
+        try {
+          const { getTelegramChatId } = await import('@/lib/johnny5-config');
+          const chatId = getTelegramChatId();
+          const bot = (global as Record<string, unknown>).telegramBot as { sendMessage: (chatId: string, text: string, mode: string) => Promise<void> } | undefined;
+          if (chatId && bot) {
+            await bot.sendMessage(chatId, `📋 *Morning Brief*\n\n${brief.summary}`, 'Markdown');
+            console.log('[Johnny5 Cron Control] Morning brief sent to Telegram');
+          }
+        } catch (telegramErr) {
+          console.warn('[Johnny5 Cron Control] Telegram send failed (non-fatal):', telegramErr);
+        }
         break;
       }
 

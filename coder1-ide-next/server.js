@@ -4921,6 +4921,7 @@ app.prepare().then(() => {
         telegramBot.start().then(connected => {
           if (connected) {
             console.log('✅ Johnny5 Telegram Bot connected');
+            global.telegramBot = telegramBot; // expose to Next.js API routes
           } else {
             console.warn('⚠️ Johnny5 Telegram Bot failed to connect');
           }

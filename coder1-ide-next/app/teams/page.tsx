@@ -603,7 +603,7 @@ function TeamPricingSection() {
     },
     {
       name: 'Pro',
-      price: '$29',
+      price: '$19',
       period: '/user/month',
       description: 'For individuals and small teams',
       features: [
