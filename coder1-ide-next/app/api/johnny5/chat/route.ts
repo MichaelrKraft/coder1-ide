@@ -49,6 +49,8 @@ import {
   saveFacts,
   getExistingFacts,
   getRelevantFactsRanked,
+  getHighConfidencePatterns,
+  recordPatternApplication,
   runPatternDetectionCycle,
   type ConversationMessage as MemoryConversationMessage,
   // Session Memory
@@ -1011,6 +1013,7 @@ export async function POST(
     // When living files are enabled, context is already loaded via loadLivingFilesContext()
     // in the system prompt — skip the old memory builder to avoid duplicate context
     let factsAndPatternsContext = '';
+    let injectedPatternIds: string[] = [];
     if (isLivingFilesEnabled()) {
       console.log('[Johnny5] Living files enabled — skipping legacy buildMemoryContext()');
       reasoningSteps.push('Using living files context (skipped legacy memory)');
@@ -1038,6 +1041,25 @@ export async function POST(
         }
       } catch (rankedFactsError) {
         console.warn('[Johnny5] Ranked facts injection failed:', rankedFactsError);
+      }
+
+      // Inject high-confidence behavioral patterns as adaptive guidance
+      try {
+        const patterns = await getHighConfidencePatterns(0.7, 5, capturedUserId);
+        if (patterns.length > 0) {
+          const patternLines = patterns.map((p: { pattern_description: string; suggested_action?: string | null }) =>
+            `- ${p.pattern_description}${p.suggested_action ? ` → ${p.suggested_action}` : ''}`
+          );
+          // Conditional prefix: avoid leading \n\n when no facts were injected above
+          const prefix = factsAndPatternsContext ? '\n\n' : '';
+          factsAndPatternsContext += `${prefix}## Behavioral Patterns (How ${capturedUserId !== 'default' ? 'this user' : 'Mike'} prefers to work)\n${patternLines.join('\n')}`;
+          injectedPatternIds = patterns.map((p: { id: string }) => p.id);
+          reasoningSteps.push(`Injected ${patterns.length} behavioral patterns`);
+          console.log(`[Johnny5] Pattern injection: ${patterns.length} patterns (actionable, confidence >=0.7)`);
+        }
+      } catch (patternInjError) {
+        console.warn('[Johnny5] Pattern injection failed:', patternInjError);
+        // injectedPatternIds stays [] — reinforcement in setImmediate is a safe no-op
       }
     } else {
     try {
@@ -1982,6 +2004,19 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
           console.log('[Johnny5] Running pattern detection cycle...');
           const patternResult = await runPatternDetectionCycle(capturedUserId);
           console.log('[Johnny5] Pattern cycle:', patternResult);
+        }
+
+        // Reinforce injected patterns — conversation completion is an implicit positive signal.
+        // recordPatternApplication increments evidence_count and refreshes last_observed.
+        // Note: it does NOT adjust confidence directly — that grows via detection cycles.
+        // The negative signal is decayStalePatterns (patterns unseen 30+ days lose confidence).
+        if (injectedPatternIds.length > 0) {
+          for (const patternId of injectedPatternIds) {
+            try {
+              await recordPatternApplication(patternId, capturedUserId);
+            } catch { /* non-critical — do not block other post-processing */ }
+          }
+          console.log(`[Johnny5] Reinforced ${injectedPatternIds.length} behavioral pattern(s)`);
         }
       } catch (extractionError) {
         console.error('[Johnny5] After-chat extraction error:', extractionError);
