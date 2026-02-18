@@ -17,6 +17,7 @@ import { getAuditLog, getSecurityWarnings } from './security-tracker';
 import { getUsageStats } from './usage-tracker';
 import { getRecentFacts, getRecentPatterns } from '@/lib/johnny5-db';
 import { getRecentSnapshots } from '@/lib/living-files';
+import { readLastScoutResult } from '@/services/johnny5/content-factory/scout-service';
 
 // Storage path
 const DATA_DIR = path.join(process.cwd(), 'data', 'johnny5');
@@ -252,12 +253,49 @@ export async function generateMorningBrief(targetDate: Date, userId: string = 'd
     console.warn('[MorningBrief] Failed to load recent snapshots:', err);
   }
 
+  // Scout integration — add AI/dev news stories to trendsSpotted
+  // Scout runs at 6:50 AM and saves results to disk; we read that file here.
+  // Stories older than 25 hours are considered stale and skipped.
+  let scoutStories: Johnny5BriefItem[] = [];
+  let scoutNewsSection = '';
+  try {
+    const scoutResult = readLastScoutResult();
+    if (scoutResult) {
+      const ageMs = Date.now() - new Date(scoutResult.runAt).getTime();
+      const twentyFiveHours = 25 * 60 * 60 * 1000;
+      if (ageMs <= twentyFiveHours) {
+        scoutStories = scoutResult.stories.map((s, i) => ({
+          id: `scout-${i}-${Date.now()}`,
+          title: s.title,
+          description: `${s.summary} — ${s.significance}`,
+          priority: 'medium' as const,
+          actionable: !!s.sourceUrl,
+          action: s.sourceUrl ? 'Read More' : undefined,
+          link: s.sourceUrl || undefined,
+        }));
+        trendsSpotted.push(...scoutStories);
+
+        // Build a compact news section to append to the summary text
+        const headlines = scoutResult.stories
+          .slice(0, 5)
+          .map((s, i) => `${i + 1}. ${s.title}`)
+          .join('\n');
+        scoutNewsSection = `\n\n📰 *Today's Top AI & Dev News:*\n${headlines}`;
+        console.log(`[MorningBriefGenerator] Added ${scoutStories.length} Scout stories to brief`);
+      } else {
+        console.warn('[MorningBriefGenerator] Last Scout result is stale (>25h), skipping');
+      }
+    }
+  } catch (err) {
+    console.warn('[MorningBrief] Failed to load Scout results:', err);
+  }
+
   // Generate summary
   const totalItems = builtOvernight.length + researchCompleted.length + trendsSpotted.length;
   let summary: string;
 
   if (totalItems === 0) {
-    summary = `A quiet night with no scheduled tasks completed. Johnny5 monitored your projects and kept systems running smoothly.`;
+    summary = `A quiet night with no scheduled tasks completed. Johnny5 monitored your projects and kept systems running smoothly.${scoutNewsSection}`;
   } else {
     const parts: string[] = [];
     if (builtOvernight.length > 0) {
@@ -266,8 +304,10 @@ export async function generateMorningBrief(targetDate: Date, userId: string = 'd
     if (researchCompleted.length > 0) {
       parts.push(`finished ${researchCompleted.length} research task${researchCompleted.length > 1 ? 's' : ''}`);
     }
-    if (trendsSpotted.length > 0) {
-      parts.push(`spotted ${trendsSpotted.length} trend${trendsSpotted.length > 1 ? 's' : ''}`);
+    // Count only non-Scout trends (Scout stories are shown separately in scoutNewsSection)
+    const nonScoutTrends = trendsSpotted.length - scoutStories.length;
+    if (nonScoutTrends > 0) {
+      parts.push(`spotted ${nonScoutTrends} trend${nonScoutTrends > 1 ? 's' : ''}`);
     }
     if (needsAttention.length > 0) {
       parts.push(`flagged ${needsAttention.length} item${needsAttention.length > 1 ? 's' : ''} needing attention`);
@@ -278,7 +318,7 @@ export async function generateMorningBrief(targetDate: Date, userId: string = 'd
     if (patternItems.length > 0) {
       parts.push(`detected ${patternItems.length} pattern${patternItems.length > 1 ? 's' : ''}`);
     }
-    summary = `While you were away, Johnny5 ${parts.join(', ')}. ${totalItems > 2 ? 'Overall, a productive night!' : ''}`;
+    summary = `While you were away, Johnny5 ${parts.join(', ')}. ${totalItems > 2 ? 'Overall, a productive night!' : ''}${scoutNewsSection}`;
   }
 
   // Get usage stats for the day
