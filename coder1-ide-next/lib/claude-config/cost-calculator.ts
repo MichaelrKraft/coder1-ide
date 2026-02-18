@@ -9,7 +9,7 @@ export class CostCalculator {
   private static instance: CostCalculator;
 
   private readonly MODELS = {
-    'claude-sonnet-4-5-20250929': {
+    'claude-sonnet-4-6-20250514': {
       inputCostPer1M: 3.00,
       outputCostPer1M: 15.00
     },
@@ -19,7 +19,7 @@ export class CostCalculator {
     }
   } as const;
 
-  private readonly DEFAULT_MODEL = 'claude-sonnet-4-5-20250929';
+  private readonly DEFAULT_MODEL = 'claude-sonnet-4-6-20250514';
 
   private constructor() {}
 

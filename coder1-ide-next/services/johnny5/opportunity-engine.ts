@@ -22,7 +22,7 @@
 
 import { createHash } from 'crypto';
 import { logger } from '@/lib/logger';
-import { getJohnny5Config } from '@/lib/johnny5-config';
+import { getJohnny5Config, getTelegramChatId } from '@/lib/johnny5-config';
 import type { Johnny5TrendAlert } from '@/types/johnny5';
 import { telegramBot } from './telegram-bot';
 import type { PendingConfirmation } from './telegram-bot';
@@ -384,7 +384,7 @@ Rules:
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5-20250929',
+          model: 'claude-sonnet-4-6-20250514',
           max_tokens: 500,
           temperature: 0.1,
           messages: [{ role: 'user', content: prompt }],
@@ -570,31 +570,43 @@ Rules:
   // --------------------------------------------------------------------------
 
   private async promptUser(opportunity: Opportunity): Promise<void> {
-    const config = getJohnny5Config();
-    const chatId = config.integrations.telegram?.chatId;
-
-    if (!chatId) {
-      logger.debug('[Johnny5/Engine] No Telegram chatId, skipping prompt');
-      // Emit to Socket.IO as fallback
-      if (this.io) {
-        this.io.emit('johnny5:opportunity', {
-          type: 'confirmation_needed',
-          opportunity,
-          timestamp: new Date().toISOString(),
-        });
-      }
-      return;
+    // Always emit to Socket.IO opportunity panel
+    if (this.io) {
+      this.io.emit('johnny5:opportunity', {
+        type: 'confirmation_needed',
+        opportunity,
+        timestamp: new Date().toISOString(),
+      });
     }
 
-    const confirmation: PendingConfirmation = {
-      id: opportunity.id,
-      description: `*${opportunity.event}* (${opportunity.source})\n\n${opportunity.description}\n\nSuggested: ${opportunity.suggestedAction?.description || 'None'}\nConfidence: ${(opportunity.confidence * 100).toFixed(0)}%`,
-      actionData: opportunity.suggestedAction?.data || {},
-      expiresAt: Date.now() + 3600000,
-      createdAt: Date.now(),
-    };
+    // Push a summary into the chat tab stream so Mike sees it regardless of active tab
+    const chatMessage = `💡 **Opportunity spotted** (${opportunity.source})\n\n${opportunity.description}\n\n_Suggested: ${opportunity.suggestedAction?.description || 'Review and decide'}_`;
+    if (this.io) {
+      this.io.emit('johnny5:chat-push', {
+        id: `opp-${opportunity.id}-${Date.now()}`,
+        content: chatMessage,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
-    await telegramBot.sendConfirmation(chatId, confirmation);
+    // Send to Telegram (uses env var-aware getTelegramChatId)
+    const chatId = getTelegramChatId();
+    if (chatId) {
+      const confirmation: PendingConfirmation = {
+        id: opportunity.id,
+        description: `*${opportunity.event}* (${opportunity.source})\n\n${opportunity.description}\n\nSuggested: ${opportunity.suggestedAction?.description || 'None'}\nConfidence: ${(opportunity.confidence * 100).toFixed(0)}%`,
+        actionData: opportunity.suggestedAction?.data || {},
+        expiresAt: Date.now() + 3600000,
+        createdAt: Date.now(),
+      };
+      try {
+        await telegramBot.sendConfirmation(chatId, confirmation);
+      } catch (err) {
+        logger.error('[Johnny5/Engine] Failed to send Telegram confirmation:', err);
+      }
+    } else {
+      logger.debug('[Johnny5/Engine] No Telegram chatId, prompt delivered to IDE only');
+    }
   }
 
   private async handleConfirmation(
@@ -629,21 +641,36 @@ Rules:
   // --------------------------------------------------------------------------
 
   private async notifyResult(opportunity: Opportunity, result: ActionResult): Promise<void> {
-    const config = getJohnny5Config();
-    const chatId = config.integrations.telegram?.chatId;
+    // Use env var-aware getTelegramChatId (works on Render without local config)
+    const chatId = getTelegramChatId();
 
     if (chatId) {
       const title = result.success ? opportunity.event : `Failed: ${opportunity.event}`;
       const description = result.output || result.error || 'No details';
-      await telegramBot.notifyAction(chatId, title, description, result.success ? 'success' : 'failure');
+      try {
+        await telegramBot.notifyAction(chatId, title, description, result.success ? 'success' : 'failure');
+      } catch (err) {
+        logger.error('[Johnny5/Engine] Failed to send Telegram action result:', err);
+      }
     }
 
-    // Also emit to Socket.IO
+    // Emit to Socket.IO action panel
     if (this.io) {
       this.io.emit('johnny5:action', {
         type: 'action_result',
         opportunity: { id: opportunity.id, source: opportunity.source, event: opportunity.event },
         result: { success: result.success, output: result.output, error: result.error },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Push result into chat tab stream
+    const resultEmoji = result.success ? '✅' : '❌';
+    const chatMessage = `${resultEmoji} **${opportunity.event}**\n${result.output || result.error || 'Completed'}`;
+    if (this.io) {
+      this.io.emit('johnny5:chat-push', {
+        id: `result-${opportunity.id}-${Date.now()}`,
+        content: chatMessage,
         timestamp: new Date().toISOString(),
       });
     }

@@ -73,6 +73,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
   const [showErrorPattern, setShowErrorPattern] = useState(true);
   const [showCoachTip, setShowCoachTip] = useState(true);
   const [hasBriefNotification, setHasBriefNotification] = useState(false);
+  const [hasChatNotification, setHasChatNotification] = useState(false);
   const {
     activeTab,
     setActiveTab,
@@ -126,6 +127,31 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
       cancelled = true;
       if (socketRef) {
         socketRef.off('johnny5:morning-brief', handler);
+      }
+    };
+  }, [activeTab]);
+
+  // Listen for proactive chat messages from Johnny5 (morning briefs, opportunity alerts, etc.)
+  useEffect(() => {
+    let cancelled = false;
+    let socketRef: Awaited<ReturnType<typeof getSocket>> | null = null;
+
+    const handler = () => {
+      if (!cancelled && activeTab !== 'chat') {
+        setHasChatNotification(true);
+      }
+    };
+
+    getSocket().then((sock) => {
+      if (cancelled) return;
+      socketRef = sock;
+      sock.on('johnny5:chat-push', handler);
+    }).catch(() => {});
+
+    return () => {
+      cancelled = true;
+      if (socketRef) {
+        socketRef.off('johnny5:chat-push', handler);
       }
     };
   }, [activeTab]);
@@ -398,6 +424,9 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
           if (tab === 'morning-brief') {
             setHasBriefNotification(false);
           }
+          if (tab === 'chat') {
+            setHasChatNotification(false);
+          }
           // Mark setup as complete when user clicks any tab
           if (!setupStatus.isComplete) {
             setSetupStatus({ ...setupStatus, isComplete: true });
@@ -406,6 +435,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
         securityScore={security.score}
         hasAlerts={hasSecurityAlerts}
         hasBriefNotification={hasBriefNotification}
+        hasChatNotification={hasChatNotification}
       />
 
       {/* Rule Suggestion Banner (Phase 2) */}

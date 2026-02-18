@@ -1730,7 +1730,7 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
               'anthropic-version': '2023-06-01',
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-20250514',
+              model: 'claude-sonnet-4-6-20250514',
               max_tokens: 4000,
               system: 'You are Johnny5, a helpful AI assistant in the Coder1 IDE. You help with coding, debugging, and software development tasks. Be concise, helpful, and friendly. When you receive memory context, use it to provide more relevant responses.',
               messages: [

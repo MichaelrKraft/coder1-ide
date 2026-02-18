@@ -25,6 +25,13 @@ export interface ModelInfo {
 }
 
 const MODEL_DATABASE: Record<string, ModelInfo> = {
+  'claude-sonnet-4.6': {
+    id: 'claude-sonnet-4.6',
+    name: 'Sonnet 4.6',
+    icon: '🎭',
+    color: '#6366F1', // indigo-500
+    capabilities: ['fast', 'balanced', 'coding', 'analysis']
+  },
   'claude-opus-4.6': {
     id: 'claude-opus-4.6',
     name: 'Opus 4.6',
@@ -32,33 +39,12 @@ const MODEL_DATABASE: Record<string, ModelInfo> = {
     color: '#8B5CF6', // purple-500
     capabilities: ['reasoning', 'coding', 'analysis', 'creative']
   },
-  'claude-sonnet-4': {
-    id: 'claude-sonnet-4',
-    name: 'Sonnet 4',
-    icon: '🎭',
-    color: '#3B82F6', // blue-500
-    capabilities: ['balanced', 'coding', 'analysis']
-  },
-  'claude-sonnet-3.7': {
-    id: 'claude-sonnet-3.7',
-    name: 'Sonnet 3.7',
-    icon: '🎼',
-    color: '#06B6D4', // cyan-500
-    capabilities: ['hybrid', 'reasoning']
-  },
   'claude-3.5-haiku': {
     id: 'claude-3.5-haiku',
     name: 'Haiku 3.5',
     icon: '🌸',
     color: '#EC4899', // pink-500
     capabilities: ['fast', 'economical']
-  },
-  'claude-3.5-sonnet': {
-    id: 'claude-3.5-sonnet',
-    name: 'Sonnet 3.5',
-    icon: '🎵',
-    color: '#10B981', // emerald-500
-    capabilities: ['balanced', 'coding']
   }
 };
 
@@ -119,7 +105,7 @@ export class ModelInfoComponent {
 
       // Method 4: Fallback to default
       if (!detectedModel) {
-        detectedModel = MODEL_DATABASE['claude-sonnet-4'];
+        detectedModel = MODEL_DATABASE['claude-sonnet-4.6'];
         logger.debug('[ModelInfo] Using fallback model');
       }
 
@@ -133,7 +119,7 @@ export class ModelInfoComponent {
       logger.error('[ModelInfo] Detection error:', error);
       
       // Return cached model or fallback
-      return this.cachedModel || MODEL_DATABASE['claude-sonnet-4'];
+      return this.cachedModel || MODEL_DATABASE['claude-sonnet-4.6'];
     }
   }
 
@@ -189,11 +175,9 @@ export class ModelInfoComponent {
    */
   private parseVersionToModel(version: string): string | null {
     // Example version parsing logic
+    if (version.includes('sonnet-4.6') || version.includes('sonnet-4-6')) return 'claude-sonnet-4.6';
     if (version.includes('opus-4')) return 'claude-opus-4.6';
-    if (version.includes('sonnet-4')) return 'claude-sonnet-4';
-    if (version.includes('sonnet-3.7')) return 'claude-sonnet-3.7';
     if (version.includes('haiku-3.5')) return 'claude-3.5-haiku';
-    if (version.includes('sonnet-3.5')) return 'claude-3.5-sonnet';
     
     return null;
   }

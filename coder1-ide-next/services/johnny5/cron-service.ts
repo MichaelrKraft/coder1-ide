@@ -2,7 +2,7 @@
  * Johnny5 Cron Service
  *
  * Enables scheduled tasks for proactive AI features:
- * - Daily morning briefs at 9am
+ * - Daily morning briefs at 7am Mountain Time (America/Denver)
  * - Trend monitoring at regular intervals
  * - Scheduled builds and research tasks
  *
@@ -601,12 +601,12 @@ class CronService {
 
     const existingJobs = this.store.getJobs();
 
-    // Default Morning Brief at 9am PT
+    // Default Morning Brief at 7am Mountain Time
     const morningBriefExists = existingJobs.some(j => j.name === 'Daily Morning Brief');
     if (!morningBriefExists) {
       await this.addJob(
         'Daily Morning Brief',
-        { kind: 'cron', expr: '0 9 * * *', tz: 'America/Los_Angeles' },
+        { kind: 'cron', expr: '0 7 * * *', tz: 'America/Denver' },
         {
           message: 'Good morning! Johnny5 has prepared your daily brief.',
           action: 'morning_brief',
@@ -614,7 +614,7 @@ class CronService {
         },
         userId
       );
-      console.log('[CronService] Created default Morning Brief job (9am PT daily)');
+      console.log('[CronService] Created default Morning Brief job (7am Mountain Time daily)');
     }
 
     // Trend check every 2 hours during business hours

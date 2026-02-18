@@ -3295,20 +3295,20 @@ app.prepare().then(() => {
       }
       
       let modelAlias = 'sonnet';  // Default to sonnet
-      
+
       if (selectedModel) {
-        // 🔧 FIX (Oct 24, 2025): Use full model ID for Sonnet 4.5
-        // Claude CLI's 'sonnet' alias defaults to Sonnet 4, not 4.5
-        // Must use exact model ID to get correct version
-        if (selectedModel.includes('sonnet-4-5') || selectedModel.includes('4.5')) {
-          modelAlias = 'claude-sonnet-4-5-20250929';  // Use exact model ID
+        if (selectedModel.includes('sonnet-4-6')) {
+          modelAlias = 'sonnet';  // Sonnet 4.6 is now the default 'sonnet' alias
+          console.log(`✅ Detected Sonnet 4.6, using alias: ${modelAlias}`);
+        } else if (selectedModel.includes('sonnet-4-5') || selectedModel.includes('4.5')) {
+          modelAlias = 'claude-sonnet-4-5-20250929';  // Use exact model ID for legacy 4.5
           console.log(`✅ Detected Sonnet 4.5, using full model ID: ${modelAlias}`);
         } else if (selectedModel.includes('haiku')) {
           modelAlias = 'haiku';
         } else if (selectedModel.includes('opus')) {
           modelAlias = 'opus';
         } else if (selectedModel.includes('sonnet')) {
-          modelAlias = 'sonnet';  // Generic sonnet (will default to Sonnet 4)
+          modelAlias = 'sonnet';
         }
       }
       
@@ -4703,13 +4703,33 @@ app.prepare().then(() => {
                 const brief = await generateMorningBrief(new Date());
                 console.log(`[Johnny5 Cron] Morning brief generated: ${brief.id}`);
 
-                // Notify connected clients via Socket.IO
+                // 1. Notify the morning-brief tab (triggers badge + tab content)
                 io.emit('johnny5:morning-brief', {
                   type: 'morning_brief_ready',
                   briefId: brief.id,
                   summary: brief.summary,
                   timestamp: new Date().toISOString(),
                 });
+
+                // 2. Push summary into the chat tab stream
+                io.emit('johnny5:chat-push', {
+                  id: `brief-${Date.now()}`,
+                  content: `📋 **Morning Brief**\n\n${brief.summary}`,
+                  timestamp: new Date().toISOString(),
+                });
+
+                // 3. Send to Telegram (in isolated try/catch so failures don't break the brief)
+                try {
+                  const { telegramBot } = require('./services/johnny5/telegram-bot.ts');
+                  const { getTelegramChatId } = require('./lib/johnny5-config.ts');
+                  const chatId = getTelegramChatId();
+                  if (chatId && telegramBot.getIsConnected()) {
+                    await telegramBot.sendMessage(chatId, `📋 *Morning Brief*\n\n${brief.summary}`, 'Markdown');
+                    console.log('[Johnny5 Cron] Morning brief sent to Telegram');
+                  }
+                } catch (telegramError) {
+                  console.error('[Johnny5 Cron] Telegram morning brief failed:', telegramError.message);
+                }
               } catch (error) {
                 console.error('[Johnny5 Cron] Morning brief generation failed:', error.message);
               }

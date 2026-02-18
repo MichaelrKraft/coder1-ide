@@ -612,6 +612,18 @@ function createTables(database: Database.Database): void {
       pattern_id TEXT PRIMARY KEY,
       dismissed_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- =========================================================================
+    -- Main Session (unified session shared by IDE and Telegram)
+    -- =========================================================================
+    -- Single-row table — one persistent session for this single-user app.
+    -- Both IDE and Telegram resolve to this session so Johnny5 has continuous memory.
+
+    CREATE TABLE IF NOT EXISTS main_session (
+      id INTEGER PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // =========================================================================
@@ -2398,6 +2410,22 @@ export function getTelegramSession(userId: string, chatId: string): string | nul
     'SELECT johnny5_session_id FROM telegram_sessions WHERE telegram_user_id = ? AND telegram_chat_id = ?'
   ).get(userId, chatId) as { johnny5_session_id: string } | undefined;
   return row?.johnny5_session_id ?? null;
+}
+
+/**
+ * Get or create the persistent "main" session used by both IDE and Telegram.
+ * Single-row table — this is a single-user app.
+ * Both channels resolve to this session ID so Johnny5 has continuous memory.
+ */
+export function getOrCreateMainSession(): string {
+  const database = getDb();
+  const row = database.prepare('SELECT session_id FROM main_session LIMIT 1').get() as { session_id: string } | undefined;
+  if (row) return row.session_id;
+  const sessionId = `main-${Date.now()}`;
+  // Create the session record in sessions table so message history works
+  database.prepare('INSERT OR IGNORE INTO sessions (id, name, status) VALUES (?, ?, ?)').run(sessionId, 'Main Session', 'active');
+  database.prepare('INSERT INTO main_session (session_id) VALUES (?)').run(sessionId);
+  return sessionId;
 }
 
 /**

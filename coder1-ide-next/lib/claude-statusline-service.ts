@@ -370,10 +370,10 @@ class ClaudeStatuslineService {
     try {
       switch (component) {
         case 'model_info':
-          this.setComponentData('model_info', { 
-            icon: '🎭', 
-            name: 'Claude Sonnet 4',
-            id: 'claude-sonnet-4' 
+          this.setComponentData('model_info', {
+            icon: '🎭',
+            name: 'Claude Sonnet 4.6',
+            id: 'claude-sonnet-4.6'
           });
           break;
           

@@ -17,14 +17,15 @@ interface ModelState {
 
 // Valid Claude models, GLM model, and Gemini model (as of February 2026)
 const VALID_MODELS = [
-  'claude-opus-4-6',          // Opus 4.6 - Most Capable (Default)
+  'claude-sonnet-4-6',         // Sonnet 4.6 - Fast & Capable (Default)
+  'claude-opus-4-6',           // Opus 4.6 - Most Capable
   'claude-sonnet-4-5-20250929',
   'claude-haiku-3-5-20241022',
-  'glm-4.6',                  // GLM 4.6 (overflow capacity)
+  'glm-4.6',                   // GLM 4.6 (overflow capacity)
   'gemini-2.5-flash-lite'
 ] as const;
 
-const DEFAULT_MODEL = 'claude-opus-4-6';
+const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
 // Migration map for old model IDs to current ones
 const MODEL_MIGRATIONS: Record<string, string> = {
@@ -36,7 +37,8 @@ const MODEL_MIGRATIONS: Record<string, string> = {
   'glm-4-0520': 'glm-4.6',       // Old date version → GLM 4.6
   'glm-4.5': 'glm-4.6',          // Deprecated GLM 4.5 → GLM 4.6
   'glm-4.5-air': 'glm-4.6',      // Deprecated GLM 4.5 Air → GLM 4.6
-  'gemini-2.5-flash': 'gemini-2.5-flash-lite'  // Deprecated Flash → Flash-Lite
+  'gemini-2.5-flash': 'gemini-2.5-flash-lite',  // Deprecated Flash → Flash-Lite
+  'claude-sonnet-4-5-20250929': 'claude-sonnet-4-6'  // Sonnet 4.5 → Sonnet 4.6
 };
 
 // Migrate old model ID to new one if needed
@@ -69,6 +71,7 @@ export const useModelStore = create<ModelState>()(
         const model = get().selectedModel;
 
         // Map internal model names to user-friendly display names
+        if (model === 'claude-sonnet-4-6') return 'Sonnet 4.6';
         if (model === 'claude-opus-4-6') return 'Opus 4.6';
         if (model.includes('sonnet-4-5')) return 'Sonnet 4.5';
         if (model.includes('haiku')) return 'Haiku 3.5';
@@ -84,11 +87,11 @@ export const useModelStore = create<ModelState>()(
     }),
     {
       name: 'coder1-model-selection',
-      version: 7,  // VERSION 7 - Opus 4.6 as default, removed Opus 4.1 (Feb 2026)
+      version: 8,  // VERSION 8 - Sonnet 4.6 as default (Feb 2026)
       
       // MIGRATION FUNCTION - Runs regardless of version
       migrate: (persistedState: any, version: number) => {
-        console.log(`🔄 [MODEL STORE] MIGRATE FUNCTION CALLED - persisted version: ${version}, code version: 7`);
+        console.log(`🔄 [MODEL STORE] MIGRATE FUNCTION CALLED - persisted version: ${version}, code version: 8`);
         console.log(`🔄 [MODEL STORE] Persisted state:`, persistedState);
 
         // NUCLEAR OPTION: Clear old localStorage completely
@@ -101,10 +104,10 @@ export const useModelStore = create<ModelState>()(
           console.log(`🧹 [MODEL STORE] Cleared old localStorage`);
         }
 
-        // Return fresh state with Opus 4.6 as default
+        // Return fresh state with Sonnet 4.6 as default
         const freshState = {
           state: { selectedModel: DEFAULT_MODEL },
-          version: 7
+          version: 8
         };
         console.log(`✅ [MODEL STORE] Migration complete - returning:`, freshState);
         return freshState;
@@ -118,7 +121,7 @@ export const useModelStore = create<ModelState>()(
         // Just modify the state object directly
         if (state) {
           console.log(`🔄 [MODEL STORE] Rehydrated state:`, state);
-          console.log(`🔄 [MODEL STORE] Version 7 migration: Forcing reset to ${DEFAULT_MODEL}`);
+          console.log(`🔄 [MODEL STORE] Version 8 migration: Forcing reset to ${DEFAULT_MODEL}`);
           state.selectedModel = DEFAULT_MODEL;
           console.log(`✅ [MODEL STORE] Reset complete - model set to ${DEFAULT_MODEL}`);
         } else {

@@ -16,7 +16,7 @@ import { Telegraf } from 'telegraf';
 import { logger } from '@/lib/logger';
 import { getJohnny5Config, getTelegramBotToken, saveConfig } from '@/lib/johnny5-config';
 import type { TelegramIntegration } from '@/lib/johnny5-config';
-import { initializeDb, getTelegramSession, setTelegramSession } from '@/lib/johnny5-db';
+import { initializeDb, getTelegramSession, setTelegramSession, getOrCreateMainSession } from '@/lib/johnny5-db';
 
 // ============================================================================
 // Types
@@ -452,8 +452,13 @@ class Johnny5TelegramBot {
     this.startTypingIndicator(chatId);
 
     try {
-      // Look up existing session or pass empty to let the API create one
+      // Look up existing session — fall back to the shared main session for unified history
       let sessionId = getTelegramSession(userId, chatId) || '';
+      if (!sessionId) {
+        sessionId = getOrCreateMainSession();
+        setTelegramSession(userId, chatId, sessionId);
+        logger.info(`[Johnny5/Telegram] Using main session for ${userId}:${chatId} → ${sessionId}`);
+      }
 
       const result = await this.callJohnny5Chat(sessionId, message);
 

@@ -321,7 +321,7 @@ export async function generateConfig(
     const systemPrompt = SYSTEM_PROMPTS[configType];
     
     const message = await getClient().messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-sonnet-4-6-20250514',
       max_tokens: 2048,
       system: systemPrompt,
       messages: [
