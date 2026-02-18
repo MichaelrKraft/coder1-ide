@@ -530,6 +530,90 @@ export async function getRelevantFacts(
 }
 
 /**
+ * Get facts ranked by a composite score: confidence × recency × relevance.
+ *
+ * Compared to getRelevantFacts(), this function:
+ * - Boosts recently created/updated facts
+ * - Boosts facts whose values share keywords with the user's message
+ * - Penalizes facts older than 90 days that have never been confirmed
+ * - Annotates stale facts so the caller can present them differently
+ */
+export async function getRelevantFactsRanked(
+  userMessage: string,
+  limit: number = 10,
+  userId: string
+): Promise<Array<ExtractedFact & { isStale: boolean; score: number }>> {
+  const db = getDb();
+
+  // Pull up to 60 candidate facts ordered by base confidence
+  const rows = db.prepare(`
+    SELECT fact_type as type, fact_key as key, fact_value as value,
+           confidence, created_at, last_referenced, reference_count
+    FROM extracted_facts
+    WHERE user_id = ?
+    ORDER BY confidence DESC, reference_count DESC
+    LIMIT 60
+  `).all(userId) as Array<ExtractedFact & {
+    created_at: string;
+    last_referenced: string | null;
+    reference_count: number;
+  }>;
+
+  const now = Date.now();
+  const STALE_DAYS = 90;
+
+  // Build keyword set from user message — only words longer than 3 chars
+  const messageWords = new Set(
+    userMessage.toLowerCase().split(/\W+/).filter(w => w.length > 3)
+  );
+
+  const scored = rows.map(row => {
+    // Recency: use last_referenced if available, otherwise created_at
+    const dateStr = row.last_referenced || row.created_at;
+    const ageDays = (now - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24);
+
+    let recencyWeight: number;
+    if (ageDays <= 7)        recencyWeight = 1.5;
+    else if (ageDays <= 30)  recencyWeight = 1.2;
+    else if (ageDays <= 90)  recencyWeight = 1.0;
+    else if (ageDays <= 180) recencyWeight = 0.7;
+    else                     recencyWeight = 0.4;
+
+    // Relevance: keyword overlap between user message and fact value + key
+    const factText = `${row.key} ${row.value}`.toLowerCase();
+    const factWords = new Set(factText.split(/\W+/).filter(w => w.length > 3));
+    const overlap = [...messageWords].filter(w => factWords.has(w)).length;
+    const relevanceWeight = messageWords.size > 0
+      ? 1.0 + Math.min(overlap * 0.25, 1.0)
+      : 1.0;
+
+    const score = row.confidence * recencyWeight * relevanceWeight;
+    const isStale = ageDays > STALE_DAYS;
+
+    return { ...row, score, isStale };
+  });
+
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ created_at, last_referenced, reference_count, ...rest }) => rest);
+}
+
+/**
+ * Mark a fact as confirmed by the user (resets stale status).
+ * Call this when the user explicitly affirms an old fact is still true.
+ */
+export function confirmFact(factKey: string, userId: string): void {
+  const db = getDb();
+  db.prepare(`
+    UPDATE extracted_facts
+    SET last_referenced = ?,
+        reference_count = reference_count + 1
+    WHERE fact_key = ? AND user_id = ?
+  `).run(new Date().toISOString(), factKey, userId);
+}
+
+/**
  * Update fact reference count (called when a fact is used in context)
  */
 export async function recordFactReference(factKey: string, userId: string): Promise<void> {

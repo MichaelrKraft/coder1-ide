@@ -635,6 +635,8 @@ function createTables(database: Database.Database): void {
     `ALTER TABLE memory_chunks ADD COLUMN user_id TEXT DEFAULT 'default'`,
     `ALTER TABLE extracted_facts ADD COLUMN user_id TEXT DEFAULT 'default'`,
     `ALTER TABLE learned_patterns ADD COLUMN user_id TEXT DEFAULT 'default'`,
+    // Step 2: Add last_confirmed_at for memory decay / stale fact tracking
+    `ALTER TABLE extracted_facts ADD COLUMN last_confirmed_at TEXT`,
   ];
 
   for (const sql of migrationSteps) {

@@ -283,6 +283,9 @@ class Johnny5TelegramBot {
     this.bot.command('status', (ctx) => this.handleStatus(ctx));
     this.bot.command('tasks', (ctx) => this.handleTasks(ctx));
     this.bot.command('help', (ctx) => this.handleHelp(ctx));
+    this.bot.command('remember', (ctx) => this.handleRemember(ctx));
+    this.bot.command('brain', (ctx) => this.handleBrain(ctx));
+    this.bot.command('brief', (ctx) => this.handleBrief(ctx));
 
     // Inline button callbacks
     this.bot.on('callback_query', async (ctx) => {
@@ -322,7 +325,7 @@ class Johnny5TelegramBot {
       await ctx.answerCbQuery(msg);
     });
 
-    // Text messages — forward to Johnny5 chat API
+    // Text messages — check for Second Brain prefixes, then forward to chat
     this.bot.on('text', async (ctx) => {
       const chatId = ctx.chat.id.toString();
       const userId = ctx.from?.id.toString() || 'unknown';
@@ -330,6 +333,26 @@ class Johnny5TelegramBot {
       const username = ctx.from?.username || ctx.from?.first_name || 'Telegram User';
 
       logger.info(`[Johnny5/Telegram] Message from ${username}: ${message.substring(0, 80)}`);
+
+      // Second Brain prefix detection — intercept before chat
+      const PREFIX_MAP: Record<string, string> = {
+        '#idea': 'idea',
+        '#book': 'book',
+        '#link': 'link',
+        '#task': 'task',
+        '#note': 'note',
+      };
+      const lowerMsg = message.toLowerCase();
+      const matchedPrefix = Object.keys(PREFIX_MAP).find(p => lowerMsg.startsWith(p));
+      if (matchedPrefix) {
+        const content = message.slice(matchedPrefix.length).trim();
+        if (content) {
+          await this.saveToSecondBrain(chatId, PREFIX_MAP[matchedPrefix], content, ctx);
+          return;
+        }
+        await ctx.reply(`Usage: ${matchedPrefix} [what to save]`);
+        return;
+      }
 
       this.queueMessage(chatId, userId, username, message, ctx);
     });
@@ -393,12 +416,121 @@ class Johnny5TelegramBot {
       '',
       '/status - Check Johnny5 status',
       '/tasks - View current tasks',
+      '/remember [text] - Save to Second Brain',
+      '/brain - Browse recent Second Brain entries',
+      '/brief - Send morning brief now',
       '/help - Show this message',
+      '',
+      '*Second Brain shortcuts:*',
+      '#idea [text] - Save an idea',
+      '#book [text] - Save a book or learning',
+      '#link [text] - Save a link or resource',
+      '#task [text] - Save a task',
+      '#note [text] - Save a note',
       '',
       'You can also send text messages and Johnny5 will process them.',
     ].join('\n');
 
     await ctx.reply(msg, { parse_mode: 'Markdown' });
+  }
+
+  private async handleBrief(ctx: any): Promise<void> {
+    await ctx.reply('⏳ Building your brief, give me a moment...');
+    const { sendMorningBrief } = await import('./morning-brief-service');
+    await sendMorningBrief();
+  }
+
+  private async handleRemember(ctx: any): Promise<void> {
+    const text = ctx.message.text.replace(/^\/remember\s*/i, '').trim();
+    if (!text) {
+      await ctx.reply('Usage: /remember [what to remember]\n\nOr use shortcuts: #idea #book #link #task #note');
+      return;
+    }
+    await this.saveToSecondBrain(ctx.chat.id.toString(), 'note', text, ctx);
+  }
+
+  private async handleBrain(ctx: any): Promise<void> {
+    try {
+      const { readFileSync } = await import('fs');
+      const { join } = await import('path');
+      const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+      const memoryPath = join(homeDir, '.coder1', 'living-files', 'MEMORY.md');
+      const content = readFileSync(memoryPath, 'utf-8');
+      // Show last ~1800 chars to fit Telegram limit with header
+      const recent = content.slice(-1800).trim();
+      await ctx.reply(`*Recent Second Brain Entries:*\n\n${recent}`, { parse_mode: 'Markdown' });
+    } catch {
+      await ctx.reply(
+        'No Second Brain entries yet.\n\nSave something with:\n#idea #book #link #task #note\nor /remember [text]'
+      );
+    }
+  }
+
+  /**
+   * Save a message directly to Second Brain (MEMORY.md + extracted_facts).
+   * Called by /remember command and #prefix text messages.
+   */
+  private async saveToSecondBrain(
+    chatId: string,
+    category: string,
+    content: string,
+    ctx: any
+  ): Promise<void> {
+    const SECTION_MAP: Record<string, string> = {
+      idea: 'Ideas',
+      book: 'Books & Learning',
+      link: 'Links & Resources',
+      task: 'Tasks & TODOs',
+      note: 'Notes',
+    };
+    const EMOJI_MAP: Record<string, string> = {
+      idea: '💡', book: '📚', link: '🔗', task: '✅', note: '📝',
+    };
+    const FACT_TYPE_MAP: Record<string, 'personal' | 'preference' | 'project' | 'technical' | 'goal'> = {
+      idea: 'goal',
+      book: 'preference',
+      link: 'technical',
+      task: 'goal',
+      note: 'personal',
+    };
+
+    try {
+      const section = SECTION_MAP[category] || 'Notes';
+      const timestamp = new Date().toISOString().split('T')[0];
+      const entry = `\n### ${section} — ${timestamp}\n- ${content}\n`;
+
+      // 1. Append to MEMORY.md
+      const { writeFileSync, readFileSync, existsSync } = await import('fs');
+      const { join } = await import('path');
+      const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+      const memoryPath = join(homeDir, '.coder1', 'living-files', 'MEMORY.md');
+      if (existsSync(memoryPath)) {
+        const current = readFileSync(memoryPath, 'utf-8');
+        writeFileSync(memoryPath, current + entry, 'utf-8');
+      }
+
+      // 2. Save to extracted_facts SQLite
+      const { saveFacts } = await import('@/services/memory/fact-extraction-service');
+      const factKey = `second_brain_${category}_${Date.now()}`;
+      await saveFacts('telegram-second-brain', [{
+        type: FACT_TYPE_MAP[category] || 'personal',
+        key: factKey,
+        value: content,
+        confidence: 0.95,
+      }], undefined, 'default');
+
+      // 3. Confirm
+      const emoji = EMOJI_MAP[category] || '💾';
+      await ctx.reply(
+        `${emoji} *Saved to Second Brain*\n\n*Category:* ${section}\n*Content:* ${content}`,
+        { parse_mode: 'Markdown' }
+      );
+
+      logger.info(`[Johnny5/Telegram] Second Brain saved: [${section}] ${content.substring(0, 60)}`);
+    } catch (error) {
+      logger.error('[Johnny5/Telegram] Second Brain save failed:', error);
+      await ctx.reply('Sorry, I had trouble saving that. Try again.');
+    }
   }
 
   // --------------------------------------------------------------------------

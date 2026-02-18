@@ -87,6 +87,8 @@ export {
   saveFacts,
   getExistingFacts,
   getRelevantFacts,
+  getRelevantFactsRanked,
+  confirmFact,
   recordFactReference,
   getFactsByType,
   cleanupStaleFacts,

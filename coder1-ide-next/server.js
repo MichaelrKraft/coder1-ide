@@ -4931,6 +4931,16 @@ app.prepare().then(() => {
           if (connected) {
             console.log('✅ Johnny5 Telegram Bot connected');
             global.telegramBot = telegramBot; // expose to Next.js API routes
+
+            // Schedule morning brief (8 AM daily) if enabled
+            if (process.env.JOHNNY5_MORNING_BRIEF === 'true') {
+              const { scheduleMorningBrief } = require('./services/johnny5/morning-brief-service.ts');
+              const cancelBrief = scheduleMorningBrief();
+              console.log('✅ Johnny5 Morning Brief scheduled (8 AM daily)');
+              // Cleanup on server shutdown
+              process.once('SIGTERM', cancelBrief);
+              process.once('SIGINT', cancelBrief);
+            }
           } else {
             console.warn('⚠️ Johnny5 Telegram Bot failed to connect');
           }
