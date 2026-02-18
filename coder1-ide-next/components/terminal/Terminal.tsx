@@ -3285,6 +3285,17 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         socket.emit('terminal:create', { id: sessionId, ...dims });
         focusOnConnect();
       }
+      // Re-establish team presence on every (re)connect so server restarts don't break spectator mode.
+      // teamPresence is in-memory on the server and cleared on restart; this guarantees re-registration.
+      const teamUser = useAuthStore.getState().user;
+      const team = useTeamStore.getState().syncTeam;
+      if (teamUser && team) {
+        socket.emit('team:presence:join', {
+          teamId: team.id,
+          userId: teamUser.id,
+          username: teamUser.username,
+        });
+      }
     };
     if (socketHandlersRef.current.connect) {
       socket.off('connect', socketHandlersRef.current.connect);
@@ -4418,6 +4429,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       }
       socketHandlersRef.current.spectatorJoined = spectatorJoinedHandler;
       socket.on('spectator:joined', spectatorJoinedHandler);
+
     }
 
     // Handle team:summary event - display formatted summary in main terminal
@@ -5665,14 +5677,26 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                   socket.emit('spectator:share:stop', { sessionId });
                   spectator.stopSharing();
                 } else {
-                  if (!authUser) return;
+                  const user = authUser ?? useAuthStore.getState().user;
+                  if (!user) return;
+                  const teamId = teamStore.syncTeam?.id;
+                  // Re-emit presence before sharing: server teamPresence is in-memory
+                  // and cleared on restart. Socket.IO guarantees in-order delivery so
+                  // the join is processed before share:start on the same connection.
+                  socket.emit('team:presence:join', {
+                    teamId,
+                    userId: user.id,
+                    username: user.username,
+                  });
                   socket.emit('spectator:share:start', {
                     sessionId,
-                    teamId: teamStore.syncTeam?.id,
-                    userId: authUser.id,
-                    username: authUser.username,
+                    teamId,
+                    userId: user.id,
+                    username: user.username,
                   });
                   spectator.startSharing(sessionId!);
+                  // Re-focus terminal — button click moves focus away from xterm
+                  setTimeout(() => { xtermRef.current?.focus(); }, 50);
                 }
               }}
               disabled={!sessionId}

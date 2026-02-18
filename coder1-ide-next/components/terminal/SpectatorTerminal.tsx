@@ -78,19 +78,23 @@ export default function SpectatorTerminal({
     term.loadAddon(fitAddon);
     term.open(terminalElRef.current);
 
-    try {
-      fitAddon.fit();
-    } catch {
-      // Container may not be fully rendered yet
-    }
-
     xtermRef.current = term;
     fitAddonRef.current = fitAddon;
 
-    // Write scrollback buffer
-    if (scrollback) {
-      term.write(scrollback);
-    }
+    // Defer fit and scrollback write to next animation frame so the browser
+    // has time to lay out the container. Writing content synchronously after
+    // open() can crash xterm when the RenderService dimensions are not ready.
+    requestAnimationFrame(() => {
+      if (!xtermRef.current) return; // Disposed during cleanup
+      try {
+        fitAddonRef.current?.fit();
+      } catch {
+        // Container may not be fully rendered yet
+      }
+      if (scrollback) {
+        xtermRef.current.write(scrollback);
+      }
+    });
 
     // Socket event handlers
     const socket = socketRef.current;

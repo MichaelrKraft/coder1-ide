@@ -427,6 +427,9 @@ class TeamSyncService {
               });
 
             if (error) {
+              if (error.message.includes('Could not find the table')) {
+                throw new Error(error.message); // Let syncCycle handle backoff
+              }
               console.warn(`[TeamSync] Push error for ${table}:`, error.message);
               continue;
             }
@@ -440,6 +443,10 @@ class TeamSyncService {
 
             pushed++;
           } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg.includes('Could not find the table')) {
+              throw err; // Propagate to syncCycle for backoff handling
+            }
             console.warn(`[TeamSync] Push row error:`, err);
           }
         }
@@ -498,6 +505,9 @@ class TeamSyncService {
       const { data: rows, error } = await query;
 
       if (error) {
+        if (error.message.includes('Could not find the table')) {
+          throw new Error(error.message); // Let syncCycle handle backoff
+        }
         console.warn('[TeamSync] Pull error:', error.message);
         break;
       }

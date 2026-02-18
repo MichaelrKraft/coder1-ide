@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS checkpoints (
     files_snapshot TEXT NULL,            -- JSON: editor files and content
     metadata TEXT NULL,                  -- JSON: tags, auto_generated, etc.
     created_from_json BOOLEAN DEFAULT FALSE, -- Flag for migration tracking
+    type TEXT DEFAULT 'manual',              -- Checkpoint type: 'manual' or 'auto'
     FOREIGN KEY (session_id) REFERENCES context_sessions(id) ON DELETE CASCADE
 );
 

@@ -164,24 +164,60 @@ export default function TeamPanel() {
       const { getSocket } = await import('@/lib/socket');
       const { useAuthStore } = await import('@/stores/useAuthStore');
       sock = await getSocket();
-      const user = useAuthStore.getState().user;
-      if (!sock || !user) return;
+      if (!sock) return;
 
-      sock.emit('team:presence:join', {
-        teamId: syncTeam.id,
-        userId: user.id,
-        username: user.username,
+      const emitPresence = (user: { id: string; username: string } | null) => {
+        if (!user || !sock) return;
+        sock.emit('team:presence:join', {
+          teamId: syncTeam.id,
+          userId: user.id,
+          username: user.username,
+        });
+        sock.emit('team:presence:request', { teamId: syncTeam.id });
+        sock.emit('spectator:list', { teamId: syncTeam.id, userId: user.id });
+      };
+
+      // Emit immediately if user is already loaded
+      let user = useAuthStore.getState().user;
+      emitPresence(user);
+
+      // Subscribe to auth store: emit presence when user logs in (fixes timing race
+      // where syncTeam is persisted but user is not loaded yet on page mount)
+      const unsubscribeAuth = useAuthStore.subscribe((state) => {
+        if (state.user && !user) {
+          user = state.user;
+          emitPresence(user);
+        }
       });
+
+      // Re-emit on socket reconnect
+      const handleConnect = () => {
+        emitPresence(useAuthStore.getState().user);
+      };
+      sock.on('connect', handleConnect);
 
       const handlePresence = (data: { online: { userId: string; username: string }[] }) => {
         useTeamStore.getState().setOnlineMembers(data.online);
       };
       sock.on('team:presence:update', handlePresence);
-      sock.emit('team:presence:request', { teamId: syncTeam.id });
+
+      const handleSpectatorList = (data: { teamId: string; terminals: any[] }) => {
+        const spectatorStore = useSpectatorStore.getState();
+        for (const terminal of data.terminals || []) {
+          spectatorStore.addSharedTerminal(terminal);
+        }
+      };
+      sock.on('spectator:list:response', handleSpectatorList);
 
       cleanup = () => {
-        sock.emit('team:presence:leave', { teamId: syncTeam.id, userId: user.id });
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          sock.emit('team:presence:leave', { teamId: syncTeam.id, userId: currentUser.id });
+        }
         sock.off('team:presence:update', handlePresence);
+        sock.off('spectator:list:response', handleSpectatorList);
+        sock.off('connect', handleConnect);
+        unsubscribeAuth();
       };
     };
 
@@ -238,6 +274,16 @@ export default function TeamPanel() {
   const handleSyncNow = async () => {
     const ok = await triggerSync();
     if (ok && syncTeam) {
+      // Ensure we're in team presence (re-emit in case initial emit was missed due to auth timing)
+      const sock = await getSocket();
+      const user = useAuthStore.getState().user;
+      if (sock && user) {
+        sock.emit('team:presence:join', {
+          teamId: syncTeam.id,
+          userId: user.id,
+          username: user.username,
+        });
+      }
       // Refresh knowledge feed after successful sync
       fetch(`/api/team/${syncTeam.id}/knowledge`)
         .then(r => r.json())
@@ -454,6 +500,9 @@ export default function TeamPanel() {
                       userId: user.id,
                       username: user.username,
                     });
+                    // Start spectating immediately so the UI updates
+                    const { useSpectatorStore } = await import('@/stores/useSpectatorStore');
+                    useSpectatorStore.getState().startSpectating(st.sessionId, st.username);
                   }}
                   className="w-full flex items-center gap-2 p-2 text-sm bg-bg-tertiary rounded hover:bg-orange-500/10 border border-transparent hover:border-orange-500/30 transition-colors"
                 >

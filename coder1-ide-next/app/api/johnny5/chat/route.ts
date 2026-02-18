@@ -820,7 +820,16 @@ export async function POST(
     }
 
     const johnny5Service = new Johnny5BridgeService('default');
-    const bridgeConnected = johnny5Service.isBridgeConnected();
+    // Fix: Read global.bridgeManager directly (same reliable method as mode endpoint)
+    // Avoids userId mismatch and module-import timing issues with the service layer
+    const bridgeManagerGlobal = (global as Record<string, unknown>).bridgeManager as {
+      hasBridgeForUser?: (id: string) => boolean;
+      findAnyConnectedBridge?: () => unknown;
+    } | undefined;
+    const bridgeConnected = !!(
+      bridgeManagerGlobal?.hasBridgeForUser?.('default') ||
+      bridgeManagerGlobal?.findAnyConnectedBridge?.()
+    );
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
     // If Bridge is connected, user has Claude Pro/Max - update their tier
@@ -1226,30 +1235,25 @@ export async function POST(
       reasoning: queryClassification.reasoning,
     });
 
-    // Determine if we should use Bridge based on both connection status AND query type
-    // Key insight: Even when Bridge is connected, personal queries should use Gemini
-    // because Claude Code CLI ignores injected memory context
     const forceGemini = /\buse gemini\b/i.test(message);
-    // When MCP is enabled, Bridge has strictly more capabilities than Gemini.
-    // Only fall back to Gemini for memory-critical queries (personal, hybrid, session_recall)
-    // and deployment queries (use Composio/Gemini, not Bridge).
-    const mcpEnabled = process.env.JOHNNY5_BRIDGE_MCP_ENABLED === 'true';
-    const isGeminiOnlyQuery = ['personal', 'hybrid', 'session_recall', 'deployment'].includes(queryClassification.category);
-    const shouldUseBridgeForThisQuery = bridgeConnected && (queryClassification.shouldUseBridge || (mcpEnabled && !isGeminiOnlyQuery)) && !forceGemini;
+    // Smart routing: Use Bridge for coding/browser queries that benefit from project context.
+    // Use Gemini for personal/memory/operational queries (faster, respects memory context).
+    const isGeminiOnlyQuery = ['personal', 'hybrid', 'session_recall', 'deployment', 'general'].includes(queryClassification.category);
+    const shouldUseBridgeForThisQuery = bridgeConnected && !isGeminiOnlyQuery && !forceGemini;
 
     if (shouldUseBridgeForThisQuery) {
-      // Use Bridge for coding queries (benefits from project context)
-      console.log('[Johnny5] Using Bridge mode (coding query)');
+      // Use Bridge for coding/browser queries (benefits from project context + MCP tools)
+      console.log(`[Johnny5] Using Bridge mode (${queryClassification.category} query - project context needed)`);
       reasoningSteps.push('Generating response via Claude Code CLI...');
       result = await johnny5Service.sendPrompt(finalMessage, conversationHistory);
     } else {
       // Use Gemini for:
-      // 1. Personal/memory queries (even when Bridge is connected)
+      // 1. Personal/memory/operational queries (even when Bridge is connected) - faster + respects memory
       // 2. All queries when Bridge is not connected
       if (forceGemini) {
         console.log('[Johnny5] Using Gemini (user override: "use gemini")');
       } else if (bridgeConnected) {
-        console.log(`[Johnny5] Bridge connected but using Gemini for ${queryClassification.category} query (memory-critical)`);
+        console.log(`[Johnny5] Using Gemini for ${queryClassification.category} query (faster for non-coding tasks)`);
       } else {
         console.log('[Johnny5] Using Gemini API mode (Bridge not connected)');
       }
