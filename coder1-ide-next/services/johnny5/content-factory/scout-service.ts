@@ -122,11 +122,8 @@ export async function runScout(): Promise<ScoutResult> {
     model: GEMINI_MODEL,
   };
 
-  // Persist for Quill agent (Phase 2)
+  // Persist so morning-brief-generator and future Quill agent can read it
   persistResult(result);
-
-  // Post to Discord — fire-and-forget per story, errors are logged not thrown
-  await postStoriesToDiscord(stories);
 
   console.log(`[Scout] Run complete. ${stories.length} stories found.`);
   return result;
@@ -294,12 +291,17 @@ const CATEGORY_LABELS: Record<StoryCategory, string> = {
   'policy':        '⚖️ Policy',
 };
 
-async function postStoriesToDiscord(stories: Story[]): Promise<void> {
+/**
+ * Optional: post Scout stories to Discord #research.
+ * Called explicitly when Discord delivery is desired (e.g., future CLI flag).
+ * runScout() does NOT call this automatically — stories reach users via the
+ * morning brief instead.
+ */
+export async function postStoriesToDiscord(stories: Story[]): Promise<void> {
   const webhookUrl = process.env.DISCORD_WEBHOOK_RESEARCH;
 
   if (!webhookUrl) {
-    console.warn('[Scout] DISCORD_WEBHOOK_RESEARCH is not set — skipping Discord delivery. Stories:');
-    stories.forEach((s, i) => console.log(`  [${i + 1}] ${s.title} — ${s.sourceUrl}`));
+    console.warn('[Scout] DISCORD_WEBHOOK_RESEARCH is not set — skipping Discord delivery.');
     return;
   }
 

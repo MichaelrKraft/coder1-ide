@@ -633,12 +633,13 @@ class CronService {
       console.log('[CronService] Created default Trend Monitor job (business hours Mon-Fri)');
     }
 
-    // Content Factory: Scout at 8am Mountain Time daily
+    // Content Factory: Scout at 6:50am Mountain Time daily (10 min before Morning Brief at 7am)
+    // Stories are saved to disk and included in the 7am morning brief automatically.
     const scoutExists = existingJobs.some(j => j.name === 'Content Factory: Scout');
     if (!scoutExists) {
       await this.addJob(
         'Content Factory: Scout',
-        { kind: 'cron', expr: '0 8 * * *', tz: 'America/Denver' },
+        { kind: 'cron', expr: '50 6 * * *', tz: 'America/Denver' },
         {
           message: 'Running Content Factory Scout — researching today\'s top AI/dev stories...',
           action: 'content_factory',
@@ -646,7 +647,7 @@ class CronService {
         },
         userId
       );
-      console.log('[CronService] Created default Content Factory Scout job (8am Mountain Time daily)');
+      console.log('[CronService] Created default Content Factory Scout job (6:50am Mountain Time daily)');
     }
   }
 
