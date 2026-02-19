@@ -66,7 +66,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           );
         }
 
-        const success = appendToLivingFile(payload.filename, payload.content);
+        const success = appendToLivingFile(payload.filename, payload.content, userId);
         if (!success) {
           return NextResponse.json(
             { error: `Failed to append to ${payload.filename}` },

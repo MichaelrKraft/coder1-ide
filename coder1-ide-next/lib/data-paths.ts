@@ -131,6 +131,25 @@ export function ensureDataDir(): void {
 }
 
 /**
+ * Get the living files directory for a specific user.
+ * userId = 'default' maps to the shared LIVING_FILES_DIR (backward compatible).
+ * Authenticated users get an isolated per-user directory.
+ */
+export function getUserLivingFilesDir(userId: string = 'default'): string {
+  if (!userId || userId === 'default') return LIVING_FILES_DIR;
+  return join(DATA_DIR, 'users', userId, 'living-files');
+}
+
+/**
+ * Get the living files history directory for a specific user.
+ * userId = 'default' maps to the shared LIVING_FILES_HISTORY_DIR (backward compatible).
+ */
+export function getUserLivingFilesHistoryDir(userId: string = 'default'): string {
+  if (!userId || userId === 'default') return LIVING_FILES_HISTORY_DIR;
+  return join(DATA_DIR, 'users', userId, 'living-files', '.history');
+}
+
+/**
  * Check if data directory is on persistent storage
  *
  * Returns true if using /data (Render persistent disk) or explicit env var
