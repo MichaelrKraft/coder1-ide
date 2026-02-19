@@ -18,6 +18,9 @@ export * from './mission-control';
 // Johnny5 AI Employee types
 export * from './johnny5';
 
+// Team collaboration types
+export * from './team';
+
 // Re-export commonly used React types for convenience
 export type {
   ReactNode,

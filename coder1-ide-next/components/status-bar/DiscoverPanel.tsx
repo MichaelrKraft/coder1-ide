@@ -18,6 +18,7 @@ import {
   Lightbulb, Eye, Layers, PenTool, Lock, Settings, Webhook
 } from 'lucide-react';
 import WcyganCommandsSection from '../WcyganCommandsSection';
+import { features } from '@/lib/feature-flags';
 import { useUIStore } from '@/stores/useUIStore';
 import { useTerminalCommand } from '@/contexts/TerminalCommandContext';
 import { glows } from '@/lib/design-tokens';
@@ -427,8 +428,13 @@ export default function DiscoverPanel() {
   
   
   // Slash commands (just the slash commands for scrolling)
-  // Filter commands based on search
+  // Filter commands based on search and feature flags
   const filteredCommands = allCommands.filter(cmd => {
+    // Hide Agents menu item when team features are disabled
+    if (!features().teamFeatures && cmd.id === 'agents') {
+      return false;
+    }
+
     // Search filter
     if (searchInput) {
       const query = searchInput.toLowerCase();
@@ -438,7 +444,7 @@ export default function DiscoverPanel() {
         cmd.category.toLowerCase().includes(query)
       );
     }
-    
+
     return true;
   });
   

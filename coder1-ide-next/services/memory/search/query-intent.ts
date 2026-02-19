@@ -129,6 +129,16 @@ const INTENT_PATTERN_GROUPS: IntentPatternGroup[] = [
       /\b(last|previous|earlier|recent)\s+session\b/i,
       /\b(recap|summarize|summary\s+of)\s+(the\s+)?(last|previous|that|my|our)?\s*session\b/i,
       /\bwhat\s+happened\s+(in|during)\s+(the\s+)?(last|previous|that)?\s*session\b/i,
+      // Patterns for "remember the last conversation" and similar
+      /\bremember\s+(the\s+)?(last|previous|our|this)\s+(conversation|chat|session|discussion)\b/i,
+      /\bdo\s+you\s+remember\b/i,
+      /\b(last|previous|recent)\s+(conversation|chat|discussion)\b/i,
+      /\bwhat\s+did\s+(we|i)\s+(talk|chat|discuss)\b/i,
+      /\bwhat\s+did\s+(we|i)\s+(cover|go\s+over)\b/i,
+      /\blast\s+time\s+(we|i)\b/i,
+      /\b(from|in)\s+(the\s+)?(last|previous|our\s+last)\s+(conversation|session|chat)\b/i,
+      /\bour\s+last\s+(conversation|chat|session|discussion)\b/i,
+      /\bprevious\s+(conversation|chat)\b/i,
     ],
   },
 ];

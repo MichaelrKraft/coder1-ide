@@ -85,6 +85,10 @@ services:
       - key: CLAUDE_CODE_REDIRECT_URI
         value: https://coder1.ai/auth/claude/callback
         
+      # Johnny5 Bridge model (Sonnet = fast + cost-effective for customers)
+      - key: JOHNNY5_MODEL
+        value: claude-sonnet-4-6
+
       # Coder1 Bridge Service Configuration
       - key: ENABLE_BRIDGE_SERVICE
         value: true

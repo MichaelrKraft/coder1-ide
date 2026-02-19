@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { features } from '@/lib/feature-flags';
 
 export function Footer() {
   return (
@@ -23,7 +24,7 @@ export function Footer() {
 
           <div className="flex items-center gap-8 text-gray-400">
             <Link href="/ide" className="hover:text-white transition-colors">IDE</Link>
-            <Link href="/teams" className="hover:text-white transition-colors">Teams</Link>
+            {features().teamFeatures && <Link href="/teams" className="hover:text-white transition-colors">Teams</Link>}
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
             <Link href="/documentation" className="hover:text-white transition-colors">Docs</Link>

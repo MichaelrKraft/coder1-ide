@@ -43,6 +43,10 @@ interface TeamKnowledgeRow {
 const VALID_SOURCE_TABLES = ['extracted_facts', 'learned_patterns', 'memory_chunks'] as const;
 type SourceTable = typeof VALID_SOURCE_TABLES[number];
 
+// memory_chunks are raw session dumps — already excluded from team knowledge display.
+// Pushing them wastes network I/O and inflates sync volume without customer benefit.
+const PUSH_SOURCE_TABLES = ['extracted_facts', 'learned_patterns'] as const;
+
 const MAX_PUSH_ROW_SIZE_BYTES = 50 * 1024; // 50KB per row (E4-2)
 const BATCH_SIZE = 50; // Process 50 rows at a time (E5-1)
 const PAGE_SIZE = 100; // Supabase pagination size (E5-4)
@@ -340,7 +344,7 @@ class TeamSyncService {
 
     let pushed = 0;
 
-    for (const table of VALID_SOURCE_TABLES) {
+    for (const table of PUSH_SOURCE_TABLES) {
       let rows: Record<string, unknown>[];
       try {
         // For memory_chunks, filter out oversized rows at SQL level to prevent OOM

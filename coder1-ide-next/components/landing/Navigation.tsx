@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { features } from '@/lib/feature-flags';
 
 export function Navigation() {
   const [scrolled, setScrolled] = useState(false);
@@ -34,7 +35,7 @@ export function Navigation() {
           />
         </Link>
         <div className="hidden md:flex items-center gap-8">
-          <Link href="/teams" className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Teams</Link>
+          {features().teamFeatures && <Link href="/teams" className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Teams</Link>}
           <Link href={`${anchorBase}#features`} className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Features</Link>
           <Link href={`${anchorBase}#pricing`} className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Pricing</Link>
           <Link href={`${anchorBase}#comparison`} className="text-white/80 hover:text-cyan-400 transition-colors font-medium">Compare</Link>

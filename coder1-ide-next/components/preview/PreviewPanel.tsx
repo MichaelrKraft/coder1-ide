@@ -8,6 +8,7 @@ import ParallelReasoningDashboard from '@/components/beta/ParallelReasoningDashb
 import { Johnny5Panel } from '@/components/johnny5';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
 import { AgentTeamsPanel } from '@/components/teams';
+import { features } from '@/lib/feature-flags';
 
 type PreviewMode = 'preview' | 'terminal' | 'parathink' | 'contextual-memory' | 'johnny5' | 'teams';
 
@@ -319,7 +320,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
             'Preview',
             'Live preview of your HTML, CSS, and JavaScript code'
           )}
-          {renderTabButton(
+          {features().teamFeatures && renderTabButton(
             'teams',
             <Users className="w-4 h-4" />,
             'Teams',
@@ -390,7 +391,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
             )}
 
             {/* Agent Teams Panel */}
-            {mode === 'teams' && (
+            {features().teamFeatures && mode === 'teams' && (
               <div className="h-full">
                 <AgentTeamsPanel onOpenFile={onOpenFile} />
               </div>
