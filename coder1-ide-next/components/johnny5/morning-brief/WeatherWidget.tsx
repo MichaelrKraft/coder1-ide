@@ -112,12 +112,12 @@ export default function WeatherWidget({
 // Helper Functions
 // ============================================================================
 
-function getWeatherConfig(condition: string): {
+function getWeatherConfig(condition: string | null): {
   icon: typeof Sun;
   bgColor: string;
   textColor: string;
 } {
-  const lowerCondition = condition.toLowerCase();
+  const lowerCondition = (condition ?? '').toLowerCase();
 
   if (lowerCondition.includes('sun') || lowerCondition.includes('clear')) {
     return {
