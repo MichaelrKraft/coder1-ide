@@ -59,7 +59,7 @@ import {
 } from '@/services/memory';
 import { getJ5Bridge } from '@/services/johnny5/j5-bridge';
 import { classifyQuery, type ClassificationResult } from '@/services/query-classifier';
-import { isLivingFilesEnabled, loadLivingFilesContext, appendToLivingFile, formatLivingFilesFromCache } from '@/lib/living-files';
+import { isLivingFilesEnabled, formatLivingFilesFromCache } from '@/lib/living-files';
 import { bridgeManager as _importedBridgeManager } from '@/services/bridge-manager';
 // FIX: Same as /api/bridge/status - use global.bridgeManager (server.js) not the module import
 function getActiveBridgeManager(): typeof _importedBridgeManager {
@@ -348,13 +348,9 @@ CRITICAL: When you see memory context, facts, or profile information in the mess
         }
       }
 
-      // Fallback: local disk (dev mode or no Bridge)
-      if (!livingContext) {
-        livingContext = loadLivingFilesContext();
-        if (livingContext) {
-          console.log('[Johnny5] Living files loaded from local disk:', livingContext.length, 'chars');
-        }
-      }
+      // No fallback to shared server-side files — each user's living files must come
+      // from their own Bridge connection. Without a Bridge, skip living files context
+      // entirely rather than inject another user's personal memory.
 
       if (livingContext) {
         livingFilesSection = `
@@ -1877,11 +1873,9 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
         const memoryEntry = `\n### ${timestamp}\n- User asked: ${message.slice(0, 100)}${message.length > 100 ? '...' : ''}\n- Topic: ${session.id || 'general'}\n`;
 
         // Write via Bridge for authenticated users (files live on their machine)
+        // No fallback to shared server-side disk — skip write if no Bridge
         if (userId !== 'default' && getActiveBridgeManager()?.hasBridgeForUser(userId)) {
           await getActiveBridgeManager().writeLivingFile(userId, 'MEMORY.md', memoryEntry, 'append');
-        } else {
-          // Dev mode fallback: write to local disk
-          appendToLivingFile('MEMORY.md', memoryEntry);
         }
       } catch (err) {
         console.warn('[Johnny5] Failed to update MEMORY.md:', err);
