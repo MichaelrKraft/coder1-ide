@@ -3,16 +3,21 @@
 import { useEffect } from 'react';
 import { useTeamStore } from '@/stores/useTeamStore';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useUIStore } from '@/stores/useUIStore';
+import { features } from '@/lib/feature-flags';
+import type { TeamSummarySharedPayload } from '@/types/team';
 
 /**
- * Shows toast notifications for teammate push events.
- * Only shows toasts for pushes from OTHER team members (not your own).
+ * Shows toast notifications for teammate push events and shared session summaries.
+ * Only shows toasts for events from OTHER team members (not your own).
  */
 export function useTeamActivityToasts() {
   const syncTeam = useTeamStore(s => s.syncTeam);
   const currentUser = useAuthStore(s => s.user);
 
   useEffect(() => {
+    // Skip if team features are disabled
+    if (!features().teamFeatures) return;
     if (!syncTeam || !currentUser) return;
 
     let sock: any = null;
@@ -39,8 +44,32 @@ export function useTeamActivityToasts() {
         }
       };
 
+      const handleSummaryShared = (payload: TeamSummarySharedPayload) => {
+        // Skip own shares
+        if (payload.summary.user_id === currentUser.id) return;
+
+        const excerpt = payload.summary.excerpt.slice(0, 100);
+        useUIStore.getState().addToast({
+          message: `${payload.summary.user_name} shared a session summary: ${excerpt}`,
+          type: 'info',
+          actions: [
+            {
+              label: 'View',
+              onClick: () => {
+                useTeamStore.getState().setOpenToSummariesTab(true);
+              },
+            },
+          ],
+        });
+      };
+
       sock.on('team:codeEvent', handleCodeEvent);
-      cleanupFn = () => { sock?.off('team:codeEvent', handleCodeEvent); };
+      sock.on('team:summaryShared', handleSummaryShared);
+
+      cleanupFn = () => {
+        sock?.off('team:codeEvent', handleCodeEvent);
+        sock?.off('team:summaryShared', handleSummaryShared);
+      };
     };
 
     setup();

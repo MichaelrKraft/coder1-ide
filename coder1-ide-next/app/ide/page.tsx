@@ -68,6 +68,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useTeamActivityToasts } from "@/lib/hooks/useTeamActivityToasts";
 import { useTeamStore } from "@/stores/useTeamStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { features } from "@/lib/feature-flags";
 
 /**
  * Detect file paths in Claude Code terminal output
@@ -2117,7 +2118,7 @@ function IDEPageContent() {
             />
             
             {/* Team Panel Slide-out — z-index must exceed MenuBar's inline z-index:100 */}
-            {showTeamPanel && (
+            {features().teamFeatures && showTeamPanel && (
               <div className="fixed inset-0 flex justify-end" style={{ zIndex: 110 }}>
                 <div className="absolute inset-0 bg-black/40" onClick={() => setShowTeamPanel(false)} />
                 <div className="relative w-[380px] bg-bg-primary border-l border-border-default shadow-2xl overflow-y-auto">
@@ -2131,7 +2132,7 @@ function IDEPageContent() {
             )}
 
             {/* Floating Team Button */}
-            <FloatingTeamButton />
+            {features().teamFeatures && <FloatingTeamButton />}
 
             {/* Keyboard Shortcuts Modal */}
             <KeyboardShortcutsModal

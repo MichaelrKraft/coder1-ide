@@ -35,9 +35,11 @@ interface TeamStore {
   syncStatus: SyncStatus;
   hasReceivedBriefing: boolean;
   onlineMembers: { userId: string; username: string }[];
+  openToSummariesTab: boolean;
 
   // Actions
   setSyncTeam: (team: SyncTeam | null) => void;
+  setOpenToSummariesTab: (val: boolean) => void;
   updateSyncStatus: (status: Partial<SyncStatus>) => void;
   markBriefingReceived: () => void;
   fetchTeams: () => Promise<void>;
@@ -67,8 +69,10 @@ export const useTeamStore = create<TeamStore>()(
       },
       hasReceivedBriefing: false,
       onlineMembers: [],
+      openToSummariesTab: false,
 
       setSyncTeam: (team) => set({ syncTeam: team }),
+      setOpenToSummariesTab: (val) => set({ openToSummariesTab: val }),
 
       updateSyncStatus: (status) => set((state) => ({
         syncStatus: { ...state.syncStatus, ...status },

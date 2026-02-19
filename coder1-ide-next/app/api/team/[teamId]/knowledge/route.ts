@@ -32,6 +32,7 @@ export async function GET(
       .select('*')
       .eq('team_id', teamId)
       .eq('is_active', true)
+      .neq('source_table', 'memory_chunks')  // exclude raw session dumps — not actionable knowledge
       .order('updated_at', { ascending: false })
       .limit(50);
 

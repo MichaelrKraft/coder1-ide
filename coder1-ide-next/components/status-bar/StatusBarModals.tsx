@@ -8,9 +8,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Check, Download, Save, Loader2, FileText, Eye, FileArchive } from 'lucide-react';
+import { X, Check, Download, Save, Loader2, FileText, Eye, FileArchive, Share2 } from 'lucide-react';
 import { useSessionSummary } from '@/lib/hooks/useSessionSummary';
 import { useUIStore } from '@/stores/useUIStore';
+import { useTeamStore } from '@/stores/useTeamStore';
+import { getFeatureFlags } from '@/lib/feature-flags';
 import type { IDEFile } from '@/types';
 import PreviewModal from '@/components/modals/PreviewModal';
 import DownloadProjectModal from '@/components/modals/DownloadProjectModal';
@@ -50,8 +52,13 @@ export default function StatusBarModals({
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isStoringInDocs, setIsStoringInDocs] = useState(false);
   const [exportFormat, setExportFormat] = useState<'markdown' | 'json' | 'html' | 'all'>('markdown');
-  
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [sharedId, setSharedId] = useState<string | null>(null);
+
   const { closeModal, addToast } = useUIStore();
+  const syncTeam = useTeamStore(s => s.syncTeam);
+  const syncStatus = useTeamStore(s => s.syncStatus);
   
   const {
     isGenerating,
@@ -161,6 +168,14 @@ export default function StatusBarModals({
     }
   };
 
+  // Reset share state when a new summary generation cycle begins
+  useEffect(() => {
+    if (isGenerating) {
+      setSharedId(null);
+      setShareError(null);
+    }
+  }, [isGenerating]);
+
   // Regenerate summary
   const handleRegenerate = () => {
     clearSummary();
@@ -170,6 +185,39 @@ export default function StatusBarModals({
       terminalHistory,
       terminalCommands
     });
+  };
+
+  // Share session summary to team workspace
+  const handleShareToTeam = async () => {
+    if (!syncTeam || !summary) return;
+    setIsSharing(true);
+    setShareError(null);
+    try {
+      const filesModifiedCount = openFiles.filter(f => f.isDirty).length;
+      const response = await fetch(`/api/team/${syncTeam.id}/summaries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary,
+          session_type: null,
+          branch: null,
+          files_modified_count: filesModifiedCount,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok || response.status === 409) {
+        setSharedId(data.id || 'shared');
+        if (!syncStatus.isConnected) {
+          addToast({ message: `Shared. Teammates will see it next time they open the panel.`, type: 'success' });
+        }
+      } else {
+        setShareError(data.error || 'Failed to share');
+      }
+    } catch {
+      setShareError('Network error. Please try again.');
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   return (
@@ -506,6 +554,29 @@ export default function StatusBarModals({
             >
               {isGenerating ? 'Generating...' : 'Regenerate'}
             </button>
+
+            {/* Share to Team Button — only shown when team features are on and user is on a team */}
+            {getFeatureFlags().teamFeatures && syncTeam && (
+              <div className="flex flex-col items-end gap-1">
+                <button
+                  onClick={handleShareToTeam}
+                  disabled={!hasGenerated || isSharing || !!sharedId}
+                  className="px-4 py-1.5 bg-coder1-cyan/20 text-coder1-cyan border border-coder1-cyan/50 rounded hover:bg-coder1-cyan/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                >
+                  {isSharing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : sharedId ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Share2 className="w-4 h-4" />
+                  )}
+                  {isSharing ? 'Sharing...' : sharedId ? '✓ Shared' : `Share to ${syncTeam.name}`}
+                </button>
+                {shareError && (
+                  <span className="text-xs text-red-400">{shareError}</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

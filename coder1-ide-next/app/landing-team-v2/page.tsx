@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { features } from '@/lib/feature-flags';
 import LightRays from '@/components/backgrounds/LightRays';
 import {
   Code, Terminal, Eye, History, Link2, Moon, GitPullRequest, Sun,
@@ -655,11 +657,19 @@ function LiveTerminalDemo() {
 // MAIN PAGE COMPONENT
 // ============================================================================
 export default function LandingTeamV2Page() {
+  const router = useRouter();
   const [scrollY, setScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [github, setGithub] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect if team features are disabled
+  useEffect(() => {
+    if (!features().teamFeatures) {
+      router.replace('/alpha');
+    }
+  }, [router]);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);

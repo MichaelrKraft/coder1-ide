@@ -12,6 +12,7 @@ export interface FeatureFlags {
   sessionSummary: boolean;
   voiceCommands: boolean;
   timeCapsules: boolean;
+  teamFeatures: boolean;
 }
 
 // Get feature flags from environment or use defaults
@@ -27,6 +28,7 @@ export const getFeatureFlags = (): FeatureFlags => {
     sessionSummary: process.env.NEXT_PUBLIC_SESSION_SUMMARY === 'true' || true,
     voiceCommands: process.env.NEXT_PUBLIC_VOICE_COMMANDS === 'true' || false,
     timeCapsules: process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' || false,
+    teamFeatures: process.env.NEXT_PUBLIC_ENABLE_TEAM_FEATURES === 'true',
   };
 };
 

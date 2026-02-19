@@ -18,6 +18,7 @@ import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { usePollingHealthStore } from '@/stores/usePollingHealthStore';
 import { useBridgeSessionData, formatTokenCount } from '@/lib/useBridgeSessionData';
+import { features } from '@/lib/feature-flags';
 import { useBridgeConnectionState } from '@/lib/useBridgeConnectionState';
 import { logger } from '@/lib/logger';
 import NotificationCenter from '@/components/johnny5/NotificationCenter';
@@ -188,7 +189,7 @@ export default function StatusBarCore({
           )}
 
           {/* Agent Team Indicator */}
-          {activeTeam && (activeTeam.status === 'executing' || activeTeam.status === 'planning' || activeTeam.status === 'spawning') && (
+          {features().teamFeatures && activeTeam && (activeTeam.status === 'executing' || activeTeam.status === 'planning' || activeTeam.status === 'spawning') && (
             <div
               className="flex items-center gap-1.5 text-coder1-cyan hover:text-coder1-cyan/80 cursor-pointer transition-colors"
               title="Agent team is active - click to view"

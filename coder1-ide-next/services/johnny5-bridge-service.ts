@@ -227,18 +227,15 @@ Only mention code/git status if the user explicitly asks about it.
     // Format for Claude Code CLI
     let prompt = `[System Context]\n${systemPrompt}\n\n`;
 
-    // Add conversation history (truncate if too long)
+    // Add conversation history.
+    // Route.ts already applies a token-budget truncation (8000 tokens) before passing history here,
+    // so we trust what we receive and include it all. The final MAX_PROMPT_SIZE check below
+    // is the safety valve if the total prompt still exceeds the CLI limit.
     if (history.length > 0) {
       prompt += `[Conversation History]\n`;
-      // Only include last 5 messages to keep history manageable
-      const recentHistory = history.slice(-5);
-      recentHistory.forEach((msg) => {
+      history.forEach((msg) => {
         const speaker = msg.role === 'user' ? 'User' : 'Johnny5';
-        // Truncate individual messages if too long
-        const content = msg.content.length > 2000
-          ? msg.content.slice(0, 2000) + '... [truncated]'
-          : msg.content;
-        prompt += `${speaker}: ${content}\n`;
+        prompt += `${speaker}: ${msg.content}\n`;
       });
       prompt += '\n';
     }
@@ -246,7 +243,7 @@ Only mention code/git status if the user explicitly asks about it.
     prompt += `[Current Message]\nUser: ${message}\n\nJohnny5:`;
 
     // Final safety check: Claude CLI has a strict prompt size limit
-    const MAX_PROMPT_SIZE = 25000; // ~6k tokens, conservative limit for CLI
+    const MAX_PROMPT_SIZE = 50000; // ~12.5k tokens — Sonnet 4.6 handles 200k context, 50k is safe
     if (prompt.length > MAX_PROMPT_SIZE) {
       console.warn(`[Johnny5BridgeService] Prompt too long (${prompt.length} chars), truncating...`);
       // Keep system context and current message, truncate middle
@@ -451,7 +448,8 @@ Only mention code/git status if the user explicitly asks about it.
       // Build command WITHOUT the prompt — prompt delivered via stdin to avoid shell escaping issues
       const mcpEnabled = process.env.JOHNNY5_BRIDGE_MCP_ENABLED === 'true';
       const permissionFlag = mcpEnabled ? ' --permission-mode bypassPermissions' : '';
-      const command = `claude --print${permissionFlag}`;
+      const modelOverride = process.env.JOHNNY5_MODEL || 'claude-sonnet-4-5';
+      const command = `claude --print --model ${modelOverride}${permissionFlag}`;
 
       console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, command: ${command}, prompt via stdin (${prompt.length} chars)`);
 

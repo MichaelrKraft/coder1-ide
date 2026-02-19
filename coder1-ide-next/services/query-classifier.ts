@@ -184,6 +184,23 @@ const BROWSER_PATTERNS = [
   /\b(scrape|extract)\s+(data\s+)?(from\s+)?(the\s+)?(page|site|website)\b/i,
 ];
 
+/**
+ * Patterns that indicate living file update requests (USER.md, MEMORY.md, etc.)
+ * These require Bridge mode for file system write access.
+ * Must be checked BEFORE personal patterns to avoid misrouting to Gemini.
+ */
+const LIVING_FILE_PATTERNS = [
+  // File name + modification verb anywhere in message (no distance limit)
+  /\b(add|update|write|edit|save|modify|append|change|include|record|put|capture|note)\b.+\b(USER\.md|MEMORY\.md|HEARTBEAT\.md|AGENTS\.md|BOOT\.md|SOUL\.md|IDENTITY\.md)\b/i,
+  /\b(USER\.md|MEMORY\.md|HEARTBEAT\.md|AGENTS\.md|BOOT\.md)\b.+\b(add|update|write|edit|save|modify|append|change|include|record)\b/i,
+  // "to [the] USER.md" — catches "add X to the USER.md", "save this to USER.md"
+  /\bto\s+(the\s+)?(USER\.md|MEMORY\.md|HEARTBEAT\.md|AGENTS\.md|BOOT\.md)\b/i,
+  // "update/save/write my user file"
+  /\b(update|save|write|add to|append to)\s+(my|the)\s+(user|memory|heartbeat|agents?|boot)\s*(file|\.md)?\b/i,
+  // "add/save/store [any content] to USER/MEMORY"
+  /\b(add|save|store|remember|record|capture)\s+.+\s+(to|in)\s+(USER|MEMORY|user\.md|memory\.md)\b/i,
+];
+
 // ============================================================================
 // Classification Functions
 // ============================================================================
@@ -251,6 +268,7 @@ export function classifyQuery(message: string, previousMode?: 'bridge' | 'gemini
   }
 
   // Match against all pattern categories
+  const livingFileMatches = matchPatterns(normalizedMessage, LIVING_FILE_PATTERNS);
   const personalMatches = matchPatterns(normalizedMessage, PERSONAL_PATTERNS);
   const codingMatches = matchPatterns(normalizedMessage, CODING_PATTERNS);
   const hybridMatches = matchPatterns(normalizedMessage, HYBRID_PATTERNS);
@@ -259,6 +277,7 @@ export function classifyQuery(message: string, previousMode?: 'bridge' | 'gemini
   const browserMatches = matchPatterns(normalizedMessage, BROWSER_PATTERNS);
 
   // Calculate confidence scores
+  const livingFileConfidence = calculateConfidence(livingFileMatches, message.length);
   const personalConfidence = calculateConfidence(personalMatches, message.length);
   const codingConfidence = calculateConfidence(codingMatches, message.length);
   const hybridConfidence = calculateConfidence(hybridMatches, message.length);
@@ -267,12 +286,14 @@ export function classifyQuery(message: string, previousMode?: 'bridge' | 'gemini
   const browserConfidence = calculateConfidence(browserMatches, message.length);
 
   console.log('[QueryClassifier] Scores:', {
+    livingFile: livingFileConfidence.toFixed(2),
     browser: browserConfidence.toFixed(2),
     deployment: deploymentConfidence.toFixed(2),
     sessionRecall: sessionRecallConfidence.toFixed(2),
     personal: personalConfidence.toFixed(2),
     coding: codingConfidence.toFixed(2),
     hybrid: hybridConfidence.toFixed(2),
+    livingFileMatches,
     browserMatches,
     deploymentMatches,
     sessionRecallMatches,
@@ -280,6 +301,18 @@ export function classifyQuery(message: string, previousMode?: 'bridge' | 'gemini
     codingMatches,
     hybridMatches,
   });
+
+  // Living file updates must route to Bridge for file write access.
+  // Check BEFORE personal patterns so "update USER.md" isn't misrouted to Gemini.
+  if (livingFileConfidence > 0.3) {
+    return {
+      category: 'coding',
+      confidence: livingFileConfidence,
+      shouldUseBridge: true,
+      reasoning: 'Living file update request (USER.md, MEMORY.md, etc.). Routing to Bridge for file write access.',
+      matchedPatterns: livingFileMatches,
+    };
+  }
 
   // Check session recall first (more specific than personal)
   if (sessionRecallConfidence > 0.3) {

@@ -56,8 +56,11 @@ const DEFAULT_CONFIG: Required<Omit<GeminiConfig, 'apiKey'>> = {
 
 /**
  * Gemini embedding model constants
+ * Override GEMINI_EMBEDDING_MODEL in .env.local if text-embedding-004 returns 404.
+ * Run: curl "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY" | grep embedding
+ * to list available models.
  */
-const GEMINI_MODEL_NAME = 'text-embedding-004';
+const GEMINI_MODEL_NAME = process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004';
 const GEMINI_DIMENSIONS = 768;
 
 /**

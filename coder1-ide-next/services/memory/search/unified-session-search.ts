@@ -28,6 +28,9 @@ import {
   allocateTokenBudget,
 } from './query-intent';
 
+import { getRecentMessagesAcrossSessions } from '@/lib/johnny5-db';
+import { getRelativeTimeWithDate } from '@/lib/utils/relative-time';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -171,6 +174,52 @@ function formatEternalResultsForInjection(
 }
 
 // ============================================================================
+// Recent Messages Fallback
+// ============================================================================
+
+/**
+ * Get the most recent actual conversation from the messages table.
+ * memory_chunks requires a backfill job to be indexed — recent conversations
+ * (< a few hours old) won't appear there yet. The messages table is written
+ * in real-time during every chat, so it always has the latest exchange.
+ */
+async function tryRecentMessages(maxMsgs: number = 20, currentSessionId?: string): Promise<string> {
+  try {
+    const msgs = getRecentMessagesAcrossSessions(maxMsgs);
+    if (msgs.length === 0) return '';
+
+    // Find the most recent message from a DIFFERENT session than the current one.
+    // The user's message is saved to the DB before this runs, so msgs[0] would
+    // otherwise point to the current session — returning the ongoing conversation
+    // instead of the previous session the user is asking about.
+    const previousMsg = msgs.find(m => !currentSessionId || m.session_id !== currentSessionId);
+    if (!previousMsg) return '';
+
+    const mostRecentSessionId = previousMsg.session_id;
+    // Get all messages from that previous session, in chronological order
+    const sessionMsgs = msgs
+      .filter(m => m.session_id === mostRecentSessionId)
+      .reverse();
+
+    const relTime = previousMsg.created_at
+      ? getRelativeTimeWithDate(previousMsg.created_at)
+      : 'recently';
+
+    const parts: string[] = [`## Most Recent Conversation (${relTime})\n`];
+    for (const msg of sessionMsgs.slice(0, 10)) {
+      const speaker = msg.role === 'user' ? 'User' : 'Johnny5';
+      const snippet = msg.content.length > 400
+        ? msg.content.slice(0, 400) + '...'
+        : msg.content;
+      parts.push(`**${speaker}**: ${snippet}\n`);
+    }
+    return parts.join('\n');
+  } catch {
+    return '';
+  }
+}
+
+// ============================================================================
 // Main Function
 // ============================================================================
 
@@ -188,7 +237,8 @@ export async function unifiedSessionSearch(
   query: string,
   queryEmbedding: number[] | undefined,
   userId: string,
-  intent: QueryIntentResult
+  intent: QueryIntentResult,
+  currentSessionId?: string
 ): Promise<UnifiedSearchResult> {
   const startTime = Date.now();
 
@@ -233,6 +283,19 @@ export async function unifiedSessionSearch(
     );
   }
 
+  // 3.6. For session_recall queries, sort by recency (most recent first).
+  // Relevance ranking would favor older sessions with more content,
+  // but "remember our last conversation" asks specifically for the most recent one.
+  // The recency boost (0.3, 30-day half-life) differs by only ~0.01 between
+  // "5 minutes ago" and "yesterday", so it cannot compete with high relevance scores.
+  if (intent.intent === 'session_recall') {
+    hybridResponse.results.sort((a, b) => {
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return bTime - aTime;
+    });
+  }
+
   // 4. Deduplicate overlapping results
   const deduped = deduplicateBySession(
     hybridResponse.results,
@@ -262,6 +325,18 @@ export async function unifiedSessionSearch(
 
   const combinedFormatted = combinedParts.join('\n');
 
+  // 6.5. For session_recall, prepend the actual most recent messages from the messages table.
+  // memory_chunks only contains sessions that have been backfilled — conversations from the
+  // last few minutes/hours won't appear in hybrid search results yet. The messages table
+  // is written in real-time and always has the latest exchange.
+  let finalFormatted = combinedFormatted;
+  if (intent.intent === 'session_recall') {
+    const recentConversation = await tryRecentMessages(20, currentSessionId);
+    if (recentConversation) {
+      finalFormatted = recentConversation + (combinedFormatted ? '\n\n' + combinedFormatted : '');
+    }
+  }
+
   // 7. Build memory tracking info
   const memoriesUsed: MemoryUsed[] = deduped.hybridResults.map(r => ({
     id: r.chunk_id,
@@ -280,12 +355,15 @@ export async function unifiedSessionSearch(
     });
   }
 
-  const totalTokens = estimateTokens(combinedFormatted);
+  const totalTokens = estimateTokens(finalFormatted);
 
   // Determine combined search type
   let searchType = hybridResponse.searchType;
   if (deduped.eternalResults.length > 0) {
     searchType = `${searchType}+eternal`;
+  }
+  if (intent.intent === 'session_recall' && finalFormatted !== combinedFormatted) {
+    searchType = `${searchType}+recent_messages`;
   }
 
   const processingTimeMs = Date.now() - startTime;
@@ -293,7 +371,7 @@ export async function unifiedSessionSearch(
   console.log(`[SessionMemory/UnifiedSearch] intent=${intent.intent}, hybrid=${deduped.hybridResults.length}, eternal=${deduped.eternalResults.length}, tokens=${totalTokens}, time=${processingTimeMs}ms`);
 
   return {
-    combinedFormatted,
+    combinedFormatted: finalFormatted,
     searchType,
     totalTokens,
     memoriesUsed,

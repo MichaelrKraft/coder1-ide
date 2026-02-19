@@ -1,14 +1,12 @@
 /**
- * Johnny5 Chat Route - Multi-Provider Support
+ * Johnny5 Chat Route
  *
  * Priority order:
  * 1. J5 (Preferred) - Uses ManusLive daemon for 24/7 capabilities
- * 2. Bridge (Secondary) - Uses Claude Code CLI via Bridge connection
- * 3. Gemini (Fallback) - Uses Google Gemini 2.5 Flash (free tier)
+ * 2. Bridge (Required) - Uses Claude Code CLI via Bridge connection
  *
- * J5 mode connects to ManusLive for autonomous agent features.
- * Bridge mode requires running 'coder1-bridge start' locally.
- * Gemini mode uses your GEMINI_API_KEY automatically when neither is available.
+ * Bridge is required. If not connected, returns 503 with instructions.
+ * Run `coder1-bridge start` to connect.
  */
 
 import { readFileSync } from 'fs';
@@ -58,7 +56,6 @@ import {
   unifiedSessionSearch,
 } from '@/services/memory';
 import { getJ5Bridge } from '@/services/johnny5/j5-bridge';
-import { classifyQuery, type ClassificationResult } from '@/services/query-classifier';
 import { isLivingFilesEnabled, formatLivingFilesFromCache } from '@/lib/living-files';
 import { bridgeManager as _importedBridgeManager } from '@/services/bridge-manager';
 // FIX: Same as /api/bridge/status - use global.bridgeManager (server.js) not the module import
@@ -527,7 +524,14 @@ Be the assistant you'd actually want to talk to. Concise when needed, thorough w
 
 Please acknowledge.`;
 
-  return basePersonality + livingFilesSection + capabilitiesSection + skillsSection + closingSection;
+  // Team knowledge instruction — injected for all users; only activates when team summaries
+  // appear in the message context (## Team Activity block). Harmless no-op for solo users.
+  const teamKnowledgeSection = `
+
+## Team Activity
+When your message includes a "## Team Activity (Recent Sessions)" block, it contains session summaries shared by your user's teammates — real work they did and committed to the team workspace. Use this to answer questions like "what has [teammate] been working on?", "what's the team making progress on?", or "who touched [feature/area]?". Cite the teammate's name and summarize their work directly from the summary. If the summaries are present but not relevant to the query, you can ignore them. Never invent team activity beyond what's stated.`;
+
+  return basePersonality + livingFilesSection + teamKnowledgeSection + capabilitiesSection + skillsSection + closingSection;
 }
 
 // ============================================================================
@@ -829,8 +833,6 @@ export async function POST(
       bridgeManagerGlobal?.hasBridgeForUser?.('default') ||
       bridgeManagerGlobal?.findAnyConnectedBridge?.()
     );
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-
     // If Bridge is connected, user has Claude Pro/Max - update their tier
     if (bridgeConnected && userId !== 'default') {
       try {
@@ -842,9 +844,9 @@ export async function POST(
       }
     }
 
-    if (!bridgeConnected && !geminiApiKey) {
+    if (!bridgeConnected) {
       return errorResponse(
-        'Johnny5 not available. Either connect to ManusLive, run coder1-bridge start, or set GEMINI_API_KEY in .env.local.',
+        'Johnny5 requires the Bridge to be connected. Run `coder1-bridge start` in your terminal.',
         'BRIDGE_NOT_CONNECTED',
         503
       );
@@ -925,28 +927,44 @@ export async function POST(
     let totalMemoryTokens = 0;
     let memoryStatus: 'full' | 'partial' | 'minimal' | 'none' = 'none';
 
+    // Perf: Start DB queries early — they're independent of the embedding and can run concurrently.
+    // Using userId directly here (capturedUserId is only defined later inside setImmediate).
+    const _factsPromise = (enableMemoryInjection && isLivingFilesEnabled())
+      ? getRelevantFactsRanked(message, 8, userId).catch(() => [])
+      : Promise.resolve([] as Awaited<ReturnType<typeof getRelevantFactsRanked>>);
+    const _patternsPromise = (enableMemoryInjection && isLivingFilesEnabled())
+      ? getHighConfidencePatterns(0.7, 5, userId).catch(() => [])
+      : Promise.resolve([] as Awaited<ReturnType<typeof getHighConfidencePatterns>>);
+
     if (enableMemoryInjection) {
       try {
-        // Get embedding provider if available
         const apiKey = process.env.GEMINI_API_KEY;
-        const provider = apiKey ? createGeminiProvider({ apiKey }) : null;
 
-        // Generate query embedding for hybrid search
-        let queryEmbedding: number[] | undefined;
-        if (provider) {
-          try {
-            const embeddings = await provider.embed([message]);
-            if (embeddings.length > 0) {
-              queryEmbedding = embeddings[0];
-            }
-          } catch (embeddingError) {
-            console.warn('[Johnny5] Memory embedding failed:', embeddingError);
-          }
-        }
-
-        // Detect session query intent for smart routing
+        // Detect intent first (synchronous, instant) — determines whether we need embedding
         const sessionIntent = detectSessionQueryIntent(message);
         console.log(`[Johnny5] Session intent: ${sessionIntent.intent} (confidence=${sessionIntent.confidence.toFixed(2)})`);
+
+        // Generate query embedding only when needed — skip for session_recall since that
+        // path is served from the messages table (real-time) rather than vector search.
+        let queryEmbedding: number[] | undefined;
+        if (sessionIntent.intent !== 'session_recall') {
+          const provider = apiKey ? createGeminiProvider({ apiKey }) : null;
+          if (provider) {
+            try {
+              const embeddings = await Promise.race([
+                provider.embed([message]),
+                new Promise<never>((_, reject) =>
+                  setTimeout(() => reject(new Error('Embedding timeout (2s)')), 2000)
+                ),
+              ]);
+              if (embeddings.length > 0) {
+                queryEmbedding = embeddings[0];
+              }
+            } catch (embeddingError) {
+              console.warn('[Johnny5] Memory embedding failed/timed out:', embeddingError);
+            }
+          }
+        }
 
         // Use unified session search for session_recall queries, regular search otherwise
         if (sessionIntent.intent !== 'general' && sessionIntent.confidence > 0.3) {
@@ -955,7 +973,8 @@ export async function POST(
             message,
             queryEmbedding,
             userId,
-            sessionIntent
+            sessionIntent,
+            session.id
           );
 
           if (unifiedResult.combinedFormatted) {
@@ -1015,8 +1034,9 @@ export async function POST(
       reasoningSteps.push('Using living files context (skipped legacy memory)');
 
       // Supplement living files with ranked facts from extracted_facts DB
+      // _factsPromise was started early (concurrently with embedding) — likely already resolved
       try {
-        const rankedFacts = await getRelevantFactsRanked(message, 8, capturedUserId);
+        const rankedFacts = await _factsPromise;
         if (rankedFacts.length > 0) {
           const currentFacts = rankedFacts.filter(f => !f.isStale);
           const staleFacts = rankedFacts.filter(f => f.isStale);
@@ -1040,15 +1060,16 @@ export async function POST(
       }
 
       // Inject high-confidence behavioral patterns as adaptive guidance
+      // _patternsPromise was started early (concurrently with embedding) — likely already resolved
       try {
-        const patterns = await getHighConfidencePatterns(0.7, 5, capturedUserId);
+        const patterns = await _patternsPromise;
         if (patterns.length > 0) {
           const patternLines = patterns.map((p: { pattern_description: string; suggested_action?: string | null }) =>
             `- ${p.pattern_description}${p.suggested_action ? ` → ${p.suggested_action}` : ''}`
           );
           // Conditional prefix: avoid leading \n\n when no facts were injected above
           const prefix = factsAndPatternsContext ? '\n\n' : '';
-          factsAndPatternsContext += `${prefix}## Behavioral Patterns (How ${capturedUserId !== 'default' ? 'this user' : 'Mike'} prefers to work)\n${patternLines.join('\n')}`;
+          factsAndPatternsContext += `${prefix}## Behavioral Patterns (How ${userId !== 'default' ? 'this user' : 'Mike'} prefers to work)\n${patternLines.join('\n')}`;
           injectedPatternIds = patterns.map((p: { id: string }) => p.id);
           reasoningSteps.push(`Injected ${patterns.length} behavioral patterns`);
           console.log(`[Johnny5] Pattern injection: ${patterns.length} patterns (actionable, confidence >=0.7)`);
@@ -1154,15 +1175,19 @@ export async function POST(
           }));
           const relevant = matchSkillsToQuery(message, matchable);
           let skillTokensUsed = 0;
-          const SKILL_TOKEN_BUDGET = 8000;
+          const SKILL_TOKEN_BUDGET = 3000; // was 8000 — smaller prompts = faster Claude CLI
 
-          for (const skill of relevant.slice(0, 3)) {
+          for (const skill of relevant.slice(0, 2)) { // was 3 — 2 skills is enough
             try {
               const instructions = await skillsService.loadSkillInstructions(skill.id);
               const instrTokens = Math.ceil(instructions.content.length / 4);
-              if (skillTokensUsed + instrTokens > SKILL_TOKEN_BUDGET) break;
-              contextParts.push(`## Skill: ${skill.name}\n${instructions.content}`);
-              skillTokensUsed += instrTokens;
+              // Always inject the first skill (truncate if oversized); skip subsequent skills if budget exhausted
+              if (skillTokensUsed > 0 && skillTokensUsed + instrTokens > SKILL_TOKEN_BUDGET) break;
+              const content = instrTokens > SKILL_TOKEN_BUDGET
+                ? instructions.content.slice(0, SKILL_TOKEN_BUDGET * 4) + '\n...[skill content trimmed for performance]'
+                : instructions.content;
+              contextParts.push(`## Skill: ${skill.name}\n${content}`);
+              skillTokensUsed += Math.min(instrTokens, SKILL_TOKEN_BUDGET);
               incrementSkillUsage(skill.id, true);
 
               // Load Tier 3: Match rules to query and inject most relevant ones
@@ -1202,6 +1227,10 @@ export async function POST(
             }
           }
 
+          if (skillTokensUsed > 0) {
+            contextParts.push(`---\nIMPORTANT: The skill definitions above are background context for your knowledge. Do NOT announce, mention, or reference that any skill was loaded — just apply the knowledge silently in your response.`);
+          }
+
           console.log(`[Johnny5/Skills] ${enabledSkills.length} skills available, ${relevant.length} matched, ${skillTokensUsed} tokens injected (Tier 1 in system prompt)`);
         }
       } catch (skillsError) {
@@ -1230,6 +1259,45 @@ export async function POST(
         preview: terminalContext.substring(0, 100),
       });
       reasoningSteps.push('Including terminal context');
+    }
+
+    // Add team session summaries context (Shared AI Memory)
+    try {
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+      if (supabaseUrl && supabaseKey && userId) {
+        const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
+        const supa = createSupabaseClient(supabaseUrl, supabaseKey);
+        // Find user's team
+        const { data: membership } = await supa
+          .from('team_members')
+          .select('team_id')
+          .eq('user_id', userId)
+          .limit(1)
+          .single();
+        if (membership?.team_id) {
+          const { data: summaryRows } = await supa
+            .from('team_summaries')
+            .select('user_name, title, excerpt, created_at')
+            .eq('team_id', membership.team_id)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+            .limit(3);  // 3 summaries max — enough context, bounded cost
+          if (summaryRows && summaryRows.length > 0) {
+            // Cap each excerpt at 120 chars to keep the block under ~600 chars total
+            const summaryLines = summaryRows.map((s: any) => {
+              const excerpt = s.excerpt.length > 120 ? s.excerpt.slice(0, 120).replace(/\s\S*$/, '') + '…' : s.excerpt;
+              return `• [${s.user_name}] ${s.title}: ${excerpt}`;
+            }).join('\n');
+            const teamBlock = `## Team Activity (Recent Sessions)\n${summaryLines}`;
+            // Hard cap: never let the team block exceed 800 chars
+            contextParts.push(teamBlock.length > 800 ? teamBlock.slice(0, 800) + '\n…' : teamBlock);
+            reasoningSteps.push('Injecting team session summaries');
+          }
+        }
+      }
+    } catch {
+      // Silent — team summaries are bonus context, not required
     }
 
     // Add active crew member context when user explicitly activated one via Crew Panel
@@ -1266,557 +1334,10 @@ export async function POST(
     }
 
     let result: { success: boolean; response: string; error?: string; errorCode?: string };
-    let modeUsed: 'bridge' | 'gemini' = 'bridge';
-
-    // 7.5. Smart Query Routing - Classify query to determine optimal provider
-    // Personal queries → Gemini (respects memory context)
-    // Coding queries → Bridge (project awareness via Claude Code CLI)
-    const queryClassification: ClassificationResult = classifyQuery(message, previousMode);
-    console.log('[Johnny5] Query classification:', {
-      category: queryClassification.category,
-      confidence: queryClassification.confidence.toFixed(2),
-      shouldUseBridge: queryClassification.shouldUseBridge,
-      reasoning: queryClassification.reasoning,
-    });
-
-    const forceGemini = /\buse gemini\b/i.test(message);
-    // Smart routing: Use Bridge for coding/browser queries that benefit from project context.
-    // Use Gemini for personal/memory/operational queries (faster, respects memory context).
-    const isGeminiOnlyQuery = ['personal', 'hybrid', 'session_recall', 'deployment', 'general'].includes(queryClassification.category);
-    const shouldUseBridgeForThisQuery = bridgeConnected && !isGeminiOnlyQuery && !forceGemini;
-
-    if (shouldUseBridgeForThisQuery) {
-      // Use Bridge for coding/browser queries (benefits from project context + MCP tools)
-      console.log(`[Johnny5] Using Bridge mode (${queryClassification.category} query - project context needed)`);
-      reasoningSteps.push('Generating response via Claude Code CLI...');
-      result = await johnny5Service.sendPrompt(finalMessage, conversationHistory);
-    } else {
-      // Use Gemini for:
-      // 1. Personal/memory/operational queries (even when Bridge is connected) - faster + respects memory
-      // 2. All queries when Bridge is not connected
-      if (forceGemini) {
-        console.log('[Johnny5] Using Gemini (user override: "use gemini")');
-      } else if (bridgeConnected) {
-        console.log(`[Johnny5] Using Gemini for ${queryClassification.category} query (faster for non-coding tasks)`);
-      } else {
-        console.log('[Johnny5] Using Gemini API mode (Bridge not connected)');
-      }
-      // Use Gemini API (Google Gemini 2.5 Flash - respects memory context)
-      modeUsed = 'gemini';
-      try {
-        // Detect Johnny5's active mode and available capabilities
-        const johnny5Mode = detectJohnny5Mode(j5Connected, bridgeConnected);
-        let systemPrompt = await generateJohnny5SystemPrompt(johnny5Mode, userId, skillsListForPrompt);
-
-        // When routing to Gemini (not Bridge) for memory/personal queries,
-        // add instruction to prevent <execute_bash> usage while keeping
-        // accurate bridge-connected context in the system prompt.
-        if (johnny5Mode.mode !== 'gemini' && !shouldUseBridgeForThisQuery) {
-          systemPrompt += `\n\n## Query Routing Override
-This query is being answered by Gemini, NOT by Claude Code CLI via the Bridge. Even though your system prompt says you have MCP tools and file system access, those tools are NOT available for this response. You are running as Gemini with NO tools except google_search and createMissionTask.
-
-CRITICAL: You do NOT have a "files" tool, "write" tool, "read" tool, or ANY file system access right now. You CANNOT update HEARTBEAT.md, MEMORY.md, USER.md, or any living file. You CANNOT execute commands. Do NOT claim you "attempted" to use a tool that doesn't exist and do NOT fabricate error messages. If you need file system access, tell the user: "That requires the Bridge — let me answer from memory instead."
-
-This query is about memory or personal knowledge, not a coding task. Answer ONLY from the session memory data and context injected into the user message (sections labeled "Session Memory", "Session History", "Relevant Memories", etc.). Do NOT use <execute_bash> tags or attempt to execute shell commands. Do NOT reference or describe conversation history between you and the user — focus exclusively on IDE session data (file changes, terminal output, errors, session summaries). If the injected session data doesn't contain the answer, say so honestly rather than drawing from conversation history.
-
-## How to Present Session Memory
-When responding from session memory, follow these guidelines:
-1. **Quote specifics** — Don't say "you worked on payments"; say "you fixed a TypeError in processPayment() at checkout.ts:142"
-2. **Use relative time** — "2 hours ago you ran...", "Last week you hit this error..."
-3. **Prioritize high-relevance** — Focus on entries marked 80%+ relevance; briefly mention lower ones
-4. **Cite source types** — "From your terminal session...", "In an error from yesterday..."
-5. **Acknowledge limitations** — If memory is thin: "I only found 2 relevant chunks from last week..."
-6. **Quote verbatim** — Include exact command strings, error messages, or file paths when available`;
-        }
-
-        console.log('[Johnny5] Active mode:', {
-          detected: johnny5Mode.mode,
-          routedToGemini: !shouldUseBridgeForThisQuery,
-          hasMCP: johnny5Mode.hasMCP,
-          provider: johnny5Mode.provider
-        });
-        reasoningSteps.push(`Generating response via ${johnny5Mode.provider}...`);
-
-        // Add task extraction instructions to system prompt
-        const taskExtractionInstruction = `
-
-## CRITICAL: Task Creation Instructions
-
-When creating tasks via the createMissionTask function, you MUST extract specific, meaningful details from the user's actual message:
-
-1. **Title**: MUST be derived directly from what the user asked for. Extract the core request.
-   - User says "Research React best practices" → Title: "Research React best practices for state management"
-   - User says "Build me a todo app" → Title: "Build a todo app"
-   - User says "Fix the login bug" → Title: "Fix the login bug"
-
-2. **Description**: Capture the user's full intent with context from their message.
-
-3. **FORBIDDEN**: NEVER use generic/placeholder values like:
-   - "test task", "new task", "task", "placeholder", "example", "sample task", "untitled"
-   - These will be automatically rejected and replaced with the user's original message.
-
-4. If uncertain about the title, use the user's exact words (cleaned up slightly for readability).
-`;
-        systemPrompt += taskExtractionInstruction;
-
-        // Build conversation history in Gemini format
-        const geminiContents = [
-          // System instruction as first user message (with mode-aware capabilities)
-          {
-            role: 'user',
-            parts: [{ text: systemPrompt }],
-          },
-          {
-            role: 'model',
-            parts: [{ text: 'Got it. I\'m Johnny5 - your personal AI in Coder1. I have memory about you and I\'m here to actually help, not just perform helpfulness. What do you need?' }],
-          },
-          // Add conversation history
-          ...conversationHistory.map((m) => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.content }],
-          })),
-          // Add current message
-          {
-            role: 'user',
-            parts: [{ text: finalMessage }],
-          },
-        ];
-
-        // Define tools - functionDeclarations and google_search cannot be in the same request
-        const functionCallingTools = [{
-          functionDeclarations: [{
-            name: 'createMissionTask',
-            description: 'Create a task in Mission Control when the user asks you to do something that requires autonomous work, research, building, or any task that should be tracked. IMPORTANT: Extract the actual task details from what the user is asking for - do NOT use generic placeholders like "test task".',
-            parameters: {
-              type: 'OBJECT',
-              properties: {
-                title: {
-                  type: 'STRING',
-                  description: 'A specific, descriptive title derived from the user\'s request. Examples: "Research React best practices for state management", "Build a todo app with Next.js", "Fix authentication bug in login flow". NEVER use generic titles like "test task" or "new task".'
-                },
-                description: {
-                  type: 'STRING',
-                  description: 'A detailed description capturing the user\'s full request and any context they provided. Include what needs to be done, any specific requirements mentioned, and expected outcomes. Extract this from the user\'s actual message.'
-                },
-                type: {
-                  type: 'STRING',
-                  enum: ['build', 'research', 'fix', 'monitor', 'create_pr', 'skill', 'trend'],
-                  description: 'Type of task based on what the user is asking: build (create something new), research (investigate/learn about), fix (bug fix or repair), monitor (watch/track changes), create_pr (code changes), skill (create a skill), trend (track trends)'
-                },
-                priority: {
-                  type: 'STRING',
-                  enum: ['low', 'medium', 'high', 'urgent'],
-                  description: 'Task priority. Default to medium unless user indicates urgency with words like "urgent", "ASAP", "critical".'
-                }
-              },
-              required: ['title', 'description', 'type']
-            }
-          },
-          {
-            name: 'generateTikTokContent',
-            description: 'Generate a TikTok photo carousel with AI-generated images to promote Coder1 IDE. Use when the user asks to create TikTok content, make a carousel, or generate social media content. Extract the hook/story from their message.',
-            parameters: {
-              type: 'OBJECT',
-              properties: {
-                hook: {
-                  type: 'STRING',
-                  description: 'The hook text for slide 1 and the story angle. Extract this from the user message. It should follow the pattern: [Person] + [conflict/skepticism] → showed them Coder1 → reaction. Example: "My tech lead said AI can\'t write production code, so I showed him this"'
-                },
-                quality: {
-                  type: 'STRING',
-                  enum: ['low', 'medium', 'high'],
-                  description: 'Image quality. Default to medium. Only use high if user specifically asks for high quality.'
-                },
-                captionContext: {
-                  type: 'STRING',
-                  description: 'Optional extra context for caption generation, extracted from the user\'s message.'
-                }
-              },
-              required: ['hook']
-            }
-          }]
-        }];
-        const searchTools = [{ google_search: {} }];
-
-        // Use google_search for general/informational queries, functionDeclarations for task-oriented
-        const isTaskCreationQuery = /\b(create|add|make|schedule|set up|track)\s+(a\s+)?(task|job|cron|mission|todo|reminder)\b/i.test(message)
-          || /\b(can you|please|i need you to)\s+(do|build|research|fix|monitor)\b/i.test(message)
-          || /\b(tiktok|make.*tiktok|create.*tiktok|generate.*tiktok|tiktok.*about|carousel|slideshow)\b/i.test(message);
-        const geminiTools = isTaskCreationQuery ? functionCallingTools : searchTools;
-
-        // Timeout to prevent indefinite hangs that block the event loop
-        const geminiAbort = new AbortController();
-        const geminiTimeout = setTimeout(() => geminiAbort.abort(), 60000);
-
-        const apiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: geminiContents,
-              tools: geminiTools,
-            }),
-            signal: geminiAbort.signal,
-          }
-        );
-        clearTimeout(geminiTimeout);
-
-        if (!apiResponse.ok) {
-          const errorText = await apiResponse.text();
-          console.error('[Johnny5] Gemini API error:', apiResponse.status, errorText);
-          result = {
-            success: false,
-            response: '',
-            error: `Gemini API error: ${apiResponse.status} - ${errorText}`,
-            errorCode: 'BRIDGE_ERROR',
-          };
-        } else {
-          const data = await apiResponse.json();
-          const parts = data.candidates?.[0]?.content?.parts || [];
-          const firstPart = parts[0];
-          const functionCallPart = parts.find((p: { functionCall?: unknown }) => p.functionCall);
-          const allText = parts
-            .filter((p: { text?: string }) => p.text)
-            .map((p: { text: string }) => p.text)
-            .join('');
-          const groundingMetadata = data.candidates?.[0]?.groundingMetadata;
-
-          // Debug: Log what Gemini returned
-          const hasGrounding = !!groundingMetadata?.groundingChunks?.length;
-          console.log('[Johnny5] Gemini response type:', functionCallPart ? 'FUNCTION_CALL' : 'TEXT', hasGrounding ? '(grounded)' : '', `(${parts.length} parts)`);
-          if (functionCallPart?.functionCall) {
-            console.log('[Johnny5] Function call details:', JSON.stringify(functionCallPart.functionCall));
-          }
-
-          // Check if Gemini wants to call a function (scan all parts, not just parts[0])
-          if (functionCallPart?.functionCall) {
-            const functionCall = functionCallPart.functionCall;
-            console.log('[Johnny5] Function call requested:', functionCall.name, functionCall.args);
-
-            let functionResult: Record<string, unknown> = { success: false };
-
-            if (functionCall.name === 'createMissionTask') {
-              try {
-                const args = functionCall.args;
-
-                // Detailed logging of what Gemini actually returns
-                console.log('[Johnny5] Function args extracted:', {
-                  title: args.title,
-                  titleLength: args.title?.length,
-                  description: args.description?.slice(0, 100),
-                  type: args.type,
-                  priority: args.priority,
-                  originalMessage: message.slice(0, 100)
-                });
-
-                // Detect generic/placeholder titles
-                const genericPatterns = ['test task', 'new task', 'task', 'placeholder', 'example', 'sample task', 'untitled'];
-                const titleLower = (args.title || '').toLowerCase().trim();
-                const isGenericTitle = !args.title ||
-                  args.title.length < 10 ||
-                  genericPatterns.some(p => titleLower === p || titleLower.startsWith(p + ' '));
-
-                // If generic, derive title from user message
-                let finalTitle = args.title;
-                let finalDescription = args.description;
-
-                if (isGenericTitle) {
-                  console.log('[Johnny5] Generic title detected, deriving from user message');
-                  // Extract meaningful title from user message - capitalize first letter, clean up
-                  const cleanedMessage = message.replace(/[^\w\s.,!?-]/g, '').trim();
-                  finalTitle = cleanedMessage.length > 80
-                    ? cleanedMessage.slice(0, 77) + '...'
-                    : cleanedMessage;
-                  // Capitalize first letter
-                  finalTitle = finalTitle.charAt(0).toUpperCase() + finalTitle.slice(1);
-                  finalDescription = `User request: ${message}`;
-                  console.log('[Johnny5] Derived title:', finalTitle);
-                }
-
-                const newTask = await createTask({
-                  title: finalTitle,
-                  description: finalDescription || `Task from Johnny5: ${message.slice(0, 200)}`,
-                  type: args.type || 'build',
-                  priority: args.priority || 'medium',
-                  reasoning: `Created via Johnny5 chat: "${message.substring(0, 100)}"`,
-                  triggeredBy: 'conversation',
-                });
-                functionResult = { success: true, task: newTask };
-                console.log('[Johnny5] Task created:', newTask.id, newTask.title);
-              } catch (err) {
-                console.error('[Johnny5] Failed to create task:', err);
-                functionResult = { success: false, error: err instanceof Error ? err.message : 'Task creation failed' };
-              }
-            } else if (functionCall.name === 'generateTikTokContent') {
-              try {
-                const args = functionCall.args;
-                console.log('[Johnny5] TikTok content requested:', { hook: args.hook, quality: args.quality });
-
-                const port = process.env.PORT || '3001';
-                const tiktokResponse = await fetch(`http://localhost:${port}/api/johnny5/tiktok`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    hook: args.hook,
-                    quality: args.quality || 'medium',
-                    captionContext: args.captionContext,
-                    triggeredBy: 'conversation',
-                  }),
-                });
-
-                const tiktokData = await tiktokResponse.json();
-                functionResult = {
-                  success: tiktokData.success,
-                  taskId: tiktokData.taskId,
-                  message: tiktokData.message,
-                  config: tiktokData.config,
-                };
-                console.log('[Johnny5] TikTok generation triggered:', tiktokData.taskId);
-              } catch (err) {
-                console.error('[Johnny5] Failed to trigger TikTok generation:', err);
-                functionResult = { success: false, error: err instanceof Error ? err.message : 'TikTok generation failed' };
-              }
-            }
-
-            // Send function result back to Gemini for final response
-            const functionResponseContents = [
-              ...geminiContents,
-              {
-                role: 'model',
-                parts: [{ functionCall: functionCall }],
-              },
-              {
-                role: 'user',
-                parts: [{
-                  functionResponse: {
-                    name: functionCall.name,
-                    response: functionResult,
-                  }
-                }],
-              },
-            ];
-
-            const followUpAbort = new AbortController();
-            const followUpTimeout = setTimeout(() => followUpAbort.abort(), 60000);
-
-            const followUpResponse = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: functionResponseContents, tools: geminiTools }),
-                signal: followUpAbort.signal,
-              }
-            );
-            clearTimeout(followUpTimeout);
-
-            if (followUpResponse.ok) {
-              const followUpData = await followUpResponse.json();
-              const responseText = followUpData.candidates?.[0]?.content?.parts?.[0]?.text ||
-                (functionResult.success
-                  ? `I've added "${functionResult.task?.title}" to Mission Control. You can track its progress there.`
-                  : 'I tried to create a task but encountered an error.');
-              result = {
-                success: true,
-                response: responseText,
-                taskCreated: functionResult.success ? functionResult.task : undefined,
-              };
-            } else {
-              // Fallback response if follow-up fails
-              result = {
-                success: true,
-                response: functionResult.success
-                  ? `Done! I've added "${functionResult.task?.title}" to Mission Control as a ${functionResult.task?.type} task with ${functionResult.task?.priority} priority.`
-                  : 'I tried to create a task but encountered an error. Please try again.',
-                taskCreated: functionResult.success ? functionResult.task : undefined,
-              };
-            }
-          } else {
-            // Regular text response (no function call) - may include grounding
-            const responseText = allText || firstPart?.text || '';
-            result = {
-              success: true,
-              response: responseText,
-              groundingMetadata: groundingMetadata || undefined,
-            };
-          }
-        }
-      } catch (apiError) {
-        console.error('[Johnny5] Gemini API call failed:', apiError);
-        result = {
-          success: false,
-          response: '',
-          error: apiError instanceof Error ? apiError.message : 'Gemini API call failed',
-          errorCode: 'BRIDGE_ERROR',
-        };
-      }
-
-      // Direct Claude CLI fallback - uses your Pro/Max subscription!
-      if (!result.success) {
-        console.log('[Johnny5] Gemini failed, trying direct Claude CLI (uses your subscription)');
-        try {
-          const { exec, spawn: spawnAsync } = await import('child_process');
-          const fs = await import('fs');
-          const os = await import('os');
-          const path = await import('path');
-
-          // Check if claude CLI is available (async to avoid blocking event loop)
-          await new Promise<void>((resolve, reject) => {
-            exec('which claude', (err) => err ? reject(new Error('Claude CLI not installed on server')) : resolve());
-          });
-
-          // Build a simple prompt with context embedded
-          // finalMessage is already truncated earlier, but apply additional CLI-specific truncation if needed
-          let cliPrompt = finalMessage;
-          const estimatedLength = finalMessage.length + 500; // +500 for system prefix
-          if (estimatedLength > MAX_CLI_PROMPT_LENGTH) {
-            console.log(`[Johnny5] CLI prompt still too long after pre-truncation (${estimatedLength} chars), applying CLI-specific truncation...`);
-            cliPrompt = truncateForCLI(message, contextParts, MAX_CLI_PROMPT_LENGTH);
-            console.log(`[Johnny5] CLI-specific truncated to ${cliPrompt.length} chars`);
-          }
-
-          let fullPrompt = '[SYSTEM] You are Johnny5, a helpful AI assistant. Be concise and helpful. Use any memory context provided to give relevant responses.\n\n';
-          fullPrompt += cliPrompt;
-
-          try {
-            // Call claude CLI with simple --print flag only
-            // IMPORTANT: Pass CLAUDE_CODE_OAUTH_TOKEN for subprocess authentication
-            const homeDir = process.env.HOME || '/Users/michaelkraft';
-            const cliEnv = {
-              ...process.env,
-              HOME: homeDir,
-              USER: process.env.USER || 'michaelkraft',
-              SHELL: '/bin/zsh',
-              TMPDIR: process.env.TMPDIR || '/tmp',
-              // Pass OAuth token for subprocess authentication (uses your Pro/Max subscription!)
-              CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN,
-            };
-            delete cliEnv.ANTHROPIC_API_KEY; // Remove so CLI uses OAuth instead
-            delete cliEnv.NEXT_PUBLIC_ANTHROPIC_API_KEY;
-
-            console.log('[Johnny5] CLI attempting with input piped, HOME:', cliEnv.HOME);
-
-            // Use async spawn to avoid blocking the Node.js event loop
-            const cliResponse = await new Promise<string>((resolve, reject) => {
-              const child = spawnAsync('claude', ['--print'], {
-                env: cliEnv,
-                cwd: '/tmp',
-                stdio: ['pipe', 'pipe', 'pipe'],
-              });
-
-              let stdout = '';
-              let stderr = '';
-
-              child.stdout?.on('data', (data: Buffer) => { stdout += data.toString(); });
-              child.stderr?.on('data', (data: Buffer) => { stderr += data.toString(); });
-
-              // 90-second timeout — kill the process if it hangs
-              const timeout = setTimeout(() => {
-                child.kill('SIGTERM');
-                reject(new Error('Claude CLI timed out after 90 seconds'));
-              }, 90000);
-
-              child.on('error', (err: Error) => {
-                clearTimeout(timeout);
-                reject(err);
-              });
-
-              child.on('close', (code: number | null) => {
-                clearTimeout(timeout);
-                if (code !== 0) {
-                  const errorMsg = stderr || stdout || 'Unknown error';
-                  reject(new Error(`CLI exited with code ${code}: ${errorMsg}`));
-                } else {
-                  resolve(stdout);
-                }
-              });
-
-              // Pipe the prompt to stdin then close it
-              child.stdin?.write(fullPrompt);
-              child.stdin?.end();
-            });
-            if (cliResponse && cliResponse.trim()) {
-              result = {
-                success: true,
-                response: cliResponse.trim(),
-              };
-              modeUsed = 'bridge'; // Track as bridge since it uses subscription
-              console.log('[Johnny5] Direct CLI successful (using your Pro/Max subscription)');
-            } else {
-              throw new Error('Empty response from Claude CLI');
-            }
-          } catch (innerErr) {
-            throw innerErr;
-          }
-        } catch (cliError) {
-          console.warn('[Johnny5] Direct CLI failed:', cliError instanceof Error ? cliError.message : cliError);
-          // Continue to Anthropic API fallback if configured
-        }
-      }
-
-      // Anthropic API fallback (pay-per-use) - only if CLI also failed
-      if (!result.success && process.env.ANTHROPIC_API_KEY) {
-        console.log('[Johnny5] CLI failed, falling back to Anthropic API (pay-per-use)');
-        try {
-          const anthropicAbort = new AbortController();
-          const anthropicTimeout = setTimeout(() => anthropicAbort.abort(), 60000);
-
-          const oauthResponse = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': process.env.ANTHROPIC_API_KEY,
-              'anthropic-version': '2023-06-01',
-            },
-            body: JSON.stringify({
-              model: 'claude-sonnet-4-6-20250514',
-              max_tokens: 4000,
-              system: 'You are Johnny5, a helpful AI assistant in the Coder1 IDE. You help with coding, debugging, and software development tasks. Be concise, helpful, and friendly. When you receive memory context, use it to provide more relevant responses.',
-              messages: [
-                ...conversationHistory.map((m) => ({
-                  role: m.role,
-                  content: m.content,
-                })),
-                { role: 'user', content: finalMessage },
-              ],
-            }),
-            signal: anthropicAbort.signal,
-          });
-          clearTimeout(anthropicTimeout);
-
-          if (!oauthResponse.ok) {
-            const errorText = await oauthResponse.text();
-            console.error('[Johnny5] OAuth API error:', oauthResponse.status, errorText);
-            result = {
-              success: false,
-              response: '',
-              error: `OAuth API error: ${oauthResponse.status} - ${errorText}`,
-              errorCode: 'BRIDGE_ERROR',
-            };
-          } else {
-            const data = await oauthResponse.json();
-            const responseText = data.content?.[0]?.text || '';
-            result = {
-              success: true,
-              response: responseText,
-            };
-            modeUsed = 'gemini'; // Still track as gemini since it's not bridge
-            console.log('[Johnny5] OAuth fallback successful');
-          }
-        } catch (oauthError) {
-          console.error('[Johnny5] OAuth fallback failed:', oauthError);
-          result = {
-            success: false,
-            response: '',
-            error: oauthError instanceof Error ? oauthError.message : 'OAuth API call failed',
-            errorCode: 'BRIDGE_ERROR',
-          };
-        }
-      }
-    }
+    const modeUsed = 'bridge' as const;
+    console.log('[Johnny5] Using Bridge mode (Claude Code CLI)');
+    reasoningSteps.push('Generating response via Claude Code CLI...');
+    result = await johnny5Service.sendPrompt(finalMessage, conversationHistory);
 
     if (!result.success) {
       console.error('[Johnny5] Error:', result.error);
@@ -1898,10 +1419,10 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
     try {
       await trackUsage({
         sessionId: session.id,
-        source: modeUsed === 'bridge' ? 'direct' : 'fallback',
+        source: 'direct',
         inputTokens: estimatedInputTokens,
         outputTokens: estimatedOutputTokens,
-        model: modeUsed === 'bridge' ? 'claude-code-cli' : 'gemini-2.5-flash',
+        model: 'claude-code-cli',
       });
     } catch (usageError) {
       console.error('[Johnny5] Failed to track usage:', usageError);
@@ -2034,10 +1555,7 @@ When creating tasks via the createMissionTask function, you MUST extract specifi
     }
 
     // 14. Return success response
-    // Determine mode info for response
-    const modeInfo = modeUsed === 'bridge'
-      ? { mode: 'bridge' as const, hasMCP: true, hasProjectContext: true, is24x7: false, provider: 'Claude Code CLI' }
-      : { mode: 'gemini' as const, hasMCP: false, hasProjectContext: false, is24x7: false, provider: 'Gemini 2.5 Flash' };
+    const modeInfo = { mode: 'bridge' as const, hasMCP: true, hasProjectContext: true, is24x7: false, provider: 'Claude Code CLI' };
 
     return NextResponse.json({
       success: true,

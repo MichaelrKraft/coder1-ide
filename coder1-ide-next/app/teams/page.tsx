@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Cloud, Users } from 'lucide-react';
 import { Navigation } from '@/components/landing/Navigation';
 import { Footer } from '@/components/landing/Footer';
+import { features } from '@/lib/feature-flags';
 
 // Team Hero Section
 function TeamHeroSection() {
@@ -737,6 +738,21 @@ function TeamCTASection() {
 
 // Main Teams Landing Page
 export default function TeamsPage() {
+  // Hide team features for alpha - show Coming Soon page
+  if (!features().teamFeatures) {
+    return (
+      <main className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">Team Features Coming Soon</h1>
+          <p className="text-gray-400 mb-8">Multiplayer collaboration is coming in our next release.</p>
+          <Link href="/ide" className="px-6 py-3 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-400 transition-colors">
+            Back to IDE
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-black text-white">
       <Navigation />
