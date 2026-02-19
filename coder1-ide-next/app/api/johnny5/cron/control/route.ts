@@ -17,7 +17,7 @@ import { generateMorningBrief } from '@/services/johnny5/morning-brief-generator
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-type ControlAction = 'start' | 'stop' | 'status' | 'init-defaults' | 'run-morning-brief' | 'run-content-factory';
+type ControlAction = 'start' | 'stop' | 'status' | 'init-defaults' | 'run-morning-brief' | 'run-content-factory' | 'run-quill';
 
 /**
  * POST handler - Control cron service
@@ -176,10 +176,25 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'run-quill': {
+        const { runQuill } = await import('@/services/johnny5/content-factory/quill-service');
+        const quillResult = await runQuill();
+        result = {
+          status: 'completed',
+          scriptTitle: quillResult.scriptTitle,
+          storyTitle: quillResult.storyTitle,
+          estimatedDuration: quillResult.estimatedDuration,
+          sectionCount: quillResult.sections.length,
+          runAt: quillResult.runAt,
+        };
+        console.log('[Johnny5 Cron Control] Quill script generation completed:', result);
+        break;
+      }
+
       default: {
         const response: Johnny5APIResponse<null> = {
           success: false,
-          error: `Unknown action: ${action}. Valid actions: start, stop, status, init-defaults, run-morning-brief, run-content-factory`,
+          error: `Unknown action: ${action}. Valid actions: start, stop, status, init-defaults, run-morning-brief, run-content-factory, run-quill`,
           timestamp: new Date(),
         };
         return NextResponse.json(response, { status: 400 });

@@ -116,6 +116,7 @@ class OpportunityEngine {
   private auditLog: AuditLogEntry[] = [];
   private classificationsThisMinute = 0;
   private rateLimitResetTimer: NodeJS.Timeout | null = null;
+  private pendingOpportunities = new Map<string, Opportunity>(); // id → opportunity awaiting user confirmation
 
   // Socket.IO reference (set by server.js after initialization)
   private io: any = null;
@@ -589,6 +590,9 @@ Rules:
       });
     }
 
+    // Store opportunity so handleConfirmation can execute it when user responds
+    this.pendingOpportunities.set(opportunity.id, opportunity);
+
     // Send to Telegram (uses env var-aware getTelegramChatId)
     const chatId = getTelegramChatId();
     if (chatId) {
@@ -613,22 +617,39 @@ Rules:
     confirmationId: string,
     action: 'confirm' | 'skip'
   ): Promise<void> {
+    const opportunity = this.pendingOpportunities.get(confirmationId);
+    this.pendingOpportunities.delete(confirmationId);
+
     if (action === 'confirm') {
       logger.info(`[Johnny5/Engine] User confirmed opportunity: ${confirmationId}`);
-      // In a full implementation, we'd look up the opportunity and execute it.
-      // For now, log the confirmation.
-      this.logAudit({
-        source: 'telegram',
-        eventType: 'user_confirmation',
-        decision: 'act',
-        reason: 'User confirmed via Telegram',
-        tokensUsed: 0,
-      });
+
+      if (opportunity?.suggestedAction) {
+        const result = await this.execute(opportunity);
+        this.logAudit({
+          source: 'telegram',
+          eventType: opportunity.event,
+          decision: 'act',
+          reason: 'User confirmed via Telegram',
+          actionDescription: opportunity.suggestedAction.description,
+          result: result.success ? 'success' : 'failure',
+          error: result.error,
+          tokensUsed: result.tokensUsed,
+        });
+        await this.notifyResult(opportunity, result);
+      } else {
+        this.logAudit({
+          source: 'telegram',
+          eventType: 'user_confirmation',
+          decision: 'act',
+          reason: 'User confirmed but no action found for opportunity',
+          tokensUsed: 0,
+        });
+      }
     } else {
       logger.info(`[Johnny5/Engine] User skipped opportunity: ${confirmationId}`);
       this.logAudit({
         source: 'telegram',
-        eventType: 'user_skip',
+        eventType: opportunity?.event || 'user_skip',
         decision: 'skip',
         reason: 'User skipped via Telegram',
         tokensUsed: 0,
