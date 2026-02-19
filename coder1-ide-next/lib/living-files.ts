@@ -32,7 +32,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, unlinkSync, statSync } from 'fs';
 import { join, basename } from 'path';
-import { LIVING_FILES_DIR, LIVING_FILES_HISTORY_DIR, ensureDataDir } from './data-paths';
+import { getUserLivingFilesDir, getUserLivingFilesHistoryDir, ensureDataDir } from './data-paths';
 import { logger } from './logger';
 
 // ============================================================================
@@ -356,11 +356,11 @@ const MAX_SNAPSHOTS_PER_FILE = 20;
 
 /**
  * Create a version snapshot of a living file before overwriting it.
- * Copies the current file to LIVING_FILES_HISTORY_DIR with a timestamp suffix.
+ * Copies the current file to the user's history directory with a timestamp suffix.
  * Prunes oldest snapshots if there are more than MAX_SNAPSHOTS_PER_FILE.
  */
-function createSnapshot(filename: string): void {
-  const sourcePath = join(LIVING_FILES_DIR, filename);
+function createSnapshot(filename: string, userId: string = 'default'): void {
+  const sourcePath = join(getUserLivingFilesDir(userId), filename);
   if (!existsSync(sourcePath)) {
     return;
   }
@@ -368,13 +368,13 @@ function createSnapshot(filename: string): void {
   try {
     const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\.\d{3}Z$/, '');
     const snapshotName = `${filename}.${timestamp}.bak`;
-    const snapshotPath = join(LIVING_FILES_HISTORY_DIR, snapshotName);
+    const snapshotPath = join(getUserLivingFilesHistoryDir(userId), snapshotName);
 
     copyFileSync(sourcePath, snapshotPath);
     logger.debug(`[Living Files] Created snapshot: ${snapshotName}`);
 
     // Prune old snapshots
-    pruneSnapshots(filename);
+    pruneSnapshots(filename, userId);
   } catch (error) {
     logger.error(`[Living Files] Failed to create snapshot for ${filename}:`, error);
   }
@@ -383,13 +383,14 @@ function createSnapshot(filename: string): void {
 /**
  * Delete the oldest snapshots for a file if there are more than MAX_SNAPSHOTS_PER_FILE.
  */
-function pruneSnapshots(filename: string): void {
+function pruneSnapshots(filename: string, userId: string = 'default'): void {
+  const historyDir = getUserLivingFilesHistoryDir(userId);
   try {
-    if (!existsSync(LIVING_FILES_HISTORY_DIR)) {
+    if (!existsSync(historyDir)) {
       return;
     }
 
-    const allFiles = readdirSync(LIVING_FILES_HISTORY_DIR);
+    const allFiles = readdirSync(historyDir);
     const prefix = `${filename}.`;
     const snapshots = allFiles
       .filter(f => f.startsWith(prefix) && f.endsWith('.bak'))
@@ -398,7 +399,7 @@ function pruneSnapshots(filename: string): void {
     if (snapshots.length > MAX_SNAPSHOTS_PER_FILE) {
       const toDelete = snapshots.slice(0, snapshots.length - MAX_SNAPSHOTS_PER_FILE);
       for (const old of toDelete) {
-        unlinkSync(join(LIVING_FILES_HISTORY_DIR, old));
+        unlinkSync(join(historyDir, old));
         logger.debug(`[Living Files] Pruned old snapshot: ${old}`);
       }
     }
@@ -412,11 +413,12 @@ function pruneSnapshots(filename: string): void {
 // ============================================================================
 
 /**
- * Ensure the living files directories exist.
- * Creates LIVING_FILES_DIR and LIVING_FILES_HISTORY_DIR if missing.
+ * Ensure the living files directories exist for the given user.
+ * Creates the main directory and the history sub-directory if missing.
+ * userId = 'default' creates the shared directories (backward compatible).
  */
-export function ensureLivingFilesDir(): void {
-  for (const dir of [LIVING_FILES_DIR, LIVING_FILES_HISTORY_DIR]) {
+export function ensureLivingFilesDir(userId: string = 'default'): void {
+  for (const dir of [getUserLivingFilesDir(userId), getUserLivingFilesHistoryDir(userId)]) {
     if (!existsSync(dir)) {
       try {
         mkdirSync(dir, { recursive: true, mode: 0o755 });
@@ -434,19 +436,20 @@ export function ensureLivingFilesDir(): void {
  * Called on first boot or setup completion.
  *
  * @param userData - Optional user info to seed USER.md with
+ * @param userId   - User to initialize files for ('default' = shared path)
  */
 export function initializeLivingFiles(userData?: {
   name?: string;
   role?: string;
   building?: string;
   workStyle?: string;
-}): void {
-  ensureLivingFilesDir();
+}, userId: string = 'default'): void {
+  ensureLivingFilesDir(userId);
 
   const created: string[] = [];
 
   for (const file of LIVING_FILES) {
-    const filePath = join(LIVING_FILES_DIR, file.filename);
+    const filePath = join(getUserLivingFilesDir(userId), file.filename);
 
     if (existsSync(filePath)) {
       logger.debug(`[Living Files] ${file.filename} already exists, skipping`);
@@ -483,11 +486,12 @@ export function initializeLivingFiles(userData?: {
  * Load a single living file from disk.
  *
  * @param filename - The filename to load (e.g., 'SOUL.md')
+ * @param userId   - User whose file to load ('default' = shared path)
  * @returns The file content as a string, or null if the file doesn't exist or can't be read
  */
-export function loadLivingFile(filename: string): string | null {
+export function loadLivingFile(filename: string, userId: string = 'default'): string | null {
   try {
-    const filePath = join(LIVING_FILES_DIR, filename);
+    const filePath = join(getUserLivingFilesDir(userId), filename);
     if (!existsSync(filePath)) {
       return null;
     }
@@ -502,13 +506,14 @@ export function loadLivingFile(filename: string): string | null {
  * Load all 9 living files into a key-value map.
  * Files that don't exist or can't be read are returned as empty strings.
  *
+ * @param userId - User whose files to load ('default' = shared path)
  * @returns Record mapping filename to file content
  */
-export function loadLivingFiles(): Record<string, string> {
+export function loadLivingFiles(userId: string = 'default'): Record<string, string> {
   const files: Record<string, string> = {};
 
   for (const file of LIVING_FILES) {
-    const content = loadLivingFile(file.filename);
+    const content = loadLivingFile(file.filename, userId);
     files[file.filename] = content ?? '';
   }
 
@@ -525,10 +530,11 @@ const MEMORY_TRUNCATION_LIMIT = 6000;
  * Token budget awareness: MEMORY.md is truncated to the last 6000 characters
  * if it exceeds that limit, preserving the most recent entries.
  *
+ * @param userId - User whose files to load ('default' = shared path)
  * @returns A formatted string containing all living file contents
  */
-export function loadLivingFilesContext(): string {
-  const files = loadLivingFiles();
+export function loadLivingFilesContext(userId: string = 'default'): string {
+  const files = loadLivingFiles(userId);
   const sections: string[] = [];
 
   for (const file of LIVING_FILES) {
@@ -578,18 +584,21 @@ export function formatLivingFilesFromCache(files: Record<string, string>): strin
  *
  * - Validates the write is allowed by the file's writeMode
  * - Sanitizes content to strip dangerous patterns
+ * - Ensures the per-user directory exists (creates on first use)
  * - Creates a version snapshot before overwriting
  * - Prunes old snapshots (keeps last 20)
  *
  * @param filename - The living file to write to (e.g., 'MEMORY.md')
- * @param content - The content to write
- * @param mode - 'replace' overwrites the file, 'append' adds to the end
+ * @param content  - The content to write
+ * @param mode     - 'replace' overwrites the file, 'append' adds to the end
+ * @param userId   - User whose file to write ('default' = shared path)
  * @returns true on success, false on failure or rejection
  */
 export function writeLivingFile(
   filename: string,
   content: string,
-  mode: 'replace' | 'append' = 'replace'
+  mode: 'replace' | 'append' = 'replace',
+  userId: string = 'default'
 ): boolean {
   // Find the file config
   const config = LIVING_FILES.find(f => f.filename === filename);
@@ -622,10 +631,13 @@ export function writeLivingFile(
   const sanitized = sanitizeContent(content);
 
   try {
-    const filePath = join(LIVING_FILES_DIR, filename);
+    // Ensure per-user directory exists (idempotent; handles first-time writes without setup)
+    ensureLivingFilesDir(userId);
+
+    const filePath = join(getUserLivingFilesDir(userId), filename);
 
     // Create snapshot before writing
-    createSnapshot(filename);
+    createSnapshot(filename, userId);
 
     // Write the file
     writeFileSync(filePath, sanitized, { encoding: 'utf-8', mode: 0o644 });
@@ -646,10 +658,11 @@ export function writeLivingFile(
  * The file's writeMode must be 'append' or 'writable'.
  *
  * @param filename - The living file to append to (e.g., 'MEMORY.md', 'USER.md')
- * @param entry - The text to append
+ * @param entry    - The text to append
+ * @param userId   - User whose file to append to ('default' = shared path)
  * @returns true on success, false on failure or rejection
  */
-export function appendToLivingFile(filename: string, entry: string): boolean {
+export function appendToLivingFile(filename: string, entry: string, userId: string = 'default'): boolean {
   // Validate write mode allows appending
   const config = LIVING_FILES.find(f => f.filename === filename);
   if (!config) {
@@ -662,29 +675,30 @@ export function appendToLivingFile(filename: string, entry: string): boolean {
     return false;
   }
 
-  // Read current content
-  const current = loadLivingFile(filename) || '';
+  // Read current content from the correct user's path
+  const current = loadLivingFile(filename, userId) || '';
 
   // Append with newline separator
   const combined = current.endsWith('\n')
     ? current + '\n' + entry
     : current + '\n\n' + entry;
 
-  // Write the combined content (replace mode since we already built the full content)
-  return writeLivingFile(filename, combined, 'replace');
+  // Write the combined content to the correct user's path
+  return writeLivingFile(filename, combined, 'replace', userId);
 }
 
 /**
  * Get token usage statistics for all living files.
  * Useful for auditing context bloat and identifying optimization opportunities.
  *
+ * @param userId - User whose files to stat ('default' = shared path)
  * @returns Record mapping filename to stats (lines, chars, estimated tokens)
  */
-export function getLivingFilesTokenStats(): Record<string, { lines: number; chars: number; estimatedTokens: number; writeMode: string }> {
+export function getLivingFilesTokenStats(userId: string = 'default'): Record<string, { lines: number; chars: number; estimatedTokens: number; writeMode: string }> {
   const stats: Record<string, { lines: number; chars: number; estimatedTokens: number; writeMode: string }> = {};
 
   for (const file of LIVING_FILES) {
-    const content = loadLivingFile(file.filename);
+    const content = loadLivingFile(file.filename, userId);
     if (!content) {
       stats[file.filename] = { lines: 0, chars: 0, estimatedTokens: 0, writeMode: file.writeMode };
       continue;
@@ -712,19 +726,23 @@ export function getWriteMode(filename: string): string | null {
 }
 
 /**
- * Get living files that were recently modified (based on history snapshots)
+ * Get living files that were recently modified (based on history snapshots).
+ *
+ * @param hoursAgo - Look back this many hours
+ * @param userId   - User whose history to scan ('default' = shared path)
  */
-export function getRecentSnapshots(hoursAgo: number): Array<{ filename: string; modifiedAt: Date }> {
-  if (!existsSync(LIVING_FILES_HISTORY_DIR)) return [];
+export function getRecentSnapshots(hoursAgo: number, userId: string = 'default'): Array<{ filename: string; modifiedAt: Date }> {
+  const historyDir = getUserLivingFilesHistoryDir(userId);
+  if (!existsSync(historyDir)) return [];
 
   const cutoff = Date.now() - hoursAgo * 60 * 60 * 1000;
   const results: Array<{ filename: string; modifiedAt: Date }> = [];
 
   try {
-    const files = readdirSync(LIVING_FILES_HISTORY_DIR);
+    const files = readdirSync(historyDir);
     for (const file of files) {
       if (!file.endsWith('.bak')) continue;
-      const filePath = join(LIVING_FILES_HISTORY_DIR, file);
+      const filePath = join(historyDir, file);
       const stat = statSync(filePath);
       if (stat.mtimeMs >= cutoff) {
         // Extract original filename from backup name: "USER.md.2026-02-15T09-00-00.bak"

@@ -239,7 +239,7 @@ export async function generateMorningBrief(targetDate: Date, userId: string = 'd
   // Memory integration - living file changes
   let changeItems: Johnny5BriefItem[] = [];
   try {
-    const snapshots = getRecentSnapshots(24);
+    const snapshots = getRecentSnapshots(24, userId);
     changeItems = snapshots
       .slice(0, 3)
       .map(s => ({

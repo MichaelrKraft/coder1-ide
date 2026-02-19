@@ -20,6 +20,7 @@ import {
   Johnny5Permissions,
 } from '@/lib/johnny5-config';
 import { isLivingFilesEnabled, initializeLivingFiles } from '@/lib/living-files';
+import { extractUserId } from '@/lib/auth/extract-user-id';
 
 // Force dynamic rendering - setup state changes
 export const dynamic = 'force-dynamic';
@@ -86,6 +87,7 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    const userId = extractUserId(request);
     const body = (await request.json()) as SetupRequest;
 
     if (body.action === 'save-config') {
@@ -109,8 +111,8 @@ export async function POST(request: NextRequest) {
       // Initialize living files if feature flag is enabled
       if (isLivingFilesEnabled()) {
         try {
-          initializeLivingFiles(body.userProfile);
-          console.log('[Johnny5 Setup] Living files initialized');
+          initializeLivingFiles(body.userProfile, userId);
+          console.log('[Johnny5 Setup] Living files initialized for user:', userId);
         } catch (lfError) {
           console.warn('[Johnny5 Setup] Living files initialization failed:', lfError);
           // Non-fatal — setup still completes

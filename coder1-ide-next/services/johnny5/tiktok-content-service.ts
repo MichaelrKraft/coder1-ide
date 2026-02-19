@@ -563,7 +563,7 @@ Write a TikTok caption for this hook.`;
     const entry = `- ${date} | Hook: "${hook.substring(0, 80)}" | Slides: ${metadata.slideCount} | Quality: ${metadata.quality} | Cost: $${metadata.cost.toFixed(2)} | PostID: ${postId || 'dry-run'} | Views: PENDING`;
 
     try {
-      appendToLivingFile('MEMORY.md', `\n## TikTok Performance Log\n${entry}`);
+      appendToLivingFile('MEMORY.md', `\n## TikTok Performance Log\n${entry}`, 'default');
       logger.info(`[TikTok] Performance logged to MEMORY.md`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

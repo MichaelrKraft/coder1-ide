@@ -621,7 +621,7 @@ async function handleInterviewComplete(
 
   // Write to USER.md
   const interviewContent = lines.join('\n');
-  appendToLivingFile('USER.md', interviewContent);
+  appendToLivingFile('USER.md', interviewContent, userId);
 
   // Aggregate extracted facts and save them (skip _meta key)
   const allFacts: ExtractedFact[] = [];
