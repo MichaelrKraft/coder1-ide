@@ -649,29 +649,20 @@ export default function SetupWizard({
                   Proactivity Level
                 </h4>
                 <div className="flex items-center gap-3">
-                  <span className={`text-xs ${proactivityLevel === 'low' ? 'text-text-primary' : 'text-text-muted'}`}>
+                  <span className={`text-xs w-8 ${proactivityLevel === 'low' ? 'text-text-primary' : 'text-text-muted'}`}>
                     Low
                   </span>
-                  <div className="flex-1 flex items-center justify-center gap-2">
-                    {(['low', 'medium', 'high'] as const).map((level) => (
-                      <button
-                        key={level}
-                        onClick={() => setProactivityLevel(level)}
-                        className={`
-                          w-8 h-8 rounded-full transition-all
-                          ${proactivityLevel === level
-                            ? 'bg-coder1-cyan scale-110'
-                            : 'bg-bg-secondary hover:bg-bg-secondary/80'
-                          }
-                        `}
-                      >
-                        {proactivityLevel === level && (
-                          <Check className="w-4 h-4 text-black mx-auto" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  <span className={`text-xs ${proactivityLevel === 'high' ? 'text-text-primary' : 'text-text-muted'}`}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={2}
+                    step={1}
+                    value={['low', 'medium', 'high'].indexOf(proactivityLevel)}
+                    onChange={(e) => setProactivityLevel((['low', 'medium', 'high'] as const)[Number(e.target.value)])}
+                    className="flex-1 h-2 appearance-none rounded-full cursor-pointer accent-coder1-cyan"
+                    style={{ accentColor: 'var(--color-coder1-cyan, #00e5ff)' }}
+                  />
+                  <span className={`text-xs w-8 text-right ${proactivityLevel === 'high' ? 'text-text-primary' : 'text-text-muted'}`}>
                     High
                   </span>
                 </div>
