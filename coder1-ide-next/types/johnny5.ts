@@ -46,7 +46,8 @@ export type Johnny5Tab =
   | 'security'
   | 'mission-control'
   | 'morning-brief'
-  | 'skills';
+  | 'skills'
+  | 'second-brain';
 
 export type Johnny5Status = 'idle' | 'working' | 'sleeping' | 'error';
 

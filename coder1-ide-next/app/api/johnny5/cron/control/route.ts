@@ -17,7 +17,7 @@ import { generateMorningBrief } from '@/services/johnny5/morning-brief-generator
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-type ControlAction = 'start' | 'stop' | 'status' | 'init-defaults' | 'run-morning-brief' | 'run-content-factory' | 'run-quill';
+type ControlAction = 'start' | 'stop' | 'status' | 'init-defaults' | 'run-morning-brief' | 'run-content-factory' | 'run-quill' | 'run-pixel';
 
 /**
  * POST handler - Control cron service
@@ -191,10 +191,25 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'run-pixel': {
+        const { runPixel } = await import('@/services/johnny5/content-factory/pixel-service');
+        const pixelResult = await runPixel();
+        result = {
+          status: 'completed',
+          scriptTitle: pixelResult.scriptTitle,
+          storyTitle: pixelResult.storyTitle,
+          thumbnailCount: pixelResult.thumbnailUrls.length,
+          thumbnailUrls: pixelResult.thumbnailUrls,
+          runAt: pixelResult.runAt,
+        };
+        console.log('[Johnny5 Cron Control] Pixel thumbnail generation completed:', result);
+        break;
+      }
+
       default: {
         const response: Johnny5APIResponse<null> = {
           success: false,
-          error: `Unknown action: ${action}. Valid actions: start, stop, status, init-defaults, run-morning-brief, run-content-factory, run-quill`,
+          error: `Unknown action: ${action}. Valid actions: start, stop, status, init-defaults, run-morning-brief, run-content-factory, run-quill, run-pixel`,
           timestamp: new Date(),
         };
         return NextResponse.json(response, { status: 400 });

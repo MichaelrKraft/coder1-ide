@@ -12,6 +12,7 @@ import { ContextTab } from './context';
 import { ReasoningTab } from './reasoning';
 import { MorningBriefTab } from './morning-brief';
 import { SkillsManager } from './skills';
+import SecondBrainPanel from './second-brain/SecondBrainPanel';
 import { SettingsPanel, SetupWizard } from './settings';
 import ContextBudgetMini from './ContextBudgetMini';
 import PromptTemplates from './PromptTemplates';
@@ -502,6 +503,7 @@ export default function Johnny5Panel({ className }: Johnny5PanelProps) {
             {activeTab === 'mission-control' && <MissionControlTab />}
             {activeTab === 'morning-brief' && <MorningBriefTab />}
             {activeTab === 'skills' && <SkillsManager />}
+            {activeTab === 'second-brain' && <SecondBrainPanel />}
           </div>
         )}
       </div>

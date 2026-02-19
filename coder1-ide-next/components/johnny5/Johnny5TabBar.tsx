@@ -79,6 +79,12 @@ const tabs: { id: Johnny5Tab; label: string; icon: React.ReactNode; title: strin
     icon: <Sparkles className="w-3.5 h-3.5" />,
     title: 'Skills Manager - Manage and install Johnny5 skills'
   },
+  {
+    id: 'second-brain',
+    label: 'Brain',
+    icon: <Brain className="w-3.5 h-3.5" />,
+    title: 'Second Brain - Search everything Johnny5 has learned about you'
+  },
 ];
 
 export default function Johnny5TabBar({

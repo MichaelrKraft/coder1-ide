@@ -38,6 +38,22 @@ const INJECTION_PATTERNS = [
   /override\s+safety/i,
   /jailbreak/i,
   /DAN\s+mode/i,
+  // Abbreviation / partial-word evasion
+  /ignore\s+prev\w*\s+inst\w*/i,
+  // Encoding-based
+  /base64[^a-z]*decode/i,
+  // Persona / role hijacks
+  /you\s+are\s+now\s+(an?\s+)?(unrestricted|evil|uncensored)\s+\w+/i,
+  /act\s+as\s+(an?\s+)?(unrestricted|evil|fully\s+uncensored)/i,
+  /pretend\s+(you\s+)?(are|have)\s+no\s+(restrictions|guidelines|rules)/i,
+  // Context / delimiter pollution
+  /\[\[.*instructions.*\]\]/i,
+  /<\s*system\s*>\s*(you\s+are|your\s+inst|new\s+inst)/i,
+  /---+\s*(new|additional|updated)\s+instructions/i,
+  // Goal hijacking
+  /your\s+(true|real|actual|hidden)\s+(goal|purpose|mission)\s+is/i,
+  /your\s+primary\s+objective\s+is\s+now/i,
+  /from\s+now\s+on[,\s]+ignore/i,
 ];
 
 /**
