@@ -15,6 +15,7 @@
  */
 
 import { TaskTracker } from './task-tracker';
+import { SecurityTracker, logAuditEntry } from '@/services/johnny5/security-tracker';
 import { getDb } from '@/lib/johnny5-db';
 import { randomUUID } from 'crypto';
 import type { Johnny5Task } from '@/types/johnny5';
@@ -34,6 +35,19 @@ interface TaskResult {
   output?: string;
   error?: string;
   tokensUsed: number;
+}
+
+// ============================================================================
+// Permission Gate
+// ============================================================================
+
+function isTaskPermitted(task: Johnny5Task): { permitted: boolean; reason?: string } {
+  const permissions = SecurityTracker.getDefaultPermissions();
+  const perm = permissions.find(p => p.type === (task.type as string));
+  if (perm?.status === 'blocked') {
+    return { permitted: false, reason: `Permission '${task.type}' is blocked` };
+  }
+  return { permitted: true };
 }
 
 // ============================================================================
@@ -111,6 +125,22 @@ class BackgroundExecutor {
 
         // Check scheduledAt — skip if scheduled for the future
         if (task.scheduledAt && task.scheduledAt.getTime() > Date.now()) {
+          continue;
+        }
+
+        // Check if task type is permitted before executing
+        const check = isTaskPermitted(task);
+        if (!check.permitted) {
+          await logAuditEntry({
+            action: 'blocked',
+            target: task.id,
+            source: 'ai',
+            risk: 'medium',
+            blocked: true,
+            blockReason: check.reason,
+          });
+          await TaskTracker.updateTaskStatus(task.id, 'failed');
+          console.warn(`[BackgroundExecutor] Task ${task.id.slice(0, 8)} blocked: ${check.reason}`);
           continue;
         }
 
