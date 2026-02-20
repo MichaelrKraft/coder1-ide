@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Check, Download, Save, Loader2, FileText, Eye, FileArchive, Share2 } from 'lucide-react';
+import { X, Check, Download, Save, Loader2, FileText, Eye, FileArchive, Share2, RotateCw, ChevronDown } from 'lucide-react';
 import { useSessionSummary } from '@/lib/hooks/useSessionSummary';
 import { useUIStore } from '@/stores/useUIStore';
 import { useTeamStore } from '@/stores/useTeamStore';
@@ -55,6 +55,7 @@ export default function StatusBarModals({
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [sharedId, setSharedId] = useState<string | null>(null);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
 
   const { closeModal, addToast } = useUIStore();
   const syncTeam = useTeamStore(s => s.syncTeam);
@@ -176,6 +177,14 @@ export default function StatusBarModals({
     }
   }, [isGenerating]);
 
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    if (!exportDropdownOpen) return;
+    const close = () => setExportDropdownOpen(false);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [exportDropdownOpen]);
+
   // Regenerate summary
   const handleRegenerate = () => {
     clearSummary();
@@ -236,43 +245,43 @@ export default function StatusBarModals({
         </div>
 
         {/* Modal Tabs */}
-        <div className="flex gap-1 p-4 border-b border-border-default">
+        <div className="flex gap-6 px-4 pt-3 border-b border-border-default">
           <button
             onClick={() => setActiveTab('summary')}
-            className={`px-4 py-2 rounded transition-all ${
-              activeTab === 'summary' 
-                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' 
-                : 'hover:bg-bg-primary text-text-muted'
+            className={`pb-2 border-b-2 text-sm transition-colors ${
+              activeTab === 'summary'
+                ? 'border-orange-400 text-text-primary font-medium'
+                : 'border-transparent text-text-muted hover:text-text-secondary'
             }`}
           >
             Summary
           </button>
           <button
             onClick={() => setActiveTab('insights')}
-            className={`px-4 py-2 rounded transition-all ${
-              activeTab === 'insights' 
-                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' 
-                : 'hover:bg-bg-primary text-text-muted'
+            className={`pb-2 border-b-2 text-sm transition-colors ${
+              activeTab === 'insights'
+                ? 'border-orange-400 text-text-primary font-medium'
+                : 'border-transparent text-text-muted hover:text-text-secondary'
             }`}
           >
             Insights
           </button>
           <button
             onClick={() => setActiveTab('nextSteps')}
-            className={`px-4 py-2 rounded transition-all ${
-              activeTab === 'nextSteps' 
-                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' 
-                : 'hover:bg-bg-primary text-text-muted'
+            className={`pb-2 border-b-2 text-sm transition-colors ${
+              activeTab === 'nextSteps'
+                ? 'border-orange-400 text-text-primary font-medium'
+                : 'border-transparent text-text-muted hover:text-text-secondary'
             }`}
           >
             Next Steps
           </button>
           <button
             onClick={() => setActiveTab('handoff')}
-            className={`px-4 py-2 rounded transition-all ${
-              activeTab === 'handoff' 
-                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' 
-                : 'hover:bg-bg-primary text-text-muted'
+            className={`pb-2 border-b-2 text-sm transition-colors ${
+              activeTab === 'handoff'
+                ? 'border-orange-400 text-text-primary font-medium'
+                : 'border-transparent text-text-muted hover:text-text-secondary'
             }`}
           >
             Handoff
@@ -485,97 +494,84 @@ export default function StatusBarModals({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between gap-4 p-4 border-t border-border-default">
-          <div className="flex items-center gap-2">
-            {/* Export Format Selector */}
-            <select
-              value={exportFormat}
-              onChange={(e) => setExportFormat(e.target.value as any)}
-              className="px-3 py-1.5 bg-bg-primary border border-border-default rounded text-sm text-text-primary"
-            >
-              <option value="markdown">Markdown</option>
-              <option value="json">JSON</option>
-              <option value="html">HTML</option>
-              <option value="all">All Formats</option>
-            </select>
+        <div className="flex items-center justify-between p-3 border-t border-border-default bg-bg-primary/30">
+          <div className="flex items-center text-xs text-text-muted">
+            {isGenerating && <span className="text-orange-400">Generating...</span>}
+            {hasGenerated && !isGenerating && <span className="text-green-400/70">Ready</span>}
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Store in Docs Button */}
-            <button
-              onClick={handleStoreInDocs}
-              disabled={!hasGenerated || isStoringInDocs}
-              className="px-4 py-1.5 bg-green-500/20 text-green-400 border border-green-500/50 rounded hover:bg-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-            >
-              {isStoringInDocs ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : storeSuccess ? (
-                <Check className="w-4 h-4" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              {storeSuccess ? 'Stored!' : 'Store in Docs'}
-            </button>
-
-            {/* Copy Button */}
-            <button
-              onClick={handleCopyToClipboard}
-              disabled={!hasGenerated}
-              className="px-4 py-1.5 bg-blue-500/20 text-blue-400 border border-blue-500/50 rounded hover:bg-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-            >
-              {copySuccess ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <FileText className="w-4 h-4" />
-                  Copy
-                </>
-              )}
-            </button>
-
-            {/* Export Button */}
-            <button
-              onClick={handleExportSummary}
-              disabled={!hasGenerated}
-              className="px-4 py-1.5 bg-purple-500/20 text-purple-400 border border-purple-500/50 rounded hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Export
-            </button>
-
-            {/* Regenerate Button */}
+          <div className="flex items-center divide-x divide-border-default">
+            {/* Regenerate */}
             <button
               onClick={handleRegenerate}
               disabled={isGenerating}
-              className="px-4 py-1.5 bg-orange-500/20 text-orange-400 border border-orange-500/50 rounded hover:bg-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              title="Regenerate summary"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-muted hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              {isGenerating ? 'Generating...' : 'Regenerate'}
+              <RotateCw className="w-3.5 h-3.5" />
+              Regen
             </button>
 
-            {/* Share to Team Button — only shown when team features are on and user is on a team */}
+            {/* Store in Docs */}
+            <button
+              onClick={handleStoreInDocs}
+              disabled={!hasGenerated || isStoringInDocs}
+              title="Store in Documentation"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-muted hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {isStoringInDocs ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : storeSuccess ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Save className="w-3.5 h-3.5" />}
+              {storeSuccess ? 'Stored!' : 'Store in Docs'}
+            </button>
+
+            {/* Copy */}
+            <button
+              onClick={handleCopyToClipboard}
+              disabled={!hasGenerated}
+              title="Copy to clipboard"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-muted hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {copySuccess ? <Check className="w-3.5 h-3.5 text-green-400" /> : <FileText className="w-3.5 h-3.5" />}
+              {copySuccess ? 'Copied!' : 'Copy'}
+            </button>
+
+            {/* Export with dropdown */}
+            <div className="relative">
+              <button
+                onClick={(e) => { e.stopPropagation(); setExportDropdownOpen(v => !v); }}
+                disabled={!hasGenerated}
+                title="Export"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-muted hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {exportDropdownOpen && (
+                <div className="absolute bottom-full right-0 mb-1 bg-bg-secondary border border-border-default rounded shadow-lg z-10 min-w-[140px]">
+                  {(['markdown', 'json', 'html', 'all'] as const).map((fmt) => (
+                    <button
+                      key={fmt}
+                      onClick={() => { setExportFormat(fmt); setExportDropdownOpen(false); handleExportSummary(); }}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-bg-tertiary transition-colors ${exportFormat === fmt ? 'text-orange-400' : 'text-text-secondary'}`}
+                    >
+                      {fmt === 'all' ? 'All Formats' : fmt.charAt(0).toUpperCase() + fmt.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Share to Team — conditional */}
             {getFeatureFlags().teamFeatures && syncTeam && (
-              <div className="flex flex-col items-end gap-1">
-                <button
-                  onClick={handleShareToTeam}
-                  disabled={!hasGenerated || isSharing || !!sharedId}
-                  className="px-4 py-1.5 bg-coder1-cyan/20 text-coder1-cyan border border-coder1-cyan/50 rounded hover:bg-coder1-cyan/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-                >
-                  {isSharing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : sharedId ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <Share2 className="w-4 h-4" />
-                  )}
-                  {isSharing ? 'Sharing...' : sharedId ? '✓ Shared' : `Share to ${syncTeam.name}`}
-                </button>
-                {shareError && (
-                  <span className="text-xs text-red-400">{shareError}</span>
-                )}
-              </div>
+              <button
+                onClick={handleShareToTeam}
+                disabled={!hasGenerated || isSharing || !!sharedId}
+                title={`Share to ${syncTeam.name}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-muted hover:text-coder1-cyan disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSharing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : sharedId ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Share2 className="w-3.5 h-3.5" />}
+                {isSharing ? 'Sharing...' : sharedId ? 'Shared' : 'Share'}
+              </button>
             )}
           </div>
         </div>
