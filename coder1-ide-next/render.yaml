@@ -145,6 +145,9 @@ services:
         
       - key: NEXT_PUBLIC_ENABLE_AGENT_DASHBOARD
         value: false # Disabled for alpha
+
+      - key: NEXT_PUBLIC_ENABLE_TEAM_FEATURES
+        value: "true"
         
       # Monitoring & Performance
       - key: ENABLE_HEALTH_CHECKS
