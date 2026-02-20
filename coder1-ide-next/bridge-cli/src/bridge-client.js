@@ -17,6 +17,7 @@ const ClaudeExecutor = require('./claude-executor');
 const FileHandler = require('./file-handler');
 const LivingFilesHandler = require('./living-files-handler');
 const { saveCredentials, loadCredentials, clearCredentials } = require('./credentials-manager');
+const GitWatcher = require('./git-watcher');
 
 class BridgeClient extends EventEmitter {
   constructor(options = {}) {
@@ -409,12 +410,31 @@ class BridgeClient extends EventEmitter {
         this._teamAuthInitialized = false;
       }
 
+      // Git watcher for VCS conflict detection
+      this._gitWatcher = null;
+
       // Listen for team authorization events from server
       this.socket.on('team:authorized', ({ teamId }) => {
         if (teamId) {
           this._authorizedTeams.add(teamId);
           this._teamAuthInitialized = true;
           logger.info('Team authorized for collab writes', { teamId });
+
+          // Start git watcher for conflict detection when team is authorized
+          if (!this._gitWatcher) {
+            this._gitWatcher = new GitWatcher({
+              socket: this.socket,
+              teamId,
+              workingDir: process.cwd(),
+              pollIntervalMs: 5000,
+              debounceMs: 500,
+            });
+            this._gitWatcher.start();
+            logger.info('Git watcher started for conflict detection', { teamId });
+          } else {
+            // Update team ID if watcher already running
+            this._gitWatcher.setTeamId(teamId);
+          }
         }
       });
 
@@ -1190,11 +1210,17 @@ class BridgeClient extends EventEmitter {
     this.stopHeartbeat();
     this.stopKeepAlive();
 
+    // Stop git watcher for conflict detection
+    if (this._gitWatcher) {
+      this._gitWatcher.stop();
+      this._gitWatcher = null;
+    }
+
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
     }
-    
+
     this.connected = false;
     this.emit('disconnected', 'manual');
   }

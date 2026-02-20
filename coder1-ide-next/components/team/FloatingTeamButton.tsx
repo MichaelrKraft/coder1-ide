@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Cloud } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { useTeamStore } from '@/stores/useTeamStore';
 
 export default function FloatingTeamButton() {
@@ -17,7 +17,7 @@ export default function FloatingTeamButton() {
       className="fixed bottom-2 right-4 z-50 w-14 h-14 rounded-full bg-coder1-cyan/20 border border-coder1-cyan/50 hover:bg-coder1-cyan/30 hover:border-coder1-cyan hover:shadow-glow-cyan transition-all duration-200 flex items-center justify-center group"
       title={syncTeam ? `Team: ${syncTeam.name}` : 'Create or join a team'}
     >
-      <Cloud className="w-6 h-6 text-coder1-cyan group-hover:scale-110 transition-transform" />
+      <Users className="w-6 h-6 text-coder1-cyan group-hover:scale-110 transition-transform" />
 
       {/* Online count badge */}
       {syncTeam && onlineMembers.length > 0 && (

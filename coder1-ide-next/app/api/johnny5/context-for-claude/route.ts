@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getExistingFacts, getRelevantFacts } from '@/services/memory/fact-extraction-service';
 import { extractUserId } from '@/lib/auth/extract-user-id';
+import { buildVCSContext } from '@/lib/johnny5/vcs-context';
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,12 +78,27 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Team VCS context (active branches, conflicts, PRs)
+    const teamId = searchParams.get('teamId') || '';
+    const vcsEnabled = process.env.NEXT_PUBLIC_JOHNNY5_VCS_CONTEXT_ENABLED === 'true';
+    if (vcsEnabled && teamId) {
+      try {
+        const vcsContext = buildVCSContext(teamId, userId);
+        if (vcsContext) {
+          sections.push('\n' + vcsContext);
+        }
+      } catch (err) {
+        console.warn('[Johnny5] Failed to build VCS context:', err);
+        // Non-fatal: continue without VCS context
+      }
+    }
+
     const context = sections.length > 0
       ? `# Context from Johnny5 (AI Assistant)\n\n${sections.join('\n')}`
       : '';
 
-    // Cap at 3000 chars to avoid overwhelming Claude Code's context
-    const cappedContext = context.slice(0, 3000);
+    // Cap at 5000 chars to accommodate VCS context (was 3000)
+    const cappedContext = context.slice(0, 5000);
 
     return NextResponse.json({
       success: true,

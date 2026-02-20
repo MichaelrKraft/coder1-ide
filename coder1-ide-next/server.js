@@ -1735,7 +1735,10 @@ app.prepare().then(() => {
       
       try {
         const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET || 'coder1-bridge-secret-2025';
+        const JWT_SECRET = process.env.JWT_SECRET;
+        if (!JWT_SECRET) {
+          return next(new Error('Server misconfiguration: JWT_SECRET is required'));
+        }
         const decoded = jwt.verify(token, JWT_SECRET);
         socket.userId = decoded.userId;
         socket.bridgeMetadata = {
@@ -2255,24 +2258,59 @@ app.prepare().then(() => {
       }
     });
 
-    // Team presence: join
-    socket.on('team:presence:join', ({ teamId, userId, username }) => {
+    // Team presence: join (with server-side membership verification)
+    socket.on('team:presence:join', async ({ teamId, userId, username }) => {
       console.log(`[TeamPresence] 👋 Join request: user=${username}, team=${teamId}, userId=${userId}`);
-      if (!teamId || !userId) return;
+      if (!teamId) return;
+
+      // CRITICAL-3: Use authenticated socket.userId, not client-provided userId
+      const authenticatedUserId = socket.userId;
+      if (!authenticatedUserId) {
+        console.warn(`[TeamPresence] ⛔ Join attempt from unauthenticated socket`);
+        socket.emit('collab:error', { code: 401, message: 'Socket not authenticated' });
+        return;
+      }
+
+      // Warn if client userId doesn't match authenticated userId (potential spoofing attempt)
+      if (userId && userId !== authenticatedUserId) {
+        console.warn(`[TeamPresence] ⚠️ Client userId mismatch: client=${userId}, authenticated=${authenticatedUserId}`);
+      }
+
+      // Use authenticated userId for membership verification
+      const verifiedUserId = authenticatedUserId;
+
+      // Verify team membership server-side before allowing join
+      try {
+        const { getTeamMembers } = require('./lib/auth/supabase-db.ts');
+        const teamMembers = await getTeamMembers(teamId);
+        const member = teamMembers.find(m => m.id === verifiedUserId);
+        if (!member) {
+          console.warn(`[TeamPresence] ⛔ Unauthorized join attempt: user=${verifiedUserId} not a member of team=${teamId}`);
+          socket.emit('collab:error', { code: 403, message: 'Not a team member' });
+          return;
+        }
+        // Store verified username from DB (don't trust client-provided username)
+        username = member.username || member.name || username;
+      } catch (err) {
+        console.warn(`[TeamPresence] ⚠️ Membership check failed, denying join: ${err.message}`);
+        socket.emit('collab:error', { code: 500, message: 'Team membership verification failed' });
+        return;
+      }
+
       socket.join(`team:${teamId}`);
       console.log(`[TeamPresence] ✅ User joined team room: team:${teamId}`);
       if (!teamPresence.has(teamId)) teamPresence.set(teamId, new Map());
       const members = teamPresence.get(teamId);
-      socket._teamPresence = { teamId, userId, username };
-      if (!members.has(userId)) {
-        members.set(userId, { userId, username, sockets: new Set() });
+      socket._teamPresence = { teamId, userId: verifiedUserId, username };
+      if (!members.has(verifiedUserId)) {
+        members.set(verifiedUserId, { userId: verifiedUserId, username, sockets: new Set() });
       }
-      members.get(userId).sockets.add(socket.id);
+      members.get(verifiedUserId).sockets.add(socket.id);
       broadcastPresence(teamId);
 
       // 4.6: Notify the user's bridge that this team is authorized for collab writes
       if (bridgeManager) {
-        bridgeManager.broadcastToUser(userId, 'team:authorized', { teamId });
+        bridgeManager.broadcastToUser(verifiedUserId, 'team:authorized', { teamId });
       }
 
       // Map terminal sessions to team for code activity tracking
@@ -2833,6 +2871,248 @@ app.prepare().then(() => {
         } catch (auditErr) { /* non-fatal */ }
       }
     });
+
+    // ===============================================
+    // VCS: BRANCH CONFLICT DETECTION
+    // ===============================================
+
+    // Track which files each user is editing: teamId -> Map<filePath, Map<userId, { username, branch, since }>>
+    if (!global._vcsActiveFiles) {
+      global._vcsActiveFiles = new Map();
+    }
+    const vcsActiveFiles = global._vcsActiveFiles;
+
+    // Stale conflict timeout: clear entries older than 30 minutes
+    const VCS_STALE_TIMEOUT_MS = 30 * 60 * 1000;
+
+    socket.on('vcs:file:opened', ({ teamId, filePath, branch }) => {
+      if (!teamId || !filePath) return;
+      if (!socket._teamPresence) return; // Must be in a team
+
+      const userId = socket._teamPresence.userId;
+      const username = socket._teamPresence.username;
+
+      // Initialize team map if needed
+      if (!vcsActiveFiles.has(teamId)) {
+        vcsActiveFiles.set(teamId, new Map());
+      }
+      const teamFiles = vcsActiveFiles.get(teamId);
+
+      // Initialize file editors map if needed
+      if (!teamFiles.has(filePath)) {
+        teamFiles.set(filePath, new Map());
+      }
+      const fileEditors = teamFiles.get(filePath);
+
+      // Record this user as editing this file
+      const since = new Date().toISOString();
+      fileEditors.set(userId, { username, branch, since });
+
+      // Broadcast editing state to team
+      io.to(`team:${teamId}`).emit('vcs:file:editing', {
+        userId,
+        username,
+        filePath,
+        branch,
+        since,
+      });
+
+      // Check for conflicts: multiple users editing the same file
+      if (fileEditors.size > 1) {
+        const editors = [];
+        for (const [uid, info] of fileEditors) {
+          editors.push({
+            userId: uid,
+            username: info.username,
+            branch: info.branch,
+            since: info.since,
+          });
+        }
+
+        const conflict = {
+          filePath,
+          editors,
+          severity: 'critical', // Same file = critical
+          detectedAt: new Date().toISOString(),
+        };
+
+        io.to(`team:${teamId}`).emit('vcs:conflict:detected', {
+          conflict,
+          teamId,
+        });
+
+        console.log(`[VCS] Conflict detected: ${filePath} edited by ${editors.map(e => e.username).join(', ')}`);
+      }
+
+      // Also check for directory-level warnings (same directory, different files)
+      const dir = filePath.substring(0, filePath.lastIndexOf('/')) || '.';
+      for (const [otherPath, otherEditors] of teamFiles) {
+        if (otherPath === filePath) continue;
+        const otherDir = otherPath.substring(0, otherPath.lastIndexOf('/')) || '.';
+        if (otherDir === dir) {
+          // Check if a different user is editing in the same directory
+          for (const [otherUserId] of otherEditors) {
+            if (otherUserId !== userId) {
+              const allEditors = [];
+              allEditors.push({ userId, username, branch, since });
+              const otherInfo = otherEditors.get(otherUserId);
+              allEditors.push({
+                userId: otherUserId,
+                username: otherInfo.username,
+                branch: otherInfo.branch,
+                since: otherInfo.since,
+              });
+
+              const dirConflict = {
+                filePath: dir + '/',
+                editors: allEditors,
+                severity: 'warning', // Same directory = warning
+                detectedAt: new Date().toISOString(),
+              };
+
+              // Only emit to the newly joining user (avoid spam)
+              socket.emit('vcs:conflict:detected', {
+                conflict: dirConflict,
+                teamId,
+              });
+              break; // One warning per directory is enough
+            }
+          }
+        }
+      }
+    });
+
+    socket.on('vcs:file:closed', ({ teamId, filePath }) => {
+      if (!teamId || !filePath) return;
+      if (!socket._teamPresence) return;
+
+      const userId = socket._teamPresence.userId;
+
+      const teamFiles = vcsActiveFiles.get(teamId);
+      if (!teamFiles) return;
+
+      const fileEditors = teamFiles.get(filePath);
+      if (!fileEditors) return;
+
+      // Remove this user from the file
+      fileEditors.delete(userId);
+
+      // Broadcast that user stopped editing
+      io.to(`team:${teamId}`).emit('vcs:file:stopped', {
+        userId,
+        filePath,
+      });
+
+      // If no more editors, clean up and resolve conflict
+      if (fileEditors.size === 0) {
+        teamFiles.delete(filePath);
+        io.to(`team:${teamId}`).emit('vcs:conflict:resolved', {
+          filePath,
+          teamId,
+        });
+      } else if (fileEditors.size === 1) {
+        // Only one editor left - conflict resolved
+        io.to(`team:${teamId}`).emit('vcs:conflict:resolved', {
+          filePath,
+          teamId,
+        });
+      }
+
+      // Clean up empty team maps
+      if (teamFiles.size === 0) {
+        vcsActiveFiles.delete(teamId);
+      }
+    });
+
+    // Request current conflict state (for reconnecting clients)
+    socket.on('vcs:conflicts:request', ({ teamId }) => {
+      if (!teamId) return;
+
+      const teamFiles = vcsActiveFiles.get(teamId);
+      if (!teamFiles) {
+        socket.emit('vcs:conflicts:state', { teamId, conflicts: [], activeEditors: [] });
+        return;
+      }
+
+      const conflicts = [];
+      const activeEditors = [];
+      const now = Date.now();
+
+      for (const [filePath, fileEditors] of teamFiles) {
+        // Clean up stale entries
+        for (const [uid, info] of fileEditors) {
+          if (now - new Date(info.since).getTime() > VCS_STALE_TIMEOUT_MS) {
+            fileEditors.delete(uid);
+          }
+        }
+
+        // Clean up empty file entries
+        if (fileEditors.size === 0) {
+          teamFiles.delete(filePath);
+          continue;
+        }
+
+        // Build active editors list
+        for (const [uid, info] of fileEditors) {
+          activeEditors.push({
+            userId: uid,
+            username: info.username,
+            filePath,
+            branch: info.branch,
+            since: info.since,
+          });
+        }
+
+        // Build conflicts (files with multiple editors)
+        if (fileEditors.size > 1) {
+          const editors = [];
+          for (const [uid, info] of fileEditors) {
+            editors.push({
+              userId: uid,
+              username: info.username,
+              branch: info.branch,
+              since: info.since,
+            });
+          }
+          conflicts.push({
+            filePath,
+            editors,
+            severity: 'critical',
+            detectedAt: editors[0].since,
+          });
+        }
+      }
+
+      socket.emit('vcs:conflicts:state', { teamId, conflicts, activeEditors });
+    });
+
+    // Clean up VCS tracking on disconnect
+    socket.on('disconnect', () => {
+      if (socket._teamPresence) {
+        const { teamId, userId } = socket._teamPresence;
+        const teamFiles = vcsActiveFiles.get(teamId);
+        if (teamFiles) {
+          for (const [filePath, fileEditors] of teamFiles) {
+            if (fileEditors.has(userId)) {
+              fileEditors.delete(userId);
+              io.to(`team:${teamId}`).emit('vcs:file:stopped', { userId, filePath });
+
+              if (fileEditors.size <= 1) {
+                if (fileEditors.size === 0) teamFiles.delete(filePath);
+                io.to(`team:${teamId}`).emit('vcs:conflict:resolved', { filePath, teamId });
+              }
+            }
+          }
+          if (teamFiles.size === 0) {
+            vcsActiveFiles.delete(teamId);
+          }
+        }
+      }
+    });
+
+    // ===============================================
+    // END VCS CONFLICT DETECTION
+    // ===============================================
 
     let currentSessionId = null;
 
