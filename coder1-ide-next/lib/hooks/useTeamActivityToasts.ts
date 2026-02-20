@@ -57,6 +57,7 @@ export function useTeamActivityToasts() {
               label: 'View',
               onClick: () => {
                 useTeamStore.getState().setOpenToSummariesTab(true);
+                window.dispatchEvent(new CustomEvent('openTeamPanel'));
               },
             },
           ],
