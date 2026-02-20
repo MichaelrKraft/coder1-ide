@@ -184,7 +184,11 @@ Be conversational and helpful, but focus on getting specific, actionable details
         model: 'claude-sonnet-4-6-20250514',
         max_tokens: 1024,
         messages: this.conversationHistory,
-        system: systemPrompt
+        system: [{
+          type: 'text',
+          text: systemPrompt,
+          cache_control: { type: 'ephemeral' }
+        }]
       });
 
       const answer = response.content[0].type === 'text' ? response.content[0].text : '';
@@ -335,7 +339,12 @@ Format as structured data.`;
         max_tokens: 1024,
         messages: [{
           role: 'user',
-          content: systemPrompt
+          content: initialRequest
+        }],
+        system: [{
+          type: 'text',
+          text: systemPrompt,
+          cache_control: { type: 'ephemeral' }
         }]
       });
 
