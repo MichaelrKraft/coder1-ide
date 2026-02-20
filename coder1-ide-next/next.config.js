@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: false, // Disabled to prevent double-initialization issues
   // Transpile y-monaco (pure ESM module) for Next.js compatibility
-  transpilePackages: ['y-monaco'],
+  transpilePackages: ['y-monaco', '@livekit/components-react'],
   // GitHub Pages Configuration
   // CRITICAL: Do NOT use 'standalone' with custom server - it breaks API routes
   output: process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES ? 'export' : undefined,
@@ -85,6 +85,9 @@ const nextConfig = {
         'ogl': stubPath,
         'd3': stubPath,
         'cheerio': stubPath,
+        'livekit-client': stubPath,
+        '@livekit/components-react': stubPath,
+        '@livekit/components-styles': stubPath,
       };
       
       // DISABLE vendor chunk splitting entirely for SSR
