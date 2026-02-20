@@ -540,7 +540,7 @@ export default function TeamPanel() {
       {/* Header with connection status */}
       <div className="space-y-2">
         {/* Row 1: Team name, selector, and connection status */}
-        <div className="flex items-center gap-2 text-text-primary pr-8">
+        <div className="flex items-center gap-2 text-text-primary">
           <Users className="w-5 h-5 text-coder1-cyan" />
           <h3 className="font-semibold">{syncTeam.name}</h3>
           {/* Connection status indicator inline */}

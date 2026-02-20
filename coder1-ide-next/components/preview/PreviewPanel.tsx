@@ -7,7 +7,9 @@ import ContextualMemoryPanel from '@/components/contextual-memory/ContextualMemo
 import ParallelReasoningDashboard from '@/components/beta/ParallelReasoningDashboard';
 import { Johnny5Panel } from '@/components/johnny5';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
-import { AgentTeamsPanel } from '@/components/teams';
+import TeamPanel from '@/components/team/TeamPanel';
+import { useTeamStore } from '@/stores/useTeamStore';
+import { useVoiceCallStore } from '@/stores/useVoiceCallStore';
 import { features } from '@/lib/feature-flags';
 
 type PreviewMode = 'preview' | 'terminal' | 'parathink' | 'contextual-memory' | 'johnny5' | 'teams';
@@ -41,6 +43,10 @@ const PreviewPanel = React.memo(function PreviewPanel({
 }: PreviewPanelProps) {
   // 🤖 Johnny5 is now the default mode (replacing Memory UX)
   const [mode, setMode] = useState<PreviewMode>('johnny5');
+
+  // Team store reads for badge indicators on the Teams tab
+  const { syncTeam, onlineMembers } = useTeamStore();
+  const { teamCallActive } = useVoiceCallStore();
   const [paraThinkSessionId, setParaThinkSessionId] = useState<string | null>(null);
   
   // Live preview state
@@ -129,6 +135,16 @@ const PreviewPanel = React.memo(function PreviewPanel({
     const handleSwitchToTeams = () => setMode('teams');
     window.addEventListener('switchToTeamsTab', handleSwitchToTeams);
     return () => window.removeEventListener('switchToTeamsTab', handleSwitchToTeams);
+  }, []);
+
+  // Listen for openTeamPanel events (from toast "View" clicks, etc.)
+  useEffect(() => {
+    const handleOpenTeamPanel = () => {
+      setMode('teams');
+      window.dispatchEvent(new CustomEvent('expandRightPanel'));
+    };
+    window.addEventListener('openTeamPanel', handleOpenTeamPanel);
+    return () => window.removeEventListener('openTeamPanel', handleOpenTeamPanel);
   }, []);
 
   // Listen for ParaThinker dashboard open events
@@ -320,11 +336,30 @@ const PreviewPanel = React.memo(function PreviewPanel({
             'Preview',
             'Live preview of your HTML, CSS, and JavaScript code'
           )}
-          {features().teamFeatures && renderTabButton(
-            'teams',
-            <Users className="w-4 h-4" />,
-            'Teams',
-            'Spawn and manage AI agent teams'
+          {features().teamFeatures && (
+            <button
+              onClick={() => setMode('teams')}
+              className={`
+                flex items-center gap-1.5 px-3 py-2 text-sm font-medium
+                transition-all duration-200 border-b-2
+                ${mode === 'teams'
+                  ? 'text-coder1-cyan border-coder1-cyan'
+                  : 'text-text-secondary border-transparent hover:text-text-primary hover:border-border-hover'
+                }
+              `}
+              title="Team collaboration — voice, chat, and coordination"
+            >
+              <Users className="w-4 h-4" />
+              <span>Teams</span>
+              {syncTeam && onlineMembers.length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-green-500 text-white text-[9px] font-bold flex items-center justify-center">
+                  {onlineMembers.length}
+                </span>
+              )}
+              {teamCallActive && (
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              )}
+            </button>
           )}
           {/* Only show ParaThinker tab when we have a session */}
           {paraThinkSessionId && renderTabButton(
@@ -390,10 +425,10 @@ const PreviewPanel = React.memo(function PreviewPanel({
               </div>
             )}
 
-            {/* Agent Teams Panel */}
-            {features().teamFeatures && mode === 'teams' && (
-              <div className="h-full">
-                <AgentTeamsPanel onOpenFile={onOpenFile} />
+            {/* Team Communication Panel — always mounted to preserve Socket.IO connections */}
+            {features().teamFeatures && (
+              <div className={`h-full overflow-y-auto ${mode === 'teams' ? '' : 'hidden'}`}>
+                <TeamPanel />
               </div>
             )}
 

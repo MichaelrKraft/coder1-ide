@@ -8,8 +8,6 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import InteractiveTour from "@/components/InteractiveTour";
 import SettingsModal from "@/components/SettingsModal";
 import KeyboardShortcutsModal from "@/components/KeyboardShortcutsModal";
-import TeamPanel from "@/components/team/TeamPanel";
-import FloatingTeamButton from "@/components/team/FloatingTeamButton";
 import FloatingVoicePanel from "@/components/team/FloatingVoicePanel";
 import { MenuActionsService, FileInfo } from '@/lib/services/menu-actions';
 import type { editor } from 'monaco-editor';
@@ -312,14 +310,6 @@ function IDEPageContent() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showQuickDocs, setShowQuickDocs] = useState(false);
-  const [showTeamPanel, setShowTeamPanel] = useState(false);
-
-  // Listen for openTeamPanel events from status bar
-  useEffect(() => {
-    const handler = () => setShowTeamPanel(prev => !prev);
-    window.addEventListener('openTeamPanel', handler);
-    return () => window.removeEventListener('openTeamPanel', handler);
-  }, []);
   const [fontSize, setFontSize] = useState(14);
 
   // Mission Control state
@@ -2118,22 +2108,6 @@ function IDEPageContent() {
               onFontSizeChange={setFontSize}
             />
             
-            {/* Team Panel Slide-out — z-index must exceed MenuBar's inline z-index:100 */}
-            {features().teamFeatures && showTeamPanel && (
-              <div className="fixed inset-0 flex justify-end" style={{ zIndex: 110 }}>
-                <div className="absolute inset-0 bg-black/40" onClick={() => setShowTeamPanel(false)} />
-                <div className="relative w-[380px] bg-bg-primary border-l border-border-default shadow-2xl overflow-y-auto">
-                  <button
-                    onClick={() => setShowTeamPanel(false)}
-                    className="absolute top-3 right-3 z-10 text-text-muted hover:text-text-primary text-lg leading-none w-6 h-6 flex items-center justify-center rounded hover:bg-bg-tertiary"
-                  >&times;</button>
-                  <TeamPanel />
-                </div>
-              </div>
-            )}
-
-            {/* Floating Team Button */}
-            {features().teamFeatures && <FloatingTeamButton />}
             {features().teamFeatures && <FloatingVoicePanel />}
 
             {/* Keyboard Shortcuts Modal */}
