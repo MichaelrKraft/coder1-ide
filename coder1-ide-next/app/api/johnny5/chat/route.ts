@@ -1265,7 +1265,7 @@ export async function POST(
     try {
       const supabaseUrl = process.env.SUPABASE_URL;
       const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-      if (supabaseUrl && supabaseKey && userId) {
+      if (supabaseUrl && supabaseKey && userId && userId !== 'default') {
         const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
         const supa = createSupabaseClient(supabaseUrl, supabaseKey);
         // Find user's team
@@ -1293,6 +1293,51 @@ export async function POST(
             // Hard cap: never let the team block exceed 800 chars
             contextParts.push(teamBlock.length > 800 ? teamBlock.slice(0, 800) + '\n…' : teamBlock);
             reasoningSteps.push('Injecting team session summaries');
+          }
+
+          // Team knowledge facts — inject alongside summaries
+          try {
+            const knowledgePromise = supa
+              .from('team_knowledge')
+              .select('data, source_table')
+              .eq('team_id', membership.team_id)
+              .eq('is_active', true)
+              .neq('source_table', 'memory_chunks')
+              .order('updated_at', { ascending: false })
+              .limit(15);
+
+            // 3-second timeout — same pattern as embeddings to avoid blocking the request
+            const timeoutPromise = new Promise<null>((_, reject) =>
+              setTimeout(() => reject(new Error('team_knowledge timeout')), 3000)
+            );
+
+            const knowledgeResult = await Promise.race([knowledgePromise, timeoutPromise]) as { data: Array<{ data: unknown; source_table: string }> } | null;
+            const knowledgeRows = knowledgeResult?.data ?? [];
+
+            if (knowledgeRows.length > 0) {
+              const factLines: string[] = [];
+              for (const row of knowledgeRows) {
+                // Null-safe cast — mirrors mapKnowledgeRow() in TeamPanel.tsx
+                const d = (row.data || {}) as {
+                  fact_key?: string;
+                  fact_value?: string;
+                  pattern_description?: string;
+                };
+                if (d.fact_key && d.fact_value) {
+                  factLines.push(`- ${d.fact_key}: ${String(d.fact_value).slice(0, 120)}`);
+                } else if (d.pattern_description) {
+                  factLines.push(`- ${d.pattern_description.slice(0, 120)}`);
+                }
+              }
+              if (factLines.length > 0) {
+                // Cap at 600 chars to stay within 8000-char context budget
+                const knowledgeBlock = `## Team Shared Knowledge\n${factLines.join('\n')}`;
+                contextParts.push(knowledgeBlock.slice(0, 600));
+                reasoningSteps.push('Injecting team knowledge facts');
+              }
+            }
+          } catch {
+            // Silent fail — team knowledge is additive, not required
           }
         }
       }
