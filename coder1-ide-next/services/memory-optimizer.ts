@@ -244,7 +244,13 @@ export class MemoryOptimizer extends EventEmitter {
     }
     this.disposables.clear();
 
-    console.log(`🧹 Cleared ${cleared} cached items`);
+    // Trigger V8 GC if available (requires --expose-gc node flag)
+    if (global.gc) {
+      global.gc();
+      console.log(`🧹 Cleared ${cleared} cached items + forced GC`);
+    } else {
+      console.log(`🧹 Cleared ${cleared} cached items (add --expose-gc for manual GC)`);
+    }
   }
 
   /**

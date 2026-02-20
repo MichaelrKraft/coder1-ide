@@ -18,10 +18,8 @@ export function getDatabasePath(): string {
 export async function getDatabase() {
   const BetterSqlite3 = await import('better-sqlite3');
   const Database = BetterSqlite3.default || BetterSqlite3;
-  
+
   const dbPath = getDatabasePath();
-  console.log(`📂 Connecting to database at: ${dbPath}`); // Optional debug
-  
   return new Database(dbPath);
 }
 

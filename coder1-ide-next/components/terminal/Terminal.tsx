@@ -3062,6 +3062,44 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   }, []);
 
   // Emergency stop all AI Team agents (Nov 26, 2025)
+  // Check if Claude Code is waiting for user confirmation (e.g., after proposing a plan)
+  const isClaudeWaitingForInput = useCallback((): boolean => {
+    if (!xtermRef.current) return false;
+    const buffer = xtermRef.current.buffer.active;
+    const lastLines: string[] = [];
+    const start = Math.max(0, buffer.length - 10);
+    for (let i = start; i < buffer.length; i++) {
+      lastLines.push(buffer.getLine(i)?.translateToString(true) ?? '');
+    }
+    const tail = lastLines.join('\n').trim();
+    return /\?\s*$/.test(tail) || /proceed|continue|confirm|yes.*no/i.test(tail);
+  }, []);
+
+  // Inject agent team prompt into active Claude Code session
+  const handleAgentTeamLaunch = useCallback(() => {
+    if (!sessionId) {
+      addToast({ type: 'error', message: 'No active terminal session.' });
+      return;
+    }
+    const socket = socketRef.current;
+    if (!socket?.connected) {
+      addToast({ type: 'error', message: 'Terminal not connected.' });
+      return;
+    }
+    if (!isClaudeWaitingForInput()) {
+      addToast({ type: 'warning', message: 'Ask Claude Code to plan something first, then click AI Team to execute it with parallel agents.' });
+      return;
+    }
+    const prompt = '\nYes, please proceed — but execute this plan using an agent team. Create parallel teammates to work on each independent part simultaneously.\n';
+    socket.emit('terminal:input', {
+      id: sessionId,
+      data: prompt,
+      selectedClaudeModel: useModelStore.getState().selectedModel,
+      skipPermissions: false,
+    });
+    setAgentsRunning(true);
+  }, [sessionId, isClaudeWaitingForInput, addToast]);
+
   const handleEmergencyStop = async () => {
     const confirmed = window.confirm(
       `Stop all ${activeAgentCount} running agents?\n\nThis will terminate all Claude CLI processes immediately.\n\nThis action cannot be undone.`
@@ -5616,14 +5654,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             </button>
           )}
 
-          {/* AI Team button - Opens Teams panel in right sidebar */}
+          {/* AI Team button - Injects agent team prompt into Claude Code session */}
           <button
-            onClick={() => {
-              window.dispatchEvent(new CustomEvent('switchToTeamsTab'));
-              window.dispatchEvent(new CustomEvent('expandRightPanel'));
-            }}
+            onClick={handleAgentTeamLaunch}
             className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-coder1-cyan/20"
-            title="Open Agent Teams panel"
+            title="Launch Agent Team — ask Claude Code to plan something first, then click to execute with parallel teammates. Requires CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1."
           >
             {(agentsRunning || (activeTeam && activeTeam.status !== 'completed' && activeTeam.status !== 'error')) && (
               <span className="w-2 h-2 rounded-full bg-coder1-cyan animate-pulse" />
