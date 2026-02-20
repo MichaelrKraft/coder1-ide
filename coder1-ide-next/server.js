@@ -3453,9 +3453,9 @@ app.prepare().then(() => {
             // 🔧 FIX (Oct 24, 2025): Grace period before killing PTY
             // Allows Timeline ↔ IDE navigation (2-3s) while cleaning up actual close/refresh (30s)
             if (session.connectedSockets.size === 0) {
-              console.log(`⏱️ Last socket disconnected for session ${disconnectSessionId} - starting 30s grace period`);
-              
-              // Start cleanup timer (30 seconds)
+              console.log(`⏱️ Last socket disconnected for session ${disconnectSessionId} - starting 60-minute grace period`);
+
+              // Start cleanup timer (60 minutes)
               const cleanupTimer = setTimeout(() => {
                 // Kill PTY only if still no connections after grace period
                 if (session.connectedSockets && session.connectedSockets.size === 0) {
@@ -3495,7 +3495,7 @@ app.prepare().then(() => {
                   console.log(`♻️ Session ${disconnectSessionId} reconnected during grace period - cleanup cancelled`);
                   sessionCleanupTimers.delete(disconnectSessionId);
                 }
-              }, 300000); // 5 minute grace period (enough for Timeline browsing and testing)
+              }, 3600000); // 60 minute grace period
               
               sessionCleanupTimers.set(disconnectSessionId, cleanupTimer);
             }
