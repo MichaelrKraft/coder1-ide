@@ -16,9 +16,10 @@ const anthropic = new Anthropic({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { teamId: string } }
+  { params }: { params: Promise<{ teamId: string }> }
 ) {
-  const { teamId } = params;
+  try {
+  const { teamId } = await params;
 
   // Auth: verify user is a member of this team
   const user = await getAuthUser(request);
@@ -92,6 +93,12 @@ export async function POST(
     summaryCount: recentSummaries.length,
     factCount: facts.length,
   });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = message.includes('Not authenticated') ? 401
+                 : message.includes('Not a team member') ? 403 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
 }
 
 type SummaryRow = {
