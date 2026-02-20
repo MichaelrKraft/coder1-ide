@@ -103,7 +103,11 @@ class ClaudeAPIService {
           max_tokens: parseInt(process.env.CLAUDE_MAX_TOKENS || '4000'),
           temperature: parseFloat(process.env.CLAUDE_TEMPERATURE || '0.1'),
           messages: this.conversationHistory,
-          system: this.getSystemPrompt()
+          system: [{
+            type: 'text',
+            text: this.getSystemPrompt(),
+            cache_control: { type: 'ephemeral' }
+          }]
         })
       });
 

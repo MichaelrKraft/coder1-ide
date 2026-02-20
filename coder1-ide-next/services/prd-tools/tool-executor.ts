@@ -165,7 +165,11 @@ export class ToolExecutor {
         model: options.model || this.model,
         max_tokens: options.maxTokens || 4096,
         temperature: options.temperature ?? 0, // Use 0 for consistency
-        system: systemPrompt,
+        system: [{
+          type: 'text',
+          text: systemPrompt,
+          cache_control: { type: 'ephemeral' }
+        }],
         messages: [
           {
             role: 'user',

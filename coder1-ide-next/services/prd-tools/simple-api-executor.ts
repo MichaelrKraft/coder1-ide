@@ -67,7 +67,11 @@ IMPORTANT: Respond with ONLY the markdown content for this section. Do not inclu
         model: this.model,
         max_tokens: 4096,
         temperature: 0.7, // Slightly higher for creative writing
-        system: systemPrompt,
+        system: [{
+          type: 'text',
+          text: systemPrompt,
+          cache_control: { type: 'ephemeral' }
+        }],
         messages: [
           {
             role: 'user',
@@ -160,7 +164,11 @@ IMPORTANT: Respond with ONLY a valid JSON object matching the AnalysisInsights s
         model: this.model,
         max_tokens: 3072, // Sufficient for JSON insights (reduced from 8192 for speed)
         temperature: 0.5, // Balanced for speed and JSON quality (increased from 0.3)
-        system: systemPrompt,
+        system: [{
+          type: 'text',
+          text: systemPrompt,
+          cache_control: { type: 'ephemeral' }
+        }],
         messages: [
           {
             role: 'user',
