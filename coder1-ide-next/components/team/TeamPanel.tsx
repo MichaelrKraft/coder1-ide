@@ -16,6 +16,9 @@ import SummariesTab from './tabs/SummariesTab';
 import BriefingTab from './tabs/BriefingTab';
 import PRDashboardTab from './tabs/PRDashboardTab';
 import ConflictsTab from './tabs/ConflictsTab';
+import ChatTab from './tabs/ChatTab';
+import CallNotificationBanner from './CallNotificationBanner';
+import { useVoiceCallStore } from '@/stores/useVoiceCallStore';
 
 export default function TeamPanel() {
   const {
@@ -26,7 +29,9 @@ export default function TeamPanel() {
   const { sharedTerminals } = useSpectatorStore();
 
   // Panel tabs
-  const [activePanel, setActivePanel] = useState<'main' | 'summaries' | 'briefing' | 'prs' | 'conflicts'>('main');
+  const [activePanel, setActivePanel] = useState<'main' | 'summaries' | 'briefing' | 'prs' | 'conflicts' | 'chat'>('main');
+  const { joinCall, callStatus } = useVoiceCallStore();
+  const isVoiceEnabled = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_ENABLE_VOICE_CALLS === 'true';
 
   // Existing state
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -626,6 +631,18 @@ export default function TeamPanel() {
         >
           Briefing
         </button>
+        {isVoiceEnabled && (
+          <button
+            onClick={() => setActivePanel('chat')}
+            className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+              activePanel === 'chat'
+                ? 'border-coder1-cyan text-coder1-cyan'
+                : 'border-transparent text-text-muted hover:text-text-primary'
+            }`}
+          >
+            Chat
+          </button>
+        )}
         <button
           onClick={() => setActivePanel('prs')}
           className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
@@ -649,6 +666,29 @@ export default function TeamPanel() {
       </div>
 
       {/* Tab Content */}
+      {/* Voice call notification banner + start button */}
+      {isVoiceEnabled && activePanel === 'main' && (
+        <>
+          <CallNotificationBanner teamId={syncTeam.id} />
+          {callStatus === 'idle' && (
+            <div className="px-3 mb-2">
+              <button
+                onClick={() => joinCall(syncTeam.id)}
+                className="w-full py-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+                Start Voice Call
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
       {activePanel === 'main' && (
         <TeamTab
           syncTeam={{ id: syncTeam.id, name: syncTeam.name }}
@@ -703,6 +743,10 @@ export default function TeamPanel() {
 
       {activePanel === 'conflicts' && (
         <ConflictsTab syncTeam={{ id: syncTeam.id, name: syncTeam.name }} />
+      )}
+
+      {activePanel === 'chat' && isVoiceEnabled && (
+        <ChatTab teamId={syncTeam.id} />
       )}
     </div>
   );

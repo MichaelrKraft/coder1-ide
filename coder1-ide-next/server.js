@@ -698,6 +698,32 @@ const MAX_ACTIVITY_BUFFER = 30;
 // Maps terminal sessions to teams for activity broadcasting
 const sessionTeamMapping = new Map(); // sessionId -> { teamId, userId, username }
 
+// ===============================================
+// TEAM VOICE CALL STATE (ephemeral, in-memory)
+// ===============================================
+const teamCallState = new Map(); // teamId -> { participantUserIds: Set, startedAt: Date, lastActivity: Date }
+
+function buildCallUpdate(teamId) {
+  const state = teamCallState.get(teamId);
+  return {
+    teamId,
+    active: !!state,
+    participantCount: state ? state.participantUserIds.size : 0,
+    participants: state ? Array.from(state.participantUserIds) : [],
+  };
+}
+
+// Clean up stale call entries every 5 minutes (handles browser crashes without disconnect)
+setInterval(() => {
+  const now = Date.now();
+  for (const [teamId, state] of teamCallState.entries()) {
+    if (now - state.lastActivity.getTime() > 30 * 60 * 1000) {
+      teamCallState.delete(teamId);
+      io.to(`team:${teamId}`).emit('team:call:update', buildCallUpdate(teamId));
+    }
+  }
+}, 5 * 60 * 1000);
+
 function detectGitEvent(sessionId, rawData) {
   // 🔧 FIX (Feb 11, 2026): Claude CLI uses cursor-right sequences (\e[1C, \e[3C)
   // instead of spaces between words. Replace them with equivalent spaces BEFORE
@@ -2342,6 +2368,47 @@ app.prepare().then(() => {
         ? Array.from(members.values()).map(m => ({ userId: m.userId, username: m.username }))
         : [];
       socket.emit('team:presence:update', { teamId, online: onlineList });
+    });
+
+    // ===============================================
+    // TEAM VOICE CALLS
+    // ===============================================
+
+    socket.on('team:call:join', ({ teamId, userId, username }) => {
+      socket._callTeamId = teamId;
+      socket._callUserId = userId;
+      if (!teamCallState.has(teamId)) {
+        teamCallState.set(teamId, { participantUserIds: new Set(), startedAt: new Date(), lastActivity: new Date() });
+      }
+      const state = teamCallState.get(teamId);
+      state.participantUserIds.add(userId);
+      state.lastActivity = new Date();
+      io.to(`team:${teamId}`).emit('team:call:update', buildCallUpdate(teamId));
+    });
+
+    socket.on('team:call:leave', ({ teamId, userId }) => {
+      const state = teamCallState.get(teamId);
+      if (state) {
+        state.participantUserIds.delete(userId);
+        if (state.participantUserIds.size === 0) {
+          teamCallState.delete(teamId);
+        } else {
+          state.lastActivity = new Date();
+        }
+      }
+      io.to(`team:${teamId}`).emit('team:call:update', buildCallUpdate(teamId));
+    });
+
+    socket.on('team:call:status', ({ teamId }) => {
+      socket.emit('team:call:update', buildCallUpdate(teamId));
+    });
+
+    // ===============================================
+    // TEAM CHAT (real-time delivery — persistence is handled by API route)
+    // ===============================================
+
+    socket.on('team:chat:message', ({ teamId, message }) => {
+      io.to(`team:${teamId}`).emit('team:chat:message', { teamId, message });
     });
 
     // ===============================================
@@ -4762,6 +4829,18 @@ app.prepare().then(() => {
           if (entry.sockets.size === 0) members.delete(userId);
         }
         broadcastPresence(teamId);
+      }
+
+      // Clean up voice call presence on disconnect
+      if (socket._callTeamId && socket._callUserId) {
+        const state = teamCallState.get(socket._callTeamId);
+        if (state) {
+          state.participantUserIds.delete(socket._callUserId);
+          if (state.participantUserIds.size === 0) {
+            teamCallState.delete(socket._callTeamId);
+          }
+        }
+        io.to(`team:${socket._callTeamId}`).emit('team:call:update', buildCallUpdate(socket._callTeamId));
       }
 
       // Note: We keep terminal session alive for reconnection

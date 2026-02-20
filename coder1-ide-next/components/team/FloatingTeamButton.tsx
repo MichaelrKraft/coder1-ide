@@ -3,9 +3,11 @@
 import React from 'react';
 import { Users } from 'lucide-react';
 import { useTeamStore } from '@/stores/useTeamStore';
+import { useVoiceCallStore } from '@/stores/useVoiceCallStore';
 
 export default function FloatingTeamButton() {
   const { syncTeam, syncStatus, onlineMembers } = useTeamStore();
+  const { teamCallActive } = useVoiceCallStore();
 
   const handleClick = () => {
     window.dispatchEvent(new CustomEvent('openTeamPanel'));
@@ -14,7 +16,9 @@ export default function FloatingTeamButton() {
   return (
     <button
       onClick={handleClick}
-      className="fixed bottom-2 right-4 z-50 w-14 h-14 rounded-full bg-coder1-cyan/20 border border-coder1-cyan/50 hover:bg-coder1-cyan/30 hover:border-coder1-cyan hover:shadow-glow-cyan transition-all duration-200 flex items-center justify-center group"
+      className={`fixed bottom-2 right-4 z-50 w-14 h-14 rounded-full bg-coder1-cyan/20 border border-coder1-cyan/50 hover:bg-coder1-cyan/30 hover:border-coder1-cyan hover:shadow-glow-cyan transition-all duration-200 flex items-center justify-center group ${
+        teamCallActive ? 'ring-2 ring-green-400 ring-offset-2 ring-offset-zinc-900 animate-pulse' : ''
+      }`}
       title={syncTeam ? `Team: ${syncTeam.name}` : 'Create or join a team'}
     >
       <Users className="w-6 h-6 text-coder1-cyan group-hover:scale-110 transition-transform" />
