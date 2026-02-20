@@ -114,7 +114,7 @@ export default function TeamPanel() {
   const { sharedTerminals } = useSpectatorStore();
 
   // Panel tabs
-  const [activePanel, setActivePanel] = useState<'main' | 'summaries'>('main');
+  const [activePanel, setActivePanel] = useState<'main' | 'summaries' | 'briefing'>('main');
 
   // Existing state
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -139,6 +139,12 @@ export default function TeamPanel() {
   const [expandedLoading, setExpandedLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Briefing state
+  const [briefing, setBriefing] = useState<string | null>(null);
+  const [briefingLoading, setBriefingLoading] = useState(false);
+  const [briefingError, setBriefingError] = useState<string | null>(null);
+  const [briefingGeneratedAt, setBriefingGeneratedAt] = useState<string | null>(null);
+
   // On mount, fetch existing teams the user belongs to
   useEffect(() => {
     if (!syncTeam) {
@@ -161,6 +167,25 @@ export default function TeamPanel() {
         .catch(() => {}); // Silent fail
     }
   }, [syncTeam, teams.length]);
+
+  // Load cached briefing from localStorage when team changes
+  useEffect(() => {
+    if (!syncTeam?.id) return;
+    const cached = localStorage.getItem(`coder1:team:${syncTeam.id}:briefing`);
+    if (cached) {
+      try {
+        const { text, generatedAt } = JSON.parse(cached) as { text: string; generatedAt: string };
+        setBriefing(text);
+        setBriefingGeneratedAt(generatedAt);
+      } catch {
+        localStorage.removeItem(`coder1:team:${syncTeam.id}:briefing`);
+      }
+    } else {
+      // Clear stale briefing when switching teams
+      setBriefing(null);
+      setBriefingGeneratedAt(null);
+    }
+  }, [syncTeam?.id]);
 
   // Fetch members and facts when team is selected
   useEffect(() => {
@@ -346,6 +371,43 @@ export default function TeamPanel() {
     setup();
     return () => { cleanupFn?.(); };
   }, [syncTeam?.id]);
+
+  const generateBriefing = async () => {
+    if (!syncTeam?.id) return;
+    setBriefingLoading(true);
+    setBriefingError(null);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+    try {
+      const res = await fetch(`/api/team/${syncTeam.id}/briefing`, {
+        method: 'POST',
+        signal: controller.signal,
+      });
+      const data = await res.json() as { briefing?: string; generatedAt?: string; error?: string; waitSecs?: number };
+
+      if (!res.ok) {
+        setBriefingError(data.error ?? 'Failed to generate briefing.');
+      } else if (data.briefing && data.generatedAt) {
+        setBriefing(data.briefing);
+        setBriefingGeneratedAt(data.generatedAt);
+        localStorage.setItem(
+          `coder1:team:${syncTeam.id}:briefing`,
+          JSON.stringify({ text: data.briefing, generatedAt: data.generatedAt })
+        );
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        setBriefingError('Request timed out. Please try again.');
+      } else {
+        setBriefingError('Network error. Please try again.');
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setBriefingLoading(false);
+    }
+  };
 
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) return;
@@ -649,6 +711,16 @@ export default function TeamPanel() {
             </span>
           )}
         </button>
+        <button
+          onClick={() => setActivePanel('briefing')}
+          className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+            activePanel === 'briefing'
+              ? 'border-coder1-cyan text-coder1-cyan'
+              : 'border-transparent text-text-muted hover:text-text-primary'
+          }`}
+        >
+          ☀️ Briefing
+        </button>
       </div>
 
       {/* Main Team Panel */}
@@ -939,6 +1011,49 @@ export default function TeamPanel() {
               {summariesLoading ? 'Loading...' : 'Load more'}
             </button>
           )}
+        </div>
+      )}
+
+      {/* Briefing Panel */}
+      {activePanel === 'briefing' && (
+        <div className="flex flex-col gap-3 p-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xs font-semibold text-text-primary">Morning Briefing</h3>
+              {briefingGeneratedAt && (
+                <p className="text-[10px] text-text-muted mt-0.5">
+                  Generated {timeAgo(briefingGeneratedAt)}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={generateBriefing}
+              disabled={briefingLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/20 text-violet-300 text-[11px] font-medium hover:bg-violet-500/30 disabled:opacity-50 transition-colors"
+            >
+              {briefingLoading
+                ? <><span className="inline-block animate-spin">⟳</span> Generating...</>
+                : <>✨ {briefing ? 'Regenerate' : 'Generate Briefing'}</>
+              }
+            </button>
+          </div>
+
+          {briefingError && (
+            <div className="text-[11px] text-red-400 bg-red-500/10 rounded-lg px-3 py-2 border border-red-500/20">
+              {briefingError}
+            </div>
+          )}
+
+          {briefing && !briefingError ? (
+            <pre className="text-[11px] leading-relaxed text-text-muted whitespace-pre-wrap font-sans bg-bg-secondary rounded-xl p-4 border border-border-default">
+              {briefing}
+            </pre>
+          ) : !briefingError ? (
+            <div className="text-center py-10 text-text-muted/40 text-[11px]">
+              <div className="text-2xl mb-2">☀️</div>
+              <p>Generate a daily briefing to see what your<br />team accomplished in the last 24 hours.</p>
+            </div>
+          ) : null}
         </div>
       )}
     </div>
