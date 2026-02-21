@@ -10,7 +10,7 @@
  */
 
 import { logger } from '@/lib/logger';
-import { isLivingFilesEnabled, loadLivingFile, writeLivingFile } from '@/lib/living-files';
+import { isLivingFilesEnabled, loadLivingFile, writeLivingFile, getLivingFilesTokenStats } from '@/lib/living-files';
 import { IntervalRegistry } from '@/lib/interval-registry';
 
 // ============================================================================
@@ -182,7 +182,12 @@ class HeartbeatService {
       process.env.OPENAI_API_KEY
     );
 
-    // 4. Emit opportunity events for detected situations
+    // 4. Check living files size health and trigger compression if needed
+    if (isLivingFilesEnabled()) {
+      await this.checkLivingFilesHealth();
+    }
+
+    // 5. Emit opportunity events for detected situations
     if (this.config.onOpportunity) {
       // Check for user inactivity
       if (this.status.userPresence.isActive && this.status.userPresence.lastActivity) {
@@ -208,6 +213,35 @@ class HeartbeatService {
       health: this.status.health,
       userActive: this.status.userPresence.isActive,
     });
+  }
+
+  /**
+   * Check living files for size issues and trigger compression if MEMORY.md is too large.
+   * Warns at 15K chars (approaching token ceiling), compresses at 25K chars.
+   */
+  private async checkLivingFilesHealth(): Promise<void> {
+    const WARN_THRESHOLD = 15000;    // ~3.75k tokens — log a warning
+    const COMPRESS_THRESHOLD = 25000; // ~6.25k tokens — trigger compression
+
+    try {
+      const stats = getLivingFilesTokenStats('default');
+
+      for (const [file, stat] of Object.entries(stats)) {
+        if (stat.chars > WARN_THRESHOLD) {
+          logger.warn(`[Heartbeat] Living file ${file} is large: ${stat.chars} chars (~${stat.estimatedTokens} tokens)`);
+        }
+      }
+
+      const memoryChars = stats['MEMORY.md']?.chars ?? 0;
+      if (memoryChars > COMPRESS_THRESHOLD) {
+        logger.warn(`[Heartbeat] MEMORY.md exceeds ${COMPRESS_THRESHOLD} chars — triggering compression`);
+        // Dynamic import to avoid loading Gemini client on every heartbeat startup
+        const { compressMemoryMd } = await import('@/services/memory/memory-compressor');
+        await compressMemoryMd('default');
+      }
+    } catch (error) {
+      logger.warn('[Heartbeat] Living files health check failed:', error);
+    }
   }
 
   /**

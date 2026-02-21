@@ -25,7 +25,7 @@ export type CronSchedule =
 
 export interface CronPayload {
   message: string;
-  action?: 'morning_brief' | 'trend_check' | 'build_check' | 'tiktok_content' | 'content_factory' | 'custom';
+  action?: 'morning_brief' | 'trend_check' | 'build_check' | 'tiktok_content' | 'content_factory' | 'memory_compress' | 'custom';
   hook?: string; // Pre-queued hook text (for tiktok_content action)
   deliver?: boolean;  // Send notification?
 }
@@ -649,6 +649,22 @@ class CronService {
       );
       console.log('[CronService] Created default Content Factory Scout job (6:50am Mountain Time daily)');
     }
+
+    // Memory compression: weekly on Sunday at 3am Mountain Time
+    const memoryCompressExists = existingJobs.some(j => j.name === 'Weekly Memory Compression');
+    if (!memoryCompressExists) {
+      await this.addJob(
+        'Weekly Memory Compression',
+        { kind: 'cron', expr: '0 3 * * 0', tz: 'America/Denver' },
+        {
+          message: 'Compressing MEMORY.md — summarizing entries older than 14 days.',
+          action: 'memory_compress',
+          deliver: false,
+        },
+        userId
+      );
+      console.log('[CronService] Created default Weekly Memory Compression job (Sunday 3am Mountain Time)');
+    }
   }
 
   // ============ HELPERS ============
@@ -717,6 +733,18 @@ export function getCronService(config?: CronServiceConfig): CronService {
             console.log(`[CronService] Content Factory Scout completed: ${result.stories.length} stories at ${result.runAt}`);
           } catch (err) {
             console.error('[CronService] Content Factory Scout failed:', err);
+            throw err;
+          }
+        }
+
+        // Handle memory_compress action — AI-powered MEMORY.md compression
+        if (job.payload.action === 'memory_compress') {
+          try {
+            const { compressMemoryMd } = await import('@/services/memory/memory-compressor');
+            await compressMemoryMd('default');
+            console.log('[CronService] Memory compression job completed');
+          } catch (err) {
+            console.error('[CronService] Memory compression job failed:', err);
             throw err;
           }
         }

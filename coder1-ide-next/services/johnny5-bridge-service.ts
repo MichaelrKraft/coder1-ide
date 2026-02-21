@@ -32,31 +32,51 @@ import { getProfile, UserProfile } from '@/lib/johnny5-db';
 // ============================================================================
 
 /**
- * Read MCP servers configured for Claude Code CLI (~/.claude.json → mcpServers).
- * Falls back to ~/.mcp.json (Claude Desktop/VS Code config) if CLI config has none.
- * Returns empty array if neither file exists or is malformed.
+ * Read MCP servers from all known config locations and merge them.
+ * Sources (in priority order):
+ *   1. ~/.claude.json (Claude Code CLI — primary)
+ *   2. ~/.mcp.json (Claude Desktop / VS Code)
+ *   3. ~/manuslive/manuslive/config/mcporter.json (MCP Porter / Zapier integrations)
+ * Returns deduplicated list of server names.
  */
 export function getAvailableMcpTools(): string[] {
-  // Primary: Claude Code CLI config (what `claude --print` actually uses)
+  const allServers = new Set<string>();
+
+  // Source 1: Claude Code CLI config
   try {
-    const cliConfigPath = join(homedir(), '.claude.json');
-    const content = readFileSync(cliConfigPath, 'utf-8');
+    const content = readFileSync(join(homedir(), '.claude.json'), 'utf-8');
     const config = JSON.parse(content);
-    const servers = Object.keys(config.mcpServers || {});
-    if (servers.length > 0) return servers;
+    for (const key of Object.keys(config.mcpServers || {})) {
+      allServers.add(key);
+    }
   } catch {
-    // Fall through to secondary config
+    // not present or malformed
   }
 
-  // Fallback: ~/.mcp.json (Claude Desktop / VS Code MCP config)
+  // Source 2: Claude Desktop / VS Code config
   try {
-    const mcpPath = join(homedir(), '.mcp.json');
-    const content = readFileSync(mcpPath, 'utf-8');
-    const mcpConfig = JSON.parse(content);
-    return Object.keys(mcpConfig.mcpServers || {});
+    const content = readFileSync(join(homedir(), '.mcp.json'), 'utf-8');
+    const config = JSON.parse(content);
+    for (const key of Object.keys(config.mcpServers || {})) {
+      allServers.add(key);
+    }
   } catch {
-    return [];
+    // not present or malformed
   }
+
+  // Source 3: MCP Porter config (Zapier and other remote integrations)
+  try {
+    const mcporterPath = join(homedir(), 'manuslive', 'manuslive', 'config', 'mcporter.json');
+    const content = readFileSync(mcporterPath, 'utf-8');
+    const config = JSON.parse(content);
+    for (const key of Object.keys(config.mcpServers || {})) {
+      allServers.add(key);
+    }
+  } catch {
+    // not present or malformed
+  }
+
+  return Array.from(allServers);
 }
 
 // ============================================================================
@@ -91,6 +111,7 @@ export class Johnny5BridgeService {
    * Includes user profile and preferences from database
    */
   private async buildSystemPrompt(): Promise<string> {
+    console.warn('[Johnny5BridgeService] WARN: Using legacy buildSystemPrompt() fallback — living files NOT injected. Check generateJohnny5SystemPrompt() call in route.ts.');
     const permissions = getPermissions();
     const proactivityLevel = getProactivityLevel();
 
@@ -220,9 +241,11 @@ Only mention code/git status if the user explicitly asks about it.
    */
   private async buildFullPrompt(
     message: string,
-    history: ChatMessage[]
+    history: ChatMessage[],
+    skipHistory: boolean = false,
+    overrideSystemPrompt?: string
   ): Promise<string> {
-    const systemPrompt = await this.buildSystemPrompt();
+    const systemPrompt = overrideSystemPrompt ?? await this.buildSystemPrompt();
 
     // Format for Claude Code CLI
     let prompt = `[System Context]\n${systemPrompt}\n\n`;
@@ -231,7 +254,9 @@ Only mention code/git status if the user explicitly asks about it.
     // Route.ts already applies a token-budget truncation (8000 tokens) before passing history here,
     // so we trust what we receive and include it all. The final MAX_PROMPT_SIZE check below
     // is the safety valve if the total prompt still exceeds the CLI limit.
-    if (history.length > 0) {
+    // When --session-id is active, Claude owns conversation state natively.
+    // Skip text-encoding history to avoid doubling context in Claude's session file.
+    if (!skipHistory && history.length > 0) {
       prompt += `[Conversation History]\n`;
       history.forEach((msg) => {
         const speaker = msg.role === 'user' ? 'User' : 'Johnny5';
@@ -288,7 +313,10 @@ Only mention code/git status if the user explicitly asks about it.
    */
   async sendPrompt(
     message: string,
-    conversationHistory: ChatMessage[] = []
+    conversationHistory: ChatMessage[] = [],
+    onChunk?: (chunk: string) => void,
+    claudeSessionId?: string,
+    systemPrompt?: string
   ): Promise<SendPromptResult> {
     // 1. Check Bridge connection
     if (!this.isBridgeConnected()) {
@@ -301,13 +329,23 @@ Only mention code/git status if the user explicitly asks about it.
     }
 
     // 2. Build the full prompt with system context and history
-    const fullPrompt = await this.buildFullPrompt(message, conversationHistory);
+    const fullPrompt = await this.buildFullPrompt(
+      message,
+      conversationHistory,
+      !!claudeSessionId,
+      systemPrompt
+    );
 
     // 3. Execute via Bridge
     const commandId = `johnny5-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     try {
-      const result = await this.executeClaudeCommand(commandId, fullPrompt);
+      const result = await this.executeClaudeCommand(
+        commandId,
+        fullPrompt,
+        { onChunk },
+        claudeSessionId
+      );
       return result;
     } catch (error) {
       console.error('[Johnny5BridgeService] Error executing command:', error);
@@ -325,12 +363,15 @@ Only mention code/git status if the user explicitly asks about it.
    */
   private executeClaudeCommand(
     commandId: string,
-    prompt: string
+    prompt: string,
+    options?: { onChunk?: (chunk: string) => void },
+    claudeSessionId?: string
   ): Promise<SendPromptResult> {
     return new Promise((resolve) => {
       let output = '';
       let errorOutput = '';
       let resolved = false;
+      let lastAssistantLength = 0; // Tracks cumulative text length for stream-json delta computation
 
       // Timeout after 5 minutes (complex prompts with system context + history can take 2-5 min)
       const JOHNNY5_TIMEOUT = 300000; // 5 minutes
@@ -363,14 +404,40 @@ Only mention code/git status if the user explicitly asks about it.
         getActiveBridgeManager().off('command:timeout', timeoutHandler);
       };
 
-      // Listen for output events
+      // Listen for output events — parse stream-json format for token-level streaming
       const outputHandler = (data: { commandId: string; data: string; stream: string }) => {
-        if (data.commandId === commandId) {
-          if (data.stream === 'stdout') {
-            output += data.data;
-          } else if (data.stream === 'stderr') {
-            errorOutput += data.data;
+        if (data.commandId !== commandId) return;
+
+        if (data.stream === 'stdout') {
+          // stream-json outputs newline-delimited JSON events
+          for (const line of data.data.split('\n')) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            try {
+              const event = JSON.parse(trimmed) as Record<string, unknown>;
+
+              // Assistant events carry the growing response text
+              // With --include-partial-messages these arrive incrementally
+              const msg = event.message as Record<string, unknown> | undefined;
+              const content = msg?.content as Array<{ type: string; text?: string }> | undefined;
+              if (event.type === 'assistant' && content?.[0]?.type === 'text' && typeof content[0].text === 'string') {
+                const fullText = content[0].text;
+                const delta = fullText.slice(lastAssistantLength);
+                if (delta) {
+                  output = fullText;
+                  lastAssistantLength = fullText.length;
+                  options?.onChunk?.(delta);
+                }
+              }
+
+              // Result event is the authoritative final output
+              if (event.type === 'result' && typeof event.result === 'string') {
+                output = event.result;
+              }
+            } catch { /* non-JSON line (e.g. debug output) — ignore */ }
           }
+        } else if (data.stream === 'stderr') {
+          errorOutput += data.data;
         }
       };
 
@@ -449,9 +516,10 @@ Only mention code/git status if the user explicitly asks about it.
       const mcpEnabled = process.env.JOHNNY5_BRIDGE_MCP_ENABLED === 'true';
       const permissionFlag = mcpEnabled ? ' --permission-mode bypassPermissions' : '';
       const modelOverride = process.env.JOHNNY5_MODEL || 'claude-sonnet-4-5';
-      const command = `claude --print --model ${modelOverride}${permissionFlag}`;
+      const sessionFlag = claudeSessionId ? ` --session-id ${claudeSessionId}` : '';
+      const command = `claude --print --verbose --output-format stream-json --include-partial-messages${sessionFlag} --model ${modelOverride}${permissionFlag}`;
 
-      console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, command: ${command}, prompt via stdin (${prompt.length} chars)`);
+      console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, sessionId: ${claudeSessionId ?? 'none'}, command: ${command}, prompt via stdin (${prompt.length} chars)`);
 
       // Execute command via Bridge — prompt goes through stdinData, not shell argument
       getActiveBridgeManager().executeCommand(this.userId, {

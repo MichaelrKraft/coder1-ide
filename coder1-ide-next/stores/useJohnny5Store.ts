@@ -781,6 +781,7 @@ export const useJohnny5Store = create<Johnny5Store>()(
           settings: state.settings,
           setupStatus: state.setupStatus,
           connectedIntegrations: state.connectedIntegrations,
+          chatSessionId: state.chatSessionId, // Persist so DB history survives page reloads
         }),
       }
     ),

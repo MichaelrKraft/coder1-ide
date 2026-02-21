@@ -979,6 +979,7 @@ export default function ChatTab() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    let streamingMsgId: string | undefined;
     try {
       // Determine which API to use based on J5 connection status
       // Prefer J5 for 24/7 daemon capabilities, fall back to Bridge CLI
@@ -1017,7 +1018,61 @@ export default function ChatTab() {
         signal: controller.signal,
       });
 
-      let data = await response.json();
+      // Helper: read SSE stream and reconstruct data in the same shape as the
+      // legacy JSON response so all downstream code continues to work unchanged.
+      const readSSE = async (resp: Response): Promise<Record<string, unknown>> => {
+        if (!streamingMsgId) {
+          streamingMsgId = `assistant-stream-${Date.now()}`;
+          addChatMessage({ id: streamingMsgId, role: 'assistant', content: '', timestamp: new Date() });
+        }
+        const rdr = resp.body!.getReader();
+        const dec = new TextDecoder();
+        let finalEvt: Record<string, unknown> = {};
+        let buf = '';
+        let streamed = '';
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { value, done } = await rdr.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop() ?? '';
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const evt = JSON.parse(line.slice(6)) as Record<string, unknown>;
+              if (typeof evt.chunk === 'string') {
+                // Clear the typing indicator once first token arrives
+                if (streamed.length === 0) setIsTyping(false);
+                streamed += evt.chunk;
+                updateChatMsg(streamingMsgId!, { content: streamed });
+              }
+              if (evt.done || evt.error) finalEvt = evt;
+            } catch { /* skip malformed SSE events */ }
+          }
+        }
+        if (finalEvt.error) {
+          return { success: false, code: finalEvt.code, error: finalEvt.message };
+        }
+        return {
+          success: true,
+          data: {
+            response: finalEvt.response,
+            sessionId: finalEvt.sessionId,
+            messageId: finalEvt.messageId,
+            tokensUsed: finalEvt.tokensUsed,
+            mode: finalEvt.mode,
+            memoryContext: finalEvt.memoryContext,
+            memoryStatus: finalEvt.memoryStatus,
+            reasoningSteps: finalEvt.reasoningSteps,
+            quota: finalEvt.quota,
+            skillSuggestion: finalEvt.skillSuggestion,
+          },
+        };
+      };
+
+      const isSSE = response.headers.get('content-type')?.includes('text/event-stream') ?? false;
+      let data = isSSE ? await readSSE(response) : await response.json();
 
       // Handle J5_DISABLED error - retry with main chat endpoint
       if (data.code === 'J5_DISABLED' && useJ5) {
@@ -1036,7 +1091,8 @@ export default function ChatTab() {
           }),
           signal: controller.signal,
         });
-        data = await response.json();
+        const isRetrySSE = response.headers.get('content-type')?.includes('text/event-stream') ?? false;
+        data = isRetrySSE ? await readSSE(response) : await response.json();
       }
 
       // Handle quota exceeded (402) response
@@ -1065,15 +1121,15 @@ export default function ChatTab() {
           errorMessage = "⚠️ Bridge error. Please check that coder1-bridge is running and try again.";
         } else if (errorCode === 'COMMAND_TIMEOUT') {
           // Show a helpful choice message instead of a dead-end error
-          addChatMessage({
-            id: `assistant-timeout-${Date.now()}`,
-            role: 'assistant',
-            content: "That request timed out — Claude CLI took longer than 5 minutes. You can:\n\n" +
-              "1. **Try again** — just resend your message and I'll retry via Bridge\n" +
-              "2. **Say \"use gemini\"** — I'll switch to Gemini for a faster response\n\n" +
-              "Complex tasks like creating multiple files can take a while. If this keeps happening, try breaking the task into smaller steps.",
-            timestamp: new Date(),
-          });
+          const timeoutMsg = "That request timed out — Claude CLI took longer than 5 minutes. You can:\n\n" +
+            "1. **Try again** — just resend your message and I'll retry via Bridge\n" +
+            "2. **Say \"use gemini\"** — I'll switch to Gemini for a faster response\n\n" +
+            "Complex tasks like creating multiple files can take a while. If this keeps happening, try breaking the task into smaller steps.";
+          if (streamingMsgId) {
+            updateChatMsg(streamingMsgId, { content: timeoutMsg });
+          } else {
+            addChatMessage({ id: `assistant-timeout-${Date.now()}`, role: 'assistant', content: timeoutMsg, timestamp: new Date() });
+          }
           setIsLoading(false);
           setIsTyping(false);
           return;
@@ -1153,17 +1209,21 @@ export default function ChatTab() {
       if (hasExecuteBashTags(rawResponse) && responseModeHasMCP && activeTerminalSessionId) {
         const { commands, displayResponse } = parseExecuteBashTags(rawResponse);
 
-        // Add initial message with pending indicators
-        const assistantMsgId = `assistant-${Date.now()}`;
-        addChatMessage({
-          id: assistantMsgId,
-          role: 'assistant',
-          content: displayResponse,
-          timestamp: new Date(),
-          toolCalls: data.data?.toolCalls || data.toolCalls,
-          thinking: data.data?.thinking || data.thinking,
-          reasoningSteps: data.data?.reasoningSteps,
-        });
+        // Add initial message with pending indicators (reuse streaming placeholder if available)
+        const assistantMsgId = streamingMsgId ?? `assistant-${Date.now()}`;
+        if (streamingMsgId) {
+          updateChatMsg(streamingMsgId, { content: displayResponse });
+        } else {
+          addChatMessage({
+            id: assistantMsgId,
+            role: 'assistant',
+            content: displayResponse,
+            timestamp: new Date(),
+            toolCalls: data.data?.toolCalls || data.toolCalls,
+            thinking: data.data?.thinking || data.thinking,
+            reasoningSteps: data.data?.reasoningSteps,
+          });
+        }
 
         // Execute commands sequentially
         if (commands.length > 0) {
@@ -1226,26 +1286,34 @@ export default function ChatTab() {
         const { displayResponse } = parseExecuteBashTags(rawResponse);
         finalContent = displayResponse + '\n\n⚠️ *Commands detected but cannot execute - Bridge not connected.*';
 
-        addChatMessage({
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: finalContent,
-          timestamp: new Date(),
-          toolCalls: data.data?.toolCalls || data.toolCalls,
-          thinking: data.data?.thinking || data.thinking,
-          reasoningSteps: data.data?.reasoningSteps,
-        });
+        if (streamingMsgId) {
+          updateChatMsg(streamingMsgId, { content: finalContent });
+        } else {
+          addChatMessage({
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: finalContent,
+            timestamp: new Date(),
+            toolCalls: data.data?.toolCalls || data.toolCalls,
+            thinking: data.data?.thinking || data.thinking,
+            reasoningSteps: data.data?.reasoningSteps,
+          });
+        }
       } else {
         // No commands - add message normally
-        addChatMessage({
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: finalContent,
-          timestamp: new Date(),
-          toolCalls: data.data?.toolCalls || data.toolCalls,
-          thinking: data.data?.thinking || data.thinking,
-          reasoningSteps: data.data?.reasoningSteps,
-        });
+        if (streamingMsgId) {
+          updateChatMsg(streamingMsgId, { content: finalContent });
+        } else {
+          addChatMessage({
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: finalContent,
+            timestamp: new Date(),
+            toolCalls: data.data?.toolCalls || data.toolCalls,
+            thinking: data.data?.thinking || data.thinking,
+            reasoningSteps: data.data?.reasoningSteps,
+          });
+        }
       }
 
       // Check for skill suggestion from the API response (Gap 3)
@@ -1272,12 +1340,16 @@ export default function ChatTab() {
 
       // Add error message with the specific error text
       const errorText = error instanceof Error ? error.message : "Sorry, I encountered an error. Please try again or check your API connection.";
-      addChatMessage({
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: errorText,
-        timestamp: new Date(),
-      });
+      if (streamingMsgId) {
+        updateChatMsg(streamingMsgId, { content: errorText });
+      } else {
+        addChatMessage({
+          id: `error-${Date.now()}`,
+          role: 'assistant',
+          content: errorText,
+          timestamp: new Date(),
+        });
+      }
     } finally {
       setIsLoading(false);
       setIsTyping(false);

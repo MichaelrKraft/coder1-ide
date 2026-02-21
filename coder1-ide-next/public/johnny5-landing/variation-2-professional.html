@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Johnny5 — Autonomous AI Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #faf9f7;
+      --warm-white: #fffffe;
+      --charcoal: #1a1a1a;
+      --slate: #4a4a4a;
+      --muted: #8b8b8b;
+      --border: #e5e5e5;
+      --accent: #2563eb;
+      --accent-light: #dbeafe;
+      --success: #059669;
+      --success-light: #d1fae5;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--charcoal);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* Typography */
+    h1, h2, h3 {
+      font-family: 'Fraunces', serif;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    /* Navigation */
+    nav {
+      padding: 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-family: 'Fraunces', serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--charcoal);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: var(--slate);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--charcoal);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--charcoal);
+      color: var(--warm-white);
+    }
+
+    .btn-primary:hover {
+      background: #333;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--warm-white);
+      color: var(--charcoal);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--charcoal);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 100px 0 80px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .hero-content h1 {
+      font-size: 3.5rem;
+      line-height: 1.15;
+      margin-bottom: 24px;
+    }
+
+    .hero-content p {
+      font-size: 1.2rem;
+      color: var(--slate);
+      margin-bottom: 32px;
+      max-width: 480px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .trust-badges {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .trust-badge svg {
+      color: var(--success);
+    }
+
+    /* Hero Visual */
+    .hero-visual {
+      position: relative;
+    }
+
+    .diagram-card {
+      background: var(--warm-white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.06);
+    }
+
+    .diagram-title {
+      font-family: 'Fraunces', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 32px;
+      color: var(--charcoal);
+    }
+
+    .flow-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .flow-node {
+      flex: 1;
+      padding: 16px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .flow-node.user {
+      background: var(--cream);
+      border: 1px solid var(--border);
+    }
+
+    .flow-node.bridge {
+      background: var(--accent-light);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+
+    .flow-node.official {
+      background: var(--success-light);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+
+    .flow-arrow {
+      color: var(--muted);
+      font-size: 1.2rem;
+    }
+
+    .flow-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+
+    .compliance-note {
+      margin-top: 24px;
+      padding: 16px;
+      background: var(--success-light);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Features Section */
+    .features {
+      padding: 100px 0;
+      background: var(--warm-white);
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .section-header h2 {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--slate);
+      font-size: 1.1rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+
+    .feature-card {
+      padding: 32px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--cream);
+      transition: all 0.2s ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--charcoal);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--charcoal);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: var(--warm-white);
+      font-size: 1.25rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--slate);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* Comparison Section */
+    .comparison {
+      padding: 100px 0;
+    }
+
+    .comparison-table {
+      background: var(--warm-white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 48px;
+    }
+
+    .comparison-header {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      background: var(--charcoal);
+      color: var(--warm-white);
+      padding: 20px 32px;
+      font-weight: 600;
+    }
+
+    .comparison-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+
+    .comparison-row:last-child {
+      border-bottom: none;
+    }
+
+    .comparison-row:hover {
+      background: var(--cream);
+    }
+
+    .comparison-feature {
+      font-weight: 500;
+    }
+
+    .comparison-check {
+      text-align: center;
+    }
+
+    .check-yes {
+      color: var(--success);
+      font-size: 1.2rem;
+    }
+
+    .check-no {
+      color: #dc2626;
+      font-size: 1.2rem;
+    }
+
+    /* How It Works */
+    .how-it-works {
+      padding: 100px 0;
+      background: var(--charcoal);
+      color: var(--warm-white);
+    }
+
+    .how-it-works .section-header h2 {
+      color: var(--warm-white);
+    }
+
+    .how-it-works .section-header p {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 48px;
+      margin-top: 48px;
+    }
+
+    .step {
+      text-align: center;
+    }
+
+    .step-number {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-family: 'Fraunces', serif;
+      font-weight: 600;
+    }
+
+    .step h3 {
+      font-size: 1.15rem;
+      margin-bottom: 12px;
+      color: var(--warm-white);
+    }
+
+    .step p {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.95rem;
+    }
+
+    .step code {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      margin-top: 12px;
+    }
+
+    /* CTA Section */
+    .cta {
+      padding: 100px 0;
+      text-align: center;
+    }
+
+    .cta h2 {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      color: var(--slate);
+      font-size: 1.1rem;
+      margin-bottom: 32px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+
+    /* Footer */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .footer-links a:hover {
+      color: var(--charcoal);
+    }
+
+    .footer-copyright {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 968px) {
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 48px;
+        padding: 60px 0;
+      }
+
+      .hero-content h1 {
+        font-size: 2.5rem;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .comparison-header,
+      .comparison-row {
+        grid-template-columns: 1.5fr 1fr 1fr;
+        padding: 16px 20px;
+        font-size: 0.9rem;
+      }
+
+      .steps {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .footer-content {
+        flex-direction: column;
+        gap: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <a href="#" class="logo">Johnny5</a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#comparison">Compare</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#" class="btn btn-secondary">Documentation</a>
+        <a href="#" class="btn btn-primary">Get Started</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="hero-content">
+        <h1>The autonomous AI agent that works with your subscription</h1>
+        <p>
+          Inspired by the best autonomous features. Built with security-first architecture.
+          Uses Claude Code CLI — exactly how Anthropic intended.
+        </p>
+        <div class="hero-cta">
+          <a href="#" class="btn btn-primary">
+            Start Building
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+          <a href="#how-it-works" class="btn btn-secondary">See How It Works</a>
+        </div>
+        <div class="trust-badges">
+          <div class="trust-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Subscription compliant
+          </div>
+          <div class="trust-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            No token extraction
+          </div>
+          <div class="trust-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Local & private
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="diagram-card">
+          <div class="diagram-title">How Johnny5 Works</div>
+          <div class="flow-diagram">
+            <div class="flow-step">
+              <div class="flow-node user">
+                <div class="flow-label">You</div>
+                Johnny5 Interface
+              </div>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-step">
+              <div class="flow-node bridge">
+                <div class="flow-label">Bridge</div>
+                PTY / Terminal Emulation
+              </div>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-step">
+              <div class="flow-node official">
+                <div class="flow-label">Official Anthropic Product</div>
+                Claude Code CLI
+              </div>
+            </div>
+          </div>
+          <div class="compliance-note">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            We bridge into the official CLI. Your subscription is used by Claude Code itself.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header">
+        <h2>Built for the way you work</h2>
+        <p>All the autonomous power, with compliance baked in</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div>
+          <h3>Zero Token Extraction</h3>
+          <p>We never access your OAuth tokens. Claude Code CLI handles all authentication internally — as Anthropic designed.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">💳</div>
+          <h3>Subscription Compatible</h3>
+          <p>Your Claude Pro or Max subscription works naturally. You're using Claude Code — we just provide a better interface.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>Autonomous Workflows</h3>
+          <p>Complex multi-step tasks. Research, code, analyze, and create. Inspired by the best autonomous agent patterns.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🏠</div>
+          <h3>100% Local</h3>
+          <p>Everything runs on your machine. No cloud servers, no data leaving your system. Full privacy and control.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔌</div>
+          <h3>MCP Integration</h3>
+          <p>Connect to Model Context Protocol servers. Extend capabilities with tools, databases, and external services.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <h3>Audit & Security</h3>
+          <p>Built-in audit logs, permission boundaries, and security-first architecture. Know exactly what's happening.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="comparison" id="comparison">
+    <div class="container">
+      <div class="section-header">
+        <h2>The compliant alternative</h2>
+        <p>Same autonomous power, different architecture</p>
+      </div>
+
+      <div class="comparison-table">
+        <div class="comparison-header">
+          <div>Feature</div>
+          <div>Johnny5</div>
+          <div>Direct OAuth</div>
+        </div>
+        <div class="comparison-row">
+          <div class="comparison-feature">Uses official Claude Code CLI</div>
+          <div class="comparison-check"><span class="check-yes">✓</span></div>
+          <div class="comparison-check"><span class="check-no">✗</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="comparison-feature">No OAuth token extraction</div>
+          <div class="comparison-check"><span class="check-yes">✓</span></div>
+          <div class="comparison-check"><span class="check-no">✗</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="comparison-feature">Works with subscriptions</div>
+          <div class="comparison-check"><span class="check-yes">✓</span></div>
+          <div class="comparison-check"><span class="check-no">Banned</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="comparison-feature">Anthropic ToS compliant</div>
+          <div class="comparison-check"><span class="check-yes">✓</span></div>
+          <div class="comparison-check"><span class="check-no">✗</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="comparison-feature">Autonomous agent capabilities</div>
+          <div class="comparison-check"><span class="check-yes">✓</span></div>
+          <div class="comparison-check"><span class="check-yes">✓</span></div>
+        </div>
+        <div class="comparison-row">
+          <div class="comparison-feature">Runs locally</div>
+          <div class="comparison-check"><span class="check-yes">✓</span></div>
+          <div class="comparison-check"><span class="check-yes">✓</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <h2>Get started in minutes</h2>
+        <p>Already have Claude Code? You're almost there.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Install Claude Code</h3>
+          <p>If you haven't already, install Anthropic's official CLI.</p>
+          <code>npm install -g @anthropic-ai/claude-code</code>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>Authenticate</h3>
+          <p>Login with your Anthropic account. Your subscription is recognized.</p>
+          <code>claude auth login</code>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Install Johnny5</h3>
+          <p>Add the Johnny5 agent interface. Start building autonomously.</p>
+          <code>npm install -g johnny5-agent</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="container">
+      <h2>Ready to build with an agent?</h2>
+      <p>Autonomous AI that works with your subscription. Built right, from the ground up.</p>
+      <div class="cta-buttons">
+        <a href="#" class="btn btn-primary">
+          Get Started
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+        <a href="#" class="btn btn-secondary">Read Documentation</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-links">
+          <a href="#">Documentation</a>
+          <a href="#">GitHub</a>
+          <a href="#">Discord</a>
+          <a href="#">Twitter</a>
+        </div>
+        <div class="footer-copyright">
+          Johnny5 is an independent project. Not affiliated with Anthropic or Open CLAW.
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

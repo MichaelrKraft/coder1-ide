@@ -11,6 +11,7 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   initializeDb,
@@ -22,6 +23,7 @@ import {
   logAudit,
   getSkillRecords,
   incrementSkillUsage,
+  type Session,
 } from '@/lib/johnny5-db';
 import {
   Johnny5BridgeService,
@@ -155,7 +157,7 @@ type ChatResponse = ChatSuccessResponse | ChatErrorResponse | QuotaExceededRespo
 // ============================================================================
 
 const MAX_MESSAGE_LENGTH = 50000;
-const MAX_HISTORY_MESSAGES = 50;
+const MAX_HISTORY_MESSAGES = 15;
 const MAX_CLI_PROMPT_LENGTH = 25000; // ~6.25k tokens, conservative limit for Claude CLI
 
 // ============================================================================
@@ -345,9 +347,17 @@ CRITICAL: When you see memory context, facts, or profile information in the mess
         }
       }
 
-      // No fallback to shared server-side files — each user's living files must come
-      // from their own Bridge connection. Without a Bridge, skip living files context
-      // entirely rather than inject another user's personal memory.
+      // Fallback: read directly from local disk (OpenClaw pattern).
+      // For userId='default': reads ~/.coder1/living-files/ (Mike's files in dev).
+      // For authenticated users: reads ~/.coder1/users/{userId}/living-files/ which is
+      // empty on the server — correct behavior, avoids cross-contaminating users' data.
+      if (!livingContext) {
+        const localContext = loadLivingFilesContext(userId);
+        if (localContext) {
+          livingContext = localContext;
+          console.log('[Johnny5] Living files loaded from local disk:', localContext.length, 'chars');
+        }
+      }
 
       if (livingContext) {
         livingFilesSection = `
@@ -554,7 +564,7 @@ export async function POST(
       );
     }
 
-    const { message, sessionId, enableMemoryInjection = true, terminalContext, crewContext, previousMode } = body;
+    const { message, sessionId, enableMemoryInjection = true, terminalContext, crewContext, previousMode, history: clientHistory } = body;
 
     // Track reasoning steps for transparency
     const reasoningSteps: string[] = [];
@@ -879,6 +889,20 @@ export async function POST(
       }
     }
 
+    // 4b. Get or generate a Claude CLI session UUID for native conversation state.
+    // Persisted in DB so the same UUID is reused across page reloads for this session.
+    // Claude stores turns at ~/.claude/projects/-tmp/<uuid>.jsonl on the user's machine.
+    let claudeSessionUuid = session.claude_session_uuid;
+    if (!claudeSessionUuid) {
+      claudeSessionUuid = randomUUID();
+      try {
+        await updateSession(session.id, { claude_session_uuid: claudeSessionUuid } as Partial<Session>);
+      } catch (uuidError) {
+        console.warn('[Johnny5] Failed to persist claude_session_uuid:', uuidError);
+        // UUID still used for this request even if persistence failed
+      }
+    }
+
     // 5. Save user message to database
     // SECURITY: Mask secrets in messages before storage to prevent sensitive data leakage
     const messageForStorage = containsSecret(message)
@@ -902,6 +926,18 @@ export async function POST(
     } catch (historyError) {
       console.error('[Johnny5] Failed to get message history:', historyError);
       // Continue with empty history
+    }
+
+    // 6.0. Fallback: if DB returned no history but client sent in-memory history, use that.
+    // This covers the race condition where sessionId was null on first message (new session created)
+    // and the client's correct in-memory conversation is otherwise discarded.
+    if (history.length === 0 && Array.isArray(clientHistory) && clientHistory.length > 0) {
+      console.log(`[Johnny5] DB history empty for session ${session.id}, using client-sent history (${clientHistory.length} msgs)`);
+      // Map client history shape to DB message shape (only role + content are needed downstream)
+      history = (clientHistory as Array<{ role: string; content: string }>)
+        .filter((m) => m && typeof m.role === 'string' && typeof m.content === 'string')
+        .slice(-MAX_HISTORY_MESSAGES)
+        .map((m) => ({ role: m.role, content: m.content, id: '', session_id: session.id, created_at: '' })) as Awaited<ReturnType<typeof getMessages>>;
     }
 
     // 6.1. Simple token-aware truncation: estimate ~4 chars per token, cap at 8000 tokens
@@ -1378,253 +1414,228 @@ export async function POST(
       console.log(`[Johnny5] Truncated to ${finalMessage.length} chars`);
     }
 
-    let result: { success: boolean; response: string; error?: string; errorCode?: string };
-    const modeUsed = 'bridge' as const;
-    console.log('[Johnny5] Using Bridge mode (Claude Code CLI)');
-    reasoningSteps.push('Generating response via Claude Code CLI...');
-    result = await johnny5Service.sendPrompt(finalMessage, conversationHistory);
+    // --- SSE Stream Setup ---
+    // Return a streaming response immediately; Claude execution + post-processing
+    // run in a background IIFE that writes SSE events as they arrive.
+    const encoder = new TextEncoder();
+    const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+    const writer = writable.getWriter();
 
-    if (!result.success) {
-      console.error('[Johnny5] Error:', result.error);
+    const writeSSE = (payload: object): void => {
+      writer.write(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`)).catch(() => {/* stream may be closed */});
+    };
 
-      // Map error codes to appropriate responses
-      if (result.errorCode === 'BRIDGE_NOT_CONNECTED') {
-        return errorResponse(
-          'Bridge disconnected. Please ensure coder1-bridge is running.',
-          'BRIDGE_NOT_CONNECTED',
-          503
+    (async () => {
+      try {
+        console.log('[Johnny5] Using Bridge mode (Claude Code CLI) — streaming');
+        reasoningSteps.push('Generating response via Claude Code CLI...');
+
+        // Generate the rich system prompt (SOUL.md + living files + capabilities).
+        // This was previously dead code — now wired into the Bridge path.
+        const bridgeSystemPrompt = await generateJohnny5SystemPrompt(mode, userId, undefined);
+
+        const result = await johnny5Service.sendPrompt(
+          finalMessage,
+          conversationHistory,
+          (chunk: string) => writeSSE({ chunk }),
+          claudeSessionUuid,
+          bridgeSystemPrompt
         );
-      }
 
-      if (result.errorCode === 'COMMAND_TIMEOUT') {
-        return NextResponse.json({
-          success: false,
-          code: 'COMMAND_TIMEOUT',
-          timeoutOptions: true,
-          error: 'Bridge timed out after 5 minutes',
-        }, { status: 504 });
-      }
-
-      return errorResponse(
-        result.error || 'Failed to get response from Claude',
-        'BRIDGE_ERROR',
-        502
-      );
-    }
-
-    const responseText = result.response;
-
-    // 9. Estimate output tokens (CLI doesn't provide exact counts)
-    const estimatedOutputTokens = Math.ceil(responseText.length / 4);
-
-    // 10. Save assistant message to database
-    let assistantMessageId = '';
-    try {
-      const assistantMsg = await addMessage(
-        session.id,
-        'assistant',
-        responseText,
-        estimatedOutputTokens
-      );
-      assistantMessageId = assistantMsg.id;
-    } catch (saveError) {
-      console.error('[Johnny5] Failed to save assistant message:', saveError);
-      assistantMessageId = `temp-${Date.now()}`;
-    }
-
-    // 10.5. Post-response: update living files with conversation summary
-    if (isLivingFilesEnabled()) {
-      try {
-        const timestamp = new Date().toISOString().split('T')[0];
-        const memoryEntry = `\n### ${timestamp}\n- User asked: ${message.slice(0, 100)}${message.length > 100 ? '...' : ''}\n- Topic: ${session.id || 'general'}\n`;
-
-        // Write via Bridge for authenticated users (files live on their machine)
-        // No fallback to shared server-side disk — skip write if no Bridge
-        if (userId !== 'default' && getActiveBridgeManager()?.hasBridgeForUser(userId)) {
-          await getActiveBridgeManager().writeLivingFile(userId, 'MEMORY.md', memoryEntry, 'append');
-        }
-      } catch (err) {
-        console.warn('[Johnny5] Failed to update MEMORY.md:', err);
-      }
-    }
-
-    // 11. Update session statistics
-    try {
-      await updateSession(session.id, {
-        message_count: history.length + 2, // +2 for new user and assistant messages
-        tokens_used:
-          session.tokens_used + estimatedInputTokens + estimatedOutputTokens,
-      });
-    } catch (updateError) {
-      console.error('[Johnny5] Failed to update session:', updateError);
-      // Non-critical
-    }
-
-    // 11.5. Track usage for analytics
-    try {
-      await trackUsage({
-        sessionId: session.id,
-        source: 'direct',
-        inputTokens: estimatedInputTokens,
-        outputTokens: estimatedOutputTokens,
-        model: 'claude-code-cli',
-      });
-    } catch (usageError) {
-      console.error('[Johnny5] Failed to track usage:', usageError);
-      // Non-critical
-    }
-
-    // 12. Log audit entry
-    try {
-      await logAudit('chat_interaction', {
-        sessionId: session.id,
-        inputTokens: estimatedInputTokens,
-        outputTokens: estimatedOutputTokens,
-        mode: modeUsed, // Track which mode was used (bridge or glm)
-        memoryInjection: {
-          enabled: enableMemoryInjection,
-          memoriesUsed: memoriesUsed.length,
-          searchType,
-          totalTokens: totalMemoryTokens,
-        },
-      });
-    } catch (auditError) {
-      console.error('[Johnny5] Failed to log audit entry:', auditError);
-      // Non-critical
-    }
-
-    // 12.6. Increment Johnny5 message counter for authenticated users
-    if (userId !== 'default') {
-      try {
-        const newCount = await incrementJohnny5MessageCount(userId);
-        console.log(`[Johnny5] Message count incremented for user ${userId}: ${newCount}`);
-      } catch (counterError) {
-        console.error('[Johnny5] Failed to increment message counter:', counterError);
-        // Non-critical - continue
-      }
-    }
-
-    // 12.5. Check for skill opportunity (Gap 3: auto-skill suggestions)
-    // If the user has done similar tasks 3+ times, suggest creating a skill
-    let skillSuggestion: { patternId: string; patternDescription: string; count: number } | undefined;
-    try {
-      const { checkForSkillOpportunity } = await import('@/services/memory/pattern-detection-service');
-      const opportunity = await checkForSkillOpportunity(message, userId);
-      if (opportunity?.shouldSuggest) {
-        skillSuggestion = {
-          patternId: opportunity.patternId,
-          patternDescription: opportunity.patternDescription,
-          count: opportunity.count,
-        };
-        console.log(`[Johnny5] Skill suggestion: "${opportunity.patternDescription}" (${opportunity.count}x)`);
-      }
-    } catch (skillSuggestError) {
-      console.warn('[Johnny5] Skill suggestion check failed:', skillSuggestError);
-      // Non-blocking
-    }
-
-    // 12.6. After-Chat Memory Intelligence
-    // Run fact extraction asynchronously - don't block the response
-    // This enables Johnny5 to learn from every conversation
-    // CRITICAL: Capture userId in closure for async extraction
-    const capturedUserId = userId;
-    setImmediate(async () => {
-      try {
-        // SECURITY: Skip fact extraction if message contains secrets (env vars, API keys, passwords)
-        // This prevents sensitive values from being stored in memory/facts
-        if (containsSecret(message)) {
-          console.log('[Johnny5] Skipping fact extraction - message contains secrets');
+        if (!result.success) {
+          console.error('[Johnny5] Error:', result.error);
+          if (result.errorCode === 'BRIDGE_NOT_CONNECTED') {
+            writeSSE({ error: true, code: 'BRIDGE_NOT_CONNECTED', message: 'Bridge disconnected. Please ensure coder1-bridge is running.' });
+          } else if (result.errorCode === 'COMMAND_TIMEOUT') {
+            writeSSE({ error: true, code: 'COMMAND_TIMEOUT', message: 'Bridge timed out after 5 minutes' });
+          } else {
+            writeSSE({ error: true, code: 'BRIDGE_ERROR', message: result.error || 'Failed to get response from Claude' });
+          }
           return;
         }
 
-        // Build conversation history for extraction
-        const fullHistory: MemoryConversationMessage[] = [
-          ...history.map((m) => ({
-            role: m.role as 'user' | 'assistant' | 'system',
-            content: m.content,
-          })),
-          { role: 'user' as const, content: message },
-          { role: 'assistant' as const, content: responseText },
-        ];
+        const responseText = result.response;
+        const modeUsed = 'bridge' as const;
 
-        // Get existing facts to avoid duplicates
-        const existingFacts = await getExistingFacts(session.id, 30, capturedUserId);
+        // 9. Estimate output tokens (CLI doesn't provide exact counts)
+        const estimatedOutputTokens = Math.ceil(responseText.length / 4);
 
-        // Extract new facts from this conversation
-        const newFacts = await extractFactsFromConversation(fullHistory, existingFacts);
-
-        if (newFacts.length > 0) {
-          await saveFacts(session.id, newFacts, undefined, capturedUserId);
-          console.log(`[Johnny5] After-chat extraction: saved ${newFacts.length} new facts`);
+        // 10. Save assistant message to database
+        let assistantMessageId = '';
+        try {
+          const assistantMsg = await addMessage(session.id, 'assistant', responseText, estimatedOutputTokens);
+          assistantMessageId = assistantMsg.id;
+        } catch (saveError) {
+          console.error('[Johnny5] Failed to save assistant message:', saveError);
+          assistantMessageId = `temp-${Date.now()}`;
         }
 
-        // Run pattern detection every 10 conversations (approximately)
-        const messageCount = history.length + 2;
-        if (messageCount > 0 && messageCount % 20 === 0) {
-          console.log('[Johnny5] Running pattern detection cycle...');
-          const patternResult = await runPatternDetectionCycle(capturedUserId);
-          console.log('[Johnny5] Pattern cycle:', patternResult);
-        }
-
-        // Reinforce injected patterns — conversation completion is an implicit positive signal.
-        // recordPatternApplication increments evidence_count and refreshes last_observed.
-        // Note: it does NOT adjust confidence directly — that grows via detection cycles.
-        // The negative signal is decayStalePatterns (patterns unseen 30+ days lose confidence).
-        if (injectedPatternIds.length > 0) {
-          for (const patternId of injectedPatternIds) {
-            try {
-              await recordPatternApplication(patternId, capturedUserId);
-            } catch { /* non-critical — do not block other post-processing */ }
-          }
-          console.log(`[Johnny5] Reinforced ${injectedPatternIds.length} behavioral pattern(s)`);
-        }
-      } catch (extractionError) {
-        console.error('[Johnny5] After-chat extraction error:', extractionError);
-        // Non-blocking - don't affect the response
-      }
-    });
-
-    // 13. Get updated quota for response
-    let quotaInfo: ChatSuccessResponse['data']['quota'] = undefined;
-    if (userId !== 'default') {
-      const updatedQuota = await getJohnny5Quota(userId);
-      if (updatedQuota) {
-        quotaInfo = {
-          messageCount: updatedQuota.messageCount,
-          limit: updatedQuota.limit === Infinity ? 999999 : updatedQuota.limit,
-          remaining: updatedQuota.remaining === Infinity ? 999999 : updatedQuota.remaining,
-          tierType: updatedQuota.tierType,
-          isProSubscriber: updatedQuota.isProSubscriber,
-        };
-      }
-    }
-
-    // 14. Return success response
-    const modeInfo = { mode: 'bridge' as const, hasMCP: true, hasProjectContext: true, is24x7: false, provider: 'Claude Code CLI' };
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        response: responseText,
-        sessionId: session.id,
-        messageId: assistantMessageId,
-        tokensUsed: {
-          input: estimatedInputTokens,
-          output: estimatedOutputTokens,
-        },
-        mode: modeInfo,
-        memoryContext: enableMemoryInjection
-          ? {
-              enabled: true,
-              memoriesUsed,
-              searchType,
-              totalMemoryTokens,
+        // 10.5. Post-response: update living files with conversation summary
+        if (isLivingFilesEnabled()) {
+          try {
+            const timestamp = new Date().toISOString().split('T')[0];
+            const responseSummary = responseText.split('\n').filter((l: string) => l.trim()).slice(0, 3).join(' ').slice(0, 300);
+            const memoryEntry = `\n### ${timestamp}\n- User: ${message.slice(0, 150)}${message.length > 150 ? '...' : ''}\n- Johnny5: ${responseSummary}${responseSummary.length >= 300 ? '...' : ''}\n`;
+            if (userId !== 'default' && getActiveBridgeManager()?.hasBridgeForUser(userId)) {
+              await getActiveBridgeManager().writeLivingFile(userId, 'MEMORY.md', memoryEntry, 'append');
             }
-          : { enabled: false, memoriesUsed: [], searchType: 'none', totalMemoryTokens: 0 },
-        memoryStatus,
-        reasoningSteps: reasoningSteps.length > 1 ? reasoningSteps : undefined,
-        quota: quotaInfo,
-        skillSuggestion,
+          } catch (err) {
+            console.warn('[Johnny5] Failed to update MEMORY.md:', err);
+          }
+        }
+
+        // 11. Update session statistics
+        try {
+          await updateSession(session.id, {
+            message_count: history.length + 2,
+            tokens_used: session.tokens_used + estimatedInputTokens + estimatedOutputTokens,
+          });
+        } catch (updateError) {
+          console.error('[Johnny5] Failed to update session:', updateError);
+        }
+
+        // 11.5. Track usage for analytics
+        try {
+          await trackUsage({
+            sessionId: session.id,
+            source: 'direct',
+            inputTokens: estimatedInputTokens,
+            outputTokens: estimatedOutputTokens,
+            model: 'claude-code-cli',
+          });
+        } catch (usageError) {
+          console.error('[Johnny5] Failed to track usage:', usageError);
+        }
+
+        // 12. Log audit entry
+        try {
+          await logAudit('chat_interaction', {
+            sessionId: session.id,
+            inputTokens: estimatedInputTokens,
+            outputTokens: estimatedOutputTokens,
+            mode: modeUsed,
+            memoryInjection: {
+              enabled: enableMemoryInjection,
+              memoriesUsed: memoriesUsed.length,
+              searchType,
+              totalTokens: totalMemoryTokens,
+            },
+          });
+        } catch (auditError) {
+          console.error('[Johnny5] Failed to log audit entry:', auditError);
+        }
+
+        // 12.6. Increment Johnny5 message counter for authenticated users
+        if (userId !== 'default') {
+          try {
+            const newCount = await incrementJohnny5MessageCount(userId);
+            console.log(`[Johnny5] Message count incremented for user ${userId}: ${newCount}`);
+          } catch (counterError) {
+            console.error('[Johnny5] Failed to increment message counter:', counterError);
+          }
+        }
+
+        // 12.5. Check for skill opportunity
+        let skillSuggestion: { patternId: string; patternDescription: string; count: number } | undefined;
+        try {
+          const { checkForSkillOpportunity } = await import('@/services/memory/pattern-detection-service');
+          const opportunity = await checkForSkillOpportunity(message, userId);
+          if (opportunity?.shouldSuggest) {
+            skillSuggestion = {
+              patternId: opportunity.patternId,
+              patternDescription: opportunity.patternDescription,
+              count: opportunity.count,
+            };
+            console.log(`[Johnny5] Skill suggestion: "${opportunity.patternDescription}" (${opportunity.count}x)`);
+          }
+        } catch (skillSuggestError) {
+          console.warn('[Johnny5] Skill suggestion check failed:', skillSuggestError);
+        }
+
+        // 12.6. After-Chat Memory Intelligence (non-blocking)
+        const capturedUserId = userId;
+        setImmediate(async () => {
+          try {
+            if (containsSecret(message)) {
+              console.log('[Johnny5] Skipping fact extraction - message contains secrets');
+              return;
+            }
+            const fullHistory: MemoryConversationMessage[] = [
+              ...history.map((m) => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
+              { role: 'user' as const, content: message },
+              { role: 'assistant' as const, content: responseText },
+            ];
+            const existingFacts = await getExistingFacts(session.id, 30, capturedUserId);
+            const newFacts = await extractFactsFromConversation(fullHistory, existingFacts);
+            if (newFacts.length > 0) {
+              await saveFacts(session.id, newFacts, undefined, capturedUserId);
+              console.log(`[Johnny5] After-chat extraction: saved ${newFacts.length} new facts`);
+            }
+            const messageCount = history.length + 2;
+            if (messageCount > 0 && messageCount % 20 === 0) {
+              console.log('[Johnny5] Running pattern detection cycle...');
+              const patternResult = await runPatternDetectionCycle(capturedUserId);
+              console.log('[Johnny5] Pattern cycle:', patternResult);
+            }
+            if (injectedPatternIds.length > 0) {
+              for (const patternId of injectedPatternIds) {
+                try {
+                  await recordPatternApplication(patternId, capturedUserId);
+                } catch { /* non-critical */ }
+              }
+              console.log(`[Johnny5] Reinforced ${injectedPatternIds.length} behavioral pattern(s)`);
+            }
+          } catch (extractionError) {
+            console.error('[Johnny5] After-chat extraction error:', extractionError);
+          }
+        });
+
+        // 13. Get updated quota for response
+        let quotaInfo: ChatSuccessResponse['data']['quota'] = undefined;
+        if (userId !== 'default') {
+          const updatedQuota = await getJohnny5Quota(userId);
+          if (updatedQuota) {
+            quotaInfo = {
+              messageCount: updatedQuota.messageCount,
+              limit: updatedQuota.limit === Infinity ? 999999 : updatedQuota.limit,
+              remaining: updatedQuota.remaining === Infinity ? 999999 : updatedQuota.remaining,
+              tierType: updatedQuota.tierType,
+              isProSubscriber: updatedQuota.isProSubscriber,
+            };
+          }
+        }
+
+        // 14. Send done event with all metadata
+        const modeInfo = { mode: 'bridge' as const, hasMCP: true, hasProjectContext: true, is24x7: false, provider: 'Claude Code CLI' };
+        writeSSE({
+          done: true,
+          response: responseText,
+          sessionId: session.id,
+          messageId: assistantMessageId,
+          tokensUsed: { input: estimatedInputTokens, output: estimatedOutputTokens },
+          mode: modeInfo,
+          memoryContext: enableMemoryInjection
+            ? { enabled: true, memoriesUsed, searchType, totalMemoryTokens }
+            : { enabled: false, memoriesUsed: [], searchType: 'none', totalMemoryTokens: 0 },
+          memoryStatus,
+          reasoningSteps: reasoningSteps.length > 1 ? reasoningSteps : undefined,
+          quota: quotaInfo,
+          skillSuggestion,
+        });
+
+      } catch (bgError) {
+        console.error('[Johnny5] Background processing error:', bgError);
+        writeSSE({ error: true, code: 'BRIDGE_ERROR', message: 'An unexpected error occurred' });
+      } finally {
+        writer.close().catch(() => {/* ignore */});
+      }
+    })();
+
+    return new Response(readable as unknown as BodyInit, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
       },
     });
   } catch (error) {
