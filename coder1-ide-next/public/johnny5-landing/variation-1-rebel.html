@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Johnny5 - Your Autonomous AI Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon-green: #00ff88;
+      --neon-blue: #00d4ff;
+      --dark-bg: #0a0a0f;
+      --card-bg: #12121a;
+      --border: #1e1e2e;
+      --text: #e0e0e0;
+      --text-muted: #6b7280;
+      --gradient: linear-gradient(135deg, var(--neon-green), var(--neon-blue));
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--dark-bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid background */
+    .grid-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image:
+        linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridMove 20s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes gridMove {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+
+    /* Glow orbs */
+    .glow-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-orb-1 {
+      width: 600px;
+      height: 600px;
+      background: var(--neon-green);
+      top: -200px;
+      right: -200px;
+    }
+
+    .glow-orb-2 {
+      width: 400px;
+      height: 400px;
+      background: var(--neon-blue);
+      bottom: -100px;
+      left: -100px;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    nav {
+      padding: 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo span {
+      color: var(--text);
+      -webkit-text-fill-color: var(--text);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--neon-green);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--gradient);
+      color: var(--dark-bg);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 40px rgba(0, 255, 136, 0.3);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--neon-green);
+      color: var(--neon-green);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 100px 0 80px;
+      text-align: center;
+    }
+
+    .hero-robot {
+      display: block;
+      width: 140px;
+      height: auto;
+      margin: 0 auto 24px auto;
+      filter: drop-shadow(0 0 40px rgba(0, 255, 136, 0.4));
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      border-radius: 100px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--neon-green);
+      margin-bottom: 32px;
+    }
+
+    .badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--neon-green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    h1 {
+      font-size: clamp(3rem, 8vw, 5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    h1 .highlight {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Terminal Demo */
+    .terminal-demo {
+      margin-top: 80px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 20px;
+      background: rgba(0, 0, 0, 0.3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red { background: #ff5f56; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green { background: #27ca40; }
+
+    .terminal-title {
+      flex: 1;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .terminal-body {
+      padding: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      line-height: 1.8;
+    }
+
+    .terminal-line {
+      opacity: 0;
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    .terminal-line:nth-child(1) { animation-delay: 0.3s; }
+    .terminal-line:nth-child(2) { animation-delay: 0.8s; }
+    .terminal-line:nth-child(3) { animation-delay: 1.3s; }
+    .terminal-line:nth-child(4) { animation-delay: 1.8s; }
+    .terminal-line:nth-child(5) { animation-delay: 2.3s; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .prompt {
+      color: var(--neon-green);
+    }
+
+    .command {
+      color: var(--text);
+    }
+
+    .output {
+      color: var(--text-muted);
+      margin-left: 20px;
+    }
+
+    .success {
+      color: var(--neon-green);
+    }
+
+    /* Features Section */
+    .features {
+      padding: 120px 0;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .section-header h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(0, 255, 136, 0.5);
+      transform: translateY(-4px);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(0, 255, 136, 0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Architecture Section */
+    .architecture {
+      padding: 80px 0 120px;
+    }
+
+    .arch-diagram {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px;
+      margin-top: 48px;
+    }
+
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .arch-node {
+      background: rgba(0, 255, 136, 0.05);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      border-radius: 12px;
+      padding: 20px 32px;
+      text-align: center;
+      min-width: 160px;
+    }
+
+    .arch-node.official {
+      background: rgba(0, 212, 255, 0.05);
+      border-color: rgba(0, 212, 255, 0.3);
+    }
+
+    .arch-node-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--neon-green);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .arch-node.official .arch-node-label {
+      color: var(--neon-blue);
+    }
+
+    .arch-node-title {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .arch-arrow {
+      color: var(--text-muted);
+      font-size: 1.5rem;
+    }
+
+    .arch-note {
+      text-align: center;
+      margin-top: 32px;
+      padding: 20px;
+      background: rgba(0, 212, 255, 0.05);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .arch-note strong {
+      color: var(--neon-blue);
+    }
+
+    /* CTA Section */
+    .cta {
+      padding: 80px 0 120px;
+      text-align: center;
+    }
+
+    .cta-card {
+      background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 212, 255, 0.1));
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      border-radius: 24px;
+      padding: 64px;
+    }
+
+    .cta h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin-bottom: 32px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .install-command {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--dark-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      margin-bottom: 32px;
+    }
+
+    .install-command code {
+      color: var(--neon-green);
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+
+    .copy-btn:hover {
+      color: var(--text);
+    }
+
+    /* Footer */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    footer a {
+      color: var(--neon-green);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        padding: 60px 0;
+      }
+
+      .terminal-demo {
+        margin-top: 40px;
+      }
+
+      .arch-flow {
+        flex-direction: column;
+      }
+
+      .arch-arrow {
+        transform: rotate(90deg);
+      }
+
+      .cta-card {
+        padding: 40px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="glow-orb glow-orb-1"></div>
+  <div class="glow-orb glow-orb-2"></div>
+
+  <div class="container">
+    <nav>
+      <div class="logo">Johnny<span>5</span></div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#architecture">How It Works</a>
+        <a href="https://github.com" target="_blank">GitHub</a>
+        <a href="#" class="btn btn-ghost">Documentation</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="badge">Works with your Anthropic subscription</div>
+      <img src="johnny5-robot.png" alt="Johnny5 Robot" class="hero-robot">
+      <h1>
+        Your <span class="highlight">Autonomous</span><br>
+        AI Agent
+      </h1>
+      <p class="hero-subtitle">
+        Inspired by the best features of Open CLAW. Built with security-first architecture.
+        Uses Claude Code CLI — the official way.
+      </p>
+      <div class="hero-cta">
+        <a href="#install" class="btn btn-primary">
+          Get Started
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+        <a href="#architecture" class="btn btn-ghost">See How It Works</a>
+      </div>
+
+      <div class="terminal-demo">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <div class="terminal-title">johnny5 — zsh</div>
+        </div>
+        <div class="terminal-body">
+          <div class="terminal-line"><span class="prompt">$</span> <span class="command">johnny5 start</span></div>
+          <div class="terminal-line output">Connecting to Claude Code CLI...</div>
+          <div class="terminal-line output success">✓ Bridge established (using official Claude Code)</div>
+          <div class="terminal-line output success">✓ Authentication verified via Claude Code</div>
+          <div class="terminal-line output">Ready. Johnny5 is alive! "No disassemble!"</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="section-header">
+        <h2>Built Different</h2>
+        <p>All the power you loved, with the compliance you need</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div>
+          <h3>Zero Token Extraction</h3>
+          <p>We never touch your OAuth tokens. Authentication is handled entirely by Claude Code CLI — Anthropic's official product.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Use Your Subscription</h3>
+          <p>Your Claude Pro/Max subscription works because you're using Claude Code. We're just the interface layer.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>Autonomous Agent</h3>
+          <p>Inspired by the best autonomous features. Research, code, analyze, create — Johnny5 handles complex multi-step tasks.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🏠</div>
+          <h3>Runs Locally</h3>
+          <p>Everything runs on your machine. Your data stays with you. Full privacy, full control.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔌</div>
+          <h3>MCP Support</h3>
+          <p>Connect to any Model Context Protocol server. Extend Johnny5 with custom tools and integrations.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Security-First</h3>
+          <p>Built with security as a core principle, not an afterthought. Audit logs, permission boundaries, safe execution.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="architecture" id="architecture">
+      <div class="section-header">
+        <h2>The Compliant Architecture</h2>
+        <p>We bridge into the official CLI — that's the difference</p>
+      </div>
+
+      <div class="arch-diagram">
+        <div class="arch-flow">
+          <div class="arch-node">
+            <div class="arch-node-label">Interface</div>
+            <div class="arch-node-title">Johnny5</div>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-node">
+            <div class="arch-node-label">Bridge</div>
+            <div class="arch-node-title">PTY / Terminal</div>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-node official">
+            <div class="arch-node-label">Official Product</div>
+            <div class="arch-node-title">Claude Code CLI</div>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-node official">
+            <div class="arch-node-label">API</div>
+            <div class="arch-node-title">Anthropic</div>
+          </div>
+        </div>
+
+        <div class="arch-note">
+          <strong>Key insight:</strong> We don't extract or use OAuth tokens. Claude Code CLI handles its own authentication.
+          You're using an official Anthropic product — we just provide a better experience on top.
+        </div>
+      </div>
+    </section>
+
+    <section class="cta" id="install">
+      <div class="cta-card">
+        <h2>Get Started in 60 Seconds</h2>
+        <p>Already have Claude Code? You're halfway there.</p>
+
+        <div class="install-command">
+          <code>npm install -g johnny5-agent</code>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('npm install -g johnny5-agent')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
+
+        <a href="#" class="btn btn-primary">
+          Read the Docs
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        Johnny5 is an independent project inspired by the autonomous AI agent movement.<br>
+        Not affiliated with Anthropic or Open CLAW. <a href="#">MIT License</a>.
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

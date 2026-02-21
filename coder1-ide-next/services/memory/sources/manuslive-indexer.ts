@@ -114,6 +114,19 @@ async function indexFile(
     return { chunks: 0, skipped: 0 };
   }
 
+  // Guard against runaway files (e.g. memory.md that looped and grew to GB)
+  const MAX_FILE_BYTES = 512 * 1024; // 512 KB — a healthy memory file is <50 KB
+  if (Buffer.byteLength(content, 'utf-8') > MAX_FILE_BYTES) {
+    onProgress?.({
+      phase: 'error',
+      current: 0,
+      total: 0,
+      message: `File too large to index (${Math.round(Buffer.byteLength(content, 'utf-8') / 1024)} KB > 512 KB limit). File may be corrupt or looping.`,
+    });
+    console.warn(`[manuslive-indexer] Skipping oversized file: ${filePath} (${Math.round(Buffer.byteLength(content, 'utf-8') / 1024)} KB)`);
+    return { chunks: 0, skipped: 1, error: 'File exceeds 512 KB size limit' };
+  }
+
   // Get existing chunks to check for changes
   const existingChunks = await getChunksBySource(sourceType, sourceId);
   const existingHashes = new Set(existingChunks.map(c => c.content_hash));

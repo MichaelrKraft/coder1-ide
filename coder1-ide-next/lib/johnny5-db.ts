@@ -61,6 +61,7 @@ export interface Session {
   message_count: number;
   tokens_used: number;
   status: 'active' | 'completed' | 'archived' | 'error';
+  claude_session_uuid: string | null;  // Native CLI session ID for --session-id flag
 }
 
 export interface Message {
@@ -883,6 +884,29 @@ function createTables(database: Database.Database): void {
     console.error('[Johnny5 DB] Interview sessions table creation error:', err);
   }
 
+  // Step 12: claude_session_uuid for native --session-id conversation state
+  try {
+    database.exec(`ALTER TABLE sessions ADD COLUMN claude_session_uuid TEXT`);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!msg.includes('duplicate column')) {
+      console.error('[Johnny5 DB] claude_session_uuid migration error:', msg);
+    }
+  }
+
+  // Step 13: alpha tester counter — single-row table for atomic global incrementing
+  try {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS alpha_tester_counter (
+        id TEXT PRIMARY KEY DEFAULT 'global',
+        n INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+    database.exec(`INSERT OR IGNORE INTO alpha_tester_counter (id, n) VALUES ('global', 0)`);
+  } catch (err) {
+    console.error('[Johnny5 DB] alpha_tester_counter table creation error:', err);
+  }
+
   // Add user_id to self_improvement_log for multi-tenant isolation
   try {
     database.exec(
@@ -991,6 +1015,10 @@ export async function updateSession(id: string, data: Partial<Session>): Promise
   if (data.status !== undefined) {
     updates.push('status = ?');
     values.push(data.status);
+  }
+  if (data.claude_session_uuid !== undefined) {
+    updates.push('claude_session_uuid = ?');
+    values.push(data.claude_session_uuid);
   }
 
   if (updates.length === 0) return;
@@ -2771,6 +2799,18 @@ export function getRecentMessagesAcrossSessions(limit: number = 20, userId?: str
   return stmt.all(limit) as Array<{
     role: string; content: string; created_at: string; session_id: string;
   }>;
+}
+
+/**
+ * Atomically claims the next alpha tester number.
+ * SQLite serializes writes, so UPDATE + SELECT is effectively atomic.
+ * Returns the assigned number (1-based).
+ */
+export function claimAlphaTesterNumber(): number {
+  const db = getDb();
+  db.prepare(`UPDATE alpha_tester_counter SET n = n + 1 WHERE id = 'global'`).run();
+  const row = db.prepare(`SELECT n FROM alpha_tester_counter WHERE id = 'global'`).get() as { n: number };
+  return row.n;
 }
 
 // Re-export ManusLive types for convenience

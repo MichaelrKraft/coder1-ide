@@ -398,7 +398,7 @@ export default function InteractiveTour({ onClose, onStepChange, onTourComplete 
   }, [isSettingsOpen]);
 
   // Handle step changes
-  const handleTourComplete = () => {
+  const handleTourComplete = async () => {
     // Calculate total tour time
     const totalTime = Date.now() - startTime;
     const totalMinutes = Math.round(totalTime / 60000);
@@ -470,32 +470,26 @@ coder1-bridge start
     localStorage.setItem('coder1-tour-timestamp', new Date().toISOString());
     localStorage.setItem('coder1-tour-completion-time', totalTime.toString());
     
-    // Assign alpha tester number if not already assigned
+    // Assign alpha tester number if not already assigned (server-side counter)
     if (!localStorage.getItem('coder1-alpha-tester-number')) {
-      // Get current counter (starts at 1 for first user)
-      const counterStr = localStorage.getItem('coder1-alpha-tester-counter');
-      const currentCounter = counterStr ? parseInt(counterStr, 10) : 0;
-      const nextNumber = currentCounter + 1;
-      
-      // Assign number to this user
-      localStorage.setItem('coder1-alpha-tester-number', nextNumber.toString());
-      
-      // Increment counter for next user
-      localStorage.setItem('coder1-alpha-tester-counter', nextNumber.toString());
-      
-      console.log(`🎯 Alpha tester #${nextNumber} badge assigned!`);
-      
-      // Show celebration toast
-      if (typeof window !== 'undefined') {
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-4 right-4 bg-coder1-cyan text-black px-6 py-3 rounded-lg shadow-glow-cyan-intense z-50 transition-all duration-300';
-        toast.innerHTML = `🎉 Congrats! You're Alpha Tester #${nextNumber}`;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-          toast.style.opacity = '0';
-          setTimeout(() => document.body.removeChild(toast), 300);
-        }, 4000);
+      try {
+        const res = await fetch('/api/alpha-tester/claim', { method: 'POST' });
+        const data = await res.json();
+        const nextNumber = data.number ?? 1;
+        localStorage.setItem('coder1-alpha-tester-number', nextNumber.toString());
+        console.log(`🎯 Alpha tester #${nextNumber} badge assigned!`);
+        if (typeof window !== 'undefined') {
+          const toast = document.createElement('div');
+          toast.className = 'fixed top-4 right-4 bg-coder1-cyan text-black px-6 py-3 rounded-lg shadow-glow-cyan-intense z-50 transition-all duration-300';
+          toast.innerHTML = `🎉 Congrats! You're Alpha Tester #${nextNumber}`;
+          document.body.appendChild(toast);
+          setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => document.body.removeChild(toast), 300);
+          }, 4000);
+        }
+      } catch (err) {
+        console.warn('[alpha-tester] Could not claim number from server:', err);
       }
     }
     

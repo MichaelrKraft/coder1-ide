@@ -5189,6 +5189,16 @@ app.prepare().then(() => {
     // ========================================================================
     // Heartbeat Service — deferred to avoid sqlite-vec blocking (fixed: vec now loads lazily)
     if (process.env.JOHNNY5_LIVING_FILES === 'true') {
+      // Ensure living files exist for 'default' user on startup.
+      // idempotent: initializeLivingFiles only writes files that don't already exist.
+      try {
+        const { initializeLivingFiles } = require('./lib/living-files');
+        initializeLivingFiles(undefined, 'default');
+        console.log('[Server] Living files initialized for default user');
+      } catch (err) {
+        console.warn('[Server] Failed to initialize living files:', err.message);
+      }
+
       try {
         const { getHeartbeatService } = require('./services/johnny5/heartbeat-service.ts');
         const heartbeat = getHeartbeatService({
