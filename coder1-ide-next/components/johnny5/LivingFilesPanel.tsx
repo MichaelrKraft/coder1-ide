@@ -372,11 +372,30 @@ export default function LivingFilesPanel() {
 
   // ── Initialize files ────────────────────────────────────────────────────────
   const handleInitialize = async () => {
+    console.log('[LivingFilesPanel] handleInitialize called');
+    setLoading(true);
+    setLoadError(null);
+
     try {
-      await fetch('/api/johnny5/living-files/init', { method: 'POST' });
+      console.log('[LivingFilesPanel] Fetching /api/johnny5/living-files/init...');
+      const res = await fetch('/api/johnny5/living-files/init', { method: 'POST' });
+      console.log('[LivingFilesPanel] Init response status:', res.status);
+      const data = await res.json();
+      console.log('[LivingFilesPanel] Init response data:', data);
+
+      if (!res.ok) {
+        console.error('[LivingFilesPanel] Init failed:', data.error);
+        setLoadError(data.error || 'Failed to initialize living files');
+        setLoading(false);
+        return;
+      }
+
+      console.log('[LivingFilesPanel] Init succeeded, reloading files...');
       await loadFiles();
-    } catch {
-      setLoadError('Failed to initialize living files');
+    } catch (err) {
+      console.error('[LivingFilesPanel] Init error:', err);
+      setLoadError(err instanceof Error ? err.message : 'Failed to initialize living files');
+      setLoading(false);
     }
   };
 
@@ -426,9 +445,17 @@ export default function LivingFilesPanel() {
         </div>
         <button
           onClick={handleInitialize}
-          className="px-4 py-2 text-sm bg-coder1-cyan/20 hover:bg-coder1-cyan/30 border border-coder1-cyan/50 text-coder1-cyan rounded transition-colors"
+          disabled={loading}
+          className="px-4 py-2 text-sm bg-coder1-cyan/20 hover:bg-coder1-cyan/30 border border-coder1-cyan/50 text-coder1-cyan rounded transition-colors disabled:opacity-50 flex items-center gap-2"
         >
-          Initialize Living Files
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Initializing...
+            </>
+          ) : (
+            'Initialize Living Files'
+          )}
         </button>
       </div>
     );
