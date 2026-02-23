@@ -4,6 +4,9 @@ import { join } from 'path';
 import { LIVING_FILES, loadLivingFile } from '@/lib/living-files';
 import { getUserLivingFilesDir } from '@/lib/data-paths';
 
+// Disable Next.js GET route caching so files appear immediately after init
+export const dynamic = 'force-dynamic';
+
 /** Logical display order for the UI */
 const DISPLAY_ORDER = [
   'SOUL.md',
