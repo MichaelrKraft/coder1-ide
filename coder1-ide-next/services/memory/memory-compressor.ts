@@ -78,6 +78,14 @@ export async function compressMemoryMd(userId: string = 'default'): Promise<void
     const success = writeLivingFile('MEMORY.md', compressed, 'replace', userId);
     if (success) {
       console.log(`[Memory Compressor] Compressed MEMORY.md: ${content.length} → ${compressed.length} chars (${Math.round((1 - compressed.length / content.length) * 100)}% reduction)`);
+      // Re-index so memory search reflects compressed content, not stale pre-compression chunks
+      try {
+        const { indexLivingFile } = await import('@/services/memory/sources/living-files-indexer');
+        await indexLivingFile('MEMORY.md', userId);
+        console.log('[Memory Compressor] MEMORY.md re-indexed after compression');
+      } catch (indexErr) {
+        console.warn('[Memory Compressor] Re-indexing after compression failed:', indexErr);
+      }
     } else {
       console.error('[Memory Compressor] Failed to write compressed MEMORY.md');
     }

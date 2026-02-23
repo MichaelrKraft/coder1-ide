@@ -545,10 +545,12 @@ class ClaudeExecutor extends EventEmitter {
       // CLAUDE.md files from the user's home directory, which inflates prompt size
       // and causes "Prompt is too long" errors for one-shot commands.
       const useStdin = !!options.stdinData;
+      // eslint-disable-next-line no-unused-vars
+      const { CLAUDECODE: _removed, ...inheritedEnv } = process.env;
       const claudeProcess = spawn('/bin/sh', ['-c', shellCommand], {
         cwd: '/tmp',
         env: {
-          ...process.env,
+          ...inheritedEnv,
           CODER1_BRIDGE: 'true',
           TERM: 'xterm-256color'
         },

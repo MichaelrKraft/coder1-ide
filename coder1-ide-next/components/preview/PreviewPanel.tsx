@@ -331,11 +331,12 @@ const PreviewPanel = React.memo(function PreviewPanel({
             'Johnny5',
             'Your AI employee dashboard - sessions, security, analytics, and autonomous features'
           )}
+          {/* J5 Living Files — view and edit Johnny5's 9 memory .md files */}
           {renderTabButton(
-            'preview',
-            <Eye className="w-4 h-4" />,
-            'Preview',
-            'Live preview of your HTML, CSS, and JavaScript code'
+            'living-files',
+            <BookOpen className="w-4 h-4" />,
+            'J5 Files',
+            "View and edit Johnny5's living memory files (SOUL, USER, MEMORY, etc.)"
           )}
           {features().teamFeatures && (
             <button
@@ -362,12 +363,11 @@ const PreviewPanel = React.memo(function PreviewPanel({
               )}
             </button>
           )}
-          {/* J5 Living Files — view and edit Johnny5's 9 memory .md files */}
           {renderTabButton(
-            'living-files',
-            <BookOpen className="w-4 h-4" />,
-            'J5 Files',
-            "View and edit Johnny5's living memory files (SOUL, USER, MEMORY, etc.)"
+            'preview',
+            <Eye className="w-4 h-4" />,
+            'Preview',
+            'Live preview of your HTML, CSS, and JavaScript code'
           )}
           {/* Only show ParaThinker tab when we have a session */}
           {paraThinkSessionId && renderTabButton(

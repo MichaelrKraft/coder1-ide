@@ -58,7 +58,7 @@ import {
   unifiedSessionSearch,
 } from '@/services/memory';
 import { getJ5Bridge } from '@/services/johnny5/j5-bridge';
-import { isLivingFilesEnabled, formatLivingFilesFromCache } from '@/lib/living-files';
+import { isLivingFilesEnabled, formatLivingFilesFromCache, loadLivingFilesContext } from '@/lib/living-files';
 import { bridgeManager as _importedBridgeManager } from '@/services/bridge-manager';
 // FIX: Same as /api/bridge/status - use global.bridgeManager (server.js) not the module import
 function getActiveBridgeManager(): typeof _importedBridgeManager {
@@ -843,6 +843,7 @@ export async function POST(
       bridgeManagerGlobal?.hasBridgeForUser?.('default') ||
       bridgeManagerGlobal?.findAnyConnectedBridge?.()
     );
+    const mode = detectJohnny5Mode(j5Connected, bridgeConnected);
     // If Bridge is connected, user has Claude Pro/Max - update their tier
     if (bridgeConnected && userId !== 'default') {
       try {
@@ -1441,6 +1442,18 @@ export async function POST(
           claudeSessionUuid,
           bridgeSystemPrompt
         );
+
+        // If a session ID conflict was auto-resolved by retry, regenerate the UUID in DB
+        // so future requests don't hit the stale session again.
+        if (result.sessionReset) {
+          const freshUuid = randomUUID();
+          try {
+            await updateSession(session.id, { claude_session_uuid: freshUuid } as Partial<Session>);
+            console.log('[Johnny5] Cleared stale claude_session_uuid, assigned new UUID');
+          } catch (resetErr) {
+            console.warn('[Johnny5] Failed to reset claude_session_uuid:', resetErr);
+          }
+        }
 
         if (!result.success) {
           console.error('[Johnny5] Error:', result.error);

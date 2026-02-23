@@ -738,19 +738,12 @@ class BridgeClient extends EventEmitter {
         }
 
         // Common execution options
-        // DEBUG: Log incoming dimensions from server
-        const receivedCols = context?.cols;
-        const receivedRows = context?.rows;
-        const finalCols = receivedCols || 120;
-        const finalRows = receivedRows || 30;
-        console.log(`🔍 [BRIDGE-DEBUG] Claude PTY dimensions: received=${receivedCols}x${receivedRows}, using=${finalCols}x${finalRows}`);
-
         const executeOptions = {
           commandId, // Pass commandId for session tracking
           context,   // Pass full context including selectedClaudeModel
           stdinData, // Prompt data to pipe via stdin (bypasses shell escaping)
-          cols: finalCols,
-          rows: finalRows,
+          cols: context?.cols || 120,
+          rows: context?.rows || 30,
           onData: (chunk) => {
             // Stream output back to server
             this.socket.emit('claude:output', {

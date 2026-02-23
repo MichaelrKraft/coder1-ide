@@ -61,6 +61,11 @@ export async function PUT(
       );
     }
 
+    // Fire-and-forget re-index — updates memory search without blocking the response
+    import('@/services/memory/sources/living-files-indexer')
+      .then(({ indexLivingFile }) => indexLivingFile(filename, 'default'))
+      .catch(err => console.warn('[Living Files API] Re-index failed:', (err as Error).message));
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[Living Files API] PUT failed:', error);

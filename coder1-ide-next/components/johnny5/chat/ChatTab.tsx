@@ -252,6 +252,10 @@ export default function ChatTab() {
     onAlert: (alert: SupervisionAlert) => {
       // Add critical/warning supervision alerts as system messages in chat
       if (alert.severity !== 'info') {
+        // Skip session conflict alerts — auto-retried by bridge service, not user-actionable
+        const alertText = `${alert.message} ${alert.details || ''}`;
+        if (alertText.includes('already in use') || alertText.includes('Session ID')) return;
+
         addChatMessage({
           id: `sup-${alert.id}`,
           role: 'system' as const,
@@ -1118,7 +1122,8 @@ export default function ChatTab() {
         if (errorCode === 'BRIDGE_NOT_CONNECTED') {
           errorMessage = "🔌 Bridge not connected! Please run 'coder1-bridge start' in your terminal and enter the pairing code.";
         } else if (errorCode === 'BRIDGE_ERROR') {
-          errorMessage = "⚠️ Bridge error. Please check that coder1-bridge is running and try again.";
+          const actualError = data.error ? ` Details: ${data.error}` : '';
+          errorMessage = `⚠️ Bridge error. Please check that coder1-bridge is running and try again.${actualError}`;
         } else if (errorCode === 'COMMAND_TIMEOUT') {
           // Show a helpful choice message instead of a dead-end error
           const timeoutMsg = "That request timed out — Claude CLI took longer than 5 minutes. You can:\n\n" +
