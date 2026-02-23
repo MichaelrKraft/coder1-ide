@@ -1,43 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import { getSupabaseClient } from '@/lib/auth/supabase-db';
+import { Resend } from 'resend';
 
-const DB_PATH = path.join(process.cwd(), 'db', 'alpha-waitlist.db');
-
-// Ensure database directory exists
-const dbDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
-
-// Initialize database
-function getDatabase() {
-  const db = new Database(DB_PATH);
-  
-  // Create table if not exists
-  const schema = fs.readFileSync(
-    path.join(process.cwd(), 'db', 'alpha-waitlist-schema.sql'),
-    'utf-8'
-  );
-  db.exec(schema);
-  
-  return db;
-}
-
-// Email validation
 function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+async function sendNotificationEmail(data: {
+  email: string;
+  name: string | null;
+  redditUsername: string | null;
+  source: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const notifyEmail = process.env.WAITLIST_NOTIFY_EMAIL || process.env.FEEDBACK_EMAIL_TO;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'Coder1 <noreply@coder1.dev>';
+
+  if (!apiKey || !notifyEmail) return;
+
+  try {
+    const resend = new Resend(apiKey);
+    await resend.emails.send({
+      from: fromEmail,
+      to: notifyEmail,
+      subject: `[Coder1 Alpha] New Waitlist Signup — ${data.email}`,
+      html: `
+        <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #00D9FF 0%, #FB923C 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">New Alpha Waitlist Signup</h1>
+          </div>
+          <div style="background: #1a1a1a; padding: 30px; border-radius: 0 0 8px 8px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="color: #999; padding: 8px 0; width: 140px;">Email</td>
+                <td style="color: #fff; padding: 8px 0;">${data.email}</td>
+              </tr>
+              ${data.name ? `<tr>
+                <td style="color: #999; padding: 8px 0;">Name</td>
+                <td style="color: #fff; padding: 8px 0;">${data.name}</td>
+              </tr>` : ''}
+              ${data.redditUsername ? `<tr>
+                <td style="color: #999; padding: 8px 0;">Reddit</td>
+                <td style="color: #fff; padding: 8px 0;">u/${data.redditUsername}</td>
+              </tr>` : ''}
+              <tr>
+                <td style="color: #999; padding: 8px 0;">Source</td>
+                <td style="color: #fff; padding: 8px 0;">${data.source}</td>
+              </tr>
+              <tr>
+                <td style="color: #999; padding: 8px 0;">Time</td>
+                <td style="color: #fff; padding: 8px 0;">${new Date().toLocaleString()}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      `,
+    });
+  } catch (err) {
+    // Non-blocking — don't fail the request if email fails
+    console.error('[Waitlist] Notification email failed:', err);
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, fullName, name, redditUsername, source } = body;
-    const displayName = fullName || name; // Support both fullName (new) and name (legacy)
+    const displayName = fullName || name || null;
 
-    // Validation
     if (!email || !isValidEmail(email)) {
       return NextResponse.json(
         { error: 'Valid email is required' },
@@ -45,58 +75,55 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get client info
-    const ipAddress = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
-                     'unknown';
+    const ipAddress = request.headers.get('x-forwarded-for') ||
+                      request.headers.get('x-real-ip') ||
+                      'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
-    // Insert into database
-    const db = getDatabase();
-    
-    try {
-      const stmt = db.prepare(`
-        INSERT INTO alpha_waitlist (
-          email, name, reddit_username, source, ip_address, user_agent
-        ) VALUES (?, ?, ?, ?, ?, ?)
-      `);
-      
-      const result = stmt.run(
-        email.toLowerCase().trim(),
-        displayName || null,
-        redditUsername || null,
-        source || 'website',
-        ipAddress,
-        userAgent
-      );
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('alpha_waitlist')
+      .insert({
+        email: email.toLowerCase().trim(),
+        name: displayName,
+        reddit_username: redditUsername || null,
+        source: source || 'website',
+        ip_address: ipAddress,
+        user_agent: userAgent,
+      })
+      .select('id')
+      .single();
 
-      db.close();
-
-      return NextResponse.json({
-        success: true,
-        message: 'Successfully added to waitlist',
-        id: result.lastInsertRowid
-      });
-
-    } catch (dbError: any) {
-      db.close();
-      
-      // Handle duplicate email
-      if (dbError.message?.includes('UNIQUE constraint failed')) {
+    if (error) {
+      if (error.code === '23505') {
+        // Unique constraint — duplicate email
         return NextResponse.json(
-          { 
+          {
             error: 'Email already registered',
-            message: 'This email is already on the waitlist'
+            message: 'This email is already on the waitlist',
           },
           { status: 409 }
         );
       }
-      
-      throw dbError;
+      throw error;
     }
 
+    // Fire-and-forget notification email to Mike
+    sendNotificationEmail({
+      email: email.toLowerCase().trim(),
+      name: displayName,
+      redditUsername: redditUsername || null,
+      source: source || 'website',
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Successfully added to waitlist',
+      id: data.id,
+    });
+
   } catch (error: any) {
-    console.error('Waitlist signup error:', error);
+    console.error('[Waitlist] Signup error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }
@@ -104,22 +131,22 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const db = getDatabase();
+    const supabase = getSupabaseClient();
+    const { count, error } = await supabase
+      .from('alpha_waitlist')
+      .select('*', { count: 'exact', head: true });
 
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM alpha_waitlist');
-    const result = stmt.get() as { count: number };
-
-    db.close();
+    if (error) throw error;
 
     return NextResponse.json({
-      totalSignups: result.count,
-      message: 'Waitlist statistics'
+      totalSignups: count ?? 0,
+      message: 'Waitlist statistics',
     });
 
   } catch (error: any) {
-    console.error('Waitlist stats error:', error);
+    console.error('[Waitlist] Stats error:', error);
     return NextResponse.json(
       { error: 'Failed to retrieve statistics' },
       { status: 500 }
@@ -127,14 +154,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// DELETE - Remove email from waitlist (dev only)
+// DELETE — remove email from waitlist (dev only)
 export async function DELETE(request: NextRequest) {
-  // Only allow in development
   if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json(
-      { error: 'Not available in production' },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
   }
 
   try {
@@ -142,27 +165,27 @@ export async function DELETE(request: NextRequest) {
     const email = searchParams.get('email');
 
     if (!email) {
-      return NextResponse.json(
-        { error: 'Email parameter required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Email parameter required' }, { status: 400 });
     }
 
-    const db = getDatabase();
-    const stmt = db.prepare('DELETE FROM alpha_waitlist WHERE email = ?');
-    const result = stmt.run(email.toLowerCase().trim());
-    db.close();
+    const supabase = getSupabaseClient();
+    const { error, count } = await supabase
+      .from('alpha_waitlist')
+      .delete({ count: 'exact' })
+      .eq('email', email.toLowerCase().trim());
+
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,
-      deleted: result.changes > 0,
-      message: result.changes > 0
+      deleted: (count ?? 0) > 0,
+      message: (count ?? 0) > 0
         ? `Removed ${email} from waitlist`
-        : 'Email not found in waitlist'
+        : 'Email not found in waitlist',
     });
 
   } catch (error: any) {
-    console.error('Delete error:', error);
+    console.error('[Waitlist] Delete error:', error);
     return NextResponse.json(
       { error: 'Failed to delete', details: error.message },
       { status: 500 }
