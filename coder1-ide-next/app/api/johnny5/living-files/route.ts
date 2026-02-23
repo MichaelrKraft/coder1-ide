@@ -77,7 +77,9 @@ export async function GET() {
     const existingCount = files.filter((f: { exists: boolean }) => f.exists).length;
     console.log('[Living Files GET] Files found:', existingCount, '/', files.length);
 
-    return NextResponse.json({ files });
+    return NextResponse.json({ files }, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (error) {
     console.error('[Living Files API] Failed to load living files:', error);
     return NextResponse.json(
