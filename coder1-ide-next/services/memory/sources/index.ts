@@ -79,6 +79,13 @@ export {
   type WatcherStatus,
 } from './file-watcher';
 
+// Living Files Indexer
+export {
+  indexLivingFile,
+  indexAllLivingFiles,
+  type IndexResult as LivingFileIndexResult,
+} from './living-files-indexer';
+
 // ============================================================================
 // Convenience Functions
 // ============================================================================

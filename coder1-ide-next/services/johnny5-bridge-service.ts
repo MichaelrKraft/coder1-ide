@@ -93,6 +93,8 @@ export interface SendPromptResult {
   response: string;
   error?: string;
   errorCode?: 'BRIDGE_NOT_CONNECTED' | 'BRIDGE_ERROR' | 'COMMAND_TIMEOUT';
+  /** True when a session ID conflict was detected and retried — route should reset claude_session_uuid */
+  sessionReset?: boolean;
 }
 
 // ============================================================================
@@ -328,11 +330,14 @@ Only mention code/git status if the user explicitly asks about it.
       };
     }
 
-    // 2. Build the full prompt with system context and history
+    // 2. Build the full prompt with system context and history.
+    // Cap history at 4 messages (2 turns) — living files + memory search provide long-term context.
+    // Each additional message adds ~500-2000 tokens to a prompt already ~7k tokens from living files.
+    const MAX_BRIDGE_HISTORY = 4;
     const fullPrompt = await this.buildFullPrompt(
       message,
-      conversationHistory,
-      !!claudeSessionId,
+      conversationHistory.slice(-MAX_BRIDGE_HISTORY),
+      false,
       systemPrompt
     );
 
@@ -346,6 +351,16 @@ Only mention code/git status if the user explicitly asks about it.
         { onChunk },
         claudeSessionId
       );
+
+      // If Claude reports the session ID is already in use (stale from a previous bridge
+      // crash), retry once without the session flag — this starts a fresh Claude session.
+      if (!result.success && result.error && result.error.includes('already in use')) {
+        console.warn('[Johnny5BridgeService] Session ID conflict detected, retrying without session ID...');
+        const retryCommandId = `johnny5-retry-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const retryResult = await this.executeClaudeCommand(retryCommandId, fullPrompt, { onChunk }, undefined);
+        return { ...retryResult, sessionReset: true };
+      }
+
       return result;
     } catch (error) {
       console.error('[Johnny5BridgeService] Error executing command:', error);
@@ -516,10 +531,12 @@ Only mention code/git status if the user explicitly asks about it.
       const mcpEnabled = process.env.JOHNNY5_BRIDGE_MCP_ENABLED === 'true';
       const permissionFlag = mcpEnabled ? ' --permission-mode bypassPermissions' : '';
       const modelOverride = process.env.JOHNNY5_MODEL || 'claude-sonnet-4-5';
-      const sessionFlag = claudeSessionId ? ` --session-id ${claudeSessionId}` : '';
-      const command = `claude --print --verbose --output-format stream-json --include-partial-messages${sessionFlag} --model ${modelOverride}${permissionFlag}`;
+      // --session-id intentionally omitted: causes "Session ID already in use" conflicts when
+      // the bridge reconnects after a disconnect (old Claude process holds the session file).
+      // Conversation history is managed in our DB and passed via prompt text instead.
+      const command = `claude --print --output-format stream-json --include-partial-messages --model ${modelOverride}${permissionFlag}`;
 
-      console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, sessionId: ${claudeSessionId ?? 'none'}, command: ${command}, prompt via stdin (${prompt.length} chars)`);
+      console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, command: ${command}, prompt via stdin (${prompt.length} chars)`);
 
       // Execute command via Bridge — prompt goes through stdinData, not shell argument
       getActiveBridgeManager().executeCommand(this.userId, {

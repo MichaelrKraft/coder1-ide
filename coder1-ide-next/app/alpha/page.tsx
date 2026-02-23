@@ -167,17 +167,11 @@ function ScrollReveal({
   className?: string;
   delay?: number;
 }) {
-  const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Handle hydration
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted || !ref.current) return;
+    if (!ref.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -186,23 +180,23 @@ function ScrollReveal({
         }
       },
       {
-        threshold: 0.1,
-        rootMargin: '-50px'
+        threshold: 0,
+        rootMargin: '200px 0px 200px 0px'
       }
     );
 
     observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [mounted, delay]);
 
-  // Server render: show content without animation classes
-  if (!mounted) {
-    return (
-      <div className={className}>
-        {children}
-      </div>
-    );
-  }
+    // Fallback: ensure content is always visible after 150ms
+    // Handles instant anchor navigation and Page Down jumps where
+    // IntersectionObserver may not fire for all in-viewport elements
+    const fallback = setTimeout(() => setIsVisible(true), 150);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(fallback);
+    };
+  }, [delay]);
 
   return (
     <div
@@ -1518,28 +1512,6 @@ export default function AlphaLandingPage() {
             </div>
           </ScrollReveal>
 
-          {/* Johnny5 Video Demo */}
-          <div className="mt-12">
-            <ScrollReveal>
-              <div className="text-center mb-8">
-                <p className="text-white text-4xl uppercase tracking-widest font-bold">DEMO</p>
-              </div>
-              <div className="max-w-3xl mx-auto rounded-xl overflow-hidden border-2 border-cyan-400/50 shadow-[0_0_40px_rgba(0,255,255,0.3)]">
-                <video
-                  className="w-full"
-                  controls
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  poster="/videos/johnny5-demo-poster.jpg"
-                >
-                  <source src="/videos/johnny5-demo.mp4" type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            </ScrollReveal>
-          </div>
         </div>
       </section>
 

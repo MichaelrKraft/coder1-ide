@@ -5405,6 +5405,20 @@ app.prepare().then(() => {
           console.error('═══════════════════════════════════════════════════════════');
         });
 
+        // Index living files into memory_chunks (must run after loadVectorExtension)
+        if (process.env.JOHNNY5_LIVING_FILES === 'true') {
+          try {
+            const { indexAllLivingFiles } = require('./services/memory/sources/living-files-indexer.ts');
+            indexAllLivingFiles('default').then(result => {
+              console.log(`[Johnny5 Memory] Living files: ${result.totalChunks} chunks indexed, ${result.totalSkipped} skipped`);
+            }).catch(err => {
+              console.warn('[Johnny5 Memory] Living files indexing failed:', err.message);
+            });
+          } catch (lfErr) {
+            console.warn('[Johnny5 Memory] Living files indexer not available:', lfErr.message);
+          }
+        }
+
         // Cleanup on shutdown
         process.on('SIGTERM', () => {
           console.log('[Johnny5 Memory] Cleaning up...');

@@ -5,6 +5,18 @@
  * Connects local Claude CLI to remote Coder1 IDE
  */
 
+// Handle EPIPE gracefully — happens when server closes the socket mid-write (e.g. user
+// navigates away). Without this handler Node throws and crashes the entire bridge process.
+process.on('uncaughtException', (err) => {
+  if (err.code === 'EPIPE') {
+    console.warn('[Bridge] Connection write error (server closed socket), waiting for reconnect...');
+    return; // Don't crash — Socket.IO will reconnect automatically
+  }
+  // Re-throw all other unexpected errors so they still surface
+  console.error('[Bridge] Fatal uncaught error:', err);
+  process.exit(1);
+});
+
 const { program } = require('commander');
 const readline = require('readline');
 const BridgeClient = require('./bridge-client');
