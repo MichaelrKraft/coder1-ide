@@ -35,6 +35,9 @@ export async function GET() {
     const livingFilesDir = getUserLivingFilesDir('default');
     const dirExists = existsSync(livingFilesDir);
 
+    console.log('[Living Files GET] Directory:', livingFilesDir);
+    console.log('[Living Files GET] Directory exists:', dirExists);
+
     const files = DISPLAY_ORDER.map((filename) => {
       const config = LIVING_FILES.find(f => f.filename === filename);
       if (!config) return null;
@@ -67,6 +70,9 @@ export async function GET() {
         description: FILE_DESCRIPTIONS[filename] ?? config.description,
       };
     }).filter(Boolean);
+
+    const existingCount = files.filter((f: { exists: boolean }) => f.exists).length;
+    console.log('[Living Files GET] Files found:', existingCount, '/', files.length);
 
     return NextResponse.json({ files });
   } catch (error) {
