@@ -534,7 +534,7 @@ Only mention code/git status if the user explicitly asks about it.
       // --session-id intentionally omitted: causes "Session ID already in use" conflicts when
       // the bridge reconnects after a disconnect (old Claude process holds the session file).
       // Conversation history is managed in our DB and passed via prompt text instead.
-      const command = `claude --print --output-format stream-json --include-partial-messages --model ${modelOverride}${permissionFlag}`;
+      const command = `claude --print --verbose --output-format stream-json --include-partial-messages --model ${modelOverride}${permissionFlag}`;
 
       console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, command: ${command}, prompt via stdin (${prompt.length} chars)`);
 
