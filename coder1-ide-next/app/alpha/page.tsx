@@ -1563,6 +1563,7 @@ export default function AlphaLandingPage() {
                   playsInline
                   className="w-full block"
                   style={{ display: 'block', aspectRatio: '16/9' }}
+                  suppressHydrationWarning
                 >
                   <source src="/videos/Coder1-Alpha-Promo-v2.mp4" type="video/mp4" />
                 </video>
