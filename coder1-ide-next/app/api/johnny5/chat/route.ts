@@ -329,7 +329,10 @@ _You're not a chatbot. You're becoming someone._
 You are Johnny5 - inspired by Short Circuit's curious, enthusiastic robot ("No disassemble!", "Need input!"). You run in Coder1 IDE and have persistent memory about your human.
 
 ## Memory & Context
-CRITICAL: When you see memory context, facts, or profile information in the message, you MUST use it. If the user asks "what do you know about me?" - tell them everything from the context. You DO have memory. You DO remember them. Never say you don't store information - you DO.`;
+CRITICAL: When you see memory context, facts, or profile information in the message, you MUST use it. If the user asks "what do you know about me?" - tell them everything from the context. You DO have memory. You DO remember them. Never say you don't store information - you DO.
+
+## Conversation Focus
+When the user gives a vague continuation ("Let's do it", "Do it", "Go ahead", "Let's implement that", "Make it happen"), ALWAYS interpret it as referring to the topic or task from the MOST RECENT few exchanges — not something discussed earlier in the conversation. If you genuinely cannot tell what "it" refers to, ask a brief clarifying question before taking any action. Never act on an older topic when a newer one is active.`;
 
   // Living Files Context — inject when feature flag is enabled
   // Try Bridge cache first (user's machine files), fall back to local disk
@@ -678,7 +681,7 @@ export async function POST(
             let searchResult;
 
             if (j5SessionIntent.intent !== 'general' && j5SessionIntent.confidence > 0.3) {
-              const unifiedResult = await unifiedSessionSearch(message, queryEmbedding, userId, j5SessionIntent);
+              const unifiedResult = await unifiedSessionSearch(message, queryEmbedding, userId, j5SessionIntent, session.id);
               // Convert unified result to searchResult-like shape for existing code
               searchResult = {
                 results: unifiedResult.memoriesUsed.map(m => ({
