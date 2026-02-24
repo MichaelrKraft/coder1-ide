@@ -214,13 +214,25 @@ export class ClientWebSocketAuth {
 
 /**
  * Enhanced Socket.IO authentication middleware for server
+ *
+ * SECURITY FIX (Feb 23, 2026): Reject unauthenticated connections in production.
+ * Guest access is only allowed in development mode for backwards compatibility.
  */
 export function createSocketAuthMiddleware() {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   return (socket: any, next: any) => {
     const ticketId = socket.handshake.auth?.ticketId;
 
     if (!ticketId) {
-      console.warn('⚠️ WebSocket connection without authentication ticket (backwards compatibility)');
+      // SECURITY: In production, reject connections without authentication
+      if (!isDevelopment) {
+        console.error('❌ WebSocket connection rejected: No authentication ticket (production mode)');
+        return next(new Error('Authentication required'));
+      }
+
+      // Development mode only: Allow guest access for backwards compatibility
+      console.warn('⚠️ WebSocket connection without authentication ticket (development mode only)');
       socket.authenticated = false;
       socket.userId = 'guest';
       socket.sessionId = `guest_${Date.now()}`;

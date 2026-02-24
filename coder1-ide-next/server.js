@@ -1641,15 +1641,40 @@ app.prepare().then(() => {
   console.log('[DEBUG] Attaching Socket.IO to server...');
   io = new Server(server, {
     cors: {
-      origin: dev 
-        ? [
+      // SECURITY FIX (Feb 23, 2026): Strict origin whitelist, no wildcards
+      origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, Postman, curl)
+        if (!origin) {
+          return callback(null, true);
+        }
+
+        // Development mode: allow localhost
+        if (dev) {
+          const localOrigins = [
             `http://localhost:${port}`,
             'http://localhost:3000',
             'http://localhost:3001'
-          ]
-        : process.env.NODE_ENV === 'production'
-          ? ['https://*.onrender.com', process.env.RENDER_EXTERNAL_URL || '*']
-          : true,
+          ];
+          if (localOrigins.includes(origin)) {
+            return callback(null, true);
+          }
+        }
+
+        // Production: allow Render URLs and configured external URL
+        const renderUrl = process.env.RENDER_EXTERNAL_URL;
+        if (renderUrl && origin === renderUrl) {
+          return callback(null, true);
+        }
+
+        // Allow *.onrender.com in production
+        if (origin.endsWith('.onrender.com') && origin.startsWith('https://')) {
+          return callback(null, true);
+        }
+
+        // Reject unknown origins in production
+        console.warn(`[CORS] Rejected origin: ${origin}`);
+        return callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
       methods: ['GET', 'POST'], // ADDED: Explicit methods to prevent extension blocking
       allowedHeaders: ['Content-Type', 'Authorization'] // ADDED: Prevent extension header injection
@@ -1680,14 +1705,18 @@ app.prepare().then(() => {
     headers["X-Instance-ID"] = INSTANCE_ID;
   });
 
-  // Add WebSocket authentication middleware (if available)
+  // SECURITY FIX (Feb 23, 2026): WebSocket authentication is REQUIRED
+  // Fail closed - if auth module fails to load, reject all connections
   try {
     const { createSocketAuthMiddleware } = require('./lib/websocket-auth');
     io.use(createSocketAuthMiddleware());
     console.log('🔐 WebSocket authentication middleware enabled');
   } catch (error) {
-    console.warn('⚠️ WebSocket authentication not available (development mode):', error.message);
-    // Continue without authentication for development/backwards compatibility
+    console.error('❌ CRITICAL: WebSocket authentication module failed to load:', error.message);
+    // SECURITY: Fail closed - reject all connections if auth is unavailable
+    io.use((socket, next) => {
+      next(new Error('Server authentication unavailable'));
+    });
   }
 
   // Connect WebSocket Event Bridge to Socket.IO server for Claude Code Bridge events
@@ -3789,6 +3818,17 @@ app.prepare().then(() => {
       const sessionId = id || currentSessionId;
 
       const session = terminalSessions.get(sessionId);
+
+      // SECURITY FIX (Feb 23, 2026): Verify session ownership
+      // Prevent users from accessing other users' terminal sessions
+      if (session && session.userId !== 'default') {
+        const socketUserId = socket.userId || 'guest';
+        if (socketUserId !== session.userId && socketUserId !== 'guest' && socketUserId !== 'alpha-user') {
+          console.warn(`[Terminal] SECURITY: User ${socketUserId} attempted to access session owned by ${session.userId}`);
+          socket.emit('terminal:error', { message: 'Access denied to this terminal session' });
+          return;
+        }
+      }
 
       // 🎭 INTERACTIVE CLAUDE SESSION CHECK (Dec 10, 2025)
       // If there's an active interactive Claude session, route ALL input to the bridge

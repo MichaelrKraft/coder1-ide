@@ -6,10 +6,25 @@
  * - Uses PTY for `claude` (no args) to show interactive welcome screen
  * - Falls back to spawn() for one-shot commands like `claude "prompt"`
  * - Supports bidirectional stdin streaming over WebSocket
+ *
+ * SECURITY FIX (Feb 23, 2026): Added input validation for model parameter
+ * to prevent shell command injection attacks.
  */
 
 const { spawn, execSync } = require('child_process');
 const EventEmitter = require('events');
+
+/**
+ * SECURITY: Validate model name to prevent shell injection
+ * Only allow alphanumeric, hyphens, underscores, dots, and colons (for model versions)
+ * Examples: "opus", "sonnet-4", "claude-3.5-opus", "claude-opus-4-5-20251101"
+ */
+function isValidModelName(model) {
+  if (!model || typeof model !== 'string') return false;
+  // Max length to prevent DoS, only safe characters
+  if (model.length > 100) return false;
+  return /^[a-zA-Z0-9._:-]+$/.test(model);
+}
 
 // Load node-pty for interactive sessions
 let pty;
@@ -301,12 +316,19 @@ class ClaudeExecutor extends EventEmitter {
       let args = parts.slice(1); // Skip 'claude'
 
       // Add model parameter if specified in context
+      // SECURITY: Validate model name to prevent command injection
       if (options.context && options.context.selectedClaudeModel) {
+        const model = options.context.selectedClaudeModel;
+        if (!isValidModelName(model)) {
+          this.error(`SECURITY: Invalid model name rejected: ${model}`);
+          reject(new Error('Invalid model parameter'));
+          return;
+        }
         const modelIndex = args.findIndex(arg => arg === '--model');
         if (modelIndex === -1) {
-          args.unshift('--model', options.context.selectedClaudeModel);
+          args.unshift('--model', model);
         } else {
-          args[modelIndex + 1] = options.context.selectedClaudeModel;
+          args[modelIndex + 1] = model;
         }
       }
 
@@ -516,9 +538,15 @@ class ClaudeExecutor extends EventEmitter {
       }
 
       // Add model parameter if specified in context and not already present
+      // SECURITY: Validate model name to prevent shell injection
       if (options.context?.selectedClaudeModel && !shellCommand.includes('--model')) {
+        const model = options.context.selectedClaudeModel;
+        if (!isValidModelName(model)) {
+          this.error(`SECURITY: Invalid model name rejected: ${model}`);
+          throw new Error('Invalid model parameter');
+        }
         const afterPath = shellCommand.substring(this.claudePath.length);
-        shellCommand = this.claudePath + ' --model ' + options.context.selectedClaudeModel + afterPath;
+        shellCommand = this.claudePath + ' --model ' + model + afterPath;
       }
 
       // When MCP permission bypass is active (server opted in via JOHNNY5_BRIDGE_MCP_ENABLED),

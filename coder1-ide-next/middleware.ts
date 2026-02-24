@@ -21,6 +21,9 @@ export function middleware(request: NextRequest) {
   }
 
   // Handle CORS for component-capture API
+  // SECURITY NOTE (Feb 23, 2026): This endpoint allows any origin because it's designed
+  // to capture components from external websites. It should NOT handle sensitive data
+  // or accept credentials. If auth is needed, use a different endpoint.
   if (pathname.startsWith('/api/component-capture')) {
     // Handle preflight OPTIONS request first
     if (request.method === 'OPTIONS') {
@@ -28,8 +31,9 @@ export function middleware(request: NextRequest) {
         status: 200,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          // SECURITY: Remove Authorization header - this endpoint should not handle auth
+          'Access-Control-Allow-Headers': 'Content-Type',
           'Access-Control-Max-Age': '86400',
         }
       });
@@ -38,8 +42,8 @@ export function middleware(request: NextRequest) {
     // For actual requests, clone the response and add headers
     const response = NextResponse.next();
     response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
 
     return response;
   }

@@ -3,9 +3,11 @@
  * Uses SQLite database for persistent storage across processes and restarts
  * Updated Feb 1, 2026 to fix production "Invalid or expired pairing code" errors
  * Updated Feb 2, 2026 to auto-create table if missing
+ * Updated Feb 23, 2026 to use cryptographically secure random code generation
  */
 
 import { getDatabase } from './database';
+import crypto from 'crypto';
 
 interface PairingData {
   userId: string;
@@ -74,8 +76,9 @@ export class BridgeStore {
       // Ensure table exists before any operations
       await this.ensureTable(db);
 
-      // Generate 6-digit code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      // Generate 6-digit code using cryptographically secure random
+      // SECURITY FIX: Math.random() is predictable - use crypto.randomInt() instead
+      const code = crypto.randomInt(100000, 999999).toString();
       const expires = Date.now() + 300000; // 5 minutes
 
       // Insert into DB
