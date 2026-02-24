@@ -1228,7 +1228,7 @@ export default function AlphaLandingPage() {
               Join the Alpha
             </a>
             <a
-              href="#demo"
+              href="#demo-video"
               className="px-8 py-4 border-2 border-coder1-cyan/50 rounded-full text-lg font-semibold text-coder1-cyan hover:bg-coder1-cyan/10 transition-all"
             >
               Watch Demo
@@ -1516,7 +1516,7 @@ export default function AlphaLandingPage() {
       </section>
 
       {/* ===== DEMO VIDEO SECTION ===== */}
-      <section className="py-24 relative overflow-hidden">
+      <section className="py-24 relative overflow-hidden" id="demo-video">
         <div className="max-w-5xl mx-auto px-6">
           <ScrollReveal>
             <div className="text-center mb-16">
