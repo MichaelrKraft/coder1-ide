@@ -2803,14 +2803,22 @@ export function getRecentMessagesAcrossSessions(limit: number = 20, userId?: str
 
 /**
  * Atomically claims the next alpha tester number.
- * SQLite serializes writes, so UPDATE + SELECT is effectively atomic.
+ * Uses Supabase RPC for atomic increment (persists across Render deploys).
  * Returns the assigned number (1-based).
  */
-export function claimAlphaTesterNumber(): number {
-  const db = getDb();
-  db.prepare(`UPDATE alpha_tester_counter SET n = n + 1 WHERE id = 'global'`).run();
-  const row = db.prepare(`SELECT n FROM alpha_tester_counter WHERE id = 'global'`).get() as { n: number };
-  return row.n;
+export async function claimAlphaTesterNumber(): Promise<number> {
+  // Dynamic import to avoid circular dependency
+  const { getSupabaseClient } = await import('@/lib/auth/supabase-db');
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase.rpc('increment_alpha_tester_counter');
+
+  if (error) {
+    console.error('[alpha-tester] Supabase RPC error:', error);
+    throw new Error('Failed to claim alpha tester number');
+  }
+
+  return data as number;
 }
 
 // Re-export ManusLive types for convenience

@@ -3,7 +3,7 @@ import { claimAlphaTesterNumber } from '@/lib/johnny5-db';
 
 export async function POST() {
   try {
-    const number = claimAlphaTesterNumber();
+    const number = await claimAlphaTesterNumber();
     return NextResponse.json({ number });
   } catch (error) {
     console.error('[alpha-tester] claim error:', error);
