@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { withGeneralMiddleware } from '@/lib/api-middleware';
+import { withFileMiddleware } from '@/lib/api-middleware';
 import { logger } from '@/lib/logger';
 import { bridgeManager } from '@/services/bridge-manager';
 
@@ -224,5 +224,6 @@ async function fileTreeHandler({ req, user }: { req: NextRequest; user?: any }):
     }
 }
 
-// Export with general middleware (rate limiting, validation, logging, but NO auth required)
-export const GET = withGeneralMiddleware(fileTreeHandler);
+// SECURITY FIX (Feb 23, 2026): Require authentication for file access
+// Export with file middleware (rate limiting, validation, logging, AND auth required)
+export const GET = withFileMiddleware(fileTreeHandler);

@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { bridgeStore } from '@/lib/bridge-store';
+import { rateLimiters } from '@/lib/rate-limiter';
 
-// JWT secret (in production, use environment variable)
-const JWT_SECRET = process.env.JWT_SECRET || 'coder1-bridge-secret-2025';
+// JWT secret - SECURITY: Must be set via environment variable, no fallback
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.error('CRITICAL SECURITY ERROR: JWT_SECRET environment variable is not set!');
+}
 
 // Active bridges tracking
 const activeBridges = new Map<string, {
@@ -17,13 +22,29 @@ const activeBridges = new Map<string, {
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Rate limit pairing attempts to prevent brute-force attacks
+    const rateLimitResult = await rateLimiters.auth.limit(request);
+    if (!rateLimitResult.success) {
+      console.warn('[Bridge Pair] Rate limit exceeded for IP');
+      return rateLimitResult.response!;
+    }
+
+    // SECURITY: Require JWT_SECRET to be configured
+    if (!JWT_SECRET) {
+      console.error('[Bridge Pair] JWT_SECRET not configured - rejecting pairing attempt');
+      return NextResponse.json({
+        success: false,
+        error: 'Server configuration error'
+      }, { status: 500 });
+    }
+
     const body = await request.json();
     const { code, version, platform, claudeVersion } = body;
 
     if (!code) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: false,
-        error: 'Pairing code required' 
+        error: 'Pairing code required'
       }, { status: 400 });
     }
 
