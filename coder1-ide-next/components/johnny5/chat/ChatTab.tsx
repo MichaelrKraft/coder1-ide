@@ -245,6 +245,19 @@ export default function ChatTab() {
   // Bridge connection state for reliable mode updates
   const { isConnected: bridgeConnected } = useBridgeConnectionState();
 
+  // FIX (Feb 2026): Derive effective mode from Socket.IO bridge state (most reliable)
+  // The mode API (/api/johnny5/mode) can return stale data due to Next.js module isolation
+  // causing "Basic Chat" to show even when bridge is connected
+  const effectiveMode = useMemo(() => {
+    if (bridgeConnected) {
+      // Socket.IO says bridge is connected - trust it over the mode API
+      return 'bridge' as const;
+    }
+    return (johnny5Mode?.mode || 'gemini') as 'j5' | 'bridge' | 'gemini';
+  }, [bridgeConnected, johnny5Mode?.mode]);
+
+  const isEffectivelyLimited = effectiveMode === 'gemini';
+
   // Terminal supervision
   const { alerts: supervisionAlerts, dismissAlert: dismissSupervisionAlert } = useTerminalSupervision({
     enabled: true,  // Always enabled for now
@@ -476,10 +489,15 @@ export default function ChatTab() {
 
   // FIX (Feb 2026): Refresh Johnny5 mode when bridge connection state changes
   // Uses useBridgeConnectionState hook which handles Socket.IO timing reliably
+  // Added delay to allow global.bridgeManager to update before API call
   useEffect(() => {
     if (bridgeConnected) {
       console.log('[ChatTab] Bridge connection detected via hook - refreshing mode');
-      fetchJohnny5Mode();
+      // Small delay to allow global.bridgeManager to update, then refresh mode
+      const timer = setTimeout(() => {
+        fetchJohnny5Mode();
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [bridgeConnected, fetchJohnny5Mode]);
 
@@ -1409,7 +1427,7 @@ export default function ChatTab() {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-text-primary">Johnny5</h3>
-            <ModeIndicator mode={johnny5Mode?.mode || null} />
+            <ModeIndicator mode={effectiveMode} />
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -1433,10 +1451,10 @@ export default function ChatTab() {
       </div>
 
       {/* Limited Mode Warning Banner - Compact */}
-      {/* FIX (Feb 2026): Also check !bridgeConnected from Socket.IO hook
-          The API endpoint can't detect bridges due to Next.js module isolation,
+      {/* FIX (Feb 2026): Use isEffectivelyLimited which derives mode from Socket.IO hook
+          The API endpoint can return stale data due to Next.js module isolation,
           but Socket.IO events reliably detect bridge connection state */}
-      {johnny5Mode?.isLimitedMode && !bridgeConnected && !limitedModeDismissed && (
+      {isEffectivelyLimited && !limitedModeDismissed && (
         <div className="px-4 py-1.5 bg-yellow-500/10 border-b border-yellow-500/30 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 text-yellow-300">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
