@@ -331,9 +331,9 @@ Only mention code/git status if the user explicitly asks about it.
     }
 
     // 2. Build the full prompt with system context and history.
-    // Cap history at 4 messages (2 turns) — living files + memory search provide long-term context.
-    // Each additional message adds ~500-2000 tokens to a prompt already ~7k tokens from living files.
-    const MAX_BRIDGE_HISTORY = 4;
+    // Cap history at 20 messages (10 turns) to maintain conversation coherence.
+    // Living files + memory search provide additional long-term context.
+    const MAX_BRIDGE_HISTORY = 20;
     const fullPrompt = await this.buildFullPrompt(
       message,
       conversationHistory.slice(-MAX_BRIDGE_HISTORY),

@@ -157,7 +157,7 @@ type ChatResponse = ChatSuccessResponse | ChatErrorResponse | QuotaExceededRespo
 // ============================================================================
 
 const MAX_MESSAGE_LENGTH = 50000;
-const MAX_HISTORY_MESSAGES = 15;
+const MAX_HISTORY_MESSAGES = 30;
 const MAX_CLI_PROMPT_LENGTH = 25000; // ~6.25k tokens, conservative limit for Claude CLI
 
 // ============================================================================
@@ -944,8 +944,8 @@ export async function POST(
         .map((m) => ({ role: m.role, content: m.content, id: '', session_id: session.id, created_at: '' })) as Awaited<ReturnType<typeof getMessages>>;
     }
 
-    // 6.1. Simple token-aware truncation: estimate ~4 chars per token, cap at 8000 tokens
-    const TOKEN_BUDGET = 8000;
+    // 6.1. Simple token-aware truncation: estimate ~4 chars per token, cap at 16000 tokens
+    const TOKEN_BUDGET = 16000;
     let estimatedHistoryTokens = 0;
     const truncatedHistory: typeof history = [];
     for (let i = history.length - 1; i >= 0; i--) {
@@ -1036,7 +1036,7 @@ export async function POST(
             userId,
             topK: 5,
             maxTokens: 2000,
-            minScore: 0.05,
+            minScore: 0.5, // raised from 0.05 — prevents unrelated past-session memories from bleeding in
           });
 
           console.log(`[Johnny5] Memory search completed: ${searchResult.results.length} results, type=${searchResult.searchType}, time=${searchResult.processingTimeMs}ms`);
