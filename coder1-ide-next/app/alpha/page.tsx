@@ -1515,6 +1515,67 @@ export default function AlphaLandingPage() {
         </div>
       </section>
 
+      {/* ===== DEMO VIDEO SECTION ===== */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="max-w-5xl mx-auto px-6">
+          <ScrollReveal>
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-coder1-cyan/10 border border-coder1-cyan/20 rounded-full mb-6">
+                <span className="text-coder1-cyan text-lg font-medium">See It In Action</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Demo</h2>
+            </div>
+          </ScrollReveal>
+
+          <ScrollReveal>
+            <div className="relative flex flex-col items-center">
+              {/* Cyan glow behind the screen */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'radial-gradient(ellipse 70% 50% at 50% 45%, rgba(0, 217, 255, 0.18) 0%, rgba(0, 217, 255, 0.06) 50%, transparent 100%)',
+                }}
+              />
+
+              {/* Monitor bezel */}
+              <div
+                className="relative w-full rounded-2xl overflow-hidden border-4 border-white/10"
+                style={{
+                  background: '#111',
+                  boxShadow: '0 0 60px 20px rgba(0, 217, 255, 0.2), 0 0 120px 40px rgba(0, 217, 255, 0.08), 0 30px 80px rgba(0,0,0,0.7)',
+                }}
+              >
+                {/* Fake browser top bar */}
+                <div className="flex items-center gap-2 px-4 py-3 bg-[#1a1a1a] border-b border-white/10">
+                  <div className="w-3 h-3 rounded-full bg-red-500/70" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
+                  <div className="w-3 h-3 rounded-full bg-green-500/70" />
+                  <div className="flex-1 ml-4 bg-white/5 rounded-md px-4 py-1 text-white/30 text-xs font-mono">
+                    coder1.app/ide
+                  </div>
+                </div>
+
+                {/* Video */}
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full block"
+                  style={{ display: 'block', aspectRatio: '16/9' }}
+                >
+                  <source src="/videos/Coder1-Alpha-Promo-v2.mp4" type="video/mp4" />
+                </video>
+              </div>
+
+              {/* Monitor stand */}
+              <div className="w-24 h-4 bg-[#1a1a1a] rounded-b-lg border-x border-b border-white/10" />
+              <div className="w-48 h-2 bg-[#111] rounded-full border border-white/10" />
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
       {/* ===== MORNING BRIEF DEMO SECTION ===== */}
       <section className="py-24" id="demo">
         <div className="max-w-4xl mx-auto px-6">
