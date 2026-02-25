@@ -140,24 +140,16 @@ const DocumentationPanel: React.FC = () => {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    if (docs.length === 0) {
-      setError('No documents to search. Add some documentation first.');
-      return;
-    }
-
+  const executeSearch = async (query: string) => {
+    if (!query.trim() || docs.length === 0) return;
     setIsSearching(true);
     setError(null);
-    
     try {
-      // Always use AI search API (works without companion service)
       const response = await fetch('/api/docs/ai-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: searchQuery,
+          query,
           documents: docs.map(doc => ({
             docId: doc.docId,
             title: doc.title,
@@ -167,11 +159,9 @@ const DocumentationPanel: React.FC = () => {
           }))
         })
       });
-
       if (response.ok) {
         const data = await response.json();
         setSearchResults(data.results || []);
-        
         if (data.results?.length === 0) {
           setError('No matching documents found. Try different keywords.');
         }
@@ -184,6 +174,15 @@ const DocumentationPanel: React.FC = () => {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (docs.length === 0) {
+      setError('No documents to search. Add some documentation first.');
+      return;
+    }
+    await executeSearch(searchQuery);
   };
 
   const handleAddDocumentation = async (e: React.FormEvent) => {
@@ -770,7 +769,9 @@ const DocumentationPanel: React.FC = () => {
                         if (doc.url && doc.url.startsWith('http')) {
                           window.open(doc.url, '_blank', 'noopener,noreferrer');
                         } else {
-                          handleCopyForClaude(doc);
+                          // File-based doc: search by title to show content excerpts
+                          setSearchQuery(doc.title);
+                          executeSearch(doc.title);
                         }
                       }}
                     >
