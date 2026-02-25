@@ -1008,16 +1008,18 @@ export async function POST(
 
         // Use unified session search for session_recall queries, regular search otherwise
         if (sessionIntent.intent !== 'general' && sessionIntent.confidence > 0.3) {
-          // Session-aware unified search
-          const unifiedResult = await unifiedSessionSearch(
-            message,
-            queryEmbedding,
-            userId,
-            sessionIntent,
-            session.id
-          );
+          // Session-aware unified search — 4-second timeout to prevent blocking the response
+          const unifiedResult = await Promise.race([
+            unifiedSessionSearch(message, queryEmbedding, userId, sessionIntent, session.id),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Memory search timeout (4s)')), 4000)
+            ),
+          ]).catch((err: Error) => {
+            console.warn('[Johnny5] Memory search timed out or failed:', err.message);
+            return null;
+          });
 
-          if (unifiedResult.combinedFormatted) {
+          if (unifiedResult?.combinedFormatted) {
             memoryContext = unifiedResult.combinedFormatted;
             searchType = unifiedResult.searchType;
             totalMemoryTokens = unifiedResult.totalTokens;
@@ -1083,11 +1085,11 @@ export async function POST(
           const lines: string[] = [];
           if (currentFacts.length > 0) {
             lines.push('## Relevant Known Facts');
-            lines.push(...currentFacts.map(f => `- ${f.fact_key}: ${f.fact_value}`));
+            lines.push(...currentFacts.map(f => `- ${f.key}: ${f.value}`));
           }
           if (staleFacts.length > 0) {
             lines.push('## Potentially Outdated Facts (>90 days old)');
-            lines.push(...staleFacts.map(f => `- ${f.fact_key}: ${f.fact_value} _(may be outdated)_`));
+            lines.push(...staleFacts.map(f => `- ${f.key}: ${f.value} _(may be outdated)_`));
           }
           if (lines.length > 0) {
             factsAndPatternsContext = lines.join('\n');

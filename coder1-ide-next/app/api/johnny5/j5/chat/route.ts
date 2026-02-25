@@ -26,6 +26,7 @@ export const dynamic = 'force-dynamic';
 interface ChatRequest {
   message: string;
   sessionKey?: string;
+  history?: Array<{ role: string; content: string }>;
 }
 
 interface ChatSuccessResponse {
@@ -77,7 +78,22 @@ export async function POST(
       );
     }
 
-    const { message, sessionKey = 'dashboard:main' } = body;
+    const { message, sessionKey = 'dashboard:main', history } = body;
+
+    // Build message with recent in-session conversation context.
+    // This ensures Johnny5 has explicit history even if ManusLive's internal
+    // session state is truncated or reset.
+    let messageWithContext = message;
+    if (Array.isArray(history) && history.length > 0) {
+      const recentTurns = history
+        .filter(m => typeof m.role === 'string' && typeof m.content === 'string')
+        .slice(-6)
+        .map(m => `${m.role === 'user' ? 'User' : 'Johnny5'}: ${m.content.slice(0, 400)}`)
+        .join('\n');
+      if (recentTurns) {
+        messageWithContext = `## Recent Conversation\n${recentTurns}\n\n---\n\nUser: ${message}`;
+      }
+    }
 
     // Validate message
     if (!message || typeof message !== 'string') {
@@ -188,7 +204,7 @@ export async function POST(
 
     let response: J5Response;
     try {
-      response = await bridge.sendMessage(sessionKey, message);
+      response = await bridge.sendMessage(sessionKey, messageWithContext);
     } catch (sendError) {
       console.error('[J5 Chat] Send error:', sendError);
       return NextResponse.json(

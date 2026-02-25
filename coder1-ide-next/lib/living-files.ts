@@ -620,6 +620,10 @@ export function loadLivingFiles(userId: string = 'default'): Record<string, stri
 /** Maximum character length for MEMORY.md before truncation */
 const MEMORY_TRUNCATION_LIMIT = 6000;
 
+/** Cache for loadLivingFilesContext — re-reading 9 files per request is expensive */
+const _livingFilesCache: Map<string, { value: string; expiresAt: number }> = new Map();
+const LIVING_FILES_CACHE_TTL_MS = 30_000; // 30 seconds
+
 /**
  * Load all living files and format them into a single context string
  * suitable for injection into the system prompt.
@@ -631,6 +635,12 @@ const MEMORY_TRUNCATION_LIMIT = 6000;
  * @returns A formatted string containing all living file contents
  */
 export function loadLivingFilesContext(userId: string = 'default'): string {
+  // Serve from cache when fresh — avoids disk I/O on every chat message
+  const cached = _livingFilesCache.get(userId);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.value;
+  }
+
   const files = loadLivingFiles(userId);
   const sections: string[] = [];
 
@@ -649,7 +659,9 @@ export function loadLivingFilesContext(userId: string = 'default'): string {
     sections.push(`## ${sectionName}\n${content}`);
   }
 
-  return sections.join('\n\n');
+  const result = sections.join('\n\n');
+  _livingFilesCache.set(userId, { value: result, expiresAt: Date.now() + LIVING_FILES_CACHE_TTL_MS });
+  return result;
 }
 
 /**
