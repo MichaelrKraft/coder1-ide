@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
         
         // Don't send full content in list
         documents.push({
-          docId: doc.docId,
+          docId: doc.docId || doc.id,
           title: doc.title,
           url: doc.url,
           categories: doc.categories,
