@@ -1456,6 +1456,41 @@ app.prepare().then(() => {
       return handle(req, res, parsedUrl);
     }
 
+    // WebSocket auth ticket endpoint — MUST live in server.js to share wsAuthManager instance with Socket.IO middleware
+    // The Next.js API route version uses a webpack-bundled wsAuthManager (different instance), so tickets generated
+    // there cannot be validated by the Socket.IO middleware. This route uses the same Node.js/tsx module cache.
+    if (pathname === '/api/websocket/auth/ticket' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', () => {
+        try {
+          const { sessionId, bridgeAuth = false, timestamp } = JSON.parse(body);
+          if (!sessionId) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ error: 'Session ID required' }));
+          }
+          const now = Date.now();
+          if (!timestamp || Math.abs(now - timestamp) > 60000) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ error: 'Invalid or expired timestamp' }));
+          }
+          const { wsAuthManager } = require('./lib/websocket-auth');
+          const crypto = require('crypto');
+          const userId = crypto.createHash('sha256').update(sessionId).digest('hex').substring(0, 16);
+          const permissions = bridgeAuth ? ['terminal', 'files', 'bridge', 'claude-cli'] : ['terminal', 'files'];
+          const ticket = wsAuthManager.generateTicket(userId, sessionId, bridgeAuth, permissions);
+          console.log('🎫 WebSocket ticket generated:', { sessionId, ticketId: ticket.ticketId.substring(0, 8) + '...' });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ticketId: ticket.ticketId, expiresAt: ticket.expiresAt, permissions: ticket.permissions }));
+        } catch (err) {
+          console.error('❌ Failed to generate WebSocket ticket:', err.message);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Failed to generate authentication ticket' }));
+        }
+      });
+      return;
+    }
+
     // Alpha validation for protected routes
     if (isAlphaMode && (pathname === '/' || pathname === '/ide' || pathname?.startsWith('/api/claude'))) {
       if (!validateAlphaAccess(req, res)) {
