@@ -222,6 +222,12 @@ export function createSocketAuthMiddleware() {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   return (socket: any, next: any) => {
+    // Bridge namespace has its own JWT-based auth middleware — skip ticket check
+    // Socket.IO 4.6+ runs io.use() for ALL namespaces, so we must exempt /bridge here
+    if (socket.nsp?.name === '/bridge') {
+      return next();
+    }
+
     const ticketId = socket.handshake.auth?.ticketId;
 
     if (!ticketId) {
