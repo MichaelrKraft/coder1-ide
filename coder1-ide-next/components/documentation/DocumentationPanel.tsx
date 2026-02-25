@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Trash2, ExternalLink, Clock, FileText, Brain, Loader2, Upload, FileImage, File, ClipboardCopy, Check } from 'lucide-react';
+import { Search, Plus, Trash2, ExternalLink, Clock, FileText, Brain, Loader2, Upload, FileImage, File, ClipboardCopy, Check, X } from 'lucide-react';
 import { copyDocForClaude } from '@/lib/doc-utils';
 import { getCompanionClient } from '@/lib/companion-client';
 import RecommendedDocs from './RecommendedDocs';
@@ -467,7 +467,7 @@ const DocumentationPanel: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 w-96 bg-bg-secondary border-l border-border-default shadow-xl z-40 flex flex-col">
+    <div className="fixed top-14 bottom-0 right-0 w-96 bg-bg-secondary border-l border-border-default shadow-xl z-40 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border-default">
         <div className="flex items-center gap-2">
@@ -479,9 +479,10 @@ const DocumentationPanel: React.FC = () => {
         </div>
         <button
           onClick={() => setIsOpen(false)}
-          className="p-1 hover:bg-bg-tertiary rounded transition-colors"
+          className="p-2 hover:bg-bg-tertiary rounded transition-colors"
+          title="Close panel"
         >
-          ✕
+          <X className="w-5 h-5 text-text-muted hover:text-text-primary" />
         </button>
       </div>
 
