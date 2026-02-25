@@ -47,6 +47,8 @@ const DocumentationPanel: React.FC = () => {
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [copiedDocId, setCopiedDocId] = useState<string | null>(null);
+  const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
+  const [expandedContent, setExpandedContent] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const companionClient = React.useMemo(() => getCompanionClient(), []);
@@ -770,9 +772,22 @@ const DocumentationPanel: React.FC = () => {
                         if (doc.url && doc.url.startsWith('http')) {
                           window.open(doc.url, '_blank', 'noopener,noreferrer');
                         } else {
-                          // File-based doc: search by title to show content excerpts
-                          setSearchQuery(doc.title);
-                          executeSearch(doc.title);
+                          // Toggle inline content view
+                          if (expandedDocId === doc.docId) {
+                            setExpandedDocId(null);
+                          } else {
+                            setExpandedDocId(doc.docId);
+                            if (!expandedContent[doc.docId]) {
+                              fetch(`/api/docs/${doc.docId}`)
+                                .then(r => r.json())
+                                .then(data => {
+                                  if (data.content) {
+                                    setExpandedContent(prev => ({ ...prev, [doc.docId]: data.content }));
+                                  }
+                                })
+                                .catch(() => {});
+                            }
+                          }
                         }
                       }}
                     >
@@ -836,6 +851,18 @@ const DocumentationPanel: React.FC = () => {
                       <div className="text-xs text-text-muted">
                         {doc.wordCount.toLocaleString()} words • {doc.chunkCount} chunks
                       </div>
+
+                      {expandedDocId === doc.docId && (
+                        <div className="mt-2 pt-2 border-t border-border-default" onClick={(e) => e.stopPropagation()}>
+                          {expandedContent[doc.docId] ? (
+                            <pre className="text-xs text-text-secondary whitespace-pre-wrap max-h-64 overflow-y-auto bg-bg-primary p-2 rounded leading-relaxed">
+                              {expandedContent[doc.docId]}
+                            </pre>
+                          ) : (
+                            <p className="text-xs text-text-muted">Loading content...</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

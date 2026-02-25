@@ -1,5 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { getDocumentationIntelligence } from '@/lib/documentation-intelligence';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params;
+    const dataDir = path.join(process.cwd(), 'data', 'documentation');
+    const docPath = path.join(dataDir, `${id}.json`);
+    const raw = await fs.readFile(docPath, 'utf-8');
+    const doc = JSON.parse(raw);
+    return NextResponse.json({
+      success: true,
+      content: doc.content || '',
+      title: doc.title
+    });
+  } catch {
+    return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+  }
+}
 
 export async function DELETE(
   request: NextRequest,
