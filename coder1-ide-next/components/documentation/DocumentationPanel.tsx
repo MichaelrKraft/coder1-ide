@@ -101,7 +101,19 @@ const DocumentationPanel: React.FC = () => {
       const response = await fetch('http://localhost:57132/docs/list');
       if (response.ok) {
         const data = await response.json();
-        setDocs(data.docs || []);
+        // Normalize companion response fields to match DocumentationDoc interface
+        // Companion uses: id, category, addedAt, chunks — interface expects: docId, categories[], processedAt, chunkCount
+        const rawDocs = data.docs || [];
+        setDocs(rawDocs.map((doc: any) => ({
+          docId: doc.docId || doc.id,
+          title: doc.title || '',
+          url: doc.url || '',
+          categories: Array.isArray(doc.categories) ? doc.categories : (doc.category ? [doc.category] : []),
+          wordCount: doc.wordCount || 0,
+          chunkCount: doc.chunkCount || doc.chunks || 0,
+          processedAt: doc.processedAt || doc.addedAt || new Date().toISOString(),
+          age: Date.now() - new Date(doc.processedAt || doc.addedAt || Date.now()).getTime()
+        })));
         setError(null);
       } else {
         throw new Error('Failed to load documentation');
