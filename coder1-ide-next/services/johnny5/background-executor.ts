@@ -66,7 +66,7 @@ class BackgroundExecutor {
     this.config = {
       pollIntervalMs: 30_000,
       maxConcurrent: 2,
-      defaultTimeoutMs: 300_000, // 5 minutes
+      defaultTimeoutMs: 1_800_000, // 30 minutes
       ...config,
     };
   }

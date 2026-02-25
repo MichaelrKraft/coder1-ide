@@ -232,10 +232,10 @@ export const withAIMiddleware = (handler: APIHandler) => withAPIMiddleware(handl
   validateBody: true
 });
 
-// File operation endpoints - REQUIRES AUTHENTICATION for security
+// File operation endpoints
 export const withFileMiddleware = (handler: APIHandler) => withAPIMiddleware(handler, {
   rateLimit: 'files',
-  requireAuth: true,
+  requireAuth: false, // Alpha: client doesn't send auth tokens
   logRequests: true,
   validateBody: false // Files may not always send JSON body
 });

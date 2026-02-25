@@ -225,7 +225,7 @@ export class CompanionClient extends EventEmitter {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
         reject(new Error('Command execution timeout'));
-      }, options.timeout || 300000); // 5 minute default timeout
+      }, options.timeout || 1800000); // 30 minute default timeout
 
       this.pendingRequests.set(requestId, { resolve, reject, timeout });
 
