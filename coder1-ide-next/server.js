@@ -1671,6 +1671,16 @@ app.prepare().then(() => {
           return callback(null, true);
         }
 
+        // Allow custom domain (e.g., https://coder1.ai) via ALLOWED_ORIGIN env var
+        const customDomain = process.env.ALLOWED_ORIGIN;
+        if (customDomain && origin === customDomain) {
+          return callback(null, true);
+        }
+        // Also allow www. variant of custom domain
+        if (customDomain && origin === `https://www.${customDomain.replace('https://', '')}`) {
+          return callback(null, true);
+        }
+
         // Reject unknown origins in production
         console.warn(`[CORS] Rejected origin: ${origin}`);
         return callback(new Error('Not allowed by CORS'));
