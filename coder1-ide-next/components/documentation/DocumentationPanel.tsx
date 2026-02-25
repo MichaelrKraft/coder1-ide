@@ -782,7 +782,10 @@ const DocumentationPanel: React.FC = () => {
                                 .then(r => r.json())
                                 .then(data => {
                                   if (data.content) {
-                                    setExpandedContent(prev => ({ ...prev, [doc.docId]: data.content }));
+                                    const content = typeof data.content === 'string'
+                                      ? data.content
+                                      : JSON.stringify(data.content, null, 2);
+                                    setExpandedContent(prev => ({ ...prev, [doc.docId]: content }));
                                   }
                                 })
                                 .catch(() => {});
