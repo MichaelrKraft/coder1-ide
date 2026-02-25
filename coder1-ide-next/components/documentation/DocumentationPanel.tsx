@@ -534,19 +534,20 @@ const DocumentationPanel: React.FC = () => {
               />
             </div>
             <button
-              type="submit"
+              type="button"
               disabled={!searchQuery.trim() || isSearching || docs.length === 0}
-              className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-bg-tertiary text-white rounded-md transition-colors flex items-center justify-center gap-2"
+              onClick={() => executeSearch(searchQuery)}
+              className="w-full py-1.5 bg-coder1-cyan/10 hover:bg-coder1-cyan/20 disabled:bg-bg-tertiary disabled:text-text-muted text-coder1-cyan border border-coder1-cyan/20 rounded-md transition-colors flex items-center justify-center gap-2 text-sm"
             >
               {isSearching ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Searching with AI...
+                  Searching...
                 </>
               ) : (
                 <>
                   <Search className="w-4 h-4" />
-                  AI Search
+                  Search Docs
                 </>
               )}
             </button>
@@ -567,7 +568,7 @@ const DocumentationPanel: React.FC = () => {
             <button
               type="submit"
               disabled={!addUrl.trim() || isAdding || !companionClient.isConnected()}
-              className="w-full py-2 bg-green-600 hover:bg-green-700 disabled:bg-bg-tertiary text-white rounded-md transition-colors flex items-center justify-center gap-2"
+              className="w-full py-1.5 bg-coder1-cyan/10 hover:bg-coder1-cyan/20 disabled:bg-bg-tertiary disabled:text-text-muted text-coder1-cyan border border-coder1-cyan/20 rounded-md transition-colors flex items-center justify-center gap-2 text-sm"
             >
               {isAdding ? (
                 <>
