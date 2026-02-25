@@ -751,7 +751,17 @@ const DocumentationPanel: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {docs.map((doc) => (
-                    <div key={doc.docId} className="border border-border-default rounded-lg p-3 space-y-2">
+                    <div
+                      key={doc.docId}
+                      className="border border-border-default rounded-lg p-3 space-y-2 cursor-pointer hover:border-blue-500/50 transition-colors"
+                      onClick={() => {
+                        if (doc.url && doc.url.startsWith('http')) {
+                          window.open(doc.url, '_blank', 'noopener,noreferrer');
+                        } else {
+                          handleCopyForClaude(doc);
+                        }
+                      }}
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
@@ -764,6 +774,7 @@ const DocumentationPanel: React.FC = () => {
                                 href={doc.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
                                 className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
                               >
                                 <ExternalLink className="w-3 h-3" />
@@ -778,7 +789,7 @@ const DocumentationPanel: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <button
-                            onClick={() => handleCopyForClaude(doc)}
+                            onClick={(e) => { e.stopPropagation(); handleCopyForClaude(doc); }}
                             className="p-1.5 hover:bg-blue-500/20 rounded transition-colors group"
                             title="Copy for Claude - paste in your conversation"
                           >
@@ -789,7 +800,7 @@ const DocumentationPanel: React.FC = () => {
                             )}
                           </button>
                           <button
-                            onClick={() => handleDeleteDoc(doc.docId)}
+                            onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc.docId); }}
                             className="p-1 hover:bg-bg-tertiary rounded transition-colors"
                             title="Delete Documentation"
                           >
