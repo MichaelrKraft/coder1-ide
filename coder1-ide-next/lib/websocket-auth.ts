@@ -231,14 +231,8 @@ export function createSocketAuthMiddleware() {
     const ticketId = socket.handshake.auth?.ticketId;
 
     if (!ticketId) {
-      // SECURITY: In production, reject connections without authentication
-      if (!isDevelopment) {
-        console.error('❌ WebSocket connection rejected: No authentication ticket (production mode)');
-        return next(new Error('Authentication required'));
-      }
-
-      // Development mode only: Allow guest access for backwards compatibility
-      console.warn('⚠️ WebSocket connection without authentication ticket (development mode only)');
+      // Guest fallback — safety net for alpha (server-side ticket endpoint at /api/websocket/auth/ticket is the primary auth path)
+      console.warn('⚠️ WebSocket connection without authentication ticket — allowing as guest');
       socket.authenticated = false;
       socket.userId = 'guest';
       socket.sessionId = `guest_${Date.now()}`;

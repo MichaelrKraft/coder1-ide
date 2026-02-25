@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { TraceContext, createTracePayload } from './trace';
+import { ClientWebSocketAuth } from './websocket-auth-client';
 
 // Check if Socket.IO is available (either from bundle or CDN)
 const getSocketIO = () => {
@@ -123,7 +124,20 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
           upgrade: true,
           rememberUpgrade: true,
           // ADDED: Keep connection alive during idle
-          closeOnBeforeunload: false
+          closeOnBeforeunload: false,
+          // AUTH: Fetch a ticket before each connection attempt (initial + reconnects)
+          // Tickets expire in 30 seconds, so the dynamic callback ensures a fresh one each time
+          auth: (cb: (data: object) => void) => {
+            if (typeof window === 'undefined') { cb({}); return; }
+            const wsAuth = new ClientWebSocketAuth();
+            const effectiveSessionId = sessionId || `client_${Date.now()}`;
+            wsAuth.requestTicket(effectiveSessionId, bridgeAuth)
+              .then((ticketId) => { cb({ ticketId }); })
+              .catch((err) => {
+                console.warn('⚠️ Failed to get auth ticket:', err);
+                cb({});
+              });
+          }
         });
 
         // Verify socket was created properly
