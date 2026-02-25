@@ -1028,6 +1028,7 @@ export default function ChatTab() {
           ? JSON.stringify({
               message: userMessage.content,
               sessionKey: 'dashboard:main', // Default session for dashboard chat
+              history: messages.slice(-6),  // Explicit in-session context fallback
             })
           : JSON.stringify({
               message: userMessage.content,

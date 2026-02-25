@@ -53,7 +53,7 @@ async function buildBrief(): Promise<string> {
   if (apiKey) {
     try {
       const genai = new GoogleGenerativeAI(apiKey);
-      const model = genai.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+      const model = genai.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const result = await model.generateContent(buildResearchPrompt());
       researchSection = result.response.text().trim();
     } catch (error) {
