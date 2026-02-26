@@ -183,7 +183,7 @@ export function ClaudeMdEditor({
     <>
       {/* Full-screen overlay */}
       <div
-        className="fixed inset-0 z-50 flex flex-col bg-bg-primary"
+        className="fixed inset-0 z-[200] flex flex-col bg-bg-primary"
         aria-label="CLAUDE.md editor"
       >
         {/* Header */}
