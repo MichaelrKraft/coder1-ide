@@ -748,6 +748,53 @@ export function getCronService(config?: CronServiceConfig): CronService {
             throw err;
           }
         }
+
+        // Handle morning_brief action — generate and deliver daily brief
+        if (job.payload.action === 'morning_brief') {
+          try {
+            const { generateMorningBrief } = await import('@/services/johnny5/morning-brief-generator');
+            const brief = await generateMorningBrief(new Date());
+            console.log(`[CronService] Morning brief generated: ${brief.id}`);
+
+            // Push to IDE via Socket.IO if available
+            const io = (global as Record<string, unknown>).io as { emit: (event: string, data: unknown) => void } | undefined;
+            if (io) {
+              io.emit('johnny5:morning-brief', {
+                type: 'morning_brief_ready',
+                briefId: brief.id,
+                summary: brief.summary,
+                timestamp: new Date().toISOString(),
+              });
+              io.emit('johnny5:chat-push', {
+                id: `brief-${Date.now()}`,
+                content: `📋 **Morning Brief**\n\n${brief.summary}`,
+                timestamp: new Date().toISOString(),
+              });
+            }
+
+            // Send to Telegram if configured
+            if (job.payload.deliver) {
+              try {
+                const { getTelegramChatId, getTelegramBotToken } = await import('@/lib/johnny5-config');
+                const chatId = getTelegramChatId();
+                const token = getTelegramBotToken();
+                if (chatId && token) {
+                  const text = `📋 *Morning Brief*\n\n${brief.summary}`;
+                  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+                  });
+                }
+              } catch (tgErr) {
+                console.error('[CronService] Morning brief Telegram delivery failed:', tgErr);
+              }
+            }
+          } catch (err) {
+            console.error('[CronService] Morning brief generation failed:', err);
+            throw err;
+          }
+        }
       },
       onNotify: (message, job) => {
         console.log(`[CronService] Notification: ${message}`);

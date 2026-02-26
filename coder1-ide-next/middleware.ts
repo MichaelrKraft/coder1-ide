@@ -20,6 +20,15 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Admin gate: redirect to /admin/login if no coder1-admin cookie
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+    const adminToken = request.cookies.get('coder1-admin')?.value;
+    if (!adminToken) {
+      const loginUrl = new URL('/admin/login', request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   // Handle CORS for component-capture API
   // SECURITY NOTE (Feb 23, 2026): This endpoint allows any origin because it's designed
   // to capture components from external websites. It should NOT handle sensitive data
@@ -52,5 +61,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/component-capture', '/ide', '/ide/:path*', '/timeline', '/timeline/:path*', '/consultation', '/hooks', '/documentation'],
+  matcher: ['/api/component-capture', '/ide', '/ide/:path*', '/timeline', '/timeline/:path*', '/consultation', '/hooks', '/documentation', '/admin', '/admin/:path*'],
 };
