@@ -76,9 +76,9 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
       `}</style>
       
       {/* Tab Buttons */}
-      <div className="flex border-b border-border-default relative z-10">
+      <div className="flex border-b border-border-default relative z-10 overflow-x-auto scrollbar-none">
         <button
-          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === 'explorer'
               ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
@@ -90,7 +90,7 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <span>Explorer</span>
         </button>
         <button
-          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === 'search'
               ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
@@ -102,7 +102,7 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <span>Search</span>
         </button>
         <button
-          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === 'sessions'
               ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
@@ -121,7 +121,7 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <span>Sessions</span>
         </button>
         <button
-          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === 'commands'
               ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
