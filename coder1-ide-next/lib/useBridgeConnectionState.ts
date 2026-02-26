@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getSocket } from './socket';
+import { trackEvent } from '@/components/PostHogProvider';
 
 interface BridgeConnectionState {
   /** Whether a bridge is currently connected */
@@ -48,6 +49,10 @@ export function useBridgeConnectionState(): BridgeConnectionState {
     version?: string;
   }) => {
     console.log('🌉 Bridge connected:', data);
+    trackEvent('bridge_connected', {
+      platform: data.platform,
+      version: data.version,
+    });
     setState({
       isConnected: true,
       bridgeId: data.bridgeId,

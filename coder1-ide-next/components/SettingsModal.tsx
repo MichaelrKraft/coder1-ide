@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain, Key, AlertCircle, CheckCircle, ExternalLink, LogOut, Calendar, Mail, CreditCard, Globe } from 'lucide-react';
+import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain, Key, AlertCircle, CheckCircle, ExternalLink, LogOut, Calendar, Mail, CreditCard, Globe, Shield } from 'lucide-react';
 import { clientMemoryPreferences } from '@/lib/memory-preferences-client';
 import { useAPIKeyStatus } from '@/hooks/useAPIKeyStatus';
 import { APIKeyStorage, APIProvider } from '@/lib/api-key-storage';
@@ -121,6 +121,7 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
   const [showAPIKeySetup, setShowAPIKeySetup] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // SSH Remote Connections state
   const [sshConnections, setSSHConnections] = useState<SSHConnection[]>([]);
@@ -191,6 +192,13 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
       };
 
       fetchUserData();
+    }
+
+    if (isOpen) {
+      fetch('/api/admin/auth')
+        .then(r => r.json())
+        .then(data => setIsAdmin(data.isAdmin === true))
+        .catch(() => {});
     }
   }, [isOpen, userData]);
 
@@ -1270,6 +1278,30 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
 
                     {/* Divider */}
                     <div className="border-t border-border-default" />
+
+                    {/* Admin Panel - only visible when admin cookie is present */}
+                    {isAdmin && (
+                      <>
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-cyan-400" />
+                            Admin
+                          </h4>
+                          <a
+                            href="/admin/overview"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded text-cyan-400 hover:text-cyan-300 text-sm transition-all"
+                          >
+                            <Shield className="w-3.5 h-3.5" />
+                            Open Admin Dashboard
+                          </a>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="border-t border-border-default" />
+                      </>
+                    )}
 
                     {/* Account Actions */}
                     <div className="space-y-3">

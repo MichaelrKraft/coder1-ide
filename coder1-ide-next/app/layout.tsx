@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { Suspense } from 'react'
 import './globals.css'
 import { SessionProvider } from '@/contexts/SessionContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ToastProvider } from '@/contexts/ToastContext'
+import { PostHogProvider } from '@/components/PostHogProvider'
 // import '@/lib/logger' // Initialize global logger - DISABLED: causing client-side errors
 
 const inter = Inter({ subsets: ['latin'] })
@@ -48,7 +50,11 @@ export default function RootLayout({
         <ErrorBoundary>
           <SessionProvider>
             <ToastProvider>
-              {children}
+              <Suspense fallback={null}>
+                <PostHogProvider>
+                  {children}
+                </PostHogProvider>
+              </Suspense>
             </ToastProvider>
             {/* 🛟 SESSION RESCUE: RecoveryModal moved to /app/ide/layout.tsx (IDE-only) */}
           </SessionProvider>
