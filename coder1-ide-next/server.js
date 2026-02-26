@@ -2358,6 +2358,38 @@ app.prepare().then(() => {
       }
     });
 
+    // Handle bridge:status requests from frontend clients
+    // Needed so clients that load AFTER a bridge is connected can still get current state
+    // (they miss the one-time bridge:connected broadcast event)
+    socket.on('bridge:status', (data, callback) => {
+      const userId = socket.userId;
+      let bridgeStatus = bridgeManager.getBridgeStatus?.(userId);
+
+      // Alpha fallback: try any connected bridge if none found for this userId
+      if (!bridgeStatus?.connected && bridgeManager.findAnyConnectedBridge) {
+        const anyBridge = bridgeManager.findAnyConnectedBridge();
+        if (anyBridge) {
+          bridgeStatus = {
+            connected: true,
+            bridges: [{
+              id: anyBridge.id,
+              platform: anyBridge.platform,
+              version: anyBridge.version,
+              connectedAt: anyBridge.pairedAt
+            }]
+          };
+        }
+      }
+
+      const response = bridgeStatus || { connected: false, bridges: [] };
+
+      // Support both acknowledgment callback and event listener patterns
+      if (typeof callback === 'function') {
+        callback(response);
+      }
+      socket.emit('bridge:status:response', response);
+    });
+
     // Team presence: join (with server-side membership verification)
     socket.on('team:presence:join', async ({ teamId, userId, username }) => {
       console.log(`[TeamPresence] 👋 Join request: user=${username}, team=${teamId}, userId=${userId}`);
