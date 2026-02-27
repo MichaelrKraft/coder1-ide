@@ -548,6 +548,11 @@ function IDEPageContent() {
         window.history.replaceState(null, '', url.toString());
       }
     }
+
+    // Trigger onboarding wizard via ?onboarding=true URL param
+    if (searchParams.get('onboarding') === 'true') {
+      setShowOnboardingWizard(true);
+    }
   }, [searchParams]);
 
   // Terminal session tracking for TerminalCommandProvider
