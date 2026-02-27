@@ -1491,8 +1491,8 @@ app.prepare().then(() => {
       return;
     }
 
-    // Alpha validation for protected routes
-    if (isAlphaMode && (pathname === '/' || pathname === '/ide' || pathname?.startsWith('/api/claude'))) {
+    // Alpha validation for protected routes (landing page '/' is public so users can sign up)
+    if (isAlphaMode && (pathname === '/ide' || pathname?.startsWith('/api/claude'))) {
       if (!validateAlphaAccess(req, res)) {
         return;
       }
