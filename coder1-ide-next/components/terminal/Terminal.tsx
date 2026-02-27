@@ -6297,7 +6297,7 @@ Context: Running in Coder1 IDE development environment`;
           />
 
           {/* Modal Container */}
-          <div className="relative z-50 w-full max-w-4xl h-[80vh] bg-bg-secondary border-2 border-coder1-cyan/50 rounded-lg shadow-2xl overflow-hidden"
+          <div className="relative z-50 w-full max-w-2xl h-[60vh] bg-bg-secondary border border-coder1-cyan/40 rounded-lg shadow-2xl overflow-hidden"
                style={{ boxShadow: '0 0 40px rgba(0, 217, 255, 0.3)' }}>
             {/* Close Button */}
             <button

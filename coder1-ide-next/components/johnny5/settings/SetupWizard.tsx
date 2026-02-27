@@ -225,21 +225,6 @@ export default function SetupWizard({
               Let&apos;s get you set up in just a few steps.
             </p>
 
-            {/* Feature highlights */}
-            <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
-              <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
-                <MessageSquare className="w-6 h-6 text-coder1-cyan mx-auto mb-2" />
-                <p className="text-xs text-text-muted">Natural Chat</p>
-              </div>
-              <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
-                <FileText className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                <p className="text-xs text-text-muted">Code Review</p>
-              </div>
-              <div className="p-4 rounded-xl bg-bg-tertiary border border-border-default">
-                <Shield className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                <p className="text-xs text-text-muted">Your Control</p>
-              </div>
-            </div>
 
             <p className="text-xs text-text-muted">
               Takes about 2 minutes to complete
