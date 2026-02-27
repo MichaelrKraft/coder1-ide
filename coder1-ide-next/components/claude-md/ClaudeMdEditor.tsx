@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import type { ClaudeMdTemplate, ClaudeMdVersion } from '@/types/claude-md';
 import { analyzeClaudeMd } from '@/lib/claude-md-analysis';
@@ -179,9 +180,9 @@ export function ClaudeMdEditor({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <>
-      {/* Full-screen overlay */}
+      {/* Full-screen overlay — rendered via portal to escape Settings modal stacking context */}
       <div
         className="fixed inset-0 z-[200] flex flex-col bg-bg-primary"
         aria-label="CLAUDE.md editor"
@@ -291,6 +292,7 @@ export function ClaudeMdEditor({
         onApply={handleTemplateApply}
         currentContent={content}
       />
-    </>
+    </>,
+    document.body
   );
 }
