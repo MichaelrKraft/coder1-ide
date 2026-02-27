@@ -392,14 +392,6 @@ export default function SandboxPanel({ onRequestClose }: SandboxPanelProps = {})
           </h4>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowParallelExploration(true)}
-            className="px-2 py-1 bg-gradient-to-r from-coder1-cyan to-blue-500 hover:from-coder1-cyan-secondary hover:to-blue-600 text-white text-xs rounded transition-all duration-200 flex items-center gap-1 shadow-lg"
-            title="Spawn multiple AI agents to explore different approaches"
-          >
-            <Sparkles className="w-3 h-3" />
-            Parallel Exploration
-          </button>
           {sandboxes.length >= 2 && (
             <button
               onClick={() => setShowComparisonView(true)}
@@ -462,8 +454,8 @@ export default function SandboxPanel({ onRequestClose }: SandboxPanelProps = {})
       {/* Sandbox List */}
       <div className="flex-1 overflow-y-auto space-y-2">
         {sandboxes.length === 0 ? (
-          <div className="text-center py-8">
-            <Box className="w-8 h-8 mx-auto mb-2 text-text-muted" />
+          <div className="text-center py-4">
+            <Box className="w-6 h-6 mx-auto mb-1.5 text-text-muted" />
             <p className="text-xs text-text-muted">No agent sandboxes running</p>
             <p className="text-xs text-text-muted opacity-75">Spawn an agent to start parallel task execution</p>
           </div>
