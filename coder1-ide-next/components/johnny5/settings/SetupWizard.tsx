@@ -213,8 +213,8 @@ export default function SetupWizard({
         return (
           <div className="text-center py-8">
             {/* Johnny5 Avatar */}
-            <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-coder1-cyan/20 to-purple-500/20 flex items-center justify-center border border-coder1-cyan/30">
-              <Sparkles className="w-12 h-12 text-coder1-cyan" />
+            <div className="w-32 h-32 mx-auto mb-6">
+              <img src="/j5.png" alt="Johnny5" className="w-full h-full object-contain" />
             </div>
 
             <h2 className="text-2xl font-bold text-text-primary mb-3">
