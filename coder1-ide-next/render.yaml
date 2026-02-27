@@ -66,6 +66,9 @@ services:
       - key: NEXT_PUBLIC_UNIFIED_SERVER_URL
         value: https://coder1.ai
 
+      - key: ALLOWED_ORIGIN
+        value: https://coder1.ai
+
       - key: NEXT_PUBLIC_UNIFIED_SERVER
         value: true
         
