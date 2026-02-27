@@ -14,7 +14,9 @@ export function middleware(request: NextRequest) {
       const authToken = request.cookies.get('auth-token')?.value;
       if (!authToken) {
         const loginUrl = new URL('/login', request.url);
-        loginUrl.searchParams.set('redirect', pathname);
+        // Preserve full path including query params (e.g., ?invite=CODE for alpha access)
+        const fullPath = pathname + request.nextUrl.search;
+        loginUrl.searchParams.set('redirect', fullPath);
         return NextResponse.redirect(loginUrl);
       }
     }
