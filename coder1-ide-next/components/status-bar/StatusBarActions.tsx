@@ -10,10 +10,8 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles } from '@/lib/icons';
-import { Package } from 'lucide-react';
 import StatusBarModals from './StatusBarModals';
 import CheckpointNameModal from '@/components/modals/CheckpointNameModal';
-import { AgentMarketplaceModal } from '@/components/agent-marketplace';
 import { useIDEStore } from '@/stores/useIDEStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
@@ -557,9 +555,6 @@ const StatusBarActions = React.memo(function StatusBarActions({
 
   const isLoadingState = (state: string) => loading === state;
   
-  // Marketplace modal state
-  const [isMarketplaceOpen, setIsMarketplaceOpen] = React.useState(false);
-
   // Check if we're in Beta environment (hydration-safe)
   const [isBetaEnvironment, setIsBetaEnvironment] = React.useState(false);
   
@@ -659,20 +654,6 @@ const StatusBarActions = React.memo(function StatusBarActions({
         </div>
 
 
-        {/* Agent Marketplace Button */}
-        <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: glows.purple.intense}}>
-          <button
-            onClick={() => setIsMarketplaceOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 bg-bg-secondary w-full"
-            onMouseEnter={(e) => applyHoverEffect(e, false)}
-            onMouseLeave={removeHoverEffect}
-            title="Agent Marketplace - Browse and activate specialized AI agents"
-          >
-            <Package className="w-4 h-4" />
-            <span>Agents</span>
-          </button>
-        </div>
-
         {/* ParaThinker Button - Beta Only */}
         {isBetaEnvironment && (
           <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #9333ea, #ec4899)'}}>
@@ -725,11 +706,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
         memoryDetection={memoryDetection}
       />
 
-      {/* Agent Marketplace Modal */}
-      <AgentMarketplaceModal
-        isOpen={isMarketplaceOpen}
-        onClose={() => setIsMarketplaceOpen(false)}
-      />
+
 
     </>
   );
