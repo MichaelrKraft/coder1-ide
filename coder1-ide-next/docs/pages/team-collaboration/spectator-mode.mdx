@@ -1,0 +1,284 @@
+import { Callout } from '@/components/Callout';
+
+# Spectator Mode
+
+Watch your teammates' terminals in real-time. Perfect for pair programming, onboarding, and code reviews.
+
+## Overview
+
+Spectator Mode lets you see exactly what a teammate sees in their terminal — every command, every output, in real-time. It's like looking over their shoulder, but from anywhere.
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6 font-mono text-sm">
+```
+┌─────────────────────────────────────────────────────────────┐
+│  LIVE TERMINALS (2)                                         │
+├─────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────────────────┐    │
+│  │  Sarah's terminal                          LIVE │    │
+│  │     feature/auth • 3 spectators                   │    │
+│  └────────────────────────────────────────────────────┘    │
+│                                                             │
+│  ┌────────────────────────────────────────────────────┐    │
+│  │  Alex's terminal                           LIVE │    │
+│  │     fix/login-bug • 1 spectator                   │    │
+│  └────────────────────────────────────────────────────┘    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+</div>
+
+## Sharing Your Terminal
+
+Let teammates watch what you're doing.
+
+### Start Sharing
+
+1. Click the **Share Terminal** button in your terminal header
+2. Or use the keyboard shortcut: `Cmd/Ctrl + Shift + T`
+
+Your terminal now appears in the **Live Terminals** section of the Team Panel for all teammates.
+
+### The LIVE Indicator
+
+When sharing, you'll see:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <span className="text-slate-100 font-mono">~/project $</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="relative flex h-3 w-3">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+      </span>
+      <span className="text-orange-400 text-xs font-semibold">LIVE</span>
+      <span className="text-slate-500 text-xs">• 3 watching</span>
+    </div>
+  </div>
+</div>
+
+### Spectator Count
+
+The badge shows how many teammates are currently watching your terminal.
+
+### Stop Sharing
+
+Click the **Stop Sharing** button or press `Cmd/Ctrl + Shift + T` again.
+
+<Callout type="info" title="Privacy">
+Only your terminal output is shared. Teammates cannot control your terminal or access your file system.
+</Callout>
+
+## Watching a Teammate
+
+See what others are working on in real-time.
+
+### Join as Spectator
+
+1. Open the **Team** tab in the Team Panel
+2. Find a teammate under **Live Terminals**
+3. Click their terminal card
+
+### Spectator View
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6">
+  <div className="flex items-center justify-between mb-4 border-b border-slate-700 pb-3">
+    <div className="flex items-center gap-3">
+      <span className="text-pink-400"></span>
+      <span className="text-slate-100">Watching Sarah's terminal</span>
+    </div>
+    <button className="text-xs text-slate-400 hover:text-slate-300 border border-slate-600 px-2 py-1 rounded">
+      Stop Watching
+    </button>
+  </div>
+
+  <div className="font-mono text-sm text-slate-300 space-y-1">
+    <div><span className="text-green-400">sarah@dev</span>:<span className="text-blue-400">~/project</span>$ npm run test</div>
+    <div className="text-slate-400">
+      <div>PASS  src/auth/oauth.test.ts</div>
+      <div>PASS  src/auth/session.test.ts</div>
+      <div>PASS  src/api/users.test.ts</div>
+      <div className="text-green-400"> 24 tests passed</div>
+    </div>
+    <div><span className="text-green-400">sarah@dev</span>:<span className="text-blue-400">~/project</span>$ █</div>
+  </div>
+</div>
+
+### Spectator Features
+
+| Feature | Description |
+|---------|-------------|
+| **Real-time sync** | Output streams instantly via WebSocket |
+| **Scroll lock** | Automatically follows new output |
+| **Read-only** | You cannot type or control the terminal |
+| **Branch context** | See which branch they're working on |
+
+### Stop Watching
+
+Click **Stop Watching** to return to your own terminal.
+
+## Use Cases
+
+### Pair Programming
+
+<div className="bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/30 rounded-lg p-6 my-6">
+  <div className="mb-3">
+    <span className="font-semibold text-slate-100">Remote Pair Programming</span>
+  </div>
+  <div className="text-sm text-slate-400">
+    One person drives (shares their terminal), the other navigates (watches and provides guidance via voice call). Perfect for tackling complex problems together.
+  </div>
+</div>
+
+**How to pair program:**
+1. Driver starts a voice call
+2. Driver shares their terminal
+3. Navigator joins the call and watches
+4. Discuss and debug together
+
+### Onboarding New Developers
+
+<div className="bg-gradient-to-r from-green-500/10 to-cyan-500/10 border border-green-500/30 rounded-lg p-6 my-6">
+  <div className="mb-3">
+    <span className="font-semibold text-slate-100">Live Onboarding Sessions</span>
+  </div>
+  <div className="text-sm text-slate-400">
+    Senior developer walks through the codebase while new hires watch. Show don't tell — demonstrate the dev workflow, debugging process, and team conventions.
+  </div>
+</div>
+
+**Onboarding workflow:**
+1. Senior dev shares terminal
+2. New hires join as spectators
+3. Walk through: repo setup, running tests, deployment
+4. Answer questions via team chat
+
+### Live Debugging
+
+<div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-lg p-6 my-6">
+  <div className="mb-3">
+    <span className="font-semibold text-slate-100">Collaborative Debugging</span>
+  </div>
+  <div className="text-sm text-slate-400">
+    Stuck on a bug? Share your terminal and let teammates see exactly what's happening. Fresh eyes often spot issues faster.
+  </div>
+</div>
+
+**Debugging session:**
+1. Share your terminal
+2. Teammates join to watch
+3. Walk through the reproduction steps
+4. Get real-time suggestions via chat
+
+### Code Review Walkthroughs
+
+<div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-lg p-6 my-6">
+  <div className="mb-3">
+    <span className="font-semibold text-slate-100">PR Walkthrough</span>
+  </div>
+  <div className="text-sm text-slate-400">
+    Instead of async code review, walk through your PR live. Show the changes in action, explain your decisions, and get instant feedback.
+  </div>
+</div>
+
+**Walkthrough workflow:**
+1. Share terminal, start voice call
+2. Show `git diff` and explain changes
+3. Demo the feature working
+4. Address questions in real-time
+
+## Best Practices
+
+<div className="space-y-3 my-6">
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Clear your terminal before sharing to remove sensitive output</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Use large font size so spectators can read easily</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Pair terminal sharing with voice calls for best results</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Narrate what you're doing if spectators can't hear you</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-red-400"></span>
+    <span className="text-slate-300">Don't share while entering passwords or API keys</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-red-400"></span>
+    <span className="text-slate-300">Don't forget you're sharing — stop when done</span>
+  </div>
+</div>
+
+## Technical Details
+
+### How It Works
+
+1. **PTY capture**: Your terminal output is captured from the pseudoterminal
+2. **Debounced streaming**: Output is batched every 50ms for efficiency
+3. **WebSocket broadcast**: Data streams to spectators via Socket.IO
+4. **Terminal rendering**: Spectators render output in a synchronized xterm.js instance
+
+### Socket Events
+
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `spectator:start` | Client → Server | Begin sharing your terminal |
+| `spectator:stop` | Client → Server | Stop sharing |
+| `spectator:join` | Client → Server | Start watching a terminal |
+| `spectator:leave` | Client → Server | Stop watching |
+| `spectator:output` | Server → Client | Terminal output broadcast |
+
+### Bandwidth Usage
+
+Terminal output is text-based and highly compressible:
+
+| Activity | Bandwidth |
+|----------|-----------|
+| Idle terminal | ~0 KB/s |
+| Normal typing | ~1-5 KB/s |
+| Fast scrolling output | ~50-100 KB/s |
+| Heavy log output | ~200+ KB/s |
+
+<Callout type="info" title="Smart Buffering">
+Spectator Mode uses intelligent buffering to minimize bandwidth while maintaining real-time feel.
+</Callout>
+
+## Limitations
+
+- **Read-only**: Spectators cannot control the shared terminal
+- **No history**: Joining mid-session shows only new output
+- **Single terminal**: Only one terminal can be shared at a time
+- **Same team**: Only team members can spectate
+
+## Troubleshooting
+
+### Terminal not appearing in Live Terminals
+
+1. Verify you clicked "Share Terminal"
+2. Check WebSocket connection (green dot in Team Panel)
+3. Ensure teammate is on the same team
+
+### Lag or delay in spectator view
+
+1. Check internet connection
+2. Reduce output-heavy operations
+3. Try stopping and restarting the share
+
+### Spectator count not updating
+
+1. Refresh the page
+2. Check if spectators are still connected
+
+## What's Next?
+
+- [Code Collaboration](/team-collaboration/code-collaboration) — PRs and conflict detection
+- [Shared Commands](/team-collaboration/shared-commands) — Team slash commands
+- [Session Summaries](/team-collaboration/session-summaries) — Share what you accomplished

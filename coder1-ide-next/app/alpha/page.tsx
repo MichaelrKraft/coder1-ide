@@ -2035,7 +2035,7 @@ export default function AlphaLandingPage() {
             {/* Already have access link */}
             <div className="text-center mb-8">
               <Link
-                href="/ide"
+                href="/ide?skipSetup=true"
                 className="text-white/50 hover:text-coder1-cyan transition-colors text-sm inline-flex items-center gap-2"
               >
                 Already have access? <span className="text-coder1-cyan">Go to IDE →</span>
