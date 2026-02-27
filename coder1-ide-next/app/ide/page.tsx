@@ -175,6 +175,10 @@ function IDEPageContent() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('sessionId') || urlParams.has('restored') || urlParams.has('skipSetup')) {
       console.log('🌉 Skipping Bridge redirect - URL params indicate existing session');
+      // Persist skipSetup so future navigations (without the param) also skip the redirect
+      if (urlParams.has('skipSetup')) {
+        localStorage.setItem('coder1-bridge-setup', 'skipped');
+      }
       return;
     }
 

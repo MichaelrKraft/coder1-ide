@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: johnny5-license-server
+    env: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: node server.js
+    disk:
+      name: j5-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_PATH
+        value: /data/j5-licenses.db
+      - key: FROM_EMAIL
+        value: hello@johnny5.ai
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false

@@ -1,0 +1,432 @@
+import { Callout } from '@/components/Callout';
+
+# Shared Commands
+
+Create and share slash commands with your team. Standardize workflows and boost productivity together.
+
+## Overview
+
+Team commands are slash commands that all team members can use. Instead of each person creating their own version of common workflows, create them once and share.
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6 font-mono text-sm">
+```
+┌─────────────────────────────────────────────────────────────┐
+│  TEAM COMMANDS                                              │
+├─────────────────────────────────────────────────────────────┤
+│  /deploy-staging ................. Deploy to staging env   │
+│  /run-tests ...................... Run full test suite     │
+│  /db-migrate ..................... Run database migrations │
+│  /code-review .................... Start code review flow  │
+│  /onboard ....................... New developer setup      │
+│                                                             │
+│  [ + Create Command ]                                       │
+└─────────────────────────────────────────────────────────────┘
+```
+</div>
+
+## Creating a Team Command
+
+### Step 1: Open Command Creator
+
+1. Click **+ Create Command** in the Team Panel
+2. Or use the keyboard shortcut: `Cmd/Ctrl + Shift + C`
+
+### Step 2: Fill in Command Details
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6">
+  <div className="space-y-4">
+    <div>
+      <label className="text-xs text-slate-400 mb-1 block">Name</label>
+      <input type="text" value="Deploy to Staging" className="w-full bg-slate-900/50 border border-slate-600 rounded px-3 py-2 text-sm text-slate-300" readOnly />
+    </div>
+
+    <div>
+      <label className="text-xs text-slate-400 mb-1 block">Slug (used as /command)</label>
+      <div className="flex items-center">
+        <span className="text-slate-500 text-sm">/</span>
+        <input type="text" value="deploy-staging" className="flex-1 bg-slate-900/50 border border-slate-600 rounded px-3 py-2 text-sm text-slate-300" readOnly />
+      </div>
+    </div>
+
+    <div>
+      <label className="text-xs text-slate-400 mb-1 block">Description</label>
+      <input type="text" value="Deploy current branch to staging environment" className="w-full bg-slate-900/50 border border-slate-600 rounded px-3 py-2 text-sm text-slate-300" readOnly />
+    </div>
+
+    <div>
+      <label className="text-xs text-slate-400 mb-1 block">Category</label>
+      <select className="w-full bg-slate-900/50 border border-slate-600 rounded px-3 py-2 text-sm text-slate-300">
+        <option>deployment</option>
+        <option>testing</option>
+        <option>debugging</option>
+        <option>general</option>
+      </select>
+    </div>
+
+    <div>
+      <label className="text-xs text-slate-400 mb-1 block">Content</label>
+      <textarea className="w-full bg-slate-900/50 border border-slate-600 rounded px-3 py-2 text-sm text-slate-300 font-mono h-32" readOnly value={`# Deploy to Staging
+
+Run the staging deployment workflow:
+
+1. Run tests: npm test
+2. Build: npm run build
+3. Deploy: npm run deploy:staging
+
+If deployment fails, check:
+- Environment variables are set
+- Staging server is accessible
+- Previous deployment completed`} />
+    </div>
+  </div>
+</div>
+
+### Command Fields
+
+| Field | Required | Description |
+|-------|:--------:|-------------|
+| **Name** | Yes | Human-readable name |
+| **Slug** | Yes | Command identifier (no spaces) |
+| **Description** | Yes | Short explanation |
+| **Category** | No | Grouping for organization |
+| **Content** | Yes | The command instructions |
+| **Tags** | No | Labels for filtering |
+
+### Step 3: Save and Share
+
+Click **Save** — the command is immediately available to all team members.
+
+## Using Team Commands
+
+### In Chat
+
+Type `/` followed by the command name:
+
+```
+/deploy-staging
+```
+
+Johnny5 expands the command and follows the instructions.
+
+### Autocomplete
+
+As you type, matching commands appear:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6 font-mono text-sm">
+```
+> /dep█
+
+Suggestions:
+  /deploy-staging .... Deploy to staging environment
+  /deploy-prod ....... Deploy to production
+```
+</div>
+
+### Arguments
+
+Use `$ARGUMENTS` for dynamic values:
+
+```markdown
+# Run Tests
+
+Execute tests for: $ARGUMENTS
+
+Commands:
+- npm test -- $ARGUMENTS
+```
+
+Usage: `/run-tests src/auth/`
+
+## Command Categories
+
+Organize commands by purpose:
+
+| Category | Examples |
+|----------|----------|
+| **general** | `/help`, `/faq`, `/links` |
+| **debugging** | `/debug-api`, `/check-logs` |
+| **deployment** | `/deploy-staging`, `/rollback` |
+| **testing** | `/run-tests`, `/e2e-tests` |
+| **database** | `/db-migrate`, `/db-seed` |
+| **setup** | `/onboard`, `/env-setup` |
+
+## Version History
+
+Track changes to commands over time.
+
+### Viewing History
+
+1. Click the **history** icon on a command
+2. See all previous versions with timestamps
+3. View diffs between versions
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6 font-mono text-sm">
+```
+VERSION HISTORY: /deploy-staging
+
+v3 (current) .... @Mike .... 2h ago
+  "Added rollback instructions"
+
+v2 .............. @Sarah ... 1d ago
+  "Updated for new CI system"
+
+v1 .............. @Alex .... 1w ago
+  "Initial version"
+```
+</div>
+
+### API Endpoint
+
+Fetch history programmatically:
+
+```bash
+GET /api/commands/team/:slug/history
+```
+
+Response:
+```json
+{
+  "versions": [
+    {
+      "version": 3,
+      "content": "...",
+      "author": "mike@example.com",
+      "timestamp": "2024-01-15T14:30:00Z",
+      "message": "Added rollback instructions"
+    }
+  ]
+}
+```
+
+## Installing Locally
+
+Copy a team command to your local commands:
+
+1. Find the command in the team list
+2. Click **Install Locally**
+3. The command is copied to your personal commands
+
+<Callout type="info" title="Local vs Team">
+Local copies are independent — changes to the team command won't update your local version automatically.
+</Callout>
+
+## Best Practices
+
+### Naming Conventions
+
+<div className="space-y-3 my-6">
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Use kebab-case: <code>/deploy-staging</code></span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Be descriptive: <code>/run-integration-tests</code></span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Start with action verb: <code>/check-</code>, <code>/run-</code>, <code>/deploy-</code></span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-red-400"></span>
+    <span className="text-slate-300">Avoid abbreviations: <code>/dply-stg</code></span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-red-400"></span>
+    <span className="text-slate-300">Avoid generic names: <code>/do-thing</code></span>
+  </div>
+</div>
+
+### Content Guidelines
+
+<div className="space-y-3 my-6">
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Include clear step-by-step instructions</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Add troubleshooting tips for common failures</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Document prerequisites and requirements</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Use $ARGUMENTS for customizable parts</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-red-400"></span>
+    <span className="text-slate-300">Don't hardcode environment-specific values</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-red-400"></span>
+    <span className="text-slate-300">Don't include sensitive credentials</span>
+  </div>
+</div>
+
+### Maintenance
+
+- **Review regularly** — Remove outdated commands
+- **Update documentation** — Keep instructions current
+- **Add version notes** — Explain changes when updating
+- **Archive, don't delete** — Disable instead of removing
+
+## Example Commands
+
+### Deployment
+
+```markdown
+# Deploy to Staging
+
+Pre-flight checks:
+1. Ensure all tests pass: npm test
+2. Build the application: npm run build
+3. Verify environment: echo $STAGING_URL
+
+Deploy:
+npm run deploy:staging
+
+Post-deploy:
+1. Smoke test: curl $STAGING_URL/health
+2. Check logs: npm run logs:staging
+3. Notify team in #deployments
+
+Rollback if needed:
+npm run rollback:staging
+```
+
+### Code Review
+
+```markdown
+# Code Review Checklist
+
+For PR: $ARGUMENTS
+
+## Review Steps
+
+1. **Read the PR description** — Understand the context
+2. **Check the diff** — Look for:
+   - Code style consistency
+   - Error handling
+   - Test coverage
+   - Security issues
+
+3. **Run locally** — Test the changes yourself
+4. **Leave constructive feedback** — Be specific and kind
+
+## Approval Criteria
+
+- [ ] Tests pass
+- [ ] No security vulnerabilities
+- [ ] Documentation updated
+- [ ] Code follows team conventions
+```
+
+### Onboarding
+
+```markdown
+# New Developer Setup
+
+Welcome to the team! 🎉
+
+## Prerequisites
+
+- Node.js 18+
+- Docker Desktop
+- GitHub SSH key configured
+
+## Setup Steps
+
+1. Clone the repo:
+   git clone git@github.com:team/project.git
+
+2. Install dependencies:
+   npm install
+
+3. Set up environment:
+   cp .env.example .env.local
+   # Edit .env.local with your values
+
+4. Start databases:
+   docker-compose up -d
+
+5. Run migrations:
+   npm run db:migrate
+
+6. Verify setup:
+   npm run dev
+   # Visit http://localhost:3000
+
+## Get Help
+
+- #dev-help on Slack
+- docs/ folder
+- Ask your onboarding buddy
+```
+
+## Permissions
+
+| Action | Owner | Admin | Member |
+|--------|:-----:|:-----:|:------:|
+| View team commands | Yes | Yes | Yes |
+| Use team commands | Yes | Yes | Yes |
+| Create commands | Yes | Yes | Yes |
+| Edit own commands | Yes | Yes | Yes |
+| Edit others' commands | Yes | Yes | No |
+| Delete commands | Yes | Yes | No |
+
+## API Reference
+
+### Create Command
+
+```bash
+POST /api/commands/team
+Content-Type: application/json
+
+{
+  "name": "Deploy Staging",
+  "slug": "deploy-staging",
+  "description": "Deploy to staging",
+  "content": "...",
+  "category": "deployment",
+  "tags": ["ci", "staging"]
+}
+```
+
+### List Commands
+
+```bash
+GET /api/commands/team
+```
+
+### Get Command
+
+```bash
+GET /api/commands/team/:slug
+```
+
+### Update Command
+
+```bash
+PUT /api/commands/team/:slug
+Content-Type: application/json
+
+{
+  "content": "...",
+  "message": "Updated deployment steps"
+}
+```
+
+### Delete Command
+
+```bash
+DELETE /api/commands/team/:slug
+```
+
+## What's Next?
+
+- [Team Setup](/team-collaboration/team-setup) — Create and manage your team
+- [Session Summaries](/team-collaboration/session-summaries) — Share your work
+- [Real-time Collaboration](/team-collaboration/real-time-collaboration) — Chat and voice calls

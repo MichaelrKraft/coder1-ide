@@ -1,0 +1,366 @@
+import { Callout } from '@/components/Callout';
+
+# Session Summaries
+
+Share your coding sessions with teammates. Get AI-generated briefings to stay in sync.
+
+## Overview
+
+Session summaries are a core collaboration feature. When you finish a coding session, you can share a summary with your team — what you worked on, which files you touched, and key insights discovered.
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6 font-mono text-sm">
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Summaries (3)                                              │
+├─────────────────────────────────────────────────────────────┤
+│   Filter summaries...                                     │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │   Add OAuth2 login flow              @Sarah     │   │
+│  │    feature/auth • 12 files • 2h ago                 │   │
+│  │    Implemented Google OAuth with PKCE flow...       │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  Fix memory leak in WebSocket                @Mike │   │
+│  │    fix/ws-leak • 3 files • 4h ago                   │   │
+│  │    Found event listeners not being cleaned up...    │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  Refactor API routes to use middleware       @Alex │   │
+│  │    refactor/api • 8 files • yesterday               │   │
+│  │    Extracted auth and validation to middleware...   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  [ Load more ]                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+</div>
+
+## Sharing a Summary
+
+### Step 1: Complete Your Session
+
+When you're ready to share what you've accomplished:
+
+1. Click the **Share Summary** button in the Status Bar
+2. Or use the keyboard shortcut: `Cmd/Ctrl + Shift + S`
+
+### Step 2: Review Your Summary
+
+Coder1 automatically generates a summary from your session, including:
+
+- **Title** — Brief description of what you accomplished
+- **Session Type** — Category of work (see below)
+- **Branch** — The git branch you worked on
+- **Files Modified** — Count of files you touched
+- **Key Insights** — AI-extracted learnings from your session
+
+### Step 3: Share with Team
+
+Click **Share with Team** to broadcast your summary. Teammates receive:
+
+- A toast notification with your name
+- An unread badge on the Summaries tab
+- Real-time update in their summary list
+
+<Callout type="info" title="Auto-Sync">
+Summaries sync automatically when teammates are online. If someone is offline, they'll see new summaries when they reconnect.
+</Callout>
+
+## Session Types
+
+Each summary has a type that helps teammates quickly understand the work:
+
+| Type | Description |
+|------|-------------|
+| **bug-fix** | Fixed a bug or resolved an issue |
+| **feature-dev** | Built new functionality |
+| **refactoring** | Improved code structure without changing behavior |
+| **exploration** | Researched, investigated, or experimented |
+| **general** | Documentation, configuration, or other work |
+
+### Automatic Detection
+
+Coder1 suggests a session type based on:
+- Your git branch name (`fix/`, `feature/`, `refactor/`)
+- Types of files modified
+- Content of your changes
+
+You can always override the suggested type before sharing.
+
+## Pinning Summaries
+
+Pin important summaries so they stay at the top of the list.
+
+<div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 my-6">
+  <div className="flex items-center gap-2 mb-2">
+    <span></span>
+    <span className="font-semibold text-slate-100">Pinned summaries have an amber border</span>
+  </div>
+  <div className="text-sm text-slate-400">
+    Use pins for critical context that new team members should read first, or for summaries that document important architectural decisions.
+  </div>
+</div>
+
+### Who Can Pin?
+
+- **Owners** and **Admins** can pin any summary
+- **Members** can pin their own summaries
+
+### Pinned Summary Best Practices
+
+<div className="space-y-3 my-6">
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Pin summaries that explain "why" behind architectural decisions</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Pin onboarding-relevant summaries for new teammates</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Pin summaries documenting complex debugging sessions</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-red-400"></span>
+    <span className="text-slate-300">Don't pin routine bug fixes or minor updates</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-red-400"></span>
+    <span className="text-slate-300">Don't pin more than 5-10 summaries (defeats the purpose)</span>
+  </div>
+</div>
+
+## Unread Notifications
+
+Stay aware of team activity without constant interruptions.
+
+### Badge Count
+
+The **Summaries** tab shows an unread count badge:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6 font-mono text-sm">
+```
+[Team] [Summaries (3)] [Briefing] [Chat] [PRs] [Conflicts]
+                  ↑
+          3 new summaries
+```
+</div>
+
+### Toast Notifications
+
+When a teammate shares a summary, you see a toast notification:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-sm">S</div>
+      <div>
+        <div className="text-slate-100 text-sm">Sarah shared a summary</div>
+        <div className="text-slate-400 text-xs"> Add OAuth2 login flow</div>
+      </div>
+    </div>
+    <button className="text-xs text-cyan-400 hover:text-cyan-300">View</button>
+  </div>
+</div>
+
+Click **View** to jump directly to the summary.
+
+### Marking as Read
+
+Summaries are marked as read when you:
+- Click on the summary to expand it
+- Switch to the Summaries tab and scroll past it
+
+## Searching Summaries
+
+Filter summaries to find what you need.
+
+### Text Search
+
+Type in the search box to filter by:
+- Summary title
+- Summary excerpt
+- Author name
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6 font-mono text-sm">
+```
+ [ oauth                                              ]
+
+Found 2 summaries matching "oauth"
+```
+</div>
+
+### Keyboard Shortcut
+
+Press `/` while in the Summaries tab to focus the search box.
+
+## Morning Briefing
+
+Start your day with an AI-generated digest of what your team accomplished.
+
+<div className="bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30 rounded-lg p-6 my-6">
+  <div className="mb-4">
+    <span className="font-semibold text-lg text-slate-100">Morning Briefing</span>
+  </div>
+  <div className="text-sm text-slate-300 space-y-3">
+    <div><strong>Last 24 hours:</strong></div>
+    <ul className="list-disc list-inside space-y-1 text-slate-400">
+      <li>Sarah completed the OAuth2 integration on <code>feature/auth</code></li>
+      <li>Mike fixed a critical memory leak in the WebSocket handler</li>
+      <li>Alex refactored 8 API routes to use the new middleware pattern</li>
+    </ul>
+    <div className="pt-2"><strong>Key decisions:</strong></div>
+    <ul className="list-disc list-inside space-y-1 text-slate-400">
+      <li>Team is using PKCE flow for OAuth (more secure for SPAs)</li>
+      <li>Middleware pattern adopted for auth/validation</li>
+    </ul>
+  </div>
+</div>
+
+### How It Works
+
+1. Open the **Briefing** tab in the Team Panel
+2. Coder1 analyzes all summaries from the past 24 hours
+3. AI generates a concise digest with key highlights
+
+### Regenerating the Briefing
+
+Click **Regenerate** to get a fresh briefing. This is useful when:
+- New summaries were added after the initial generation
+- You want a different summarization perspective
+
+<Callout type="info" title="Local Cache">
+Briefings are cached in your browser's localStorage. They persist across sessions until you regenerate.
+</Callout>
+
+## Welcome Briefing
+
+New team members get an automatic welcome briefing to get up to speed fast.
+
+### What's Included
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6">
+  <div className="space-y-4 text-sm">
+    <div>
+      <div className="font-semibold text-slate-100 mb-2">🏗️ Architecture & Technical</div>
+      <ul className="list-disc list-inside text-slate-400 space-y-1">
+        <li><strong>Database:</strong> PostgreSQL with Prisma ORM</li>
+        <li><strong>Auth:</strong> JWT tokens in httpOnly cookies</li>
+        <li><strong>State:</strong> Zustand for client state</li>
+        <li><strong>Styling:</strong> Tailwind CSS with custom design tokens</li>
+        <li><strong>Testing:</strong> Vitest + React Testing Library</li>
+      </ul>
+    </div>
+
+    <div>
+      <div className="font-semibold text-slate-100 mb-2">📐 Key Patterns</div>
+      <ul className="list-disc list-inside text-slate-400 space-y-1">
+        <li>API routes use middleware for auth and validation</li>
+        <li>Components follow compound component pattern</li>
+        <li>Errors are handled at route boundaries</li>
+      </ul>
+    </div>
+
+    <div>
+      <div className="font-semibold text-slate-100 mb-2"> Team-Confirmed Facts</div>
+      <ul className="list-disc list-inside text-slate-400 space-y-1">
+        <li>Never store sensitive data in localStorage</li>
+        <li>All API responses follow the envelope pattern</li>
+        <li>Feature flags are managed in Vercel dashboard</li>
+      </ul>
+    </div>
+
+    <div className="text-slate-500 pt-2 border-t border-slate-700">
+      4 team members have contributed 23 insights.
+    </div>
+  </div>
+</div>
+
+### Auto-Generation
+
+Welcome briefings are generated automatically when:
+- A new member joins the team
+- A member hasn't visited in 7+ days
+
+### Content Sources
+
+The welcome briefing pulls from:
+- **Team Knowledge Base** — Facts extracted from all sessions
+- **Session Summaries** — Recent team activity
+- **Pinned Summaries** — Important context flagged by the team
+
+## Summary Details
+
+Click any summary to see full details:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6">
+  <div className="space-y-4 text-sm">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <span className="text-xl"></span>
+        <span className="font-semibold text-slate-100">Add OAuth2 login flow</span>
+      </div>
+      <button className="text-xs text-slate-400 hover:text-slate-300"> Pin</button>
+    </div>
+
+    <div className="flex gap-4 text-xs text-slate-400">
+      <span>@Sarah</span>
+      <span>•</span>
+      <span>feature/auth</span>
+      <span>•</span>
+      <span>12 files modified</span>
+      <span>•</span>
+      <span>2 hours ago</span>
+    </div>
+
+    <div className="text-slate-300 leading-relaxed">
+      Implemented Google OAuth using the PKCE flow for improved security in single-page applications.
+      Added login, callback, and logout routes. User profile is fetched and stored in Zustand.
+      Tokens are stored in httpOnly cookies with automatic refresh handling.
+    </div>
+
+    <div className="pt-3 border-t border-slate-700">
+      <div className="text-xs text-slate-500 mb-2">Files touched:</div>
+      <div className="font-mono text-xs text-slate-400 space-y-1">
+        <div>app/api/auth/google/route.ts</div>
+        <div>app/api/auth/callback/route.ts</div>
+        <div>lib/auth/oauth.ts</div>
+        <div className="text-slate-500">+ 9 more files...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+## Lazy Loading
+
+The Summaries tab uses pagination to keep things fast.
+
+- **Initial load**: 10 most recent summaries
+- **Load more**: Click "Load more" to fetch the next 10
+- **Pinned summaries**: Always shown at top, regardless of age
+
+<Callout type="success" title="Performance">
+Even teams with 1000+ summaries load quickly because only visible summaries are fetched.
+</Callout>
+
+## Real-time Updates
+
+Summaries update in real-time via Socket.IO:
+
+| Event | Description |
+|-------|-------------|
+| `summary:shared` | New summary from teammate |
+| `summary:pinned` | Summary was pinned/unpinned |
+| `summary:updated` | Summary content was edited |
+
+You never need to refresh — new summaries appear automatically.
+
+## What's Next?
+
+- [Real-time Collaboration](/team-collaboration/real-time-collaboration) — Chat, voice calls, and presence
+- [Spectator Mode](/team-collaboration/spectator-mode) — Watch teammates' terminals live
+- [Code Collaboration](/team-collaboration/code-collaboration) — PRs and conflict detection

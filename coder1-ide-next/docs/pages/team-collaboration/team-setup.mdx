@@ -1,0 +1,265 @@
+import { Callout } from '@/components/Callout';
+
+# Team Setup
+
+Learn how to create a team, invite members, and manage roles and permissions.
+
+## Prerequisites
+
+Before setting up a team, ensure you have:
+
+1. **Authenticated account** — You must be logged in to Coder1 IDE
+2. **Team features enabled** — `NEXT_PUBLIC_ENABLE_TEAM_FEATURES=true` in your environment
+
+## Creating a Team
+
+### Step 1: Open the Team Panel
+
+Click the **Team** icon in the right sidebar, or use the keyboard shortcut to open it.
+
+### Step 2: Enter a Team Name
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6 font-mono text-sm">
+```
+┌─────────────────────────────────────────────────────┐
+│   Team Knowledge Sync                             │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  Create a team to sync Johnny5's knowledge across   │
+│  your team members.                                 │
+│                                                     │
+│   Detected: MichaelrKraft/coder1-ide             │
+│                                                     │
+│  ┌─────────────────────────────────┬──────────┐    │
+│  │ MichaelrKraft/coder1-ide        │  Create  │    │
+│  └─────────────────────────────────┴──────────┘    │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+</div>
+
+<Callout type="info" title="Smart Detection">
+Coder1 reads your git remote and auto-fills the team name with your `org/repo` format. This helps teammates find and join the right team.
+</Callout>
+
+### Step 3: Click Create
+
+Your team is instantly created and you become the **Owner**.
+
+## Inviting Members
+
+### Email Invitations
+
+1. In the Team Panel, find the **Invite Member** section
+2. Enter your teammate's email address
+3. Click **Invite**
+4. An invite link is copied to your clipboard automatically
+5. Share the link with your teammate (Slack, email, etc.)
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6">
+  <div className="flex items-center gap-2 mb-3">
+    <span className="text-green-400"></span>
+    <span className="text-sm text-slate-300">Copied!</span>
+  </div>
+  <div className="font-mono text-xs text-slate-400 bg-slate-900/50 p-2 rounded">
+    https://coder1.dev/join/abc123xyz789
+  </div>
+</div>
+
+### Invitation States
+
+| State | Description |
+|-------|-------------|
+| **Pending** | Invitation sent, waiting for teammate to accept |
+| **Accepted** | Teammate has joined the team |
+| **Expired** | Invitation link has expired (after 7 days) |
+
+<Callout type="warning" title="Expired Invitations">
+If an invitation expires, simply re-invite the teammate with a new email. Each invitation generates a unique, secure token.
+</Callout>
+
+### Invitation Flow
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-6 font-mono text-sm">
+```
+You (Owner/Admin)              Teammate
+      │                            │
+      │  1. Enter email, click     │
+      │     "Invite"               │
+      │                            │
+      │  2. Copy invite link       │
+      │────────────────────────────>│
+      │  (share via Slack/email)   │
+      │                            │
+      │                            │  3. Click invite link
+      │                            │  4. Log in / Sign up
+      │                            │  5. Auto-join team
+      │                            │
+      │<────────────────────────────│
+      │  Real-time notification:   │
+      │  "Sarah joined the team"   │
+      │                            │
+```
+</div>
+
+## Understanding Roles
+
+Teams have three roles with different permission levels:
+
+### Permission Matrix
+
+| Permission | Owner | Admin | Member |
+|------------|:-----:|:-----:|:------:|
+| View team members | Yes | Yes | Yes |
+| View team knowledge | Yes | Yes | Yes |
+| Share session summaries | Yes | Yes | Yes |
+| Use team chat | Yes | Yes | Yes |
+| Join voice calls | Yes | Yes | Yes |
+| Create shared commands | Yes | Yes | Yes |
+| Delete knowledge facts | Yes | Yes | Yes |
+| Invite new members | Yes | Yes | No |
+| Remove members | Yes | Yes | No |
+| Change member roles | Yes | Yes | No |
+| Delete the team | Yes | No | No |
+| Transfer ownership | Yes | No | No |
+
+### Role Descriptions
+
+<div className="space-y-4 my-6">
+  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+    <div className="flex items-center gap-2 mb-2">
+      <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded">owner</span>
+      <span className="font-semibold text-slate-100">Owner</span>
+    </div>
+    <div className="text-sm text-slate-400">
+      Full control over the team. Can delete the team, transfer ownership, and perform all administrative actions. Every team has exactly one owner.
+    </div>
+  </div>
+
+  <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+    <div className="flex items-center gap-2 mb-2">
+      <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded">admin</span>
+      <span className="font-semibold text-slate-100">Admin</span>
+    </div>
+    <div className="text-sm text-slate-400">
+      Can manage team membership — invite new members, remove existing ones, and change roles (except owner). Cannot delete the team.
+    </div>
+  </div>
+
+  <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+    <div className="flex items-center gap-2 mb-2">
+      <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs rounded">member</span>
+      <span className="font-semibold text-slate-100">Member</span>
+    </div>
+    <div className="text-sm text-slate-400">
+      Full collaboration access — can use all team features, share summaries, chat, join calls, and contribute to team knowledge. Cannot manage membership.
+    </div>
+  </div>
+</div>
+
+## Managing Your Team
+
+### Switching Between Teams
+
+If you belong to multiple teams, use the team dropdown in the header:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 my-6">
+  <div className="flex items-center gap-3">
+    <span className="text-slate-100"> MichaelrKraft/coder1-ide</span>
+    <span className="w-2 h-2 rounded-full bg-green-400"></span>
+    <select className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-slate-300">
+      <option>MichaelrKraft/coder1-ide</option>
+      <option>company/internal-tools</option>
+      <option>my-team/side-project</option>
+    </select>
+  </div>
+</div>
+
+### Syncing Team Knowledge
+
+Click the **Sync** button to manually trigger a knowledge sync:
+
+- **Push**: Sends your local insights to the team
+- **Pull**: Fetches teammates' latest contributions
+
+<Callout type="success" title="Automatic Sync">
+Knowledge syncs automatically when you connect. Manual sync is useful after making significant discoveries you want to share immediately.
+</Callout>
+
+### Deleting a Team
+
+<Callout type="error" title="Destructive Action">
+Deleting a team is permanent and cannot be undone. All team data, including summaries, knowledge, and chat history, will be lost.
+</Callout>
+
+Only the **Owner** can delete a team:
+
+1. Click the **Delete** button in the Team Panel header
+2. Confirm in the dialog: "Delete team 'TeamName'? This cannot be undone."
+3. The team is permanently removed
+
+### Transferring Ownership
+
+To transfer ownership to another member:
+
+1. Contact the new owner to confirm they want the responsibility
+2. The current owner promotes the member to owner role
+3. The previous owner is automatically demoted to admin
+
+<Callout type="info" title="Coming Soon">
+Ownership transfer UI is planned for a future release. Currently, contact support for ownership transfers.
+</Callout>
+
+## Connection Status
+
+The Team Panel shows your real-time connection status:
+
+| Indicator | Meaning |
+|-----------|---------|
+|  Green dot | Connected to team sync server |
+|  Yellow dot | Connection issues or reconnecting |
+| Error banner | Detailed error message with retry option |
+
+### Troubleshooting Connection Issues
+
+**"Team sync unavailable"**
+1. Check your internet connection
+2. Verify `NEXT_PUBLIC_ENABLE_TEAM_FEATURES=true` is set
+3. Ensure Supabase is configured correctly
+4. Check browser console for WebSocket errors
+
+**Teammates not appearing online**
+1. Ask them to refresh their page
+2. Check if they're on the same team (team ID matches)
+3. Verify Socket.IO connection in Network tab
+
+## Best Practices
+
+<div className="space-y-3 my-6">
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Use your git repo name as team name for easy discovery</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Promote trusted teammates to admin so they can invite others</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-green-400"></span>
+    <span className="text-slate-300">Keep team sizes manageable (10-15 members recommended)</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-red-400"></span>
+    <span className="text-slate-300">Don't create multiple teams for the same project</span>
+  </div>
+  <div className="flex gap-3">
+    <span className="text-red-400"></span>
+    <span className="text-slate-300">Don't share invite links publicly — they grant team access</span>
+  </div>
+</div>
+
+## What's Next?
+
+- [Session Summaries](/team-collaboration/session-summaries) — Share your work with the team
+- [Real-time Collaboration](/team-collaboration/real-time-collaboration) — Chat, voice calls, and presence
+- [Spectator Mode](/team-collaboration/spectator-mode) — Watch teammates' terminals live

@@ -1,0 +1,220 @@
+import { Callout } from '@/components/Callout';
+
+# Team Collaboration
+
+<div className="my-8 text-center">
+  <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+    Google Docs-Style Collaboration for Developers
+  </h2>
+  <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+    Real-time presence, shared sessions, voice calls, and conflict detection — everything your team needs to build together.
+  </p>
+</div>
+
+## Quick Start
+
+Get your team collaborating in under 2 minutes:
+
+<div className="grid md:grid-cols-3 gap-4 my-8">
+  <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 text-center">
+    <div className="text-3xl mb-3">1</div>
+    <div className="font-semibold text-slate-100 mb-2">Create a Team</div>
+    <div className="text-sm text-slate-400">Open Team Panel → Enter team name → Click Create</div>
+  </div>
+
+  <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 text-center">
+    <div className="text-3xl mb-3">2</div>
+    <div className="font-semibold text-slate-100 mb-2">Invite Members</div>
+    <div className="text-sm text-slate-400">Enter teammate's email → Copy invite link → Share</div>
+  </div>
+
+  <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 text-center">
+    <div className="text-3xl mb-3">3</div>
+    <div className="font-semibold text-slate-100 mb-2">Collaborate</div>
+    <div className="text-sm text-slate-400">See who's online → Share summaries → Chat in real-time</div>
+  </div>
+</div>
+
+<Callout type="info" title="Smart Team Name Detection">
+Coder1 automatically detects your git remote and suggests your repository name (e.g., `org/repo`) as the team name.
+</Callout>
+
+## The Team Panel
+
+All team features live in the Team Panel, accessible from the right sidebar. It contains 6 tabs:
+
+<div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 my-8 font-mono text-sm">
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Team: MichaelrKraft/coder1-ide                          │
+│  [Sync] [Delete]                                            │
+├─────────────────────────────────────────────────────────────┤
+│  Team │ Summaries (3) │ Briefing │ Chat │ PRs │ Conflicts  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  MEMBERS (4)                                                │
+│  ┌──┐ Mike ............ owner      online               │
+│  ┌──┐ Sarah ........... admin      online               │
+│  ┌──┐ James ........... member     offline               │
+│  ┌──┐ Alex ............ member     online               │
+│                                                             │
+│  LIVE TERMINALS (1)                                         │
+│  ┌────────────────────────────────────────┐                │
+│  │  Sarah's terminal              LIVE │                │
+│  └────────────────────────────────────────┘                │
+│                                                             │
+│  INVITE MEMBER                                              │
+│  ┌────────────────────────────┬──────────┐                 │
+│  │ email@example.com          │  Invite  │                 │
+│  └────────────────────────────┴──────────┘                 │
+│                                                             │
+│  TEAM KNOWLEDGE (12)                                        │
+│  @Mike: database → PostgreSQL with Prisma ORM              │
+│  @Sarah: auth → JWT tokens in httpOnly cookies             │
+│  @Alex: testing → Vitest + React Testing Library           │
+│                                                             │
+│  RECENT ACTIVITY                                            │
+│   @Sarah committed to feature/auth .......... 2m ago     │
+│   @Mike pushed to remote ................... 15m ago     │
+│   @Alex switched to fix/login-bug ........... 1h ago     │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+</div>
+
+## Feature Overview
+
+<div className="grid md:grid-cols-2 gap-6 my-8">
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-6">
+    <div className="mb-3">
+      <span className="font-semibold text-lg text-slate-100">Team Management</span>
+    </div>
+    <p className="text-sm text-slate-400 mb-3">
+      Create teams, invite members via email, and manage roles. Owners have full control, admins can manage the team, and members can collaborate.
+    </p>
+    <a href="/team-collaboration/team-setup" className="text-cyan-400 text-sm hover:underline">Learn more →</a>
+  </div>
+
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-6">
+    <div className="mb-3">
+      <span className="font-semibold text-lg text-slate-100">Session Summaries</span>
+    </div>
+    <p className="text-sm text-slate-400 mb-3">
+      Share session summaries with your team. Pin important ones, search through history, and get AI-generated morning briefings.
+    </p>
+    <a href="/team-collaboration/session-summaries" className="text-cyan-400 text-sm hover:underline">Learn more →</a>
+  </div>
+
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-6">
+    <div className="mb-3">
+      <span className="font-semibold text-lg text-slate-100">Real-time Collaboration</span>
+    </div>
+    <p className="text-sm text-slate-400 mb-3">
+      See who's online, track activity in real-time, chat with teammates, and jump on voice calls instantly.
+    </p>
+    <a href="/team-collaboration/real-time-collaboration" className="text-cyan-400 text-sm hover:underline">Learn more →</a>
+  </div>
+
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-6">
+    <div className="mb-3">
+      <span className="font-semibold text-lg text-slate-100">Spectator Mode</span>
+    </div>
+    <p className="text-sm text-slate-400 mb-3">
+      Watch your teammate's terminal in real-time. Perfect for pair programming, onboarding, and code reviews.
+    </p>
+    <a href="/team-collaboration/spectator-mode" className="text-cyan-400 text-sm hover:underline">Learn more →</a>
+  </div>
+
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-6">
+    <div className="mb-3">
+      <span className="font-semibold text-lg text-slate-100">Code Collaboration</span>
+    </div>
+    <p className="text-sm text-slate-400 mb-3">
+      View team PRs, detect file conflicts before they happen, and build a shared knowledge base automatically.
+    </p>
+    <a href="/team-collaboration/code-collaboration" className="text-cyan-400 text-sm hover:underline">Learn more →</a>
+  </div>
+
+  <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-6">
+    <div className="mb-3">
+      <span className="font-semibold text-lg text-slate-100">Shared Commands</span>
+    </div>
+    <p className="text-sm text-slate-400 mb-3">
+      Create and share slash commands with your team. Standardize workflows and boost productivity together.
+    </p>
+    <a href="/team-collaboration/shared-commands" className="text-cyan-400 text-sm hover:underline">Learn more →</a>
+  </div>
+</div>
+
+## What Makes It Different
+
+<div className="space-y-6 my-8">
+  <div>
+    <div className="font-semibold text-slate-100 mb-1">Consistent User Colors</div>
+    <div className="text-sm text-slate-400">
+      Each teammate gets a unique color (chosen from 12 distinct colors) that stays consistent across all features — their presence indicator, activity feed, chat messages, and cursor selections.
+    </div>
+  </div>
+
+  <div>
+    <div className="font-semibold text-slate-100 mb-1">AI-Powered Knowledge</div>
+    <div className="text-sm text-slate-400">
+      Coder1 automatically extracts facts and patterns from your team's sessions. New members get an instant briefing on architecture decisions, coding conventions, and team preferences.
+    </div>
+  </div>
+
+  <div>
+    <div className="font-semibold text-slate-100 mb-1">Proactive Conflict Detection</div>
+    <div className="text-sm text-slate-400">
+      Get warnings when teammates are editing the same files — before you push and discover merge conflicts. Real-time visibility into who's working on what.
+    </div>
+  </div>
+
+  <div>
+    <div className="font-semibold text-slate-100 mb-1">Tight GitHub Integration</div>
+    <div className="text-sm text-slate-400">
+      See all team PRs, CI status, and review assignments right in the IDE. No context switching to check if that build passed.
+    </div>
+  </div>
+</div>
+
+## Environment Setup
+
+Enable team features by setting these environment variables:
+
+```bash
+# Required for team features
+NEXT_PUBLIC_ENABLE_TEAM_FEATURES=true
+
+# Optional: Voice calls
+NEXT_PUBLIC_ENABLE_VOICE_CALLS=true
+LIVEKIT_API_KEY=your-livekit-key
+LIVEKIT_API_SECRET=your-livekit-secret
+LIVEKIT_URL=wss://your-livekit-server
+
+# Optional: PR Dashboard
+NEXT_PUBLIC_PR_DASHBOARD_ENABLED=true
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Optional: Conflict Detection
+NEXT_PUBLIC_CONFLICT_DETECTION_ENABLED=true
+```
+
+<Callout type="success" title="No Database Required">
+Team features use Supabase for data storage. Your existing Supabase connection handles teams, members, and shared data automatically.
+</Callout>
+
+## What's Next?
+
+<div className="grid md:grid-cols-2 gap-4 my-8">
+  <a href="/team-collaboration/team-setup" className="block bg-slate-800/30 border border-slate-700 rounded-lg p-4 hover:border-cyan-500/50 transition-colors">
+    <div className="font-semibold text-slate-100 mb-1">Team Setup →</div>
+    <div className="text-sm text-slate-400">Create your first team and invite members</div>
+  </a>
+
+  <a href="/team-collaboration/real-time-collaboration" className="block bg-slate-800/30 border border-slate-700 rounded-lg p-4 hover:border-cyan-500/50 transition-colors">
+    <div className="font-semibold text-slate-100 mb-1">Real-time Features →</div>
+    <div className="text-sm text-slate-400">Explore presence, chat, and voice calls</div>
+  </a>
+</div>
