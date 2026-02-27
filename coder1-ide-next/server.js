@@ -1725,12 +1725,12 @@ app.prepare().then(() => {
       allowedHeaders: ['Content-Type', 'Authorization'] // ADDED: Prevent extension header injection
     },
     path: '/socket.io/',
-    transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket
+    transports: ['polling'], // Polling only - more stable on Render proxy (WebSocket gets killed by proxy)
     allowEIO3: true, // Support older clients
-    pingTimeout: 300000, // 5 min — allows long Claude CLI commands without disconnect
-    pingInterval: 25000, // 25s — keep connection alive
+    pingTimeout: 60000, // 60s — under Render's ~90s proxy timeout to detect dead connections quickly
+    pingInterval: 10000, // 10s — aggressive keepalive to prevent Render proxy from killing idle connections
     upgradeTimeout: 30000, // Time to wait for upgrade from polling to websocket
-    allowUpgrades: true, // Allow upgrade from polling to websocket
+    allowUpgrades: false, // Don't upgrade to WebSocket - Render proxy kills persistent connections
     perMessageDeflate: false, // Disable compression for better reliability on Render
     httpCompression: false, // Disable HTTP compression for better reliability
     connectTimeout: 45000, // ADDED: 45 seconds for initial connection
