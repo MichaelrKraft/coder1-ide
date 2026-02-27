@@ -108,21 +108,21 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
         
         newSocket = socketIO(unifiedUrl, {
           path: '/socket.io/',
-          transports: ['websocket'], // FIXED: Force WebSocket to bypass polling/upgrade issues
+          transports: ['polling'], // Polling only - Render proxy kills WebSocket connections
           reconnection: true,
           reconnectionAttempts: Infinity, // Never give up - keep reconnecting
           reconnectionDelay: 1000,
           reconnectionDelayMax: 10000, // INCREASED: Max backoff to 10 seconds
           timeout: 45000, // INCREASED: Match server connectTimeout
           forceNew: false,
-          // FIXED: Consistent keep-alive across all environments
-          pingTimeout: 300000,  // 5 min — allows long Claude CLI commands without disconnect
-          pingInterval: 25000,  // 25s — keep connection alive
+          // FIXED: Aggressive keepalive for Render proxy (kills connections at ~90s idle)
+          pingTimeout: 60000,  // 60s — under Render's ~90s proxy timeout
+          pingInterval: 10000,  // 10s — aggressive keepalive to prevent proxy killing idle connections
           // ADDED: Additional stability settings
           autoConnect: true,
           withCredentials: true,
-          upgrade: true,
-          rememberUpgrade: true,
+          upgrade: false, // Don't upgrade to WebSocket - Render proxy kills persistent connections
+          rememberUpgrade: false,
           // ADDED: Keep connection alive during idle
           closeOnBeforeunload: false,
           // AUTH: Fetch a ticket before each connection attempt (initial + reconnects)
@@ -231,7 +231,7 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
             newSocket.emit('ping', { timestamp: now });
             console.log('💓 Heartbeat ping sent');
           }
-        }, 20000); // 20s — heartbeat in all environments
+        }, 10000); // 10s — aggressive heartbeat to keep Render proxy connection alive
       };
       
       const stopHeartbeat = () => {

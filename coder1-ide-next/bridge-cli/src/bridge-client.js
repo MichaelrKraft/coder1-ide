@@ -296,16 +296,16 @@ class BridgeClient extends EventEmitter {
         auth: {
           token: this.token
         },
-        transports: ['polling', 'websocket'], // Start with polling, upgrade to websocket (matches server config)
+        transports: ['polling'], // Polling only - Render proxy kills WebSocket connections
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionDelayMax: 30000,
+        reconnectionDelayMax: 10000, // INCREASED: Max backoff to 10 seconds
         reconnectionAttempts: this.maxReconnectAttempts,
-        upgrade: true, // Allow upgrade from polling to websocket
-        rememberUpgrade: true, // Remember successful upgrades
+        upgrade: false, // Don't upgrade to WebSocket - Render proxy kills persistent connections
+        rememberUpgrade: false,
         timeout: 45000, // Match server connectTimeout
-        pingTimeout: 300000, // 5 minutes - allows long Claude CLI commands
-        pingInterval: 25000 // 25 seconds - keep connection alive
+        pingTimeout: 60000, // 60s — under Render's ~90s proxy timeout
+        pingInterval: 10000 // 10s — aggressive keepalive to prevent proxy killing idle connections
       });
       
       // Connection success
