@@ -27,6 +27,7 @@ import QuickDocsLookup from "@/components/documentation/QuickDocsLookup";
 import AITeamDashboard from "@/components/preview/AITeamDashboard";
 import MissionControlLayout from "@/components/mission-control/MissionControlLayout";
 import AlphaFeedbackButton from "@/components/AlphaFeedbackButton";
+import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 // Conductor components removed - using simple multi-Claude tabs instead
 
@@ -310,6 +311,7 @@ function IDEPageContent() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showQuickDocs, setShowQuickDocs] = useState(false);
+  const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
   const [fontSize, setFontSize] = useState(14);
 
   // Mission Control state
@@ -545,6 +547,11 @@ function IDEPageContent() {
         url.searchParams.delete('sessionId');
         window.history.replaceState(null, '', url.toString());
       }
+    }
+
+    // Trigger onboarding wizard via ?onboarding=true URL param
+    if (searchParams.get('onboarding') === 'true') {
+      setShowOnboardingWizard(true);
     }
   }, [searchParams]);
 
@@ -2107,6 +2114,16 @@ function IDEPageContent() {
               fontSize={fontSize}
               onFontSizeChange={setFontSize}
             />
+
+            {/* Team Onboarding Wizard */}
+            {syncTeam?.id && authUser?.id && (
+              <OnboardingWizard
+                teamId={syncTeam.id}
+                userId={authUser.id}
+                isOpen={showOnboardingWizard}
+                onClose={() => setShowOnboardingWizard(false)}
+              />
+            )}
             
             {features().teamFeatures && <FloatingVoicePanel />}
 
