@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain, Key, AlertCircle, CheckCircle, ExternalLink, LogOut, Calendar, Mail, CreditCard, Globe, Shield } from 'lucide-react';
+import { X, Monitor, Terminal, Bot, Save, User, Palette, Code, Brain, Key, AlertCircle, CheckCircle, ExternalLink, LogOut, Calendar, Mail, CreditCard, Globe, Shield, GraduationCap } from 'lucide-react';
 import { clientMemoryPreferences } from '@/lib/memory-preferences-client';
 import { useAPIKeyStatus } from '@/hooks/useAPIKeyStatus';
 import { APIKeyStorage, APIProvider } from '@/lib/api-key-storage';
@@ -12,6 +12,9 @@ import IntegrationsPanel from './settings/IntegrationsPanel';
 import { SSHSetupModal } from './settings/SSHSetupModal';
 import { SSHConnectionStorage } from '@/lib/ssh-connection-storage';
 import type { SSHConnection } from '@/types/ssh';
+import { ClaudeMdTab } from './claude-md';
+import { AgentActivatedList } from './agent-marketplace';
+import OnboardingAdminPanel from './onboarding/OnboardingAdminPanel';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -20,7 +23,7 @@ interface SettingsModalProps {
   onFontSizeChange?: (size: number) => void;
 }
 
-type SettingsTab = 'general' | 'editor' | 'terminal' | 'ai' | 'memory' | 'account' | 'remote';
+type SettingsTab = 'general' | 'editor' | 'terminal' | 'ai' | 'memory' | 'account' | 'remote' | 'team-brain' | 'agents' | 'onboarding-admin';
 
 interface UserData {
   id: string;
@@ -353,6 +356,9 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
     { id: 'memory' as SettingsTab, label: 'Memory', icon: Brain },
     { id: 'account' as SettingsTab, label: 'Account', icon: User },
     { id: 'remote' as SettingsTab, label: 'Remote', icon: Globe },
+    { id: 'team-brain' as SettingsTab, label: 'Team Brain', icon: Brain },
+    { id: 'agents' as SettingsTab, label: 'Agents', icon: Bot },
+    ...(isAdmin ? [{ id: 'onboarding-admin' as SettingsTab, label: 'Onboarding', icon: GraduationCap }] : []),
   ];
 
   return (
@@ -1119,6 +1125,28 @@ export default function SettingsModal({ isOpen, onClose, fontSize, onFontSizeCha
                   onConnect={handleSSHConnect}
                   onDisconnect={handleSSHDisconnect}
                 />
+              </div>
+            )}
+
+            {activeTab === 'team-brain' && (
+              <ClaudeMdTab teamId={userData?.id ?? null} />
+            )}
+
+            {activeTab === 'agents' && (
+              <div className="p-4">
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-text-primary mb-1">Activated Agents</h3>
+                  <p className="text-xs text-text-muted">
+                    Agents activated for your team. Open the Agent Marketplace from the status bar to add more.
+                  </p>
+                </div>
+                <AgentActivatedList teamId={userData?.id ?? null} />
+              </div>
+            )}
+
+            {activeTab === 'onboarding-admin' && (
+              <div className="p-4">
+                <OnboardingAdminPanel teamId={userData?.id ?? null} />
               </div>
             )}
 

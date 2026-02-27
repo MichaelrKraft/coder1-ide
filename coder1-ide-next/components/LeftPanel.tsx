@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FolderTree, Clock, Search } from 'lucide-react';
+import { FolderTree, Clock, Search, Terminal } from 'lucide-react';
 import SafeFileExplorer from './SafeFileExplorer';
 import SessionsPanel from './SessionsPanel';
 import CodeSearch from './codebase/CodeSearch';
+import { CommandsPanel } from './commands/CommandsPanel';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -14,7 +15,7 @@ interface LeftPanelProps {
 }
 
 export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, onRootChange }: LeftPanelProps) {
-  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'search'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'search' | 'commands'>('explorer');
   
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
@@ -75,9 +76,9 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
       `}</style>
       
       {/* Tab Buttons */}
-      <div className="flex border-b border-border-default relative z-10">
+      <div className="flex border-b border-border-default relative z-10 overflow-x-auto scrollbar-none">
         <button
-          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === 'explorer'
               ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
@@ -89,7 +90,7 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <span>Explorer</span>
         </button>
         <button
-          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === 'search'
               ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
@@ -101,7 +102,7 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <span>Search</span>
         </button>
         <button
-          className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === 'sessions'
               ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
@@ -119,6 +120,18 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <Clock className="w-3 h-3" />
           <span>Sessions</span>
         </button>
+        <button
+          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+            activeTab === 'commands'
+              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
+              : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+          }`}
+          onClick={() => setActiveTab('commands')}
+          title="Commands - Browse and install shared slash commands for Claude Code"
+        >
+          <Terminal className="w-3 h-3" />
+          <span>Commands</span>
+        </button>
       </div>
       
       {/* Tab Content - Takes remaining space but leaves room for Discover */}
@@ -131,6 +144,9 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
         )}
         {activeTab === 'search' && (
           <CodeSearch onOpenFile={onFileSelect} />
+        )}
+        {activeTab === 'commands' && (
+          <CommandsPanel teamId={null} />
         )}
       </div>
       
