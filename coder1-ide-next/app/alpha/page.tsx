@@ -1108,7 +1108,7 @@ export default function AlphaLandingPage() {
             {/* Nav Links - Center */}
             <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
               <a href="#features" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Features</a>
-              <Link href="/teams" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Teams</Link>
+              <a href="#teams" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Teams</a>
               <a href="#johnny5" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Johnny5</a>
               <a href="#pricing" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Pricing</a>
             </div>
@@ -1139,7 +1139,7 @@ export default function AlphaLandingPage() {
           <div className="md:hidden bg-[#0A0A0A] border-t border-white/10 px-6 py-4">
             <div className="flex flex-col gap-4">
               <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Features</a>
-              <Link href="/teams" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Teams</Link>
+              <a href="#teams" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Teams</a>
               <a href="#johnny5" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Johnny5</a>
               <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Pricing</a>
               <a
@@ -1214,10 +1214,11 @@ export default function AlphaLandingPage() {
           </div>
 
           {/* Description */}
-          <p className="text-lg text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg text-white/50 max-w-2xl mx-auto mb-3 leading-relaxed">
             Stop babysitting your Claude Code sessions. Johnny5 works autonomously overnight,
-            creating PRs and briefing you every morning - All within an ADE (Agentic Development Environment) built for Claude Code power users.
+            creating PRs and briefing you every morning.
           </p>
+
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
@@ -1239,7 +1240,7 @@ export default function AlphaLandingPage() {
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
             <div className="text-center">
               <div className="text-3xl md:text-4xl font-bold text-coder1-cyan mb-1">
-                <AnimatedCounter end={8000} suffix="+" duration={2000} />
+                8,000+
               </div>
               <p className="text-white/40 text-sm">MCP Integrations</p>
             </div>
@@ -1257,21 +1258,13 @@ export default function AlphaLandingPage() {
             </div>
           </div>
 
-          {/* Audience hooks */}
-          <div className="grid md:grid-cols-3 gap-6 mt-16">
-            {[
-              { audience: 'Founders', message: 'Ship faster with AI that works while you sleep' },
-              { audience: 'Developers', message: 'Full IDE + autonomous agent in one' },
-              { audience: 'Vibe Coders', message: 'User-friendly interface with AI power features' }
-            ].map((hook, idx) => (
-              <ScrollReveal key={idx} delay={idx * 100}>
-                <div className="p-6 bg-[#151515] border border-white/10 rounded-xl hover:border-white/20 transition-all">
-                  <p className="text-coder1-purple text-base font-semibold uppercase tracking-widest mb-2">{hook.audience}</p>
-                  <p className="text-white font-medium">{hook.message}</p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
+          {/* Audience line */}
+          <p className="text-base text-white/50 text-center mt-12">
+            Built for{' '}
+            <span className="text-coder1-cyan font-medium">Founders</span>,{' '}
+            <span className="text-coder1-cyan font-medium">Vibe Coders</span>,{' '}
+            and Claude Code power users.
+          </p>
         </div>
 
         {/* Scroll indicator */}
@@ -1802,6 +1795,127 @@ export default function AlphaLandingPage() {
                   <ComparisonRow feature="Free Forever Plan" coder1="yes" cursor="no" copilot="no" vscode="partial" />
                 </tbody>
               </table>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ===== TEAMS SECTION ===== */}
+      <section className="py-24 bg-[#060606]" id="teams">
+        <div className="max-w-5xl mx-auto px-6">
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <div className="inline-block px-3 py-1 rounded-full bg-coder1-purple/10 border border-coder1-purple/30 text-coder1-purple text-xs font-semibold uppercase tracking-widest mb-4">
+                For Teams
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight">
+                The only IDE where your whole team<br />
+                <span className="text-coder1-cyan">shares AI memory in real time</span>
+              </h2>
+              <p className="text-white/50 text-base max-w-xl mx-auto">
+                Building with a co-founder or team? Coder1 Teams lets everyone share context, memory, and AI agents — no more re-explaining to Claude.
+              </p>
+            </div>
+          </ScrollReveal>
+
+          <ScrollReveal delay={100}>
+            <div className="overflow-x-auto rounded-xl border border-white/10">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 bg-[#0D0D0D]">
+                    <th className="text-left py-4 px-5 text-white/40 font-medium">Feature</th>
+                    <th className="py-4 px-5 text-center font-semibold text-coder1-cyan bg-coder1-cyan/5 border-x border-coder1-cyan/20">Coder1 Teams</th>
+                    <th className="py-4 px-5 text-center text-white/40 font-medium">Cursor</th>
+                    <th className="py-4 px-5 text-center text-white/40 font-medium">GitHub Copilot</th>
+                    <th className="py-4 px-5 text-center text-white/40 font-medium">VS Code Live Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Shared Team AI Memory', true, false, false, false],
+                    ['Real-time Co-editing', true, false, false, true],
+                    ['Learns from All Team Members', true, false, false, false],
+                    ['Persistent Memory Across Sessions', true, false, false, false],
+                    ['Autonomous Overnight Work', true, false, false, false],
+                    ['Merge Conflict Prevention', true, false, false, false],
+                  ].map(([feature, coder1, cursor, copilot, vslive], idx) => (
+                    <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-5 text-white/60">{feature as string}</td>
+                      <td className="py-3 px-5 text-center bg-coder1-cyan/5 border-x border-coder1-cyan/10">
+                        {coder1 ? <Check className="w-4 h-4 text-coder1-cyan mx-auto" /> : <X className="w-4 h-4 text-white/20 mx-auto" />}
+                      </td>
+                      <td className="py-3 px-5 text-center">
+                        {cursor ? <Check className="w-4 h-4 text-emerald-400 mx-auto" /> : <X className="w-4 h-4 text-white/20 mx-auto" />}
+                      </td>
+                      <td className="py-3 px-5 text-center">
+                        {copilot ? <Check className="w-4 h-4 text-emerald-400 mx-auto" /> : <X className="w-4 h-4 text-white/20 mx-auto" />}
+                      </td>
+                      <td className="py-3 px-5 text-center">
+                        {vslive ? <Check className="w-4 h-4 text-emerald-400 mx-auto" /> : <X className="w-4 h-4 text-white/20 mx-auto" />}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-[#0D0D0D]">
+                    <td className="py-3 px-5 text-white/40 font-medium">Price</td>
+                    <td className="py-3 px-5 text-center bg-coder1-cyan/5 border-x border-coder1-cyan/10 text-coder1-cyan font-semibold">$24/user/mo</td>
+                    <td className="py-3 px-5 text-center text-white/40">$20/user/mo</td>
+                    <td className="py-3 px-5 text-center text-white/40">$10/user/mo</td>
+                    <td className="py-3 px-5 text-center text-white/40">Free</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="text-center mt-8">
+              <a
+                href="#pricing"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-coder1-purple/10 border border-coder1-purple/30 rounded-full text-coder1-purple text-sm font-semibold hover:bg-coder1-purple/20 transition-all"
+              >
+                See Team Pricing <ArrowRight className="w-4 h-4" />
+              </a>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ===== FOUNDER STORY SECTION ===== */}
+      <section className="py-24 bg-[#080808]">
+        <div className="max-w-4xl mx-auto px-6">
+          <ScrollReveal>
+            <div
+              className="p-8 md:p-12 rounded-2xl border border-white/10 bg-[#0D0D0D]"
+              style={{ boxShadow: '0 0 60px rgba(0, 217, 255, 0.06)' }}
+            >
+              <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                {/* Founder photo */}
+                <div className="flex-shrink-0">
+                  <div
+                    className="w-32 h-32 rounded-full overflow-hidden bg-[#1a1a1a] flex items-center justify-center"
+                    style={{ boxShadow: '0 0 0 2px rgba(0,217,255,0.35), 0 0 24px rgba(0,217,255,0.15)' }}
+                  >
+                    <Image
+                      src="/mike-founder.png"
+                      alt="Mike, Founder of Coder1"
+                      width={128}
+                      height={128}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+                {/* Story */}
+                <div className="flex-1 text-center md:text-left">
+                  <p className="text-xs text-coder1-cyan font-semibold uppercase tracking-widest mb-4">
+                    Built By a Vibe Coder, For Vibe Coders
+                  </p>
+                  <blockquote className="text-xl md:text-2xl text-white font-medium leading-relaxed mb-4">
+                    &ldquo;I&apos;m not a developer. I left my corporate job, went into debt, and taught myself
+                    to build using Claude. I built Coder1 because I needed it &mdash; this is the IDE
+                    I wish I&apos;d had from day one.&rdquo;
+                  </blockquote>
+                  <p className="text-white/50 text-sm">
+                    &mdash; Mike, Founder of Coder1
+                  </p>
+                </div>
+              </div>
             </div>
           </ScrollReveal>
         </div>
