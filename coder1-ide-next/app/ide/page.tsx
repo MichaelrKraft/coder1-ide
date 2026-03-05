@@ -1110,7 +1110,10 @@ function IDEPageContent() {
     handleOpenFileFromPath(path);
   };
 
-  // 🔧 FIX (Feb 2026): Clear stale activeFile when Explorer navigates to different directory
+  const handleOpenFolder = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('coder1:openFolder'));
+  }, []);
+
   const handleExplorerRootChange = useCallback((newRoot: string) => {
     if (activeFile && !activeFile.startsWith(newRoot)) {
       console.log('[IDE] Explorer root changed to:', newRoot, '- clearing stale activeFile:', activeFile);
@@ -1795,6 +1798,7 @@ function IDEPageContent() {
             <MenuBar
               onNewFile={handleNewFile}
               onOpenFile={handleOpenFile}
+              onOpenFolder={handleOpenFolder}
               onSave={handleSaveFile}
               onSaveAs={handleSaveAs}
               onCloseFile={handleCloseFile}

@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Loader2, Home, Settings, ArrowLeft } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Loader2, Home, ArrowLeft, Clock } from 'lucide-react';
+
+const RECENT_FOLDERS_KEY = 'coder1-recentFolders';
+const MAX_RECENT = 5;
 
 interface FileNode {
   name: string;
@@ -25,13 +28,39 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
   const [currentRoot, setCurrentRoot] = useState<string>('');
   const [showDirectoryInput, setShowDirectoryInput] = useState(false);
   const [directoryInput, setDirectoryInput] = useState('');
+  const [recentFolders, setRecentFolders] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load saved directory from localStorage on mount
+  // Load saved directory and recent folders from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('fileExplorerDirectory');
     if (saved) {
       setCurrentRoot(saved);
     }
+    try {
+      const recent = JSON.parse(localStorage.getItem(RECENT_FOLDERS_KEY) || '[]');
+      if (Array.isArray(recent)) setRecentFolders(recent);
+    } catch {}
+  }, []);
+
+  // Listen for 'coder1:openFolder' event from MenuBar
+  useEffect(() => {
+    const handler = () => {
+      setShowDirectoryInput(true);
+      setTimeout(() => inputRef.current?.focus(), 100);
+    };
+    window.addEventListener('coder1:openFolder', handler);
+    return () => window.removeEventListener('coder1:openFolder', handler);
+  }, []);
+
+  // Add a folder to recent list
+  const addToRecentFolders = useCallback((folderPath: string) => {
+    if (!folderPath) return;
+    setRecentFolders(prev => {
+      const updated = [folderPath, ...prev.filter(p => p !== folderPath)].slice(0, MAX_RECENT);
+      localStorage.setItem(RECENT_FOLDERS_KEY, JSON.stringify(updated));
+      return updated;
+    });
   }, []);
 
   // Fetch real file tree from API
@@ -61,9 +90,10 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
         setCurrentRoot(data.currentRoot);
         onRootChange?.(data.currentRoot);
 
-        // Save to localStorage
+        // Save to localStorage and track in recent folders
         if (data.currentRoot) {
           localStorage.setItem('fileExplorerDirectory', data.currentRoot);
+          addToRecentFolders(data.currentRoot);
         }
         
         // Reset expanded folders for new directory
@@ -77,7 +107,7 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [addToRecentFolders]);
 
   useEffect(() => {
     fetchFileTree(currentRoot || undefined);
@@ -247,33 +277,56 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
               <Home className="w-3 h-3" />
             </button>
             <button
-              onClick={() => setShowDirectoryInput(!showDirectoryInput)}
-              className="p-1 hover:bg-bg-secondary rounded transition-colors"
-              title="Change directory"
+              onClick={() => {
+                setShowDirectoryInput(!showDirectoryInput);
+                if (!showDirectoryInput) setTimeout(() => inputRef.current?.focus(), 100);
+              }}
+              className="px-2 py-0.5 text-xs bg-coder1-cyan/10 border border-coder1-cyan/30 rounded hover:bg-coder1-cyan/20 transition-colors flex items-center gap-1"
+              title="Open Folder"
             >
-              <Settings className="w-3 h-3" />
+              <FolderOpen className="w-3 h-3" />
+              <span>Open</span>
             </button>
           </div>
         </div>
 
         {/* Directory Input */}
         {showDirectoryInput && (
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={directoryInput}
-              onChange={(e) => setDirectoryInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleDirectoryInputSubmit()}
-              placeholder="Enter directory path..."
-              className="flex-1 px-2 py-1 text-xs bg-bg-primary border border-border-default rounded focus:outline-none focus:ring-1 focus:ring-coder1-cyan"
-              autoFocus
-            />
-            <button
-              onClick={handleDirectoryInputSubmit}
-              className="px-2 py-1 text-xs bg-coder1-cyan text-bg-primary rounded hover:bg-opacity-80 transition-colors"
-            >
-              Go
-            </button>
+          <div className="space-y-1">
+            <div className="flex gap-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={directoryInput}
+                onChange={(e) => setDirectoryInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleDirectoryInputSubmit()}
+                placeholder="Enter folder path (e.g. ~/projects/my-app)"
+                className="flex-1 px-2 py-1 text-xs bg-bg-primary border border-border-default rounded focus:outline-none focus:ring-1 focus:ring-coder1-cyan"
+                autoFocus
+              />
+              <button
+                onClick={handleDirectoryInputSubmit}
+                className="px-2 py-1 text-xs bg-coder1-cyan text-bg-primary rounded hover:bg-opacity-80 transition-colors"
+              >
+                Go
+              </button>
+            </div>
+            {recentFolders.length > 0 && (
+              <div className="space-y-0.5">
+                <div className="text-[10px] text-text-muted uppercase tracking-wider px-1">Recent</div>
+                {recentFolders.map(folder => (
+                  <button
+                    key={folder}
+                    onClick={() => handleDirectoryChange(folder)}
+                    className="w-full text-left px-2 py-1 text-xs text-text-secondary hover:bg-bg-secondary rounded truncate transition-colors flex items-center gap-1.5"
+                    title={folder}
+                  >
+                    <Clock className="w-3 h-3 shrink-0 text-text-muted" />
+                    <span className="truncate">{folder.replace(/^\/Users\/[^/]+/, '~')}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -281,7 +334,37 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
       {/* File Tree Content */}
       <div className="flex-1 overflow-auto">
         {fileTree ? renderNode(fileTree) : (
-          <div className="p-4 text-text-secondary text-sm">No files to display</div>
+          <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+            <FolderOpen className="w-10 h-10 text-coder1-cyan/50 mb-3" />
+            <div className="text-sm font-medium text-text-secondary mb-1">Open a Folder</div>
+            <div className="text-xs text-text-muted mb-4">Get started by opening a project folder</div>
+            <button
+              onClick={() => {
+                setShowDirectoryInput(true);
+                setTimeout(() => inputRef.current?.focus(), 100);
+              }}
+              className="px-4 py-2 text-xs bg-coder1-cyan/10 border border-coder1-cyan/30 rounded-lg hover:bg-coder1-cyan/20 transition-colors flex items-center gap-2 text-coder1-cyan"
+            >
+              <FolderOpen className="w-4 h-4" />
+              Open Folder...
+            </button>
+            {recentFolders.length > 0 && (
+              <div className="mt-5 w-full max-w-[200px]">
+                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Recent Folders</div>
+                {recentFolders.map(folder => (
+                  <button
+                    key={folder}
+                    onClick={() => handleDirectoryChange(folder)}
+                    className="w-full text-left px-2 py-1.5 text-xs text-text-secondary hover:bg-bg-tertiary rounded truncate transition-colors flex items-center gap-1.5"
+                    title={folder}
+                  >
+                    <Clock className="w-3 h-3 shrink-0 text-text-muted" />
+                    <span className="truncate">{folder.replace(/^\/Users\/[^/]+/, '~')}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
