@@ -29,6 +29,7 @@ interface MenuBarProps {
   onNewFile?: () => void;
   onOpenFile?: () => void;
   onOpenFileFromComputer?: () => void;
+  onOpenFolder?: () => void;
   onFilesUploaded?: (filePaths: string[]) => void;
   onSave?: () => void;
   onSaveAs?: () => void;
@@ -69,6 +70,7 @@ const MenuBar = React.memo(function MenuBar({
   onNewFile,
   onOpenFile,
   onOpenFileFromComputer,
+  onOpenFolder,
   onFilesUploaded,
   onSave,
   onSaveAs,
@@ -122,6 +124,7 @@ const MenuBar = React.memo(function MenuBar({
       { separator: true },
       { label: 'Open File...', action: onOpenFile || (() => {}), shortcut: 'Ctrl+O' },
       { label: 'Open from Computer...', action: () => setFileUploadOpen(true), shortcut: 'Ctrl+Shift+O' },
+      { label: 'Open Folder...', action: onOpenFolder || (() => {}), shortcut: 'Ctrl+Shift+K' },
       { separator: true },
       { label: 'Save', action: onSave || (() => {}), shortcut: 'Ctrl+S' },
       { label: 'Save As...', action: onSaveAs || (() => {}), shortcut: 'Ctrl+Shift+S' },
