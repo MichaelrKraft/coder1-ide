@@ -54,11 +54,11 @@ function LoginPageContent() {
           console.warn('[Login] Team join network error');
         }
       }
-      router.push(redirectTo);
+      window.location.href = redirectTo;
     };
 
     joinAndRedirect();
-  }, [isAuthenticated, isLoading, inviteToken, redirectTo, router]);
+  }, [isAuthenticated, isLoading, inviteToken, redirectTo]);
 
   // Clear error when switching modes
   useEffect(() => {
@@ -118,7 +118,7 @@ function LoginPageContent() {
       // useEffect above handles invite join + redirect
       // If no invite, redirect immediately
       if (!inviteToken) {
-        router.push(redirectTo);
+        window.location.href = redirectTo;
       }
     }
 
@@ -138,6 +138,8 @@ function LoginPageContent() {
 
   // If already authenticated and waiting for redirect
   if (isAuthenticated) {
+    // Safety net: force hard redirect if window.location.href hasn't fired within 3s
+    setTimeout(() => { window.location.href = redirectTo; }, 3000);
     return (
       <MatrixBackground>
         <div className="min-h-screen flex items-center justify-center">
