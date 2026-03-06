@@ -2,19 +2,45 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import path from 'path';
 import fs from 'fs/promises';
+import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+import { logAudit } from '@/lib/johnny5-db';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Extract authenticated userId from request.
+ * Returns null if not authenticated (caller should return 401).
+ */
+function getAuthenticatedUserId(request: NextRequest): string | null {
+  // 1. Check Authorization header
+  const authHeader = request.headers.get('authorization');
+  if (authHeader) {
+    const token = extractTokenFromHeader(authHeader);
+    if (token) {
+      const decoded = verifyAccessToken(token);
+      if (decoded) return decoded.userId;
+    }
+  }
+
+  // 2. Fall back to auth-token cookie
+  const cookieToken = request.cookies.get('auth-token')?.value;
+  if (cookieToken) {
+    const decoded = verifyAccessToken(cookieToken);
+    if (decoded) return decoded.userId;
+  }
+
+  // 3. Development mode fallback
+  if (process.env.NODE_ENV === 'development') {
+    return 'default';
+  }
+
+  return null;
+}
+
 // Get the correct data directory path (consistent with checkpoint API)
 const getDataDirectory = () => {
-  // The server runs from /autonomous_vibe_interface/coder1-ide-next, so data is in ./data
   const projectRoot = process.cwd();
-  const dataDir = path.join(projectRoot, 'data');
-  
-  console.log('📂 Sessions API - Project root:', projectRoot);
-  console.log('📂 Sessions API - Data directory:', dataDir);
-  
-  return dataDir;
+  return path.join(projectRoot, 'data');
 };
 
 // Simple session management (unified server implementation)
@@ -34,32 +60,36 @@ interface Session {
 }
 
 export async function GET(request: NextRequest) {
+  const userId = getAuthenticatedUserId(request);
+  if (!userId) {
+    return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+  }
+
   try {
     // Get sessions from both memory and file system
     const memSessions = Array.from(activeSessions.values());
     const fileSessions: Session[] = [];
-    
+
     // Try to read sessions from file system
     const dataDir = path.join(getDataDirectory(), 'sessions');
-    console.log('📂 Sessions GET - Looking for sessions in:', dataDir);
     try {
       const sessionDirs = await fs.readdir(dataDir);
-      
+
       for (const sessionDir of sessionDirs) {
         const metadataPath = path.join(dataDir, sessionDir, 'metadata.json');
         try {
           const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
-          
-          // Convert to Session format
+
           const session: Session = {
             id: metadata.id || sessionDir,
             name: metadata.name,
             description: metadata.description,
+            userId: metadata.userId,
             createdAt: new Date(metadata.createdAt).getTime(),
             updatedAt: new Date(metadata.lastUpdated || metadata.createdAt).getTime(),
             metadata: metadata.metadata
           };
-          
+
           fileSessions.push(session);
         } catch {
           // Metadata file doesn't exist, skip
@@ -68,51 +98,56 @@ export async function GET(request: NextRequest) {
     } catch {
       // Sessions directory doesn't exist yet
     }
-    
+
     // Combine and dedupe sessions (prefer file sessions)
     const sessionMap = new Map<string, Session>();
     memSessions.forEach(s => sessionMap.set(s.id, s));
     fileSessions.forEach(s => sessionMap.set(s.id, s));
-    
-    const allSessions = Array.from(sessionMap.values()).sort((a, b) => {
-      const timeA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : a.createdAt;
-      const timeB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : b.createdAt;
-      return timeB - timeA; // Most recent first
-    });
-    
+
+    // Filter by authenticated userId — only return sessions owned by this user
+    // Legacy sessions without userId are included for backward compatibility
+    const allSessions = Array.from(sessionMap.values())
+      .filter(s => !s.userId || s.userId === userId || s.userId === 'anonymous' || s.userId === 'default')
+      .sort((a, b) => {
+        const timeA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : a.createdAt;
+        const timeB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : b.createdAt;
+        return timeB - timeA;
+      });
+
     return NextResponse.json({
       success: true,
       sessions: allSessions,
       count: allSessions.length,
-      server: 'unified-server',
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
-    // logger?.error('❌ [Unified] Sessions GET error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to retrieve sessions'
-      },
+      { success: false, error: 'Failed to retrieve sessions' },
       { status: 500 }
     );
   }
 }
 
 export async function POST(request: NextRequest) {
+  const userId = getAuthenticatedUserId(request);
+  if (!userId) {
+    return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const { name, description, metadata, userId, type = 'general' } = body;
-    
+    const { name, description, metadata, type = 'general' } = body;
+    // userId comes from JWT, never from request body
+
     const sessionId = `session_${Date.now()}_${randomBytes(6).toString('hex')}`;
     const now = new Date().toISOString();
-    
+
     const session: Session = {
       id: sessionId,
       name: name || `Session ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
       description: description || 'Created from Coder1 IDE',
-      userId: userId || 'anonymous',
+      userId,
       createdAt: now,
       updatedAt: now,
       lastActivity: now,
@@ -127,15 +162,15 @@ export async function POST(request: NextRequest) {
     // Save to file system for persistence
     const dataDir = getDataDirectory();
     const sessionDir = path.join(dataDir, 'sessions', sessionId);
-    console.log('📂 Sessions POST - Creating session in:', sessionDir);
     
     await fs.mkdir(sessionDir, { recursive: true });
     
-    // Save session metadata
+    // Save session metadata (includes userId for ownership)
     const sessionMetadata = {
       id: sessionId,
       name: session.name,
       description: session.description,
+      userId,
       createdAt: session.createdAt,
       lastUpdated: session.updatedAt,
       metadata: session.metadata
@@ -149,12 +184,9 @@ export async function POST(request: NextRequest) {
     // Create checkpoints directory
     await fs.mkdir(path.join(sessionDir, 'checkpoints'), { recursive: true });
     
-    // REMOVED: // REMOVED: console.log(`✅ [Unified] Session created: ${sessionId} (${type})`);
-    
     return NextResponse.json({
       success: true,
-      session,
-      server: 'unified-server'
+      session
     });
     
   } catch (error) {
@@ -170,48 +202,62 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const userId = getAuthenticatedUserId(request);
+  if (!userId) {
+    return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
-    
+
     if (!sessionId) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'sessionId parameter is required'
-        },
+        { success: false, error: 'sessionId parameter is required' },
         { status: 400 }
       );
     }
-    
-    // Delete from memory if exists
+
+    // Verify ownership before deleting
+    const sessionDir = path.join(getDataDirectory(), 'sessions', sessionId);
+    const metadataPath = path.join(sessionDir, 'metadata.json');
+    try {
+      const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
+      if (metadata.userId && metadata.userId !== userId && metadata.userId !== 'anonymous' && metadata.userId !== 'default') {
+        // Audit: unauthorized deletion attempt
+        logAudit('session_delete_denied', { userId, targetSessionId: sessionId, ownerId: metadata.userId }).catch(() => {});
+        return NextResponse.json(
+          { success: false, error: 'Not authorized to delete this session' },
+          { status: 403 }
+        );
+      }
+    } catch {
+      // Metadata doesn't exist — allow deletion (orphaned session)
+    }
+
+    // Delete from memory
     if (activeSessions.has(sessionId)) {
       activeSessions.delete(sessionId);
     }
-    
-    // Also delete from file system
-    const sessionDir = path.join(getDataDirectory(), 'sessions', sessionId);
-    console.log('📂 Sessions DELETE - Removing session from:', sessionDir);
+
+    // Delete from file system
     try {
       await fs.rm(sessionDir, { recursive: true, force: true });
-      console.log(`✅ Session directory deleted: ${sessionDir}`);
-    } catch (error) {
-      console.log(`⚠️ Could not delete session directory: ${sessionDir}`, error);
-      // Continue even if directory doesn't exist
+    } catch {
+      // Directory doesn't exist — not an error
     }
-    
+
+    // Audit: session deleted
+    logAudit('session_deleted', { userId, sessionId }).catch(() => {});
+
     return NextResponse.json({
       success: true,
       sessionId,
       status: 'deleted'
     });
   } catch (error) {
-    // logger?.error('❌ [Unified] Sessions DELETE error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to delete session'
-      },
+      { success: false, error: 'Failed to delete session' },
       { status: 500 }
     );
   }

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     
     // Initialize processor if needed
-    const currentProjectPath = projectPath || '/Users/michaelkraft/autonomous_vibe_interface';
+    const currentProjectPath = projectPath || process.env.PROJECT_PATH || process.cwd();
     const stats = await contextProcessor.getStats();
     
     // PHASE 2 FIX: Smart context processor initialization with session management

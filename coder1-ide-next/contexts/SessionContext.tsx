@@ -42,8 +42,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const [sessionId, setSessionId] = useState<string>('');
   const [sessions, setSessions] = useState<Session[]>([]);
   
-  // Add mutex to prevent race conditions during session creation
-  const isCreatingSession = useRef(false);
+  // Promise-based mutex to prevent race conditions during session creation
+  // Two rapid calls will both await the same Promise instead of racing past a boolean flag
+  const sessionMutexPromise = useRef<Promise<void> | null>(null);
   const hasInitialized = useRef(false);
   const initializationPromise = useRef<Promise<void> | null>(null);
   
@@ -81,41 +82,46 @@ export function SessionProvider({ children }: SessionProviderProps) {
   }, []);
 
   const initializeSession = async () => {
-    // Prevent concurrent initialization with immediate return if already running
-    if (isCreatingSession.current) {
+    // Promise-based mutex: if already running, await the existing promise
+    // This prevents two rapid calls from both passing a boolean check before either sets it
+    if (sessionMutexPromise.current) {
       console.log('🔒 Session initialization already in progress, waiting...');
+      await sessionMutexPromise.current;
       return;
     }
-    
-    // Set the mutex immediately to prevent race conditions
-    isCreatingSession.current = true;
-    
+
+    // Create a new promise and store it so subsequent callers can await it
+    let releaseMutex: () => void;
+    sessionMutexPromise.current = new Promise<void>((resolve) => {
+      releaseMutex = resolve;
+    });
+
     try {
       console.log('🔄 Starting atomic session initialization...');
-      
+
       // Check for existing session in localStorage (client-side only)
       let storedSessionId = typeof window !== 'undefined' ? localStorage.getItem('currentSessionId') : null;
-      
+
       if (storedSessionId) {
         console.log('📂 Found stored session:', storedSessionId);
         setSessionId(storedSessionId);
-        
+
         // Detect browser refresh using same pattern as MonacoEditor
-        const isPageReload = typeof window !== 'undefined' && 
-                            window.performance && 
-                            window.performance.navigation && 
+        const isPageReload = typeof window !== 'undefined' &&
+                            window.performance &&
+                            window.performance.navigation &&
                             window.performance.navigation.type === 1;
-        
+
         if (isPageReload) {
           console.log('🔄 Browser refresh detected, dispatching sessionRefreshed event');
-          window.dispatchEvent(new CustomEvent('sessionRefreshed', { 
-            detail: { sessionId: storedSessionId } 
+          window.dispatchEvent(new CustomEvent('sessionRefreshed', {
+            detail: { sessionId: storedSessionId }
           }));
         }
-        
+
         // Load all sessions and find the current one
         const loadedSessions = await refreshSessions();
-        
+
         // Verify the stored session still exists
         const sessionExists = loadedSessions.some(s => s.id === storedSessionId);
         if (!sessionExists) {
@@ -129,14 +135,14 @@ export function SessionProvider({ children }: SessionProviderProps) {
           return; // Valid session found, we're done
         }
       }
-      
+
       // No valid session, need to create one atomically
       if (!storedSessionId) {
         console.log('🆕 No valid session found, creating new session...');
-        
+
         // Load sessions first to check if any exist
         const existingSessions = await refreshSessions();
-        
+
         // Double-check localStorage one more time after the await (client-side only)
         const finalCheck = typeof window !== 'undefined' ? localStorage.getItem('currentSessionId') : null;
         if (!finalCheck && existingSessions.length === 0) {
@@ -147,14 +153,15 @@ export function SessionProvider({ children }: SessionProviderProps) {
           setSessionId(finalCheck);
         }
       }
-      
+
       console.log('✅ Session initialization completed successfully');
-      
+
     } catch (error) {
       console.error('❌ Error during session initialization:', error);
     } finally {
-      // Always release the mutex
-      isCreatingSession.current = false;
+      // Release the mutex: resolve the promise and clear the ref
+      releaseMutex!();
+      sessionMutexPromise.current = null;
     }
   };
 
