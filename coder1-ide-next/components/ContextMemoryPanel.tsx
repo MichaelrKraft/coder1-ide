@@ -60,7 +60,7 @@ export default function ContextMemoryPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           action: 'initialize',
-          projectPath: '/Users/michaelkraft/autonomous_vibe_interface' 
+          projectPath: ''
         })
       });
       

@@ -41,12 +41,16 @@ interface TaskCommand {
   category: string;
 }
 
+// Provider tag for skills that only work with specific AI CLIs
+type ProviderTag = 'claude-code' | 'any';
+
 interface SkillItem {
   id: string;
   name: string;
   description: string;
   icon: React.ComponentType<any>;
   category: string;
+  providerTag?: ProviderTag;
 }
 
 const SKILLS_LIST: SkillItem[] = [
@@ -57,9 +61,9 @@ const SKILLS_LIST: SkillItem[] = [
   // DEVELOPMENT
   { id: 'frontend-design', name: 'Frontend Design', description: 'Production-grade UI interfaces', icon: PenTool, category: 'DEVELOPMENT' },
   { id: 'tailwind', name: 'Tailwind', description: 'Tailwind CSS utility-first patterns', icon: Palette, category: 'DEVELOPMENT' },
-  { id: 'hook-development', name: 'Hook Development', description: 'Create Claude Code automation hooks', icon: Webhook, category: 'DEVELOPMENT' },
-  { id: 'command-development', name: 'Command Development', description: 'Create custom slash commands', icon: Zap, category: 'DEVELOPMENT' },
-  { id: 'skill-development', name: 'Skill Development', description: 'Create new Claude Code skills', icon: Settings, category: 'DEVELOPMENT' },
+  { id: 'hook-development', name: 'Hook Development', description: 'Create Claude Code automation hooks', icon: Webhook, category: 'DEVELOPMENT', providerTag: 'claude-code' },
+  { id: 'command-development', name: 'Command Development', description: 'Create custom slash commands', icon: Zap, category: 'DEVELOPMENT', providerTag: 'claude-code' },
+  { id: 'skill-development', name: 'Skill Development', description: 'Create new Claude Code skills', icon: Settings, category: 'DEVELOPMENT', providerTag: 'claude-code' },
   { id: 'stripe-integration', name: 'Stripe Integration', description: 'Stripe payment integration', icon: Lock, category: 'DEVELOPMENT' },
   { id: 'mcp-code-orchestrator', name: 'MCP Orchestrator', description: 'MCP server orchestration', icon: Server, category: 'DEVELOPMENT' },
 
@@ -753,7 +757,12 @@ export default function DiscoverPanel() {
                           >
                             <IconComponent className="w-4 h-4 text-text-muted group-hover:text-coder1-cyan transition-colors" />
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm">{skill.name}</div>
+                              <div className="font-medium text-sm flex items-center gap-1.5">
+                                {skill.name}
+                                {skill.providerTag === 'claude-code' && (
+                                  <span className="text-[10px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-400 font-normal">Claude Code</span>
+                                )}
+                              </div>
                               <div className="text-xs text-text-muted">{skill.description}</div>
                             </div>
                           </button>

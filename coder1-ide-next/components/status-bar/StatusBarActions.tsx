@@ -422,7 +422,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            projectPath: '/Users/michaelkraft/autonomous_vibe_interface', // TODO: Get from project context
+            projectPath: process.env.NEXT_PUBLIC_PROJECT_PATH || '',
             sessionData
           })
         });

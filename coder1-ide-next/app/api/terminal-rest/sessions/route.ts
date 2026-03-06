@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // PRESERVED: Original code for Phase 2 restoration:
     /*
     try {
-      await contextProcessor.initialize('/Users/michaelkraft/autonomous_vibe_interface');
+      await contextProcessor.initialize(process.env.PROJECT_PATH || process.cwd());
       logger.info(`🧠 Context processor initialized for terminal session: ${sessionId}`);
     } catch (error) {
       logger.warn('Context processor initialization failed:', error);

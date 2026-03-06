@@ -123,7 +123,7 @@ async function createTestData(): Promise<void> {
   console.log('📝 Creating test conversation data...');
   
   // Get or create folder
-  const projectPath = '/Users/michaelkraft/autonomous_vibe_interface';
+  const projectPath = process.cwd();
   const folder = await contextDatabase.getOrCreateFolder(projectPath, 'Test Project');
   
   // Create session
