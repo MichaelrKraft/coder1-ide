@@ -182,19 +182,7 @@ class UniversalAIWrapper extends EventEmitter {
     let context = '';
 
     try {
-      // Get recent context from memory
-      // Commented out for browser compatibility - needs server-side implementation
-      // const projectPath = '/Users/michaelkraft/autonomous_vibe_interface';
-      // const folder = await contextDatabase.getOrCreateFolder(projectPath);
-      // const recentConversations = await contextDatabase.getRecentConversations(folder.id, 2);
-
-      // if (recentConversations.length > 0) {
-      //   context += '## Recent Context:\n';
-      //   recentConversations.forEach((conv, i) => {
-      //     context += `Previous: ${this.truncate(conv.user_input, 200)}\n`;
-      //     context += `Response: ${this.truncate(conv.claude_reply, 200)}\n\n`;
-      //   });
-      // }
+      // TODO: Implement server-side context retrieval for browser compatibility
 
       // Add file context if provided
       if (files && files.length > 0) {
@@ -379,22 +367,7 @@ class UniversalAIWrapper extends EventEmitter {
    */
   private async storeInMemory(interaction: AIInteraction, sessionId: string): Promise<void> {
     try {
-      // Commented out for browser compatibility - needs server-side implementation
-      // const projectPath = '/Users/michaelkraft/autonomous_vibe_interface';
-      // const folder = await contextDatabase.getOrCreateFolder(projectPath);
-
-      // await contextDatabase.addConversation({
-      //   folder_id: folder.id,
-      //   user_input: interaction.input,
-      //   claude_reply: interaction.output,
-      //   model: interaction.platform,
-      //   success: true,
-      //   metadata: {
-      //     sessionId,
-      //     tokensUsed: interaction.tokensUsed,
-      //     timestamp: interaction.timestamp.toISOString()
-      //   }
-      // });
+      // TODO: Implement server-side memory storage for browser compatibility
 
       logger.debug(`💾 Stored interaction in memory for session ${sessionId}`);
     } catch (error) {

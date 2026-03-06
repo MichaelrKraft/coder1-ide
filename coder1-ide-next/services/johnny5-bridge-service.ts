@@ -31,15 +31,21 @@ import { getProfile, UserProfile } from '@/lib/johnny5-db';
 // MCP Discovery
 // ============================================================================
 
+// Cache MCP tools list to avoid re-reading 3 config files on every request
+let mcpToolsCache: string[] | null = null;
+let mcpToolsCacheTime = 0;
+const MCP_TOOLS_CACHE_TTL_MS = 60_000; // 1 minute
+
 /**
  * Read MCP servers from all known config locations and merge them.
- * Sources (in priority order):
- *   1. ~/.claude.json (Claude Code CLI — primary)
- *   2. ~/.mcp.json (Claude Desktop / VS Code)
- *   3. ~/manuslive/manuslive/config/mcporter.json (MCP Porter / Zapier integrations)
- * Returns deduplicated list of server names.
+ * Cached for 60 seconds to avoid FS I/O bottleneck at scale.
  */
 export function getAvailableMcpTools(): string[] {
+  const now = Date.now();
+  if (mcpToolsCache && now - mcpToolsCacheTime < MCP_TOOLS_CACHE_TTL_MS) {
+    return mcpToolsCache;
+  }
+
   const allServers = new Set<string>();
 
   // Source 1: Claude Code CLI config
@@ -76,7 +82,9 @@ export function getAvailableMcpTools(): string[] {
     // not present or malformed
   }
 
-  return Array.from(allServers);
+  mcpToolsCache = Array.from(allServers);
+  mcpToolsCacheTime = now;
+  return mcpToolsCache;
 }
 
 // ============================================================================

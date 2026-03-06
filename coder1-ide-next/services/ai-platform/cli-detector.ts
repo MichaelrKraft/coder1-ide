@@ -55,6 +55,14 @@ const AI_PLATFORMS: Partial<CLIInfo>[] = [
     sessionCommand: 'claude'
   },
   {
+    name: 'Codex CLI',
+    command: 'codex',
+    description: 'OpenAI\'s Codex coding agent CLI',
+    icon: '💻',
+    features: ['code-generation', 'context-aware', 'multi-file', 'mcp-server'],
+    sessionCommand: 'codex'
+  },
+  {
     name: 'OpenAI CLI',
     command: 'openai',
     description: 'OpenAI\'s official CLI tool',
@@ -195,6 +203,7 @@ class CLIDetector {
   private getVersionCommand(command: string): string {
     const versionCommands: Record<string, string> = {
       'claude': 'claude --version 2>&1',
+      'codex': 'codex --version 2>&1',
       'openai': 'openai --version 2>&1',
       'gh copilot': 'gh copilot --version 2>&1',
       'aider': 'aider --version 2>&1',
@@ -240,10 +249,11 @@ class CLIDetector {
     try {
       const authCommands: Record<string, string> = {
         'Claude Code': 'claude config get api_key 2>&1',
+        'Codex CLI': 'codex login status 2>&1',
         'OpenAI CLI': 'openai api models.list --limit 1 2>&1',
         'GitHub Copilot CLI': 'gh auth status 2>&1',
         'Aider': 'aider --check-auth 2>&1',
-        'Ollama': 'ollama list 2>&1' // Check if models are available
+        'Ollama': 'ollama list 2>&1'
       };
 
       const authCommand = authCommands[platform.name];
@@ -258,6 +268,11 @@ class CLIDetector {
       // Platform-specific auth checks
       if (platform.name === 'Claude Code') {
         return !output.includes('not set') && !output.includes('error');
+      }
+      if (platform.name === 'Codex CLI') {
+        // codex login status exits 0 when credentials exist
+        // Also check env var as fallback
+        return !output.includes('not logged in') || !!(process.env.CODEX_API_KEY || process.env.OPENAI_API_KEY);
       }
       if (platform.name === 'GitHub Copilot CLI') {
         return output.includes('Logged in');
@@ -286,6 +301,7 @@ class CLIDetector {
     // Priority order
     const priorityOrder = [
       'Claude Code',      // Native integration
+      'Codex CLI',       // OpenAI's coding agent
       'Aider',           // Most feature-rich
       'GitHub Copilot CLI', // Popular and powerful
       'OpenAI CLI',      // Official OpenAI

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const logs: string[] = [];
   
   try {
-    const cwd = '/Users/michaelkraft/autonomous_vibe_interface';
+    const cwd = process.env.PROJECT_PATH || process.cwd();
     logs.push(`CWD: ${cwd}`);
     
     // Step 1: Get project dir
@@ -26,12 +26,8 @@ export async function GET(request: NextRequest) {
     logs.push(`Full project dir: ${projectDir}`);
     logs.push(`Dir exists? ${fs.existsSync(projectDir)}`);
     
-    // Try hardcoded path
-    const hardcodedPath = '/Users/michaelkraft/.claude/projects/-Users-michaelkraft-autonomous-vibe-interface';
-    logs.push(`Hardcoded path exists? ${fs.existsSync(hardcodedPath)}`);
-    
-    // Compare paths
-    logs.push(`Paths equal? ${projectDir === hardcodedPath}`);
+    // Compare computed project dir
+    logs.push(`Project dir exists? ${fs.existsSync(projectDir)}`);
     logs.push(`Computed length: ${projectDir.length}`);
     logs.push(`Hardcoded length: ${hardcodedPath.length}`);
     logs.push(`Computed: "${projectDir}"`);

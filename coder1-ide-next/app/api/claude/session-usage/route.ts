@@ -41,10 +41,7 @@ export async function GET(request: NextRequest) {
     const cwd = searchParams.get('cwd');
 
     if (!cwd) {
-      return NextResponse.json(
-        { error: 'Missing cwd parameter' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: true, usage: null });
     }
 
     console.log('📊 [API] Getting session usage for cwd:', cwd);

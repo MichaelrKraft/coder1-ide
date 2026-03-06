@@ -584,10 +584,6 @@ class J5BridgeService extends EventEmitter {
       process.env.NEXT_PUBLIC_J5_AUTH_TOKEN ||  // Client-accessible env
       '';  // Fallback to empty string for auth mode "none"
 
-    console.log(`[J5Bridge] Auth token available: ${authToken !== undefined ? 'Yes' : 'No'}`);
-    console.log(`[J5Bridge] Auth token length: ${authToken.length}`);
-    console.log(`[J5Bridge] Auth token preview: ${authToken.substring(0, 8)}${authToken.length > 8 ? '...' : ''}`);
-
     // Exact format - J5 requires protocol 3
     const response = {
       type: 'req',
