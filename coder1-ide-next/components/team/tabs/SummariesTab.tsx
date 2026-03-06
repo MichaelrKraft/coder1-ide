@@ -100,7 +100,7 @@ export default function SummariesTab({
                   }
                   setSummariesLoading(false);
                 })
-                .catch(() => { setSummariesError('Failed to load'); setSummariesLoading(false); });
+                .catch(() => { setSummariesError('Couldn\'t load summaries. Click retry to try again.'); setSummariesLoading(false); });
             }}
             className="text-coder1-cyan hover:underline"
           >

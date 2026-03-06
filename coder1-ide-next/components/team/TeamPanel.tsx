@@ -43,6 +43,7 @@ export default function TeamPanel() {
   const [recentActivity, setRecentActivity] = useState<CodeEvent[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [copied, setCopied] = useState(false);
+  const [pendingInvitations, setPendingInvitations] = useState<{ id: string; email: string; token: string; expires_at: string }[]>([]);
 
   // Summaries state
   const [summaries, setSummaries] = useState<Omit<TeamSummary, 'summary'>[]>([]);
@@ -112,6 +113,7 @@ export default function TeamPanel() {
       .then(data => {
         if (data.success) {
           setMembers(data.data.members || []);
+          setPendingInvitations(data.data.pendingInvitations || []);
         }
       })
       .catch(() => {});
@@ -151,12 +153,12 @@ export default function TeamPanel() {
             setUnreadCount(data.summaries?.length ?? 0);
           }
         } else if (!data.migrationRequired) {
-          setSummariesError(data.error || 'Failed to load summaries');
+          setSummariesError(data.error || 'Couldn\'t load summaries. Click retry to try again.');
         }
         setSummariesLoading(false);
       })
       .catch(() => {
-        setSummariesError('Failed to load summaries');
+        setSummariesError('Couldn\'t load summaries. Click retry to try again.');
         setSummariesLoading(false);
       });
   }, [syncTeam?.id]);
@@ -333,7 +335,7 @@ export default function TeamPanel() {
   };
 
   const handleInvite = async () => {
-    if (!inviteEmail.trim()) return;
+    if (!inviteEmail.trim() || !syncTeam) return;
     const { inviteMember } = useTeamStore.getState();
     const link = await inviteMember(inviteEmail.trim());
     if (link) {
@@ -341,6 +343,15 @@ export default function TeamPanel() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       setInviteEmail('');
+      // Refresh pending invitations
+      fetch(`/api/team/${syncTeam.id}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            setPendingInvitations(data.data.pendingInvitations || []);
+          }
+        })
+        .catch(() => {});
     }
   };
 
@@ -693,6 +704,7 @@ export default function TeamPanel() {
         <TeamTab
           syncTeam={{ id: syncTeam.id, name: syncTeam.name }}
           members={members}
+          pendingInvitations={pendingInvitations}
           facts={facts}
           recentActivity={recentActivity}
           onlineMembers={onlineMembers}
