@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { saveFacts, type ExtractedFact } from '@/services/memory/fact-extraction-service';
-import { extractUserId } from '@/lib/auth/extract-user-id';
+import { extractUserId, hasPremiumAccess } from '@/lib/auth/extract-user-id';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -17,6 +17,14 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const userId = extractUserId(request);
+
+    // Server-side premium check — supervision is a premium feature
+    if (!hasPremiumAccess(request)) {
+      return NextResponse.json(
+        { success: false, error: 'Supervision requires Pro subscription', requiresPremium: true },
+        { status: 403 }
+      );
+    }
 
     const body = await request.json();
     const { type, key, value, confidence } = body;

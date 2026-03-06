@@ -3,10 +3,20 @@
  * Provides unified memory management across all AI platforms
  */
 
-// import { contextDatabase } from '@/services/context-database'; // Server-only
 import { universalAIWrapper } from './universal-ai-wrapper';
 import { logger } from '@/lib/logger';
 import { EventEmitter } from 'events';
+
+// Server-only: contextDatabase uses better-sqlite3 which only works in Node.js
+let contextDatabase: Awaited<typeof import('@/services/context-database')>['contextDatabase'] | null = null;
+if (typeof window === 'undefined') {
+  // Dynamic import to avoid bundling in client
+  import('@/services/context-database').then(mod => {
+    contextDatabase = mod.contextDatabase;
+  }).catch(err => {
+    logger.warn('⚠️ contextDatabase unavailable (expected in non-Node.js environments):', err);
+  });
+}
 
 export interface MemoryEntry {
   id: string;
@@ -76,8 +86,14 @@ class SharedMemoryService extends EventEmitter {
    */
   private async initializeService(): Promise<void> {
     try {
-      await contextDatabase.initialize();
-      await this.loadRecentMemory();
+      // Wait briefly for async contextDatabase import to resolve
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (contextDatabase) {
+        await contextDatabase.initialize();
+        await this.loadRecentMemory();
+      } else {
+        logger.warn('⚠️ contextDatabase not available, skipping DB initialization');
+      }
       this.startMemoryMaintenance();
       logger.info('🧠 Shared Memory Service initialized');
     } catch (error) {
@@ -97,34 +113,44 @@ class SharedMemoryService extends EventEmitter {
     };
 
     try {
-      // Store in database through context system
-      const projectPath = '/Users/michaelkraft/autonomous_vibe_interface';
-      const folder = await contextDatabase.getOrCreateFolder(projectPath);
-      
-      // Get or create session
-      const sessionId = entry.sessionId || 'shared';
-      const session = await contextDatabase.getOrCreateSession(folder.id, sessionId);
+      // Store in database through context system (if available)
+      if (contextDatabase) {
+        const projectPath = process.env.PROJECT_PATH || process.cwd();
+        const folder = await contextDatabase.getOrCreateFolder(projectPath);
 
-      // Add conversation to database
-      await contextDatabase.addConversation({
-        folder_id: folder.id,
-        session_id: session.id,
-        user_input: entry.input,
-        claude_reply: entry.output, // Works for any AI platform
-        model: entry.platform,
-        success: entry.success,
-        tokens_used: entry.tokensUsed || 0,
-        files_involved: entry.files,
-        metadata: {
-          platform: entry.platform,
-          context: entry.context,
-          tags: entry.tags
-        }
-      });
+        // Get or create session
+        const sessionId = entry.sessionId || 'shared';
+        const session = await contextDatabase.getOrCreateSession(folder.id, sessionId);
+
+        // Add conversation to database
+        await contextDatabase.addConversation({
+          folder_id: folder.id,
+          session_id: session.id,
+          user_input: entry.input,
+          claude_reply: entry.output, // Works for any AI platform
+          model: entry.platform,
+          success: entry.success,
+          tokens_used: entry.tokensUsed || 0,
+          files_involved: entry.files,
+          metadata: {
+            platform: entry.platform,
+            context: entry.context,
+            tags: entry.tags
+          }
+        });
+      }
 
       // Update memory cache
       this.memoryCache.set(id, memoryEntry);
-      
+
+      // Evict oldest entries if cache exceeds 1000
+      if (this.memoryCache.size > 1000) {
+        const entries = Array.from(this.memoryCache.keys());
+        const toDelete = entries.slice(0, 200);
+        toDelete.forEach(key => this.memoryCache.delete(key));
+        logger.debug(`🧹 Cache eviction: removed ${toDelete.length} oldest entries`);
+      }
+
       // Update indexes
       this.updateIndexes(memoryEntry);
 
@@ -422,9 +448,13 @@ class SharedMemoryService extends EventEmitter {
 
   private async loadRecentMemory(): Promise<void> {
     try {
-      const projectPath = '/Users/michaelkraft/autonomous_vibe_interface';
+      if (!contextDatabase) {
+        logger.warn('⚠️ contextDatabase not available, skipping memory load');
+        return;
+      }
+      const projectPath = process.env.PROJECT_PATH || process.cwd();
       const folder = await contextDatabase.getOrCreateFolder(projectPath);
-      
+
       // Load recent conversations (last 7 days)
       const conversations = await contextDatabase.getRecentConversations(folder.id, 100);
       
@@ -536,16 +566,26 @@ class SharedMemoryService extends EventEmitter {
       const toRemove: string[] = [];
 
       // Remove old entries
-      this.memoryCache.forEach((entry, id) => {
+      let iterCount = 0;
+      for (const [id, entry] of this.memoryCache) {
         if (new Date(entry.timestamp) < retentionCutoff) {
           toRemove.push(id);
         }
-      });
+        iterCount++;
+        // Yield to event loop every 50 iterations to prevent blocking
+        if (iterCount % 50 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+      }
 
-      toRemove.forEach(id => {
-        this.memoryCache.delete(id);
+      for (let i = 0; i < toRemove.length; i++) {
+        this.memoryCache.delete(toRemove[i]);
         removed++;
-      });
+        // Yield to event loop every 50 deletions
+        if ((i + 1) % 50 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+      }
 
       // Enforce max entries limit
       if (this.memoryCache.size > this.MAX_MEMORY_ENTRIES) {

@@ -50,9 +50,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await contextDatabase.initialize();
     
     // Get current project context
-    const projectPath = '/Users/michaelkraft/autonomous_vibe_interface';
+    const projectPath = process.env.PROJECT_PATH || process.cwd();
     const folder = await contextDatabase.getOrCreateFolder(projectPath);
-    
+
     // Get recent conversations for context
     const limit = includeFullContext ? 5 : 2;
     const conversations = await contextDatabase.getRecentConversations(folder.id, limit);
@@ -127,9 +127,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     await contextDatabase.initialize();
     
     // Get current project context
-    const projectPath = '/Users/michaelkraft/autonomous_vibe_interface';
+    const projectPath = process.env.PROJECT_PATH || process.cwd();
     const folder = await contextDatabase.getOrCreateFolder(projectPath);
-    
+
     // Get recent conversations for preview
     const conversations = await contextDatabase.getRecentConversations(folder.id, 3);
     

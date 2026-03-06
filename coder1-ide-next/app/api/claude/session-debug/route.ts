@@ -11,7 +11,7 @@ import os from 'os';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const cwd = searchParams.get('cwd') || '/Users/michaelkraft/autonomous_vibe_interface';
+    const cwd = searchParams.get('cwd') || process.env.PROJECT_PATH || process.cwd();
 
     const homeDir = os.homedir();
     const claudeProjectsDir = path.join(homeDir, '.claude', 'projects');

@@ -13,6 +13,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimiters } from '@/lib/rate-limiter';
 import {
   initializeDb,
   createSession,
@@ -193,6 +194,16 @@ function maskSecretsInMessage(message: string): string {
 }
 
 /**
+ * Build prompt with XML boundaries to separate system context from user input.
+ * Prevents prompt injection attacks where user input could be mistaken for system instructions.
+ */
+function buildSafePrompt(contextParts: string[], userMessage: string): string {
+  if (contextParts.length === 0) return userMessage;
+  const context = contextParts.join('\n\n');
+  return `<memory_context>\n${context}\n</memory_context>\n\n<user_message>\n${userMessage}\n</user_message>`;
+}
+
+/**
  * Truncate prompt for CLI to prevent "Prompt too long" errors.
  * Priority: user message > terminal context (recent) > memory context > history
  */
@@ -227,7 +238,7 @@ function truncateForCLI(
   }
 
   if (included.length > 0) {
-    return `${included.join('\n\n')}\n\n---\n\n**User Query:**\n${userMessage}`;
+    return buildSafePrompt(included, userMessage);
   }
   return userMessage;
 }
@@ -554,6 +565,15 @@ When your message includes a "## Team Activity (Recent Sessions)" block, it cont
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<ChatResponse>> {
+  // Rate limit: 10 requests per minute per IP
+  const rateLimitResult = await rateLimiters.ai.limit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Please wait before sending more messages.', mode: 'error' } as ChatResponse,
+      { status: 429 }
+    );
+  }
+
   try {
     // 1. Parse and validate request
     let body: ChatRequest;
@@ -715,7 +735,7 @@ export async function POST(
               if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
                 j5Parts.push(`## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\``);
               }
-              j5Message = `${j5Parts.join('\n\n')}\n\n---\n\n**User Query:**\n${message}`;
+              j5Message = buildSafePrompt(j5Parts, message);
               j5SearchType = searchResult.searchType;
               j5MemoryTokens = searchResult.totalTokens;
               j5MemoriesUsed = searchResult.results.map((r) => ({
@@ -729,7 +749,7 @@ export async function POST(
               console.log('[Johnny5/J5] No memories found for query');
               // Still inject terminal context even without memory search results
               if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
-                j5Message = `## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\`\n\n---\n\n**User Query:**\n${message}`;
+                j5Message = buildSafePrompt([`## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\``], message);
               }
             }
           } catch (memoryError) {
@@ -737,7 +757,7 @@ export async function POST(
           }
         } else if (terminalContext && typeof terminalContext === 'string' && terminalContext.length > 0) {
           // Memory injection disabled but terminal context present
-          j5Message = `## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\`\n\n---\n\n**User Query:**\n${message}`;
+          j5Message = buildSafePrompt([`## Recent Terminal Activity\n\`\`\`\n${terminalContext.slice(0, 2000)}\n\`\`\``], message);
         }
 
         // Skills context for J5
@@ -763,13 +783,12 @@ export async function POST(
         let truncatedJ5Message = j5Message;
         if (j5Message.length > MAX_J5_MESSAGE_LENGTH) {
           console.log(`[Johnny5/J5] Message too long (${j5Message.length} chars), truncating...`);
-          const userQueryMarker = '\n\n---\n\n**User Query:**\n';
-          const idx = j5Message.lastIndexOf(userQueryMarker);
-          if (idx > 0) {
-            const userQuery = j5Message.slice(idx);
+          const userMsgStart = j5Message.lastIndexOf('<user_message>');
+          if (userMsgStart > 0) {
+            const userQuery = j5Message.slice(userMsgStart);
             const maxContextLength = MAX_J5_MESSAGE_LENGTH - userQuery.length - 100;
             if (maxContextLength > 500) {
-              truncatedJ5Message = j5Message.slice(0, maxContextLength) + '\n... [context truncated]' + userQuery;
+              truncatedJ5Message = j5Message.slice(0, maxContextLength) + '\n... [context truncated]\n</memory_context>\n\n' + userQuery;
             } else {
               truncatedJ5Message = j5Message.slice(0, MAX_J5_MESSAGE_LENGTH);
             }
@@ -1396,23 +1415,19 @@ export async function POST(
     }
 
     if (contextParts.length > 0) {
-      enhancedMessage = `${contextParts.join('\n\n')}\n\n---\n\n**User Query:**\n${message}`;
+      enhancedMessage = buildSafePrompt(contextParts, message);
     }
 
     // Truncate enhanced message if too long for CLI (applies to ALL paths including Bridge)
-    // NOTE: Bridge adds ~2KB system prompt + conversation history on top of this
-    // Claude CLI has a strict prompt limit, so we need to be conservative here
-    const MAX_ENHANCED_MESSAGE_LENGTH = 8000; // ~2k tokens, leaves room for Bridge additions
+    const MAX_ENHANCED_MESSAGE_LENGTH = 8000;
     let finalMessage = enhancedMessage;
     if (enhancedMessage.length > MAX_ENHANCED_MESSAGE_LENGTH) {
       console.log(`[Johnny5] Enhanced message too long (${enhancedMessage.length} chars), truncating...`);
-      // Keep the user message, truncate context
-      const userQueryMarker = '\n\n---\n\n**User Query:**\n';
-      const userQueryIndex = enhancedMessage.lastIndexOf(userQueryMarker);
-      if (userQueryIndex > 0) {
-        const userQuery = enhancedMessage.slice(userQueryIndex);
+      const userMsgStart = enhancedMessage.lastIndexOf('<user_message>');
+      if (userMsgStart > 0) {
+        const userQuery = enhancedMessage.slice(userMsgStart);
         const maxContextLength = MAX_ENHANCED_MESSAGE_LENGTH - userQuery.length - 100;
-        const truncatedContext = enhancedMessage.slice(0, maxContextLength) + '\n... [context truncated]';
+        const truncatedContext = enhancedMessage.slice(0, maxContextLength) + '\n... [context truncated]\n</memory_context>\n\n';
         finalMessage = truncatedContext + userQuery;
       } else {
         finalMessage = enhancedMessage.slice(0, MAX_ENHANCED_MESSAGE_LENGTH);
