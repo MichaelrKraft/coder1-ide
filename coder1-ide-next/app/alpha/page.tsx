@@ -900,6 +900,7 @@ export default function AlphaLandingPage() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -910,6 +911,7 @@ export default function AlphaLandingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormError(null);
 
     try {
       const response = await fetch('/api/alpha/waitlist', {
@@ -926,11 +928,11 @@ export default function AlphaLandingPage() {
           // Existing user - redirect to IDE
           window.location.href = '/ide';
         } else {
-          alert(data.error || 'Something went wrong');
+          setFormError(data.error || 'Something went wrong. Please try again.');
         }
       }
-    } catch (error) {
-      alert('Something went wrong. Please try again.');
+    } catch {
+      setFormError('Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -1549,17 +1551,18 @@ export default function AlphaLandingPage() {
                 </div>
 
                 {/* Video */}
-                <video
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  className="w-full block"
-                  style={{ display: 'block', aspectRatio: '16/9' }}
-                  suppressHydrationWarning
-                >
-                  <source src="/videos/Coder1-Alpha-Promo-v2.mp4" type="video/mp4" />
-                </video>
+                <div className="relative w-full" style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                    suppressHydrationWarning
+                  >
+                    <source src="/videos/alpha-demo-web-optimized.mp4" type="video/mp4" />
+                  </video>
+                </div>
               </div>
 
               {/* Monitor stand */}
@@ -2137,6 +2140,15 @@ export default function AlphaLandingPage() {
                 required
                 className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-coder1-cyan/50 transition-colors"
               />
+              {formError && (
+                <div className="p-3 rounded-lg text-sm text-center" style={{
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  color: '#ef4444',
+                }}>
+                  {formError}
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={isSubmitting}
