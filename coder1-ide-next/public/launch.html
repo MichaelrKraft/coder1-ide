@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coder1 — The AI IDE. Reinvented.</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --c1: #00d4ff;
+      --c2: #7c3aed;
+      --c3: #06b6d4;
+      --white: #ffffff;
+      --off-white: #f5f5f7;
+      --gray: #6e6e73;
+      --dark-gray: #1d1d1f;
+      --black: #000000;
+    }
+
+    html { scroll-behavior: auto; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      overflow-x: hidden;
+      line-height: 1;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 999;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      opacity: 0;
+    }
+
+    .nav-logo {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: #fff;
+    }
+
+    .nav-logo span { color: var(--c1); }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      transition: color 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    .nav-links a:hover { color: #fff; }
+
+    .nav-cta {
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--c1);
+      color: #000;
+      padding: 6px 16px;
+      border-radius: 980px;
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      transition: opacity 0.2s;
+    }
+
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ─── HERO ─── */
+    #hero {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #hero-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    .hero-eyebrow {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--c1);
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title {
+      font-size: clamp(72px, 12vw, 160px);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 0.9;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title .gradient-text {
+      background: linear-gradient(135deg, #fff 0%, var(--c1) 50%, var(--c2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(18px, 2.5vw, 28px);
+      font-weight: 300;
+      color: rgba(255,255,255,0.6);
+      margin-top: 28px;
+      position: relative;
+      z-index: 1;
+      letter-spacing: -0.01em;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      margin-top: 48px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-primary {
+      font-size: 17px;
+      font-weight: 500;
+      background: var(--c1);
+      color: #000;
+      padding: 14px 32px;
+      border-radius: 980px;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .btn-primary:hover { transform: scale(1.03); opacity: 0.9; }
+
+    .btn-secondary {
+      font-size: 17px;
+      font-weight: 400;
+      color: var(--c1);
+      padding: 14px 32px;
+      border-radius: 980px;
+      text-decoration: none;
+      border: 1px solid rgba(0,212,255,0.3);
+      letter-spacing: -0.01em;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .btn-secondary:hover { border-color: var(--c1); background: rgba(0,212,255,0.08); }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 1;
+      opacity: 0;
+    }
+
+    .scroll-hint span {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ─── CSS ENTRANCE ANIMATIONS (browser-throttle resistant) ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .hero-eyebrow  { animation: fadeUp 0.8s ease-out 0.2s both; }
+    .hero-title    { animation: fadeUp 1.2s cubic-bezier(0.16,1,0.3,1) 0.4s both; }
+    .hero-sub      { animation: fadeUp 0.9s ease-out 0.7s both; }
+    .hero-actions  { animation: fadeUp 0.8s ease-out 0.9s both; }
+    .scroll-hint   { animation: fadeIn 1.2s ease-out 1.4s both; }
+
+    .scroll-chevron {
+      width: 1px;
+      height: 48px;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent);
+      animation: scrollPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 0.3; transform: scaleY(1); }
+      50% { opacity: 0.8; transform: scaleY(1.2); }
+    }
+
+    /* ─── CINEMATIC DIVIDER ─── */
+    .section-divider {
+      height: 50vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .divider-text {
+      font-size: clamp(24px, 4vw, 56px);
+      font-weight: 300;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: -0.02em;
+      text-align: center;
+      padding: 0 40px;
+    }
+
+    /* ─── PIN SECTIONS ─── */
+    .pin-section {
+      position: relative;
+    }
+
+    .pin-inner {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ─── FEATURE: MULTI-AGENT ─── */
+    #feat-agent {
+      height: 300vh;
+    }
+
+    .feat-agent-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      max-width: 1200px;
+      width: 100%;
+      padding: 0 60px;
+    }
+
+    .feat-label {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--c1);
+      margin-bottom: 20px;
+    }
+
+    .feat-headline {
+      font-size: clamp(42px, 5vw, 72px);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.0;
+    }
+
+    .feat-body {
+      font-size: 17px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.6;
+      margin-top: 24px;
+      letter-spacing: -0.01em;
+    }
+
+    /* Agent Visualization */
+    .agent-viz {
+      position: relative;
+      width: 480px;
+      height: 480px;
+    }
+
+    .agent-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(0,212,255,0.15);
+      animation: spin var(--dur) linear infinite var(--dir, normal);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .agent-node {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .agent-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .agent-core {
+      width: 120px;
+      height: 120px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(124,58,237,0.15));
+      border: 1px solid rgba(0,212,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 4px;
+      backdrop-filter: blur(10px);
+    }
+
+    .agent-core-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--c1);
+    }
+
+    .agent-core-sub {
+      font-size: 9px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.05em;
+    }
+
+    .connection-line {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 2px;
+      height: 140px;
+      transform-origin: top center;
+      background: linear-gradient(to bottom, rgba(0,212,255,0.4), transparent);
+    }
+
+    /* ─── FEATURE: TEAM ─── */
+    #feat-team {
+      height: 300vh;
+      background: linear-gradient(to bottom, #000, #030308, #000);
+    }
+
+    .feat-team-inner {
+      text-align: center;
+      max-width: 900px;
+      padding: 0 40px;
+    }
+
+    /* Editor mockup */
+    .editor-mockup {
+      width: 680px;
+      max-width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      overflow: hidden;
+      margin: 48px auto 0;
+      font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    }
+
+    .editor-titlebar {
+      height: 36px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+    }
+
+    .traffic-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .editor-body {
+      padding: 24px;
+      font-size: 13px;
+      line-height: 1.7;
+      text-align: left;
+    }
+
+    .code-line { display: flex; align-items: flex-start; gap: 16px; }
+
+    .ln { color: rgba(255,255,255,0.2); min-width: 24px; user-select: none; }
+
+    .code-keyword { color: #c792ea; }
+    .code-func { color: #82aaff; }
+    .code-string { color: #c3e88d; }
+    .code-type { color: #ffcb6b; }
+    .code-comment { color: rgba(255,255,255,0.3); }
+    .code-punct { color: rgba(255,255,255,0.5); }
+
+    /* Cursors */
+    .cursor-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 1px 8px 1px 2px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      animation: cursorBlink 1.2s ease-in-out infinite;
+    }
+
+    .cursor-dot {
+      width: 2px;
+      height: 14px;
+      background: currentColor;
+      border-radius: 1px;
+    }
+
+    .cursor-alex { background: rgba(0,212,255,0.2); color: var(--c1); }
+    .cursor-sarah { background: rgba(124,58,237,0.2); color: #a78bfa; }
+
+    @keyframes cursorBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ─── FEATURE: MEMORY ─── */
+    #feat-memory {
+      height: 300vh;
+    }
+
+    .feat-memory-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      max-width: 1200px;
+      width: 100%;
+      padding: 0 60px;
+    }
+
+    /* Memory Viz */
+    .memory-viz {
+      position: relative;
+      width: 440px;
+      height: 440px;
+    }
+
+    .memory-node {
+      position: absolute;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      white-space: nowrap;
+      animation: floatNode var(--dur, 6s) ease-in-out infinite var(--delay, 0s);
+    }
+
+    @keyframes floatNode {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .memory-pulse {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+    }
+
+    .memory-pulse-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(0,212,255,0.4);
+      animation: pulsate 2.5s ease-out infinite;
+    }
+
+    .memory-pulse-ring:nth-child(2) { animation-delay: 0.8s; }
+    .memory-pulse-ring:nth-child(3) { animation-delay: 1.6s; }
+
+    @keyframes pulsate {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(4); opacity: 0; }
+    }
+
+    .memory-core-dot {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--c1);
+      box-shadow: 0 0 20px var(--c1);
+    }
+
+    /* ─── FEATURE: BRIDGE ─── */
+    #feat-bridge {
+      height: 300vh;
+      background: linear-gradient(to bottom, #000, #020510, #000);
+    }
+
+    .feat-bridge-inner {
+      text-align: center;
+      max-width: 1000px;
+      padding: 0 40px;
+    }
+
+    .bridge-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin: 60px auto 0;
+    }
+
+    .bridge-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bridge-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 28px;
+    }
+
+    .bridge-node-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.05em;
+    }
+
+    .bridge-connector {
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(to right, rgba(0,212,255,0.2), rgba(0,212,255,0.6), rgba(0,212,255,0.2));
+      position: relative;
+      min-width: 80px;
+    }
+
+    .bridge-packet {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--c1);
+      box-shadow: 0 0 8px var(--c1);
+      animation: travelPacket 2s linear infinite;
+    }
+
+    .bridge-packet.reverse { animation: travelPacketReverse 2s linear infinite; animation-delay: 1s; }
+
+    @keyframes travelPacket {
+      from { left: 0; opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      to { left: 100%; opacity: 0; }
+    }
+
+    @keyframes travelPacketReverse {
+      from { left: 100%; opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      to { left: 0; opacity: 0; }
+    }
+
+    .lock-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 980px;
+      background: rgba(0,212,255,0.1);
+      border: 1px solid rgba(0,212,255,0.2);
+      font-size: 11px;
+      color: var(--c1);
+      letter-spacing: 0.05em;
+      margin-top: 32px;
+    }
+
+    /* ─── STATS ─── */
+    #stats {
+      padding: 140px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .stats-label {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      text-align: center;
+      margin-bottom: 80px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+
+    .stat-card {
+      padding: 48px 32px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      text-align: center;
+    }
+
+    .stat-card:first-child { border-radius: 16px 0 0 16px; }
+    .stat-card:last-child { border-radius: 0 16px 16px 0; }
+
+    .stat-num {
+      font-size: clamp(48px, 5vw, 80px);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #fff 0%, var(--c1) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+
+    .stat-unit {
+      font-size: 28px;
+      font-weight: 300;
+    }
+
+    .stat-desc {
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 12px;
+      letter-spacing: -0.01em;
+      line-height: 1.4;
+    }
+
+    /* ─── WORKFLOW ─── */
+    #workflow {
+      padding: 140px 40px;
+      text-align: center;
+    }
+
+    .workflow-headline {
+      font-size: clamp(42px, 5vw, 72px);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .workflow-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 1100px;
+      margin: 80px auto 0;
+    }
+
+    .workflow-step {
+      padding: 40px 32px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      text-align: left;
+      transition: border-color 0.3s, background 0.3s;
+    }
+
+    .workflow-step:hover {
+      border-color: rgba(0,212,255,0.2);
+      background: rgba(0,212,255,0.04);
+    }
+
+    .step-number {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--c1);
+      margin-bottom: 20px;
+    }
+
+    .step-title {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .step-desc {
+      font-size: 15px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.6;
+      letter-spacing: -0.01em;
+    }
+
+    /* ─── QUOTE SECTION ─── */
+    #quote {
+      padding: 160px 40px;
+      text-align: center;
+      background: linear-gradient(to bottom, #000, #030510, #000);
+    }
+
+    .quote-text {
+      font-size: clamp(28px, 4vw, 52px);
+      font-weight: 300;
+      letter-spacing: -0.03em;
+      max-width: 900px;
+      margin: 0 auto;
+      line-height: 1.2;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .quote-text em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--c1), var(--c2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── CTA ─── */
+    #cta {
+      padding: 160px 40px;
+      text-align: center;
+    }
+
+    .cta-eyebrow {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--c1);
+      margin-bottom: 24px;
+    }
+
+    .cta-headline {
+      font-size: clamp(48px, 7vw, 96px);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 0.95;
+    }
+
+    .cta-sub {
+      font-size: 19px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.5);
+      margin-top: 28px;
+      letter-spacing: -0.01em;
+    }
+
+    .cta-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 48px;
+    }
+
+    .cta-note {
+      font-size: 13px;
+      color: rgba(255,255,255,0.25);
+      margin-top: 20px;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 48px 40px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-brand {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .footer-brand span { color: var(--c1); }
+
+    .footer-copy {
+      font-size: 12px;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ─── REVEAL UTILITY ─── */
+    .reveal-up { transform: translateY(40px); }
+    .reveal-left { transform: translateX(-40px); }
+    .reveal-right { transform: translateX(40px); }
+
+    /* ─── HORIZONTAL SCROLLER ─── */
+    #feat-horizontal {
+      overflow: hidden;
+    }
+
+    /* ─── MEDIA ─── */
+    @media (max-width: 900px) {
+      .feat-agent-inner,
+      .feat-memory-inner {
+        grid-template-columns: 1fr;
+        gap: 48px;
+        text-align: center;
+      }
+      .agent-viz, .memory-viz {
+        width: 300px;
+        height: 300px;
+        margin: 0 auto;
+      }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .stat-card:nth-child(2) { border-radius: 0; }
+      .stat-card:nth-child(3) { border-radius: 0; }
+      .workflow-steps { grid-template-columns: 1fr; }
+      .bridge-diagram { flex-direction: column; gap: 24px; }
+      .bridge-connector { width: 2px; height: 48px; min-width: unset; background: linear-gradient(to bottom, rgba(0,212,255,0.2), rgba(0,212,255,0.6), rgba(0,212,255,0.2)); }
+      nav .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="main-nav">
+  <div class="nav-logo">Coder<span>1</span></div>
+  <ul class="nav-links">
+    <li><a href="#feat-agent">Features</a></li>
+    <li><a href="#stats">Performance</a></li>
+    <li><a href="#workflow">How It Works</a></li>
+    <li><a href="#cta">Pricing</a></li>
+  </ul>
+  <a href="#cta" class="nav-cta">Get Started Free</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-eyebrow">Introducing Coder1</div>
+  <h1 class="hero-title">
+    <span class="gradient-text">The IDE</span><br>
+    that thinks.
+  </h1>
+  <p class="hero-sub">Multi-agent AI. Real-time collaboration. Local-first security.</p>
+  <div class="hero-actions">
+    <a href="#cta" class="btn-primary">Start Building Free</a>
+    <a href="#feat-agent" class="btn-secondary">See What's New</a>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-chevron"></div>
+  </div>
+</section>
+
+<!-- DIVIDER 1 -->
+<div class="section-divider">
+  <p class="divider-text" id="div1">We didn't just build an IDE.<br>We built an intelligence.</p>
+</div>
+
+<!-- FEATURE: MULTI-AGENT -->
+<section id="feat-agent" class="pin-section">
+  <div class="pin-inner">
+    <div class="feat-agent-inner">
+      <!-- Left: Text -->
+      <div>
+        <div class="feat-label" id="agent-label">Multi-Agent System</div>
+        <h2 class="feat-headline" id="agent-headline">Think in<br>parallel.</h2>
+        <p class="feat-body" id="agent-body">
+          Coder1 deploys multiple AI agents simultaneously — each working on different parts of your codebase at once. While one agent refactors your API, another writes tests, and a third updates your docs. Ship 10× faster.
+        </p>
+      </div>
+      <!-- Right: Visualization -->
+      <div class="agent-viz" id="agent-viz">
+        <!-- Rings -->
+        <div class="agent-ring" style="--dur:20s; border: 1px solid rgba(0,212,255,0.1);"></div>
+        <div class="agent-ring" style="--dur:15s; --dir:reverse; width:60%; height:60%; top:20%; left:20%; border: 1px solid rgba(124,58,237,0.15);"></div>
+        <div class="agent-ring" style="--dur:25s; width:80%; height:80%; top:10%; left:10%; border: 1px solid rgba(255,255,255,0.05);"></div>
+
+        <!-- Connection lines -->
+        <div class="connection-line" style="transform: rotate(0deg) translateX(-50%); top:50%; left:50%;"></div>
+        <div class="connection-line" style="transform: rotate(60deg) translateX(-50%); top:50%; left:50%;"></div>
+        <div class="connection-line" style="transform: rotate(120deg) translateX(-50%); top:50%; left:50%;"></div>
+        <div class="connection-line" style="transform: rotate(180deg) translateX(-50%); top:50%; left:50%;"></div>
+        <div class="connection-line" style="transform: rotate(240deg) translateX(-50%); top:50%; left:50%;"></div>
+        <div class="connection-line" style="transform: rotate(300deg) translateX(-50%); top:50%; left:50%;"></div>
+
+        <!-- Agent nodes around the ring -->
+        <div class="agent-node" style="top:4%; left:42%; background:rgba(0,212,255,0.08); color:var(--c1);">REFACTOR</div>
+        <div class="agent-node" style="top:25%; right:5%; background:rgba(124,58,237,0.08); color:#a78bfa;">TESTS</div>
+        <div class="agent-node" style="bottom:25%; right:5%; background:rgba(6,182,212,0.08); color:var(--c3);">DOCS</div>
+        <div class="agent-node" style="bottom:4%; left:42%; background:rgba(0,212,255,0.08); color:var(--c1);">BUILD</div>
+        <div class="agent-node" style="bottom:25%; left:5%; background:rgba(124,58,237,0.08); color:#a78bfa;">REVIEW</div>
+        <div class="agent-node" style="top:25%; left:5%; background:rgba(16,185,129,0.08); color:#34d399;">DEPLOY</div>
+
+        <!-- Core -->
+        <div class="agent-center">
+          <div class="agent-core">
+            <div class="agent-core-label">Coder1</div>
+            <div class="agent-core-sub">AI Orchestrator</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIVIDER 2 -->
+<div class="section-divider">
+  <p class="divider-text" id="div2">Every keystroke. Every cursor.<br>Every idea — together.</p>
+</div>
+
+<!-- FEATURE: TEAM COLLABORATION -->
+<section id="feat-team" class="pin-section">
+  <div class="pin-inner">
+    <div class="feat-team-inner">
+      <div class="feat-label" id="team-label">Real-Time Collaboration</div>
+      <h2 class="feat-headline" id="team-headline">Your whole team.<br>One mind.</h2>
+      <p class="feat-body" id="team-body" style="max-width:600px; margin:24px auto 0;">
+        Google Docs-style collaboration, built for code. See your teammates' cursors in real time. Share Claude Code sessions. Ship together, at the speed of thought.
+      </p>
+
+      <!-- Editor Mockup -->
+      <div class="editor-mockup" id="editor-mockup">
+        <div class="editor-titlebar">
+          <div class="traffic-dot" style="background:#ff5f57;"></div>
+          <div class="traffic-dot" style="background:#febc2e;"></div>
+          <div class="traffic-dot" style="background:#28c840;"></div>
+          <span style="margin-left:8px; font-size:12px; color:rgba(255,255,255,0.3); font-family:'Inter',sans-serif;">api/routes/users.ts</span>
+        </div>
+        <div class="editor-body">
+          <div class="code-line"><span class="ln">1</span><span class="code-keyword">import</span> <span class="code-punct">{ </span><span class="code-type">Router</span><span class="code-punct"> }</span> <span class="code-keyword">from</span> <span class="code-string">'express'</span><span class="code-punct">;</span></div>
+          <div class="code-line"><span class="ln">2</span><span class="code-keyword">import</span> <span class="code-punct">{ </span><span class="code-type">UserService</span><span class="code-punct"> }</span> <span class="code-keyword">from</span> <span class="code-string">'../services'</span><span class="code-punct">;</span></div>
+          <div class="code-line"><span class="ln">3</span>&nbsp;</div>
+          <div class="code-line"><span class="ln">4</span><span class="code-keyword">export const</span> <span class="code-func">userRouter</span> <span class="code-punct">= </span><span class="code-func">Router</span><span class="code-punct">();</span></div>
+          <div class="code-line"><span class="ln">5</span>&nbsp;</div>
+          <div class="code-line"><span class="ln">6</span><span class="code-comment">// GET /api/users/:id</span></div>
+          <div class="code-line"><span class="ln">7</span><span class="code-func">userRouter</span><span class="code-punct">.</span><span class="code-func">get</span><span class="code-punct">(</span><span class="code-string">'/:id'</span><span class="code-punct">, </span><span class="code-keyword">async </span><span class="code-punct">(</span><span class="code-type">req</span><span class="code-punct">, </span><span class="code-type">res</span><span class="code-punct">) => {</span>
+            <span class="cursor-badge cursor-alex"><span class="cursor-dot"></span>Alex</span>
+          </div>
+          <div class="code-line"><span class="ln">8</span>&nbsp; <span class="code-keyword">const</span> <span class="code-punct">{ id } = </span><span class="code-type">req</span><span class="code-punct">.params;</span></div>
+          <div class="code-line"><span class="ln">9</span>&nbsp; <span class="code-keyword">const</span> <span class="code-func">user</span> <span class="code-punct">= </span><span class="code-keyword">await</span> <span class="code-type">UserService</span><span class="code-punct">.</span><span class="code-func">findById</span><span class="code-punct">(id);</span>
+            <span class="cursor-badge cursor-sarah"><span class="cursor-dot"></span>Sarah</span>
+          </div>
+          <div class="code-line"><span class="ln">10</span>&nbsp; <span class="code-func">res</span><span class="code-punct">.</span><span class="code-func">json</span><span class="code-punct">({ </span><span class="code-func">user</span> <span class="code-punct">});</span></div>
+          <div class="code-line"><span class="ln">11</span><span class="code-punct">});</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIVIDER 3 -->
+<div class="section-divider">
+  <p class="divider-text" id="div3">Your code never<br>leaves your machine.</p>
+</div>
+
+<!-- FEATURE: BRIDGE / SECURITY -->
+<section id="feat-bridge" class="pin-section">
+  <div class="pin-inner">
+    <div class="feat-bridge-inner">
+      <div class="feat-label" id="bridge-label">Local-First Security</div>
+      <h2 class="feat-headline" id="bridge-headline">Your code<br>stays yours.</h2>
+      <p class="feat-body" id="bridge-body" style="max-width:600px; margin:24px auto 0;">
+        The Coder1 Bridge runs entirely on your machine. AI intelligence delivered via cloud, execution always local. No code uploads. No telemetry. Just speed.
+      </p>
+
+      <!-- Bridge Diagram -->
+      <div class="bridge-diagram" id="bridge-diagram">
+        <div class="bridge-node">
+          <div class="bridge-icon" style="background:rgba(0,212,255,0.08); border-color:rgba(0,212,255,0.2);">🌐</div>
+          <span class="bridge-node-label">Coder1 Cloud</span>
+        </div>
+        <div class="bridge-connector">
+          <div class="bridge-packet"></div>
+          <div class="bridge-packet reverse"></div>
+        </div>
+        <div class="bridge-node">
+          <div class="bridge-icon" style="background:rgba(124,58,237,0.08); border-color:rgba(124,58,237,0.2);">🔒</div>
+          <span class="bridge-node-label">Encrypted Bridge</span>
+        </div>
+        <div class="bridge-connector">
+          <div class="bridge-packet" style="animation-delay:0.4s;"></div>
+        </div>
+        <div class="bridge-node">
+          <div class="bridge-icon" style="background:rgba(16,185,129,0.08); border-color:rgba(16,185,129,0.2);">💻</div>
+          <span class="bridge-node-label">Your Machine</span>
+        </div>
+      </div>
+
+      <div class="lock-badge" id="lock-badge">
+        🔐 &nbsp;End-to-end encrypted · Code never uploaded · Local execution
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIVIDER 4 -->
+<div class="section-divider">
+  <p class="divider-text" id="div4">It knows you.<br>Every session. Every project.</p>
+</div>
+
+<!-- FEATURE: MEMORY -->
+<section id="feat-memory" class="pin-section">
+  <div class="pin-inner">
+    <div class="feat-memory-inner">
+      <!-- Left: Text -->
+      <div>
+        <div class="feat-label" id="memory-label">Persistent Memory</div>
+        <h2 class="feat-headline" id="memory-headline">It remembers<br>everything.</h2>
+        <p class="feat-body" id="memory-body">
+          Coder1 builds a living model of your projects, preferences, and patterns across every session. No more re-explaining context. The AI grows with you.
+        </p>
+      </div>
+      <!-- Right: Visualization -->
+      <div class="memory-viz" id="memory-viz">
+        <!-- Floating memory nodes -->
+        <div class="memory-node" style="top:8%; left:15%; --dur:7s; --delay:0s;">🗂 &nbsp;Project structure</div>
+        <div class="memory-node" style="top:20%; right:5%; --dur:6s; --delay:0.5s;">⚡ prefers TypeScript</div>
+        <div class="memory-node" style="top:48%; left:0%; --dur:8s; --delay:1s;">🐛 &nbsp;Bug patterns</div>
+        <div class="memory-node" style="top:68%; left:20%; --dur:5s; --delay:1.5s;">📦 using Tailwind</div>
+        <div class="memory-node" style="bottom:8%; right:10%; --dur:7s; --delay:0.3s;">🚀 Deploy to Render</div>
+        <div class="memory-node" style="top:35%; right:2%; --dur:6s; --delay:0.8s;">🔑 Auth: JWT + bcrypt</div>
+
+        <!-- Central pulse -->
+        <div class="memory-pulse">
+          <div class="memory-pulse-ring"></div>
+          <div class="memory-pulse-ring"></div>
+          <div class="memory-pulse-ring"></div>
+          <div class="memory-core-dot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="stats-label">By the numbers</div>
+  <div class="stats-grid">
+    <div class="stat-card" id="stat-0">
+      <div class="stat-num"><span class="count" data-target="10">0</span><span class="stat-unit">×</span></div>
+      <div class="stat-desc">faster than solo coding<br>with multi-agent parallelism</div>
+    </div>
+    <div class="stat-card" id="stat-1">
+      <div class="stat-num"><span class="count" data-target="2">0</span><span class="stat-unit">s</span></div>
+      <div class="stat-desc">average response time<br>on conversational queries</div>
+    </div>
+    <div class="stat-card" id="stat-2">
+      <div class="stat-num"><span class="count" data-target="0">0</span><span class="stat-unit">%</span></div>
+      <div class="stat-desc">code uploaded to cloud<br>local-first by design</div>
+    </div>
+    <div class="stat-card" id="stat-3">
+      <div class="stat-num">∞</div>
+      <div class="stat-desc">sessions remembered<br>persistent AI memory</div>
+    </div>
+  </div>
+</section>
+
+<!-- WORKFLOW -->
+<section id="workflow">
+  <h2 class="workflow-headline" id="workflow-headline">From idea to shipped.<br>In minutes.</h2>
+  <div class="workflow-steps">
+    <div class="workflow-step" id="step-0">
+      <div class="step-number">01 — CONNECT</div>
+      <h3 class="step-title">Bridge in one command</h3>
+      <p class="step-desc">Run <code style="color:var(--c1); font-size:13px;">coder1-bridge start</code> in your terminal. Automatically connects to your local Claude Code session — no pairing code, no config.</p>
+    </div>
+    <div class="workflow-step" id="step-1">
+      <div class="step-number">02 — DELEGATE</div>
+      <h3 class="step-title">Describe what you need</h3>
+      <p class="step-desc">Tell Coder1 what to build. It dispatches multiple agents, orchestrates tasks in parallel, and keeps you in control with real-time progress.</p>
+    </div>
+    <div class="workflow-step" id="step-2">
+      <div class="step-number">03 — COLLABORATE</div>
+      <h3 class="step-title">Work with your team</h3>
+      <p class="step-desc">Invite teammates to join your session. Share the AI context, review changes together, and ship as a unit — even across time zones.</p>
+    </div>
+  </div>
+</section>
+
+<!-- QUOTE -->
+<section id="quote">
+  <p class="quote-text" id="quote-text">
+    "Coder1 is the first tool that actually <em>understands</em> my codebase — not just my current file, but every decision I've ever made."
+  </p>
+  <p style="font-size:14px; color:rgba(255,255,255,0.25); margin-top:28px; opacity:0;" id="quote-attr">— Beta user, building a SaaS in public</p>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-eyebrow" id="cta-eyebrow">Start free. Ship faster.</div>
+  <h2 class="cta-headline" id="cta-headline">Build something<br>extraordinary.</h2>
+  <p class="cta-sub" id="cta-sub">Works with your existing Claude Code subscription.<br>No new tools. No new accounts. Just more power.</p>
+  <div class="cta-actions" id="cta-actions">
+    <a href="https://coder1.ai" class="btn-primary" style="font-size:19px; padding:18px 44px;">Get Coder1 Free</a>
+    <a href="#workflow" class="btn-secondary" style="font-size:19px; padding:18px 44px;">See How It Works</a>
+  </div>
+  <p class="cta-note" id="cta-note">Free to start · No credit card required · Works with Claude Code</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">Coder<span>1</span> IDE</div>
+  <div class="footer-copy">© 2026 Coder1. Built for Claude Code power users.</div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// ─── HERO CANVAS (Particle Field) ─────────────────────────────────────────
+const canvas = document.getElementById('hero-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.vy = (Math.random() - 0.5) * 0.3;
+    this.r = Math.random() * 1.5 + 0.3;
+    this.alpha = Math.random() * 0.6 + 0.1;
+    this.hue = Math.random() > 0.7 ? 190 : 260; // cyan or purple
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = `hsl(${this.hue}, 100%, 70%)`;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+for (let i = 0; i < 200; i++) particles.push(new Particle());
+
+function drawConnections() {
+  const maxDist = 100;
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d < maxDist) {
+        ctx.save();
+        ctx.globalAlpha = (1 - d/maxDist) * 0.1;
+        ctx.strokeStyle = '#00d4ff';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+}
+
+function animCanvas() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => { p.update(); p.draw(); });
+  drawConnections();
+  requestAnimationFrame(animCanvas);
+}
+animCanvas();
+
+// ─── HERO NAV FADE IN (CSS handles hero text, GSAP handles nav) ──────────
+gsap.set('#main-nav', { opacity: 0 });
+gsap.to('#main-nav', { opacity: 1, duration: 0.8, delay: 0.3, ease: 'power2.out' });
+
+// Fade hero on scroll
+gsap.to(['#hero .hero-eyebrow','#hero .hero-title','#hero .hero-sub','#hero .hero-actions'], {
+  scrollTrigger: {
+    trigger: '#hero',
+    start: 'top top',
+    end: '60% top',
+    scrub: 1.5,
+  },
+  opacity: 0,
+  y: -40,
+  stagger: 0.05,
+});
+
+// ─── DIVIDER TEXT REVEALS ─────────────────────────────────────────────────
+['#div1','#div2','#div3','#div4'].forEach(id => {
+  gsap.from(id, {
+    scrollTrigger: { trigger: id, start: 'top 80%', end: 'top 40%', scrub: 1 },
+    opacity: 0,
+    y: 30,
+    color: 'rgba(255,255,255,0)',
+  });
+  gsap.to(id, {
+    scrollTrigger: { trigger: id, start: 'top 50%', end: 'bottom 20%', scrub: 1 },
+    color: 'rgba(255,255,255,0.8)',
+  });
+});
+
+// ─── SET INITIAL STATES FOR ALL SCROLL-ANIMATED ELEMENTS ─────────────────
+gsap.set(['#agent-label','#agent-headline','#agent-body'], { opacity: 0, y: 30 });
+gsap.set('#agent-viz', { opacity: 0, scale: 0.85 });
+gsap.set(['#team-label','#team-headline','#team-body'], { opacity: 0, y: 30 });
+gsap.set('#editor-mockup', { opacity: 0, y: 40 });
+gsap.set(['#bridge-label','#bridge-headline','#bridge-body'], { opacity: 0, y: 30 });
+gsap.set('#bridge-diagram', { opacity: 0, y: 30 });
+gsap.set('#lock-badge', { opacity: 0 });
+gsap.set(['#memory-label','#memory-headline','#memory-body'], { opacity: 0, y: 30 });
+gsap.set('#memory-viz', { opacity: 0, scale: 0.9 });
+gsap.set(['.stat-card'], { opacity: 0, y: 30 });
+gsap.set('#workflow-headline', { opacity: 0, y: 40 });
+gsap.set('.workflow-step', { opacity: 0, y: 40 });
+gsap.set('#quote-text', { opacity: 0, y: 30 });
+gsap.set('#quote-attr', { opacity: 0 });
+gsap.set(['#cta-eyebrow','#cta-headline','#cta-sub','#cta-actions','#cta-note'], { opacity: 0, y: 30 });
+
+// ─── FEATURE REVEALS (CSS sticky handles pinning, GSAP handles reveal animations) ───
+// Multi-Agent
+ScrollTrigger.create({
+  trigger: '#feat-agent',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.to('#agent-label', { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
+    gsap.to('#agent-headline', { opacity: 1, y: 0, duration: 0.8, delay: 0.1, ease: 'power3.out' });
+    gsap.to('#agent-body', { opacity: 1, y: 0, duration: 0.8, delay: 0.25, ease: 'power3.out' });
+    gsap.to('#agent-viz', { opacity: 1, scale: 1, duration: 1.2, delay: 0.3, ease: 'power3.out' });
+  },
+});
+
+// Team Collaboration
+ScrollTrigger.create({
+  trigger: '#feat-team',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.to('#team-label', { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
+    gsap.to('#team-headline', { opacity: 1, y: 0, duration: 0.8, delay: 0.1, ease: 'power3.out' });
+    gsap.to('#team-body', { opacity: 1, y: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+    gsap.to('#editor-mockup', { opacity: 1, y: 0, duration: 1, delay: 0.3, ease: 'power3.out' });
+  },
+});
+
+// Bridge / Security
+ScrollTrigger.create({
+  trigger: '#feat-bridge',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.to('#bridge-label', { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
+    gsap.to('#bridge-headline', { opacity: 1, y: 0, duration: 0.8, delay: 0.1, ease: 'power3.out' });
+    gsap.to('#bridge-body', { opacity: 1, y: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+    gsap.to('#bridge-diagram', { opacity: 1, y: 0, duration: 1, delay: 0.35, ease: 'power3.out' });
+    gsap.to('#lock-badge', { opacity: 1, duration: 0.8, delay: 0.6 });
+  },
+});
+
+// Memory
+ScrollTrigger.create({
+  trigger: '#feat-memory',
+  start: 'top 80%',
+  once: true,
+  onEnter: () => {
+    gsap.to('#memory-label', { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
+    gsap.to('#memory-headline', { opacity: 1, y: 0, duration: 0.8, delay: 0.1, ease: 'power3.out' });
+    gsap.to('#memory-body', { opacity: 1, y: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+    gsap.to('#memory-viz', { opacity: 1, scale: 1, duration: 1.2, delay: 0.3, ease: 'power3.out' });
+  },
+});
+
+// ─── STATS ────────────────────────────────────────────────────────────────
+[0,1,2,3].forEach(i => {
+  gsap.to(`#stat-${i}`, {
+    scrollTrigger: { trigger: `#stat-${i}`, start: 'top 85%' },
+    opacity: 1,
+    y: 0,
+    duration: 0.7,
+    delay: i * 0.12,
+    ease: 'power3.out',
+  });
+});
+
+// Counting animation for stats
+document.querySelectorAll('.count').forEach(el => {
+  const target = parseInt(el.dataset.target);
+  ScrollTrigger.create({
+    trigger: el,
+    start: 'top 85%',
+    onEnter: () => {
+      gsap.to({ val: 0 }, {
+        val: target,
+        duration: 1.5,
+        ease: 'power2.out',
+        onUpdate: function() {
+          el.textContent = Math.round(this.targets()[0].val);
+        }
+      });
+    },
+    once: true,
+  });
+});
+
+// ─── WORKFLOW ─────────────────────────────────────────────────────────────
+gsap.to('#workflow-headline', {
+  scrollTrigger: { trigger: '#workflow-headline', start: 'top 80%' },
+  opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+});
+
+[0,1,2].forEach(i => {
+  gsap.to(`#step-${i}`, {
+    scrollTrigger: { trigger: `#step-${i}`, start: 'top 85%' },
+    opacity: 1, y: 0, duration: 0.7, delay: i * 0.15, ease: 'power3.out',
+  });
+});
+
+// ─── QUOTE ───────────────────────────────────────────────────────────────
+gsap.to('#quote-text', {
+  scrollTrigger: { trigger: '#quote-text', start: 'top 80%' },
+  opacity: 1, y: 0, duration: 1, ease: 'power3.out',
+});
+gsap.to('#quote-attr', {
+  scrollTrigger: { trigger: '#quote-attr', start: 'top 85%' },
+  opacity: 1, duration: 0.8, delay: 0.3,
+});
+
+// ─── CTA ─────────────────────────────────────────────────────────────────
+['#cta-eyebrow','#cta-headline','#cta-sub','#cta-actions','#cta-note'].forEach((id, i) => {
+  gsap.to(id, {
+    scrollTrigger: { trigger: '#cta', start: 'top 75%' },
+    opacity: 1, y: 0, duration: 0.8, delay: i * 0.12, ease: 'power3.out',
+  });
+});
+
+// ─── NAV ACTIVE STATE ─────────────────────────────────────────────────────
+ScrollTrigger.create({
+  trigger: 'body',
+  start: 'top top-=100',
+  onUpdate: self => {
+    document.getElementById('main-nav').style.borderBottomColor =
+      self.progress > 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0)';
+  }
+});
+
+// ─── SMOOTH SCROLL FOR NAV LINKS ─────────────────────────────────────────
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+</body>
+</html>
