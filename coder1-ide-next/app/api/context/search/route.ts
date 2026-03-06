@@ -28,7 +28,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await contextDatabase.initialize();
     
     // Get current project context
-    const projectPath = '/Users/michaelkraft/autonomous_vibe_interface';
+    const projectPath = process.env.PROJECT_PATH || process.cwd();
     const folder = await contextDatabase.getOrCreateFolder(projectPath);
     
     const results = {

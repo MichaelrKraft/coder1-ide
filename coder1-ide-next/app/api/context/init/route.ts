@@ -33,8 +33,7 @@ function getProjectPath(requestedPath?: string): string {
   
   // Development environment - try common local paths
   const devPaths = [
-    '/Users/michaelkraft/autonomous_vibe_interface',
-    process.cwd(),
+    process.env.PROJECT_PATH || process.cwd(),
     resolve(process.cwd(), '..')
   ];
   

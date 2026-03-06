@@ -47,9 +47,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     await contextDatabase.initialize();
     
     // Get current project context
-    const projectPath = '/Users/michaelkraft/autonomous_vibe_interface';
+    const projectPath = process.env.PROJECT_PATH || process.cwd();
     const folder = await contextDatabase.getOrCreateFolder(projectPath);
-    
+
     // Get recent conversations
     const conversations = await contextDatabase.getRecentConversations(folder.id, limit);
     

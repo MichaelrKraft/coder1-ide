@@ -14,7 +14,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const processorStats = await contextProcessor.getStats();
     
     // Get database stats for current project
-    const projectPath = '/Users/michaelkraft/autonomous_vibe_interface';
+    const projectPath = process.env.PROJECT_PATH || process.cwd();
     const folder = await contextDatabase.getOrCreateFolder(projectPath);
     const dbStats = await contextDatabase.getStats(folder.id);
     
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     switch (action) {
       case 'initialize':
         // Initialize context processor for project
-        await contextProcessor.initialize(projectPath || '/Users/michaelkraft/autonomous_vibe_interface');
+        await contextProcessor.initialize(projectPath || process.env.PROJECT_PATH || process.cwd());
         
         return NextResponse.json({
           success: true,
