@@ -8,23 +8,24 @@ import { getTeamInvitationByToken, acceptTeamInvitation, getTeamById } from '@/l
  */
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token');
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
   if (!token) {
-    return NextResponse.redirect(new URL('/login?inviteError=notfound', request.url));
+    return NextResponse.redirect(new URL('/login?inviteError=notfound', baseUrl));
   }
 
   const invitation = await getTeamInvitationByToken(token);
 
   if (!invitation) {
-    return NextResponse.redirect(new URL('/login?inviteError=notfound', request.url));
+    return NextResponse.redirect(new URL('/login?inviteError=notfound', baseUrl));
   }
 
   if (invitation.status !== 'pending') {
-    return NextResponse.redirect(new URL('/login?inviteError=used', request.url));
+    return NextResponse.redirect(new URL('/login?inviteError=used', baseUrl));
   }
 
   if (new Date(invitation.expires_at) < new Date()) {
-    return NextResponse.redirect(new URL('/login?inviteError=expired', request.url));
+    return NextResponse.redirect(new URL('/login?inviteError=expired', baseUrl));
   }
 
   // Look up team name for the login page display
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
   const teamName = team?.name || 'your team';
 
   return NextResponse.redirect(
-    new URL(`/login?invite=${token}&team=${encodeURIComponent(teamName)}`, request.url)
+    new URL(`/login?invite=${token}&team=${encodeURIComponent(teamName)}`, baseUrl)
   );
 }
 
