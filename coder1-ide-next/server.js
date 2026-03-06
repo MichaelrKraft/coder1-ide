@@ -414,7 +414,7 @@ const port = parseInt(process.env.PORT || '3001', 10);
 
 // Alpha deployment configuration
 const isAlphaMode = process.env.ALPHA_MODE_ENABLED === 'true';
-const alphaInviteCode = process.env.ALPHA_INVITE_CODE;
+const alphaInviteCode = process.env.ALPHA_INVITE_CODE || 'ALPHA2026';
 const maxAlphaUsers = parseInt(process.env.MAX_ALPHA_USERS || '10');
 const deploymentMode = process.env.DEPLOYMENT_MODE || 'standard';
 
@@ -511,7 +511,7 @@ const flushContextData = async (sessionId) => {
       body: JSON.stringify({
         chunks,
         sessionId,
-        projectPath: '/Users/michaelkraft/autonomous_vibe_interface'
+        projectPath: process.env.PROJECT_PATH || process.cwd()
       }),
       signal: controller.signal
     });
@@ -1741,6 +1741,17 @@ app.prepare().then(() => {
     destroyUpgradeTimeout: 1000 // But clean up failed upgrades quickly
   });
 
+  // Connection limit middleware — reject new connections when at capacity
+  const MAX_SOCKET_CONNECTIONS = 100;
+  io.use((socket, next) => {
+    const currentConnections = io.engine.clientsCount;
+    if (currentConnections >= MAX_SOCKET_CONNECTIONS) {
+      console.warn(`[Socket.IO] Connection rejected: ${currentConnections}/${MAX_SOCKET_CONNECTIONS} limit reached`);
+      return next(new Error('Server at capacity. Please try again shortly.'));
+    }
+    next();
+  });
+
   // [DEBUG] Check server listeners after Socket.IO attached
   console.log('[DEBUG] Socket.IO attached. Server request listeners:', server.listenerCount('request'));
   console.log('[DEBUG] Server connection listeners:', server.listenerCount('connection'));
@@ -1925,6 +1936,49 @@ app.prepare().then(() => {
         });
       });
       
+      // Dual-listen: ai:output and ai:complete for v2 bridge compatibility
+      // v1 bridge emits claude:*, v2 bridge emits ai:*. Server handles both.
+      socket.on('ai:output', (data) => {
+        // Same handler as claude:output — forward to terminal
+        io.emit('terminal:data', { id: data.sessionId, data: data.data });
+
+        if (data.data && data.sessionId) {
+          const gitEvents = detectGitEvent(data.sessionId, data.data);
+          if (process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' && gitEvents.length > 0) {
+            const claudeSession = claudeCodeSessions.get(data.sessionId);
+            if (claudeSession && claudeSession.inClaudeSession) {
+              for (const event of gitEvents) {
+                if (event.type === 'commit') {
+                  const duration = claudeSession.sessionStartTime
+                    ? Date.now() - claudeSession.sessionStartTime.getTime()
+                    : 0;
+                  const session = terminalSessions.get(data.sessionId);
+                  const terminalSocket = terminalSessionSockets.get(data.sessionId);
+                  if (terminalSocket) {
+                    terminalSocket.emit('time_capsule:commit_detected', {
+                      sessionId: data.sessionId,
+                      sha: event.sha,
+                      branch: event.branch,
+                      message: event.message,
+                      claudeSessionStart: claudeSession.sessionStartTime,
+                      duration,
+                      repoPath: session?.workingDir || process.cwd(),
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      socket.on('ai:complete', (data) => {
+        const message = data.exitCode === 0
+          ? `\r\n✅ Command completed successfully\r\n`
+          : `\r\n❌ Command failed (exit code: ${data.exitCode})${data.error ? ': ' + data.error : ''}\r\n`;
+        io.emit('terminal:data', { id: data.sessionId, data: message });
+      });
+
       // Handle file operations from bridge
       socket.on('file:response', (data) => {
         // Forward file operation responses
@@ -3626,7 +3680,7 @@ app.prepare().then(() => {
             // 🔧 FIX (Oct 24, 2025): Grace period before killing PTY
             // Allows Timeline ↔ IDE navigation (2-3s) while cleaning up actual close/refresh (30s)
             if (session.connectedSockets.size === 0) {
-              console.log(`⏱️ Last socket disconnected for session ${disconnectSessionId} - starting 60-minute grace period`);
+              console.log(`⏱️ Last socket disconnected for session ${disconnectSessionId} - starting 30-second grace period`);
 
               // Start cleanup timer (60 minutes)
               const cleanupTimer = setTimeout(() => {
@@ -3668,7 +3722,7 @@ app.prepare().then(() => {
                   console.log(`♻️ Session ${disconnectSessionId} reconnected during grace period - cleanup cancelled`);
                   sessionCleanupTimers.delete(disconnectSessionId);
                 }
-              }, 3600000); // 60 minute grace period
+              }, 30000); // 30 second grace period (was 60 min — caused OOM under concurrent load)
               
               sessionCleanupTimers.set(disconnectSessionId, cleanupTimer);
             }
@@ -5045,7 +5099,39 @@ app.prepare().then(() => {
       console.log(`📊 Session status: Active: ${terminalSessions.size}, Queued for cleanup: ${cleanupQueue.length}`);
     }
   }, 10 * 1000); // Check every 10 seconds (more frequent for better control)
-  
+
+  // Periodic cleanup of orphaned map entries (every 5 minutes)
+  setInterval(() => {
+    const activeSessions = new Set(terminalSessions.keys());
+    let cleaned = 0;
+
+    // Prune maps that reference sessions no longer in terminalSessions
+    for (const map of [terminalHistoryBuffers, terminalDataBuffers, contextSessions,
+      claudeCodeSessions, interactiveClaudeSessions, memoryDebounceTimers,
+      spectatorBatchBuffers, spectatorThrottleTimers, gitOutputBuffer,
+      sessionTeamMapping, terminalSessionSockets]) {
+      for (const key of map.keys()) {
+        if (!activeSessions.has(key)) {
+          map.delete(key);
+          cleaned++;
+        }
+      }
+    }
+
+    // Prune cleanup timers for sessions that no longer exist
+    for (const key of sessionCleanupTimers.keys()) {
+      if (!activeSessions.has(key)) {
+        clearTimeout(sessionCleanupTimers.get(key));
+        sessionCleanupTimers.delete(key);
+        cleaned++;
+      }
+    }
+
+    if (cleaned > 0) {
+      console.log(`🧹 Periodic map cleanup: removed ${cleaned} orphaned entries`);
+    }
+  }, 5 * 60 * 1000);
+
   // Start memory optimizer monitoring
   memoryOptimizer.startMonitoring();
   
@@ -5555,7 +5641,7 @@ const initializeContextSession = async (terminalSessionId) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        projectPath: '/Users/michaelkraft/autonomous_vibe_interface',
+        projectPath: process.env.PROJECT_PATH || process.cwd(),
         sessionId: terminalSessionId
       })
     });

@@ -30,6 +30,9 @@ const getSocketIO = () => {
 
 let socket: Socket | null = null;
 let connectionAttempts = 0;
+let visibilityHandler: (() => void) | null = null;
+let visibilityListenerAdded = false;
+let moduleHeartbeatInterval: NodeJS.Timeout | null = null;
 
 // Create a mock socket for fallback
 const createMockSocket = (): Socket => {
@@ -110,7 +113,7 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
           path: '/socket.io/',
           transports: ['polling'], // Polling only - Render proxy kills WebSocket connections
           reconnection: true,
-          reconnectionAttempts: Infinity, // Never give up - keep reconnecting
+          reconnectionAttempts: 25, // Cap reconnection attempts to prevent connection storms
           reconnectionDelay: 1000,
           reconnectionDelayMax: 10000, // INCREASED: Max backoff to 10 seconds
           timeout: 45000, // INCREASED: Match server connectTimeout
@@ -216,7 +219,8 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       
       const startHeartbeat = () => {
         if (heartbeatInterval) clearInterval(heartbeatInterval);
-        
+        if (moduleHeartbeatInterval) clearInterval(moduleHeartbeatInterval);
+
         // Send ping every 20 seconds to keep connection alive
         heartbeatInterval = setInterval(() => {
           if (newSocket?.connected) {
@@ -232,12 +236,17 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
             console.log('💓 Heartbeat ping sent');
           }
         }, 10000); // 10s — aggressive heartbeat to keep Render proxy connection alive
+        moduleHeartbeatInterval = heartbeatInterval;
       };
-      
+
       const stopHeartbeat = () => {
         if (heartbeatInterval) {
           clearInterval(heartbeatInterval);
           heartbeatInterval = null;
+        }
+        if (moduleHeartbeatInterval) {
+          clearInterval(moduleHeartbeatInterval);
+          moduleHeartbeatInterval = null;
         }
       };
       
@@ -260,8 +269,9 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
       });
 
       // Detect when user returns to tab and verify socket health
-      if (typeof document !== 'undefined') {
-        document.addEventListener('visibilitychange', () => {
+      if (typeof document !== 'undefined' && !visibilityListenerAdded) {
+        visibilityListenerAdded = true;
+        visibilityHandler = () => {
           if (document.visibilityState === 'visible' && newSocket) {
             if (!newSocket.connected) {
               console.log('🔄 Tab visible — socket disconnected, reconnecting...');
@@ -286,7 +296,8 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
               });
             }
           }
-        });
+        };
+        document.addEventListener('visibilitychange', visibilityHandler);
       }
 
       // Johnny5 Heartbeat & Notification events → dispatch as CustomEvents for UI
@@ -334,6 +345,17 @@ export const getSocket = async (sessionId?: string, bridgeAuth: boolean = false)
 };
 
 export const disconnectSocket = () => {
+  // Clear heartbeat interval to prevent leak
+  if (moduleHeartbeatInterval) {
+    clearInterval(moduleHeartbeatInterval);
+    moduleHeartbeatInterval = null;
+  }
+  // Remove visibility listener to prevent leak
+  if (visibilityHandler && typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', visibilityHandler);
+    visibilityHandler = null;
+    visibilityListenerAdded = false;
+  }
   if (socket) {
     socket.disconnect();
     socket = null;

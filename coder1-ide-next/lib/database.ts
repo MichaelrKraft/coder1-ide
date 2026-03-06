@@ -20,7 +20,10 @@ export async function getDatabase() {
   const Database = BetterSqlite3.default || BetterSqlite3;
 
   const dbPath = getDatabasePath();
-  return new Database(dbPath);
+  const db = new Database(dbPath);
+  // Enable WAL mode for better concurrent read/write performance
+  db.pragma('journal_mode = WAL');
+  return db;
 }
 
 export function closeDatabaseSafely(db: any) {

@@ -12,6 +12,17 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     console.log('[Instrumentation] Initializing server-side services...');
 
+    // Validate critical secrets at startup — fail fast, not at first request
+    if (process.env.NODE_ENV === 'production') {
+      if (!process.env.JWT_SECRET) {
+        throw new Error('FATAL: JWT_SECRET environment variable is required in production. Set it to a secure random string (e.g., openssl rand -hex 32).');
+      }
+      if (!process.env.JWT_REFRESH_SECRET) {
+        throw new Error('FATAL: JWT_REFRESH_SECRET environment variable is required in production. Set it to a secure random string (e.g., openssl rand -hex 32).');
+      }
+      console.log('[Instrumentation] JWT secrets validated');
+    }
+
     // Dynamically import to avoid client-side bundling issues
     const { getCronService } = await import('@/services/johnny5/cron-service');
 

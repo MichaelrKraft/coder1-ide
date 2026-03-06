@@ -50,7 +50,7 @@ services:
       - key: AGENT_RESPONSE_TIMEOUT
         value: 30000
       - key: MEMORY_PANIC_THRESHOLD_MB
-        value: 1800
+        value: 1200
       
       # Production Environment Configuration (Error Doctor Fix)
       # These settings prevent file system errors and enable fallback modes
