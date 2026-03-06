@@ -217,7 +217,7 @@ class LicenseService {
       tier: 'free',
       features: this.getFeaturesForTier('free'),
       machineId: this.generateMachineId(),
-      validUntil: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day for free trial
+      validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 365 days for free tier
       isValid: true
     };
 
@@ -231,8 +231,8 @@ class LicenseService {
     switch (tier) {
       case 'free':
         return {
-          memoryPersistence: false, // Sessions expire daily
-          unlimitedProjects: false, // Limited to 3 projects
+          memoryPersistence: true, // Free tier gets persistent memory
+          unlimitedProjects: true, // Free tier gets unlimited projects
           searchHistory: false,
           teamCollaboration: false,
           prioritySupport: false,

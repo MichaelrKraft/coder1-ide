@@ -133,7 +133,7 @@ const initialState: TerminalState = {
   commandHistoryIndex: -1,
 
   // Working state
-  workingDirectory: process.cwd?.() || '/Users/michaelkraft',
+  workingDirectory: process.cwd?.() || '',
   isProcessing: false,
 
   // Settings

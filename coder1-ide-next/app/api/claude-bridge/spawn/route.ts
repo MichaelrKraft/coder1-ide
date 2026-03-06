@@ -100,7 +100,7 @@ Continue the work based on the above context.`;
     
     // Validate OAuth token format
     if (!oauthToken.startsWith('sk-ant-oat01-')) {
-      logger.error(`❌ [BRIDGE] Invalid OAuth token format. Expected sk-ant-oat01-, got ${oauthToken.substring(0, 10)}...`);
+      logger.error('❌ [BRIDGE] Invalid OAuth token format. Expected sk-ant-oat01- prefix.');
       
       return NextResponse.json({
         success: false,

@@ -98,7 +98,7 @@ export class ContainerUseService extends EventEmitter {
     try {
       // Create container environment
       // Note: container-use manages the git branch creation automatically
-      const command = `cd /Users/michaelkraft/autonomous_vibe_interface && container-use apply ${containerId}`;
+      const command = `cd ${process.env.PROJECT_PATH || process.cwd()} && container-use apply ${containerId}`;
       
       logger.debug(`Executing: ${command}`);
       const { stdout, stderr } = await execAsync(command);
@@ -303,7 +303,7 @@ export class ContainerUseService extends EventEmitter {
       logger.debug(`🔀 Merging work from container ${containerId}...`);
       
       // Use container-use merge command
-      await execAsync(`cd /Users/michaelkraft/autonomous_vibe_interface && container-use merge ${containerId}`);
+      await execAsync(`cd ${process.env.PROJECT_PATH || process.cwd()} && container-use merge ${containerId}`);
       
       logger.debug(`✅ Successfully merged work from container ${containerId}`);
       this.emit('container-merged', session);

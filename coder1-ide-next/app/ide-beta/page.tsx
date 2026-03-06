@@ -217,7 +217,7 @@ export default App;
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            projectPath: '/Users/michaelkraft/autonomous_vibe_interface',
+            projectPath: '',
             autoStart: true  // Enable file watcher
           })
         });

@@ -154,7 +154,7 @@ class BrowserSessionManager {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        projectPath: projectPath || '/Users/michaelkraft/autonomous_vibe_interface',
+        projectPath: projectPath || process.env.PROJECT_PATH || process.cwd(),
         browserSessionId: currentSession.browserSessionId,
         userSessionId: currentSession.userSessionId,
         autoStart: true

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       action, 
       browserSessionId, 
       userSessionId, 
-      projectPath = '/Users/michaelkraft/autonomous_vibe_interface' 
+      projectPath = process.env.PROJECT_PATH || process.cwd()
     } = await request.json();
 
     switch (action) {

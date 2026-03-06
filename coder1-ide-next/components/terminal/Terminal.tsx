@@ -5380,7 +5380,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     const pollSessionUsage = async () => {
       try {
         // Use correct directory path (with dashes, not underscores)
-        const cwd = '/Users/michaelkraft/autonomous-vibe-interface';
+        const cwd = '';
         
         const response = await fetch(`/api/claude/session-usage?cwd=${encodeURIComponent(cwd)}`);
         

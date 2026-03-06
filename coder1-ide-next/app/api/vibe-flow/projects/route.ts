@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
           {
             id: 'coder1-ide-next',
             name: 'coder1-ide-next',
-            path: '/Users/michaelkraft/autonomous_vibe_interface/coder1-ide-next',
+            path: process.cwd(),
             tokensUsed: 0,
             commandsRun: 0,
             filesEdited: 0,
