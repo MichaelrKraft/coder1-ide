@@ -176,3 +176,5 @@ ide-old*/
 .coder1/codebase-index/
 # coder1-premium/ # ENABLED FOR ALPHA LAUNCH - Premium billing service
 docker-mcp-poc/
+johnny5-standalone/
+coder1-ambient/

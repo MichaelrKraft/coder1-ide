@@ -1,0 +1,32 @@
+{
+  "name": "@coder1/ai-provider-protocol",
+  "version": "0.1.0",
+  "description": "Open protocol for AI CLI provider integration with Coder1 IDE",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "coder1",
+    "ai",
+    "cli",
+    "provider",
+    "protocol",
+    "claude-code",
+    "codex",
+    "aider",
+    "gemini-cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MichaelrKraft/coder1-ide"
+  },
+  "homepage": "https://coder1.app"
+}
