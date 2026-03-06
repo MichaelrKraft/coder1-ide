@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, requireTeamMember, requireTeamAdmin } from '@/lib/auth/team-middleware';
-import { getTeamMembers, getTeamById, removeTeamMember } from '@/lib/auth';
+import { getTeamMembers, getTeamById, removeTeamMember, getPendingInvitations } from '@/lib/auth';
 
 /**
  * GET /api/team/[teamId]/members
@@ -17,6 +17,7 @@ export async function GET(
     await requireTeamMember(user.id, teamId);
 
     const members = await getTeamMembers(teamId);
+    const pending = await getPendingInvitations(teamId);
 
     return NextResponse.json({
       success: true,
@@ -25,6 +26,12 @@ export async function GET(
         email: m.email,
         username: m.username,
         role: m.role,
+      })),
+      pendingInvitations: pending.map(inv => ({
+        id: inv.id,
+        email: inv.email,
+        token: inv.token,
+        expires_at: inv.expires_at,
       })),
     });
   } catch (error) {

@@ -1,16 +1,24 @@
 'use client';
 
-import React from 'react';
-import { UserPlus, Trash2, Check, Monitor } from 'lucide-react';
+import React, { useState } from 'react';
+import { UserPlus, Trash2, Check, Monitor, Copy, Clock } from 'lucide-react';
 import { useSpectatorStore } from '@/stores/useSpectatorStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { getSocket } from '@/lib/socket';
 import type { TeamMember, TeamFact, CodeEvent } from './types';
 import { timeAgo } from './types';
 
+interface PendingInvitation {
+  id: string;
+  email: string;
+  token: string;
+  expires_at: string;
+}
+
 interface TeamTabProps {
   syncTeam: { id: string; name: string };
   members: TeamMember[];
+  pendingInvitations: PendingInvitation[];
   facts: TeamFact[];
   recentActivity: CodeEvent[];
   onlineMembers: { userId: string; username: string }[];
@@ -24,6 +32,7 @@ interface TeamTabProps {
 export default function TeamTab({
   syncTeam,
   members,
+  pendingInvitations,
   facts,
   recentActivity,
   onlineMembers,
@@ -62,6 +71,33 @@ export default function TeamTab({
           })}
         </div>
       </div>
+
+      {/* Pending Invitations */}
+      {pendingInvitations.length > 0 && (
+        <div>
+          <h4 className="text-xs font-medium text-text-muted uppercase tracking-wide mb-2">Pending ({pendingInvitations.length})</h4>
+          <div className="space-y-1">
+            {pendingInvitations.map(inv => (
+              <div key={inv.id} className="flex items-center gap-2 text-sm text-text-muted">
+                <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-xs text-amber-400">
+                  <Clock className="w-3 h-3" />
+                </div>
+                <span className="flex-1 truncate">{inv.email}</span>
+                <button
+                  onClick={async () => {
+                    const link = `${window.location.origin}/api/team/join?token=${inv.token}`;
+                    await navigator.clipboard.writeText(link);
+                  }}
+                  className="text-text-muted/60 hover:text-coder1-cyan transition-colors p-0.5"
+                  title="Copy invite link"
+                >
+                  <Copy className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Live Terminals (Spectator Mode) */}
       {(() => {

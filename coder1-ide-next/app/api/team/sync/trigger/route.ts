@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const status = message.includes('Not authenticated') ? 401 : 500;
+    const status = message.includes('Not authenticated') ? 401
+      : message.includes('Not a team member') ? 403
+      : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
 }

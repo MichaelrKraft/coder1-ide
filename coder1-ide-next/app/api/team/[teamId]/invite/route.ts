@@ -1,6 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, requireTeamAdmin } from '@/lib/auth/team-middleware';
-import { createTeamInvitation } from '@/lib/auth';
+import { createTeamInvitation, getTeamById } from '@/lib/auth';
+import { Resend } from 'resend';
+
+async function sendInviteEmail(toEmail: string, inviteLink: string, teamName: string, inviterName: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'Coder1 <noreply@coder1.dev>';
+  if (!apiKey) return;
+
+  try {
+    const resend = new Resend(apiKey);
+    await resend.emails.send({
+      from: fromEmail,
+      to: toEmail,
+      subject: `You've been invited to join ${teamName} on Coder1`,
+      html: `
+        <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #00D9FF 0%, #0a0a0a 100%); padding: 24px; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">You're invited to ${teamName}</h1>
+          </div>
+          <div style="background: #1a1a1a; padding: 30px; border-radius: 0 0 8px 8px; color: #ccc;">
+            <p><strong style="color: #00D9FF;">${inviterName}</strong> has invited you to collaborate on Coder1 IDE.</p>
+            <p>Click the button below to join the team:</p>
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${inviteLink}" style="display: inline-block; background: #00D9FF; color: #0a0a0a; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+                Join ${teamName}
+              </a>
+            </div>
+            <p style="color: #666; font-size: 13px;">This invitation expires in 7 days. If the button doesn't work, copy this link: ${inviteLink}</p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('[Team Invite] Failed to send email:', error);
+  }
+}
 
 /**
  * POST /api/team/[teamId]/invite
@@ -30,6 +65,10 @@ export async function POST(
     const invitation = await createTeamInvitation(teamId, email.trim(), user.id);
 
     const inviteLink = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/team/join?token=${invitation.token}`;
+
+    // Send invite email (fire-and-forget — don't block response)
+    const team = await getTeamById(teamId);
+    sendInviteEmail(email.trim(), inviteLink, team?.name || 'your team', user.username || 'A team member');
 
     return NextResponse.json({
       success: true,
