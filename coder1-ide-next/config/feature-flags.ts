@@ -299,8 +299,10 @@ class FeatureFlagManager {
   
   /**
    * Load feature flags from storage
+   * Environment variables are the source of truth; localStorage is a client-side cache.
    */
   async load(): Promise<void> {
+    // 1. Try localStorage as a cache
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('feature-flags');
       if (stored) {
@@ -309,6 +311,20 @@ class FeatureFlagManager {
         } catch (error) {
           console.error('Failed to load feature flags:', error);
         }
+      }
+    }
+
+    // 2. Override with env vars (server-side source of truth)
+    const envOverrides: Record<string, Partial<FeatureFlag>> = {
+      ENHANCED_SESSIONS: { enabled: process.env.NEXT_PUBLIC_ENHANCED_SESSIONS === 'true' },
+      ACTIVITY_TRACKING: { enabled: process.env.NEXT_PUBLIC_ACTIVITY_TRACKING === 'true' },
+      DYNAMIC_TITLES: { enabled: process.env.NEXT_PUBLIC_DYNAMIC_TITLES === 'true' },
+      MEMORY_PANEL_V2: { enabled: process.env.NEXT_PUBLIC_MEMORY_PANEL_V2 === 'true' },
+    };
+
+    for (const [name, override] of Object.entries(envOverrides)) {
+      if (this.flags[name] && override.enabled !== undefined) {
+        this.flags[name] = { ...this.flags[name], ...override };
       }
     }
   }
