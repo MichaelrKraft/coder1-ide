@@ -95,6 +95,7 @@ export const removeTeamMember = backend.removeTeamMember;
 export const deleteTeam = backend.deleteTeam;
 export const getTeamMembers = backend.getTeamMembers;
 export const createTeamInvitation = backend.createTeamInvitation;
+export const getPendingInvitations = backend.getPendingInvitations;
 export const getTeamInvitationByToken = backend.getTeamInvitationByToken;
 export const acceptTeamInvitation = backend.acceptTeamInvitation;
 

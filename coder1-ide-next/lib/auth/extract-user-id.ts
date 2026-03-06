@@ -28,3 +28,36 @@ export function extractUserId(request: NextRequest): string {
   // 3. No auth = dev/anonymous mode
   return 'default';
 }
+
+/**
+ * Extract subscription tier from request authentication.
+ * Returns the tier from JWT claims, or 'free' as default.
+ * Used for server-side premium gating.
+ */
+export function extractSubscriptionTier(request: NextRequest): string {
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader) {
+    const token = extractTokenFromHeader(authHeader);
+    if (token) {
+      const decoded = verifyAccessToken(token);
+      if (decoded) return decoded.subscriptionTier || 'free';
+    }
+  }
+
+  const cookieToken = request.cookies.get('auth-token')?.value;
+  if (cookieToken) {
+    const decoded = verifyAccessToken(cookieToken);
+    if (decoded) return decoded.subscriptionTier || 'free';
+  }
+
+  return 'free';
+}
+
+/**
+ * Check if the request has premium access (pro, team, or alpha tier).
+ * Use this for server-side premium gating on API routes.
+ */
+export function hasPremiumAccess(request: NextRequest): boolean {
+  const tier = extractSubscriptionTier(request);
+  return ['pro', 'team', 'alpha'].includes(tier);
+}

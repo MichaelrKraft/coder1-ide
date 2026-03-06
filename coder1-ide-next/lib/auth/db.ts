@@ -784,6 +784,14 @@ export function createTeamInvitation(teamId: string, email: string, invitedBy: s
   return stmt.get(teamId, email, invitedBy, token, expiresAt.toISOString()) as TeamInvitation;
 }
 
+export function getPendingInvitations(teamId: string): TeamInvitation[] {
+  const db = getAuthDatabase();
+  const stmt = db.prepare(
+    'SELECT * FROM team_invitations WHERE team_id = ? AND status = ? AND expires_at > CURRENT_TIMESTAMP ORDER BY created_at DESC'
+  );
+  return stmt.all(teamId, 'pending') as TeamInvitation[];
+}
+
 export function getTeamInvitationByToken(token: string): TeamInvitation | undefined {
   const db = getAuthDatabase();
 

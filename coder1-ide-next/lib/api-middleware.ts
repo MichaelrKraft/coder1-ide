@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimiters, withRateLimit } from './rate-limiter';
 import { logger } from './logger';
+import { verifyAccessToken, extractTokenFromHeader } from './auth/jwt';
 
 // Middleware configuration
 export interface APIMiddlewareConfig {
@@ -130,59 +131,63 @@ export function withAPIMiddleware(
 }
 
 /**
- * Authentication validation
+ * Authentication validation — uses real JWT verification
  */
 async function validateAuth(req: NextRequest): Promise<{ success: boolean; user?: any }> {
   try {
-    // Check for Bearer token
+    // 1. Check Authorization header (API clients, bridge)
     const authorization = req.headers.get('authorization');
-    if (!authorization?.startsWith('Bearer ')) {
-      logger.warn('Missing or invalid authorization header');
-      return { success: false };
+    if (authorization) {
+      const token = extractTokenFromHeader(authorization);
+      if (token) {
+        // Admin dev bypass via explicit env var (NOT a prefix check)
+        if (process.env.CODER1_ALPHA_TOKEN && token === process.env.CODER1_ALPHA_TOKEN) {
+          return {
+            success: true,
+            user: { id: 'admin', email: 'admin@coder1.dev', username: 'admin', subscriptionTier: 'team' }
+          };
+        }
+
+        // Verify JWT cryptographic signature
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          return {
+            success: true,
+            user: {
+              id: decoded.userId,
+              email: decoded.email,
+              username: decoded.username,
+              subscriptionTier: decoded.subscriptionTier,
+            }
+          };
+        }
+      }
     }
 
-    const token = authorization.slice(7);
-    
-    // Enhanced token validation
-    if (!token || token === 'null' || token === 'undefined' || token.length < 10) {
-      logger.warn('Invalid or empty token');
-      return { success: false };
+    // 2. Fall back to auth-token cookie (browser clients)
+    const cookieToken = req.cookies.get('auth-token')?.value;
+    if (cookieToken) {
+      const decoded = verifyAccessToken(cookieToken);
+      if (decoded) {
+        return {
+          success: true,
+          user: {
+            id: decoded.userId,
+            email: decoded.email,
+            username: decoded.username,
+            subscriptionTier: decoded.subscriptionTier,
+          }
+        };
+      }
     }
 
-    // For alpha launch: Simple token validation
-    // Production should use JWT with proper signing and expiration
-    if (token === process.env.CODER1_ALPHA_TOKEN || token.startsWith('coder1-alpha-')) {
-      return {
-        success: true,
-        user: { id: 'alpha-user', name: 'Alpha User', tier: 'alpha' }
-      };
-    }
-
-    // Check for session-based auth as fallback
-    const sessionToken = req.cookies.get('coder1-session')?.value;
-    if (sessionToken && isValidSessionToken(sessionToken)) {
-      return {
-        success: true,
-        user: { id: 'session-user', name: 'Session User', tier: 'free' }
-      };
-    }
-
-    logger.warn(`Invalid token attempt: ${token.substring(0, 10)}...`);
+    logger.warn('Authentication failed: no valid JWT token found');
     return { success: false };
 
   } catch (error) {
     logger.error('Authentication error:', error);
     return { success: false };
   }
-}
-
-/**
- * Validate session token (simple implementation for alpha)
- */
-function isValidSessionToken(sessionToken: string): boolean {
-  // For alpha: Accept any session token that looks valid
-  // Production should validate against database or JWT
-  return !!(sessionToken && sessionToken.length >= 20 && sessionToken.includes('-'));
 }
 
 /**
@@ -235,9 +240,9 @@ export const withAIMiddleware = (handler: APIHandler) => withAPIMiddleware(handl
 // File operation endpoints
 export const withFileMiddleware = (handler: APIHandler) => withAPIMiddleware(handler, {
   rateLimit: 'files',
-  requireAuth: false, // Alpha: client doesn't send auth tokens
+  requireAuth: false,
   logRequests: true,
-  validateBody: false // Files may not always send JSON body
+  validateBody: false
 });
 
 // Authentication endpoints

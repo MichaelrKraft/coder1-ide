@@ -786,6 +786,20 @@ export async function createTeamInvitation(teamId: string, email: string, invite
   return data as TeamInvitation;
 }
 
+export async function getPendingInvitations(teamId: string): Promise<TeamInvitation[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('team_invitations')
+    .select('*')
+    .eq('team_id', teamId)
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data as TeamInvitation[]) || [];
+}
+
 export async function getTeamInvitationByToken(token: string): Promise<TeamInvitation | undefined> {
   const client = getSupabaseClient();
   const { data, error } = await client

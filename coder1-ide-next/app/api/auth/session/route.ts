@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAPIMiddleware } from '@/lib/api-middleware';
 import { logger } from '@/lib/logger';
 import { randomBytes } from 'crypto';
+import { generateTokens, verifyAccessToken, refreshAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 
 interface SessionRequest {
   email?: string;
@@ -41,15 +42,14 @@ async function sessionHandler({ req }: { req: NextRequest }): Promise<NextRespon
 
 async function createSession(email?: string, alphaCode?: string): Promise<NextResponse> {
   try {
-    // For alpha launch: Simple validation (codes from env var with fallback)
+    // Validate alpha access code
     const validAlphaCodes = (process.env.ALPHA_CODES || 'coder1-alpha-2025').split(',');
 
-    // Validate alpha access
     if (!alphaCode || !validAlphaCodes.includes(alphaCode)) {
       logger.warn(`Invalid alpha code attempt: ${alphaCode} for ${email}`);
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: 'Invalid alpha access code',
           hint: 'Contact Michael for early access'
         },
@@ -57,32 +57,49 @@ async function createSession(email?: string, alphaCode?: string): Promise<NextRe
       );
     }
 
-    // Generate session token
-    const sessionToken = generateSessionToken();
-    const bearerToken = generateBearerToken();
+    // Generate a stable user ID for this alpha user
+    const userId = `alpha-${randomBytes(4).toString('hex')}`;
+    const userEmail = email || 'alpha-user@coder1.dev';
 
-    logger.info(`✅ Session created for ${email || 'anonymous'} with alpha code: ${alphaCode}`);
+    // Issue real JWT tokens
+    const { accessToken, refreshToken, expiresAt } = generateTokens({
+      userId,
+      email: userEmail,
+      username: userEmail.split('@')[0],
+      subscriptionTier: 'alpha',
+    });
+
+    logger.info(`Session created for ${userEmail}`);
 
     const response = NextResponse.json({
       success: true,
       session: {
-        token: bearerToken,
+        token: accessToken,
         user: {
-          id: `alpha-${randomBytes(4).toString('hex')}`,
-          email: email || 'alpha-user@coder1.dev',
+          id: userId,
+          email: userEmail,
           tier: 'alpha',
           access: ['files', 'terminal', 'ai', 'memory']
         },
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+        expiresAt: expiresAt.toISOString()
       }
     });
 
-    // Set secure HTTP-only cookie for session
-    response.cookies.set('coder1-session', sessionToken, {
+    // Set JWT access token as httpOnly cookie (browser clients)
+    response.cookies.set('auth-token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60 // 24 hours
+      maxAge: 15 * 60 // 15 minutes (matches JWT expiry)
+    });
+
+    // Set JWT refresh token as httpOnly cookie
+    response.cookies.set('refresh-token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/auth', // Only sent to auth endpoints
+      maxAge: 7 * 24 * 60 * 60 // 7 days
     });
 
     return response;
@@ -98,23 +115,22 @@ async function createSession(email?: string, alphaCode?: string): Promise<NextRe
 
 async function verifySession(req: NextRequest): Promise<NextResponse> {
   try {
-    const sessionToken = req.cookies.get('coder1-session')?.value;
+    // Try Bearer token first, then cookie
     const authHeader = req.headers.get('authorization');
+    const cookieToken = req.cookies.get('auth-token')?.value;
+    const token = authHeader ? extractTokenFromHeader(authHeader) : cookieToken;
 
-    if (!sessionToken && !authHeader) {
+    if (!token) {
       return NextResponse.json(
         { success: false, error: 'No session found' },
         { status: 401 }
       );
     }
 
-    // Verify session token or bearer token
-    const isValid = sessionToken ? isValidSessionToken(sessionToken) : 
-                   authHeader ? isValidBearerToken(authHeader) : false;
-
-    if (!isValid) {
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
       return NextResponse.json(
-        { success: false, error: 'Invalid session' },
+        { success: false, error: 'Invalid or expired session' },
         { status: 401 }
       );
     }
@@ -124,8 +140,9 @@ async function verifySession(req: NextRequest): Promise<NextResponse> {
       session: {
         valid: true,
         user: {
-          id: 'alpha-user',
-          tier: 'alpha',
+          id: decoded.userId,
+          email: decoded.email,
+          tier: decoded.subscriptionTier,
           access: ['files', 'terminal', 'ai', 'memory']
         }
       }
@@ -142,34 +159,39 @@ async function verifySession(req: NextRequest): Promise<NextResponse> {
 
 async function refreshSession(req: NextRequest): Promise<NextResponse> {
   try {
-    const sessionToken = req.cookies.get('coder1-session')?.value;
-    
-    if (!sessionToken || !isValidSessionToken(sessionToken)) {
+    const refreshTokenCookie = req.cookies.get('refresh-token')?.value;
+
+    if (!refreshTokenCookie) {
       return NextResponse.json(
-        { success: false, error: 'Invalid session' },
+        { success: false, error: 'No refresh token' },
         { status: 401 }
       );
     }
 
-    // Generate new tokens
-    const newSessionToken = generateSessionToken();
-    const newBearerToken = generateBearerToken();
+    // Use the real JWT refresh mechanism
+    const result = refreshAccessToken(refreshTokenCookie);
+    if (!result) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or expired refresh token' },
+        { status: 401 }
+      );
+    }
 
     const response = NextResponse.json({
       success: true,
       session: {
-        token: newBearerToken,
+        token: result.accessToken,
         refreshed: true,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        expiresAt: result.expiresAt.toISOString()
       }
     });
 
-    // Update cookie
-    response.cookies.set('coder1-session', newSessionToken, {
+    // Update access token cookie
+    response.cookies.set('auth-token', result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60
+      maxAge: 15 * 60 // 15 minutes
     });
 
     return response;
@@ -183,25 +205,7 @@ async function refreshSession(req: NextRequest): Promise<NextResponse> {
   }
 }
 
-// Helper functions
-function generateSessionToken(): string {
-  return `sess_${randomBytes(16).toString('hex')}_${Date.now()}`;
-}
-
-function generateBearerToken(): string {
-  return `coder1-alpha-${randomBytes(20).toString('hex')}`;
-}
-
-function isValidSessionToken(token: string): boolean {
-  // Simple validation for alpha
-  return token.startsWith('sess_') && token.includes('_') && token.length > 20;
-}
-
-function isValidBearerToken(authHeader: string): boolean {
-  if (!authHeader.startsWith('Bearer ')) return false;
-  const token = authHeader.slice(7);
-  return token.startsWith('coder1-alpha-') && token.length > 20;
-}
+// Note: Token generation and validation now handled by @/lib/auth/jwt
 
 // Export WITHOUT body validation since we need to read the body in the handler
 // Auth endpoints don't need auth validation (they create the auth)
