@@ -174,9 +174,34 @@ const nextConfig = {
     return config;
   },
   
+  // Fix MIME types for video files
+  async headers() {
+    return [
+      {
+        source: '/videos/:path*.mp4',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'video/mp4',
+          },
+        ],
+      },
+    ];
+  },
+
   // Add rewrites to bridge Express-to-Next.js routing for component capture system
   async rewrites() {
     return [
+      // Rewrite /alpha/api/* to /api/* — production uses /alpha/ prefix
+      {
+        source: '/alpha/api/:path*',
+        destination: '/api/:path*'
+      },
+      // Rewrite /alpha/* page routes (login, ide, etc.)
+      {
+        source: '/alpha/:path*',
+        destination: '/:path*'
+      },
       {
         source: '/welcome',
         destination: '/coder1-alpha-welcome.html'
