@@ -85,7 +85,8 @@ user-workspaces/*
 !user-workspaces/default/styles.css
 !user-workspaces/default/app.js
 .tar.gz
-public/videos/
+public/videos/*
+!public/videos/alpha-demo-web-optimized.mp4
 
 # AI tool configurations (various coding assistants)
 .adal/
