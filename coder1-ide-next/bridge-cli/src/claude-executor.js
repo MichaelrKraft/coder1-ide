@@ -633,6 +633,12 @@ class ClaudeExecutor extends EventEmitter {
 
         this.log(`Process exited with code ${code} after ${duration}ms`);
 
+        // Include stdout in error when stderr is empty — Claude CLI often writes
+        // failure info to stdout (not stderr) when using --output-format stream-json
+        const errorMsg = code !== 0
+          ? (errorBuffer || outputBuffer.substring(0, 500) || 'Command failed')
+          : null;
+
         resolve({
           exitCode: code || 0,
           signal,
@@ -640,7 +646,7 @@ class ClaudeExecutor extends EventEmitter {
           stderr: errorBuffer,
           duration,
           interactive: false,
-          error: code !== 0 ? errorBuffer || 'Command failed' : null
+          error: errorMsg
         });
       });
 

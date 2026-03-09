@@ -538,11 +538,13 @@ Only mention code/git status if the user explicitly asks about it.
       // Build command WITHOUT the prompt — prompt delivered via stdin to avoid shell escaping issues
       const mcpEnabled = process.env.JOHNNY5_BRIDGE_MCP_ENABLED === 'true';
       const permissionFlag = mcpEnabled ? ' --permission-mode bypassPermissions' : '';
-      const modelOverride = process.env.JOHNNY5_MODEL || 'claude-sonnet-4-5';
+      const modelOverride = process.env.JOHNNY5_MODEL || 'claude-sonnet-4-6';
       // --session-id intentionally omitted: causes "Session ID already in use" conflicts when
       // the bridge reconnects after a disconnect (old Claude process holds the session file).
       // Conversation history is managed in our DB and passed via prompt text instead.
-      const command = `claude --print --verbose --output-format stream-json --include-partial-messages --model ${modelOverride}${permissionFlag}`;
+      // NOTE: --verbose intentionally omitted — it outputs non-JSON debug text to stdout which
+      // conflicts with --output-format stream-json and causes silent command failures.
+      const command = `claude --print --output-format stream-json --include-partial-messages --model ${modelOverride}${permissionFlag}`;
 
       console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, command: ${command}, prompt via stdin (${prompt.length} chars)`);
 
