@@ -19,6 +19,140 @@ const LivingFilesHandler = require('./living-files-handler');
 const { saveCredentials, loadCredentials, clearCredentials } = require('./credentials-manager');
 const GitWatcher = require('./git-watcher');
 
+/**
+ * ManusLiveProxy — transparent WebSocket tunnel from bridge to ManusLive daemon.
+ * Handles the Moltbot authentication handshake locally; all other messages are
+ * forwarded raw to the server so j5-bridge.ts can parse them unchanged.
+ */
+class ManusLiveProxy {
+  constructor(bridgeSocket) {
+    this.socket = bridgeSocket;
+    this.ws = null;
+    this.connected = false;
+    this.reconnectTimer = null;
+    this.reconnectDelay = 5000; // Start at 5s
+    this.stopping = false;
+    this.port = parseInt(process.env.MANUSLIVE_PORT || '18789', 10);
+    this.authToken = process.env.MANUSLIVE_AUTH_TOKEN || '';
+  }
+
+  async start() {
+    if (this.stopping) return;
+    // Health check first — avoids noisy WS errors when ManusLive is not running
+    try {
+      const fetch = require('node-fetch');
+      const res = await fetch(`http://127.0.0.1:${this.port}/health`, { timeout: 3000 });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch {
+      // ManusLive not running — retry with backoff
+      this._scheduleReconnect();
+      return;
+    }
+    this._connect();
+  }
+
+  _connect() {
+    if (this.stopping) return;
+    const WebSocket = require('ws');
+    const url = `ws://127.0.0.1:${this.port}/dashboard`;
+    this.ws = new WebSocket(url);
+
+    // If handshake not completed within 10s, give up and reconnect
+    const handshakeTimeout = setTimeout(() => {
+      logger.warn('[ManusLiveProxy] Handshake timeout — reconnecting');
+      this.ws && this.ws.terminate();
+    }, 10000);
+
+    this.ws.on('open', () => {
+      // Wait for connect.challenge from ManusLive before emitting status
+    });
+
+    this.ws.on('message', (raw) => {
+      const data = raw.toString();
+      let msg;
+      try { msg = JSON.parse(data); } catch { return; }
+
+      // Handle Moltbot handshake locally — never forward to server
+      if (msg.type === 'evt' && msg.event === 'connect.challenge') {
+        const connectReq = JSON.stringify({
+          type: 'req',
+          id: 'bridge-connect-1',
+          method: 'connect',
+          params: {
+            auth: this.authToken ? { token: this.authToken } : undefined,
+            minProtocol: 3,
+            maxProtocol: 3,
+          },
+        });
+        this.ws.send(connectReq);
+        return;
+      }
+
+      if (msg.type === 'evt' && msg.event === 'connect.success') {
+        clearTimeout(handshakeTimeout);
+        this.connected = true;
+        this.reconnectDelay = 5000; // Reset backoff
+        this.socket.emit('j5:ws:status', { connected: true });
+        logger.info('[ManusLiveProxy] Connected and authenticated to ManusLive');
+        return;
+      }
+
+      // Forward all other messages raw — j5-bridge.ts on the server parses them
+      this.socket.emit('j5:ws:message', { payload: data });
+    });
+
+    this.ws.on('close', () => {
+      clearTimeout(handshakeTimeout);
+      this._handleDisconnect('ManusLive closed connection');
+    });
+
+    this.ws.on('error', (err) => {
+      clearTimeout(handshakeTimeout);
+      this._handleDisconnect(err.message);
+    });
+  }
+
+  _handleDisconnect(reason) {
+    if (this.connected) {
+      this.connected = false;
+      this.socket.emit('j5:ws:status', { connected: false, error: reason });
+      logger.warn(`[ManusLiveProxy] Disconnected: ${reason}`);
+    }
+    this._scheduleReconnect();
+  }
+
+  _scheduleReconnect() {
+    if (this.stopping || this.reconnectTimer) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.start();
+    }, this.reconnectDelay);
+    // Exponential backoff capped at 60s
+    this.reconnectDelay = Math.min(this.reconnectDelay * 2, 60000);
+  }
+
+  send(payload) {
+    const WebSocket = require('ws');
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(payload);
+    } else {
+      logger.warn('[ManusLiveProxy] Cannot send — WebSocket not open');
+    }
+  }
+
+  stop() {
+    this.stopping = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.ws) {
+      this.ws.terminate();
+      this.ws = null;
+    }
+  }
+}
+
 class BridgeClient extends EventEmitter {
   constructor(options = {}) {
     super();
@@ -321,6 +455,12 @@ class BridgeClient extends EventEmitter {
         this.bridgeId = data.bridgeId;
         this.emit('accepted', data);
 
+        // Start ManusLive proxy — connects to local ManusLive daemon if running
+        if (!this.manusLiveProxy) {
+          this.manusLiveProxy = new ManusLiveProxy(this.socket);
+          this.manusLiveProxy.start();
+        }
+
         // Sync living files to server on connection
         try {
           if (!this.livingFilesHandler) {
@@ -613,6 +753,11 @@ class BridgeClient extends EventEmitter {
         this.handleConfigUpdate(data);
       });
 
+      // Forward messages to ManusLive (transparent relay for j5-bridge.ts)
+      this.socket.on('j5:ws:send', (data) => {
+        this.manusLiveProxy?.send(data.payload);
+      });
+
       // Handle Time Capsule creation requests
       this.socket.on('time_capsule:create', async (data) => {
         const { repoPath, commitSha, capsuleData, capsuleId } = data;
@@ -657,6 +802,8 @@ class BridgeClient extends EventEmitter {
       this.socket.on('disconnect', (reason) => {
         this.warn('Disconnected:', reason);
         this.connected = false;
+        this.manusLiveProxy?.stop();
+        this.manusLiveProxy = null;
         this.emit('disconnected', reason);
       });
       
@@ -664,6 +811,11 @@ class BridgeClient extends EventEmitter {
       this.socket.on('reconnect', (attemptNumber) => {
         this.log(`Reconnected after ${attemptNumber} attempts`);
         this.connected = true;
+        // Restart ManusLive proxy after Socket.IO reconnection
+        if (!this.manusLiveProxy && this.bridgeId) {
+          this.manusLiveProxy = new ManusLiveProxy(this.socket);
+          this.manusLiveProxy.start();
+        }
         this.emit('reconnected');
       });
 
