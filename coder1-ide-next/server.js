@@ -219,7 +219,7 @@ try {
  * Auto-starts the daemon if not already running
  */
 async function ensureManusLiveRunning() {
-  const MANUSLIVE_PORT = parseInt(process.env.MANUSLIVE_PORT || '55413');
+  const MANUSLIVE_PORT = parseInt(process.env.MANUSLIVE_PORT || '18789');
   const MANUSLIVE_PATH = process.env.MANUSLIVE_PATH ||
     path.join(process.env.HOME, 'manuslive/manuslive');
 
@@ -2281,6 +2281,14 @@ app.prepare().then(() => {
     // Make bridge manager globally available for API routes
     global.bridgeManager = bridgeManager;
     console.log('🌉 Coder1 Bridge Manager initialized');
+
+    // Enable J5 relay mode: bridge CLI acts as transparent tunnel to ManusLive.
+    // This replaces the direct WebSocket from the Render server (which can't reach
+    // the user's localhost) with a relay through the bridge Socket.IO connection.
+    if (j5Bridge) {
+      j5Bridge.enableRelayMode(bridgeManager);
+      console.log('🔗 J5 relay mode enabled — ManusLive will connect via bridge CLI');
+    }
     
   } catch (error) {
     console.error('❌ CRITICAL: Bridge Manager failed to initialize');

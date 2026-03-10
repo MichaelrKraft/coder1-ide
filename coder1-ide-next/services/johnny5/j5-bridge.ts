@@ -75,7 +75,7 @@ export interface J5BridgeEvents {
 // ============================================================================
 
 const DEFAULT_CONFIG: J5Config = {
-  gatewayUrl: process.env.J5_GATEWAY_URL || 'ws://localhost:55413',
+  gatewayUrl: process.env.J5_GATEWAY_URL || 'ws://localhost:18789',
   enabled: true,
   reconnectInterval: parseInt(process.env.J5_RECONNECT_INTERVAL || '5000', 10),
   maxRetries: parseInt(process.env.J5_MAX_RETRIES || '10', 10),
@@ -98,6 +98,10 @@ class J5BridgeService extends EventEmitter {
   private agentResponses = new Map<string, { content: string; sessionKey: string }>(); // Accumulate streamed content
   private readonly PING_INTERVAL_MS = 30000; // 30 seconds
   private readonly MESSAGE_TIMEOUT_MS = parseInt(process.env.JOHNNY5_MESSAGE_TIMEOUT || '180000', 10); // 3 minutes default (Claude can be slow)
+  // Relay mode: bridge CLI acts as transparent WS tunnel to ManusLive
+  private relayMode = false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private bridgeManagerRef: any = null;
 
   /**
    * Safely extract text content from various payload formats.
@@ -151,6 +155,57 @@ class J5BridgeService extends EventEmitter {
   }
 
   // -------------------------------------------------------------------------
+  // Relay Mode (bridge CLI acts as transparent tunnel to ManusLive)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Enable relay mode: swaps the direct WebSocket to ManusLive for a tunnel
+   * through the coder1-bridge CLI's Socket.IO connection. All existing Moltbot
+   * protocol parsing, pending message correlation, and timeout logic is kept.
+   * Only the transport layer changes.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  enableRelayMode(bridgeMgr: any): void {
+    this.relayMode = true;
+    this.bridgeManagerRef = bridgeMgr;
+
+    // ManusLive handshake completed via bridge → mark as connected + authenticated
+    bridgeMgr.on('j5:relay:authenticated', () => {
+      this.authenticated = true;
+      this.state.status.connected = true;
+      this.state.status.gatewayUrl = `ws://127.0.0.1:${process.env.MANUSLIVE_PORT || '18789'}/dashboard`;
+      this.emit('authenticated'); // Unblocks j5/chat route's 5s wait
+      this.emit('connected');     // Triggers johnny5:j5-connected broadcast in server.js
+      console.log('[J5Bridge] Relay mode: ManusLive connected via bridge');
+    });
+
+    // ManusLive disconnected (bridge disconnect or ManusLive crash)
+    bridgeMgr.on('j5:ws:status', (data: { connected: boolean; error?: string }) => {
+      if (!data.connected) {
+        this.authenticated = false;
+        this.state.status.connected = false;
+        // Fail fast: reject all pending messages instead of waiting for timeout
+        for (const [, pending] of this.state.pendingMessages) {
+          clearTimeout(pending.timeout);
+          pending.reject(new Error('ManusLive disconnected: ' + (data.error || 'unknown')));
+        }
+        this.state.pendingMessages.clear();
+        this.emit('disconnected', data.error || 'ManusLive disconnected'); // Triggers j5-disconnected
+        console.log('[J5Bridge] Relay mode: ManusLive disconnected —', data.error || '');
+      }
+    });
+
+    // Incoming raw Moltbot messages from ManusLive via bridge tunnel
+    bridgeMgr.on('j5:ws:message', (data: { payload: string }) => {
+      try {
+        this.handleMessage(data.payload);
+      } catch { /* ignore parse errors */ }
+    });
+
+    console.log('[J5Bridge] Relay mode enabled — ManusLive connection managed by bridge CLI');
+  }
+
+  // -------------------------------------------------------------------------
   // Connection Management
   // -------------------------------------------------------------------------
 
@@ -158,6 +213,11 @@ class J5BridgeService extends EventEmitter {
    * Connect to the J5 gateway
    */
   async connect(gatewayUrl?: string): Promise<void> {
+    // In relay mode the bridge CLI manages the ManusLive WebSocket — nothing to do here
+    if (this.relayMode) {
+      console.log('[J5Bridge] Relay mode: connect() is a no-op — bridge manages ManusLive connection');
+      return;
+    }
     const url = gatewayUrl || this.state.config.gatewayUrl;
 
     console.log(`[J5Bridge] Connecting to ${url}...`);
@@ -436,6 +496,9 @@ class J5BridgeService extends EventEmitter {
    * Check if connected and authenticated to the gateway
    */
   isConnected(): boolean {
+    if (this.relayMode) {
+      return this.state.status.connected && this.authenticated;
+    }
     return this.state.status.connected && this.ws?.readyState === 1 && this.authenticated;
   }
 
@@ -1218,7 +1281,12 @@ class J5BridgeService extends EventEmitter {
       try {
         const payloadStr = JSON.stringify(payload);
         console.log(`[J5Bridge] Sending via chat.send: ${payloadStr.substring(0, 200)}`);
-        this.ws!.send(payloadStr);
+        if (this.relayMode) {
+          // Route through bridge CLI tunnel instead of direct WebSocket
+          this.bridgeManagerRef!.sendJ5WsMessage(payloadStr);
+        } else {
+          this.ws!.send(payloadStr);
+        }
         console.log(`[J5Bridge] Message sent: ${messageId}`);
       } catch (error) {
         clearTimeout(timeout);

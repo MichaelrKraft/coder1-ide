@@ -23,6 +23,7 @@ interface BridgeConnection {
     uptime: number;
     memoryUsage: number;
   };
+  j5RelayConnected?: boolean; // True when ManusLive is reachable via this bridge
 }
 
 interface PairingCode {
@@ -317,6 +318,25 @@ export class BridgeManager extends EventEmitter {
         }
         console.error(`[BridgeManager] Living file write failed: ${data.filename} - ${data.error}`);
       }
+    });
+
+    // ManusLive relay status (connected/disconnected on user's machine)
+    socket.on('j5:ws:status', (data: { connected: boolean; error?: string }) => {
+      const bridge = this.bridges.get(bridgeId);
+      if (bridge) {
+        bridge.j5RelayConnected = data.connected;
+      }
+      this.emit('j5:ws:status', { bridgeId, userId: bridge?.userId, connected: data.connected, error: data.error });
+      if (data.connected) {
+        // Signal j5-bridge.ts that ManusLive handshake completed via bridge
+        this.emit('j5:relay:authenticated', { bridgeId, userId: bridge?.userId });
+      }
+    });
+
+    // Raw Moltbot message from ManusLive — forwarded to j5-bridge.ts for parsing
+    socket.on('j5:ws:message', (data: { payload: string }) => {
+      const bridge = this.bridges.get(bridgeId);
+      this.emit('j5:ws:message', { payload: data.payload, userId: bridge?.userId });
     });
 
     // Errors
@@ -615,11 +635,53 @@ export class BridgeManager extends EventEmitter {
       pendingSync.reject(new Error('Bridge disconnected'));
     }
 
+    // Emit J5 relay disconnected if ManusLive was connected through this bridge
+    if (bridge.j5RelayConnected) {
+      this.emit('j5:ws:status', { bridgeId, userId: bridge.userId, connected: false, error: 'Bridge disconnected' });
+    }
+
     // Remove bridge
     this.bridges.delete(bridgeId);
 
     console.log(`[BridgeManager] Unregistered bridge ${bridgeId}`);
     this.emit('bridge:disconnected', { bridgeId, userId: bridge.userId });
+  }
+
+  /**
+   * Returns true if any connected bridge reports ManusLive is reachable
+   */
+  getJ5RelayConnected(): boolean {
+    for (const bridge of this.bridges.values()) {
+      if (bridge.j5RelayConnected === true) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Send a raw Moltbot JSON string to ManusLive via the bridge tunnel
+   */
+  sendJ5WsMessage(payload: string): void {
+    // Prefer a bridge that already has ManusLive connected
+    let target: BridgeConnection | null = null;
+    for (const bridge of this.bridges.values()) {
+      if (bridge.j5RelayConnected === true && bridge.socket?.connected) {
+        target = bridge;
+        break;
+      }
+    }
+    // Fall back to any connected bridge (ManusLive might still be handshaking)
+    if (!target) {
+      for (const bridge of this.bridges.values()) {
+        if (bridge.socket?.connected) {
+          target = bridge;
+          break;
+        }
+      }
+    }
+    if (!target?.socket?.connected) {
+      throw new Error('No bridge connected for J5 relay');
+    }
+    target.socket.emit('j5:ws:send', { payload });
   }
 
   /**
