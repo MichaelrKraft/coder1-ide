@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, XCircle, Lightbulb, Loader2 } from 'lucide-react';
+import { AlertCircle, XCircle, Lightbulb, Loader2, History } from 'lucide-react';
 import { useContextActivation } from '@/lib/hooks/useContextActivation';
 import { useModelStore } from '@/stores/useModelStore';
 
@@ -10,19 +10,46 @@ interface ErrorDoctorProps {
   isActive: boolean;
 }
 
+interface PastErrorMatch {
+  commitSha: string;
+  shortSha: string;
+  commitMessage: string;
+  timestamp: number;
+  score: number;
+}
+
 export default function ErrorDoctor({ lastError, isActive }: ErrorDoctorProps) {
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [errorType, setErrorType] = useState<'error' | 'warning' | 'info'>('error');
-  
+  const [pastMatches, setPastMatches] = useState<PastErrorMatch[]>([]);
+
   // PHASE 3: Context activation for Error Doctor AI analysis
   const { activateContext } = useContextActivation();
 
   useEffect(() => {
     if (lastError && isActive) {
       analyzeError(lastError);
+      lookupPastErrors(lastError);
     }
   }, [lastError, isActive]);
+
+  const lookupPastErrors = async (error: string) => {
+    try {
+      const res = await fetch('/api/flowtrace/similar-errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ errorText: error }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPastMatches(data.matches ?? []);
+      }
+    } catch {
+      // FlowTrace unavailable — silently skip
+      setPastMatches([]);
+    }
+  };
 
   const analyzeError = async (error: string) => {
     setIsAnalyzing(true);
@@ -139,6 +166,32 @@ export default function ErrorDoctor({ lastError, isActive }: ErrorDoctorProps) {
           {!diagnosis && !isAnalyzing && !lastError && (
             <div className="text-sm text-text-muted">
               No errors detected. The Error Doctor is monitoring your terminal.
+            </div>
+          )}
+
+          {/* FlowTrace "seen before" — only shown when there are past matches */}
+          {pastMatches.length > 0 && !isAnalyzing && (
+            <div className="mt-2 pt-2 border-t border-gray-700/50">
+              <div className="flex items-center gap-1 mb-1">
+                <History className="w-3 h-3 text-[#00D9FF]" />
+                <span className="text-[10px] font-semibold text-[#00D9FF] uppercase tracking-wider">
+                  You&apos;ve seen this before
+                </span>
+              </div>
+              {pastMatches.slice(0, 2).map((m) => (
+                <a
+                  key={m.commitSha}
+                  href={`/git-log?sha=${m.commitSha}`}
+                  className="block text-xs text-gray-400 hover:text-white py-0.5 hover:underline truncate"
+                  title={m.commitMessage}
+                >
+                  <code className="text-[#00D9FF] mr-1">{m.shortSha}</code>
+                  <span className="text-gray-500 mr-1">
+                    {new Date(m.timestamp).toLocaleDateString()}
+                  </span>
+                  {m.commitMessage || 'see how you fixed it →'}
+                </a>
+              ))}
             </div>
           )}
         </div>

@@ -51,11 +51,6 @@ import StagedComposer from './StagedComposer';
 import SessionMetricsBar from './SessionMetricsBar';
 import { useAutoCheckpoint } from '@/lib/hooks/useAutoCheckpoint';
 
-// Time Capsule: Dynamic import to avoid bundle impact when feature is disabled
-const TimeCapsulePrompt = features().timeCapsules
-  ? dynamic(() => import('@/components/time-capsules/TimeCapsulePrompt'), { ssr: false })
-  : null;
-
 // Defensive filtering for status lines - Layer 3 protection
 const cleanStatusLines = (data: string): string => {
   if (!data) return data;
@@ -272,16 +267,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const [audioAlertsEnabled, setAudioAlertsEnabled] = useState(false);
   const [recognition, setRecognition] = useState<any | null>(null);
   const [claudeActive, setClaudeActive] = useState(false);
-  // Time Capsule: Commit data for the save prompt (feature-gated)
-  const [timeCapsuleCommit, setTimeCapsuleCommit] = useState<{
-    sessionId: string;
-    sha: string;
-    branch: string;
-    message: string;
-    duration: number;
-    claudeSessionStart?: string;
-    repoPath?: string;
-  } | null>(null);
   const claudeActivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const claudeActivityStartedRef = useRef(false); // ⚡ Prevent repeated setState during same response (Feb 2, 2025)
   const lastDataRef = useRef<{data: string, timestamp: number} | null>(null);
@@ -3976,23 +3961,24 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         outputFlushTimeoutRef.current = setTimeout(flushOutput, flushDelay);
         
         // Check if we should display statusline after command completion
-        if (terminalSettings.statusLine.enabled && data.includes('\n')) {
+        // FIX (Mar 12, 2026): Skip status line during active Claude sessions to prevent TUI interference
+        if (terminalSettings.statusLine.enabled && data.includes('\n') && !claudeActive) {
           // Check for command prompt pattern (indicates command completed)
           if (data.match(/\$\s*$/) || data.match(/>\s*$/) || data.match(/#\s*$/) || data.match(/❯\s*$/)) {
             // Generate and display statusline
             const width = term.cols || 80;
             const separator = '─'.repeat(width);
-            
+
             // Line 1: Session info and tokens
             const sessionInfo = `Session: ${sessionId?.slice(-8) || 'none'} | Tokens: ${totalTokens || 0} | Cost: ${usageCost} | Reset: ${blockResetTime}`;
             const model = 'claude-3-5-sonnet';
             const line1 = `${sessionInfo}${' '.repeat(Math.max(0, width - sessionInfo.length - model.length))}${model}`;
-            
+
             // Line 2: Current file and git info
             const currentFileDisplay = currentFile || 'No file open';
             const gitBranch = 'main'; // TODO: Get from git status
             const line2 = `File: ${currentFileDisplay} | Branch: ${gitBranch}`;
-            
+
             // Line 3: Status and model
             const modelDisplay = selectedClaudeModel.includes('opus-4-6') ? 'Opus 4.6' :
                                 selectedClaudeModel.includes('4-5-sonnet') ? 'Sonnet 4.5' :
@@ -4000,20 +3986,23 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
                                 selectedClaudeModel.includes('3-7-sonnet') ? 'Sonnet 3.7' :
                                 selectedClaudeModel.includes('3-5-sonnet') ? 'Sonnet 3.5' :
                                 selectedClaudeModel.includes('3-5-haiku') ? 'Haiku 3.5' :
-                                selectedClaudeModel.includes('sonnet') ? 'Sonnet' : 
-                                selectedClaudeModel.includes('opus') ? 'Opus' : 
+                                selectedClaudeModel.includes('sonnet') ? 'Sonnet' :
+                                selectedClaudeModel.includes('opus') ? 'Opus' :
                                 selectedClaudeModel.includes('haiku') ? 'Haiku' : 'Claude';
             const mode = `Model: ${modelDisplay}`;
             const status = agentsRunning ? 'AI Team Active' : claudeActive ? 'Claude Active' : 'Ready';
             const mcpInfo = mcpStatus.total > 0 ? ` | MCP: ${mcpStatus.healthy}/${mcpStatus.total} ` : '';
             const line3 = `${mode} | ${status}${mcpInfo}`;
-            
-            // Write the statusline
-            term.write('\r\n' + separator);
-            term.write('\r\n' + line1);
-            term.write('\r\n' + line2);
-            term.write('\r\n' + line3);
-            term.write('\r\n' + separator + '\r\n');
+
+            // FIX (Mar 12, 2026): Consolidate into single atomic write to prevent interleaving
+            const statusBlock = [
+              '\r\n' + separator,
+              '\r\n' + line1,
+              '\r\n' + line2,
+              '\r\n' + line3,
+              '\r\n' + separator + '\r\n'
+            ].join('');
+            term.write(statusBlock);
           }
         }
         
@@ -4328,18 +4317,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
     socketHandlersRef.current.claudeSessionComplete = claudeSessionCompleteHandler;
     socket.on('claude:sessionComplete', claudeSessionCompleteHandler);
-
-    // Time Capsule: Listen for commit detection during active Claude sessions
-    if (features().timeCapsules) {
-      const timeCapsuleHandler = (data: { sessionId: string; sha: string; branch: string; message: string; duration: number; claudeSessionStart?: string; repoPath?: string }) => {
-        setTimeCapsuleCommit(data);
-      };
-      if ((socketHandlersRef.current as any).timeCapsuleCommit) {
-        socket.off('time_capsule:commit_detected', (socketHandlersRef.current as any).timeCapsuleCommit);
-      }
-      (socketHandlersRef.current as any).timeCapsuleCommit = timeCapsuleHandler;
-      socket.on('time_capsule:commit_detected', timeCapsuleHandler);
-    }
 
     // ⚡ PERFORMANCE FIX (Feb 2, 2025): Convert to named handler with socketHandlersRef storage
     const claudeErrorHandler = ({ message }: { message: string }) => {
@@ -5752,59 +5729,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
         </div>
       </div>
-
-      {/* Time Capsule Prompt - Feature-gated inline notification */}
-      {features().timeCapsules && TimeCapsulePrompt && timeCapsuleCommit && (
-        <TimeCapsulePrompt
-          commitSha={timeCapsuleCommit.sha}
-          commitMessage={timeCapsuleCommit.message}
-          sessionDuration={timeCapsuleCommit.duration}
-          onSave={async () => {
-            try {
-              // Truncate transcript client-side (1MB limit)
-              const MAX_TRANSCRIPT = 1024 * 1024;
-              let transcript = terminalHistory || '';
-              if (transcript.length > MAX_TRANSCRIPT) {
-                transcript = transcript.slice(-MAX_TRANSCRIPT);
-              }
-
-              const repoPath = timeCapsuleCommit.repoPath || workingDirectory || 'unknown';
-
-              const resp = await fetch('/api/time-capsules', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  repository_path: repoPath,
-                  commit_sha: timeCapsuleCommit.sha,
-                  commit_message: timeCapsuleCommit.message,
-                  commit_branch: timeCapsuleCommit.branch,
-                  duration_seconds: Math.round(timeCapsuleCommit.duration / 1000),
-                  session_start_time: timeCapsuleCommit.claudeSessionStart,
-                  agent_name: 'Claude Code',
-                  user_id: authUser?.id || null,
-                  transcript,
-                }),
-              });
-              if (!resp.ok) throw new Error('Failed to save');
-
-              // Trigger bridge to write capsule to git metadata branch
-              const capsuleData = await resp.json();
-              if (capsuleData.success && capsuleData.capsule && socketRef.current) {
-                socketRef.current.emit('time_capsule:create', {
-                  repoPath,
-                  commitSha: timeCapsuleCommit.sha,
-                  capsuleId: capsuleData.capsule.id,
-                  capsuleData: capsuleData.capsule,
-                });
-              }
-            } catch (err) {
-              console.error('[Time Capsule] Save failed:', err);
-              throw err;
-            }
-          }}
-          onDismiss={() => setTimeCapsuleCommit(null)}
-        />
-      )}
 
       {/* Terminal Content - Let xterm.js handle scrolling */}
       <div
