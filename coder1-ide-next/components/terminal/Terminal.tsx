@@ -3700,9 +3700,18 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         // Track flush time for idle detection (AFTER checking idle state)
         lastFlushTimeRef.current = Date.now();
         
-        // 🔧 FIX: Skip auto-scroll during initial load to keep header visible
+        // 🔧 FIX: During initial load, scroll back to top after each write to
+        // counteract xterm's built-in scroll-on-output behavior.
         if (!initialLoadComplete.current) {
-          // Initial load - don't auto-scroll, let header remain visible
+          requestAnimationFrame(() => {
+            if (!initialLoadComplete.current && term) {
+              try {
+                term.scrollToLine(0);
+                const viewport = terminalRef.current?.querySelector('.xterm-viewport') as HTMLElement;
+                if (viewport) viewport.scrollTop = 0;
+              } catch (_) { /* ignore */ }
+            }
+          });
           return;
         }
         

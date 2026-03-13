@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Loader2, Clock, Monitor, AlertCircle, Zap } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, Loader2, Clock, Monitor, AlertCircle, Zap, ArrowLeft } from 'lucide-react';
 
 // ============================================================================
 // Types
@@ -120,7 +121,8 @@ function MatchCard({ match }: { match: QueryMatch }) {
 // Main Panel
 // ============================================================================
 
-export function FlowTracePanel() {
+export function FlowTracePanel({ hideBackButton = false }: { hideBackButton?: boolean }) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<QueryResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -173,6 +175,15 @@ export function FlowTracePanel() {
     <div className="flex flex-col h-full bg-gray-900 text-white">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800">
+        {!hideBackButton && (
+          <button
+            onClick={() => router.push('/ide')}
+            className="text-gray-500 hover:text-gray-300 transition-colors"
+            title="Back to IDE"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+        )}
         <Zap className="w-4 h-4 text-[#00D9FF]" />
         <h1 className="text-sm font-semibold">FlowTrace</h1>
         {status && (

@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X, Edit3 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X, Edit3, Zap } from 'lucide-react';
+import { FlowTracePanel } from '@/components/flowtrace/FlowTracePanel';
 
 interface TimelineEvent {
   id: string;
@@ -21,6 +22,8 @@ interface Session {
 
 export default function TimelinePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = (searchParams.get('tab') ?? 'timeline') as 'timeline' | 'flowtrace';
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<string>(''); // Current viewing session (changes as user browses)
@@ -440,7 +443,41 @@ export default function TimelinePage() {
             </button>
           </div>
         </div>
-        
+
+        {/* Tab Bar */}
+        <div className="flex border-b border-gray-700 mb-6">
+          <button
+            onClick={() => router.push('/timeline?tab=timeline')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'timeline'
+                ? 'border-cyan-400 text-cyan-400'
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            Checkpoints
+          </button>
+          <button
+            onClick={() => router.push('/timeline?tab=flowtrace')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'flowtrace'
+                ? 'border-[#00D9FF] text-[#00D9FF]'
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            <Zap className="w-4 h-4" />
+            FlowTrace
+          </button>
+        </div>
+
+        {activeTab === 'flowtrace' && (
+          <div style={{ height: 'calc(100vh - 180px)' }}>
+            <FlowTracePanel hideBackButton />
+          </div>
+        )}
+
+        {activeTab === 'timeline' && (
+          <>
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold text-white">Project Timeline</h1>
           
@@ -687,6 +724,8 @@ export default function TimelinePage() {
               );
             })}
           </div>
+          </>
+        )}
           </>
         )}
       </div>
