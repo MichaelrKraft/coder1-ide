@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Home, Grid, FileText, Code, Sparkles, BookOpen, SettingsIcon, Info, HelpCircle, Keyboard, AlertCircle } from '@/lib/icons';
+import { GitBranch, Zap } from 'lucide-react';
 import { glows } from '@/lib/design-tokens';
 import { SetupInstructionsModal } from './bridge/SetupInstructionsModal';
 import { GlmSetupModal } from './GlmSetupModal';
@@ -228,6 +229,8 @@ const MenuBar = React.memo(function MenuBar({
     { icon: Sparkles, label: 'Features', href: '/documentation.html' },
     { icon: FileText, label: 'AI PRD', href: 'http://localhost:3001/smart-prd-generator-standalone.html', target: '_blank' },
     { icon: BookOpen, label: 'Documentation', href: '/documentation' },
+    { icon: GitBranch, label: 'Git History', href: '/git-log' },
+    { icon: Zap, label: 'FlowTrace', href: '/flowtrace' },
     { icon: SettingsIcon, label: 'Settings', href: '#', onClick: () => onShowSettings?.() },
   ];
 

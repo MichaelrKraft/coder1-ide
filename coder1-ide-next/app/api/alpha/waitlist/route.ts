@@ -65,8 +65,9 @@ async function sendNotificationEmail(data: {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, fullName, name, redditUsername, source } = body;
+    const { email, fullName, name, redditUsername, source, utm_content } = body;
     const displayName = fullName || name || null;
+    const resolvedSource = utm_content || source || 'website';
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json(
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
         email: email.toLowerCase().trim(),
         name: displayName,
         reddit_username: redditUsername || null,
-        source: source || 'website',
+        source: resolvedSource,
         ip_address: ipAddress,
         user_agent: userAgent,
       })
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase().trim(),
       name: displayName,
       redditUsername: redditUsername || null,
-      source: source || 'website',
+      source: resolvedSource,
     });
 
     return NextResponse.json({

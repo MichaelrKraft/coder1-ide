@@ -145,6 +145,7 @@ export class DatabaseMigrationManager {
       'bridge-schema.sql',                    // Bridge pairing persistence
       'time-capsules-schema.sql',             // Time Capsules: AI session -> Git commit linking
       'add-checkpoint-type.sql',              // Add type column (manual|auto) to checkpoints
+      'migrations/004_commit_contexts.sql',   // Commit Context: automatic session context at each git commit
     ];
 
     let appliedCount = 0;

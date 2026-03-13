@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Coder1 IDE captures every AI decision, reasoning step, and session context — inside the IDE where you actually work. Not just context capture. Action.">
+    <title>Coder1 — The IDE That Remembers Everything</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --cyan: #00D9FF;
+            --cyan-mid: #00B4D8;
+            --cyan-light: #90E0EF;
+            --cyan-dark: #0077B6;
+            --cyan-pale: #caf0f8;
+            --cyan-ultra-pale: #f0fafe;
+            --bg: linear-gradient(160deg, #f0fafe 0%, #caf0f8 60%, #e0f7fc 100%);
+            --white: #ffffff;
+            --card: rgba(255, 255, 255, 0.9);
+            --text-dark: #060a0d;
+            --text-mid: #2d4a5a;
+            --text-muted: #5a7a8a;
+            --border: rgba(0, 180, 216, 0.25);
+            --border-strong: rgba(0, 217, 255, 0.5);
+            --shadow: 0 4px 24px rgba(0, 180, 216, 0.12);
+            --shadow-hover: 0 8px 40px rgba(0, 180, 216, 0.22);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text-dark);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ─── NAV ─── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 40px;
+            background: rgba(240, 250, 254, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--text-dark);
+            text-decoration: none;
+        }
+
+        .nav-logo-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 12px var(--cyan);
+        }
+
+        .nav-cta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .nav-link {
+            color: var(--text-mid);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-link:hover { color: var(--cyan-dark); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-mid));
+            color: var(--white);
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 180, 216, 0.4);
+        }
+
+        .btn-secondary {
+            color: var(--cyan-dark);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1.5px solid var(--border-strong);
+            padding: 10px 22px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-secondary:hover {
+            background: rgba(0, 217, 255, 0.08);
+            border-color: var(--cyan);
+        }
+
+        /* ─── HERO ─── */
+        .hero {
+            padding: 160px 40px 100px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 400px;
+            background: radial-gradient(ellipse, rgba(0, 217, 255, 0.18) 0%, transparent 70%);
+            pointer-events: none;
+            animation: heroGlow 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes heroGlow {
+            0% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+            100% { opacity: 1; transform: translateX(-50%) scale(1.08); }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 217, 255, 0.12);
+            border: 1px solid var(--border-strong);
+            border-radius: 100px;
+            padding: 6px 16px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--cyan-dark);
+            margin-bottom: 28px;
+        }
+
+        .hero-badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--cyan);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .hero h1 {
+            font-size: clamp(2.8rem, 6vw, 5rem);
+            font-weight: 900;
+            line-height: 1.08;
+            color: var(--text-dark);
+            margin-bottom: 24px;
+            letter-spacing: -0.03em;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--cyan-dark), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            font-size: 1.25rem;
+            color: var(--text-mid);
+            max-width: 640px;
+            margin: 0 auto 40px;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 64px;
+        }
+
+        .hero-cta-main {
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-mid));
+            color: var(--white);
+            border: none;
+            padding: 16px 32px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.25s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 24px rgba(0, 180, 216, 0.35);
+        }
+        .hero-cta-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 36px rgba(0, 180, 216, 0.5);
+        }
+
+        /* Terminal mock */
+        .hero-terminal {
+            max-width: 780px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid var(--border-strong);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--shadow-hover);
+            text-align: left;
+        }
+
+        .terminal-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: rgba(0, 180, 216, 0.08);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .terminal-body {
+            padding: 24px;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.82rem;
+            line-height: 2;
+        }
+
+        .t-dim { color: #5a7a8a; }
+        .t-cyan { color: var(--cyan-dark); font-weight: 600; }
+        .t-green { color: #0a7a4e; font-weight: 600; }
+        .t-amber { color: #b45309; }
+        .t-tag {
+            display: inline-block;
+            background: rgba(0, 217, 255, 0.12);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 8px;
+            font-size: 0.75rem;
+            color: var(--cyan-dark);
+            font-weight: 600;
+            margin-right: 6px;
+        }
+
+        /* ─── SECTION WRAPPER ─── */
+        section { padding: 100px 40px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        .section-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--cyan-dark);
+            margin-bottom: 16px;
+        }
+
+        .section-label::before {
+            content: '';
+            width: 20px;
+            height: 2px;
+            background: var(--cyan);
+        }
+
+        h2 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+        }
+
+        h2 span {
+            background: linear-gradient(135deg, var(--cyan-dark), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-sub {
+            font-size: 1.1rem;
+            color: var(--text-mid);
+            max-width: 600px;
+            margin-bottom: 60px;
+            line-height: 1.7;
+        }
+
+        /* ─── PAIN SECTION ─── */
+        .pain-section {
+            background: rgba(255, 255, 255, 0.6);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .pain-quote {
+            max-width: 800px;
+            margin: 0 auto 60px;
+            text-align: center;
+        }
+
+        .pain-quote blockquote {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            line-height: 1.5;
+            font-style: italic;
+        }
+
+        .pain-quote cite {
+            display: block;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-style: normal;
+        }
+
+        .pain-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .pain-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pain-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.4), transparent);
+        }
+
+        .pain-icon {
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+        }
+
+        .pain-card h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .pain-card p {
+            font-size: 0.92rem;
+            color: var(--text-mid);
+            line-height: 1.6;
+        }
+
+        /* ─── FEATURE GRID ─── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 28px;
+        }
+
+        .feature-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            border-color: var(--border-strong);
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-3px);
+        }
+
+        .feature-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top left, rgba(0, 217, 255, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(0, 180, 216, 0.08));
+            border: 1px solid var(--border-strong);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            font-size: 0.9rem;
+            color: var(--text-mid);
+            line-height: 1.65;
+            margin-bottom: 16px;
+        }
+
+        .feature-detail {
+            font-size: 0.8rem;
+            color: var(--cyan-dark);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .feature-detail::before {
+            content: '';
+            width: 12px;
+            height: 1.5px;
+            background: var(--cyan);
+        }
+
+        /* ─── COMPARISON TABLE ─── */
+        .comparison-section {
+            background: rgba(255, 255, 255, 0.5);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            background: var(--white);
+        }
+
+        .comparison-table th {
+            padding: 20px 24px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-align: left;
+            background: rgba(0, 180, 216, 0.08);
+            border-bottom: 2px solid var(--border);
+            color: var(--text-dark);
+        }
+
+        .comparison-table th:nth-child(2) {
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .comparison-table th:nth-child(3) {
+            text-align: center;
+            color: var(--cyan-dark);
+        }
+
+        .comparison-table td {
+            padding: 16px 24px;
+            font-size: 0.88rem;
+            border-bottom: 1px solid rgba(0, 180, 216, 0.1);
+            color: var(--text-mid);
+        }
+
+        .comparison-table td:nth-child(2),
+        .comparison-table td:nth-child(3) {
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .comparison-table tr:last-child td { border-bottom: none; }
+        .comparison-table tr:hover td { background: rgba(0, 217, 255, 0.03); }
+
+        .check { color: #0a9e63; }
+        .cross { color: #c0392b; }
+        .partial { color: #b45309; }
+
+        .row-highlight td {
+            background: rgba(0, 217, 255, 0.05);
+            font-weight: 600;
+        }
+
+        .comparison-note {
+            margin-top: 16px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* ─── IDE ADVANTAGE ─── */
+        .ide-advantage {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .ide-advantage { grid-template-columns: 1fr; }
+        }
+
+        .ide-text h2 { margin-bottom: 20px; }
+
+        .ide-text p {
+            font-size: 1.05rem;
+            color: var(--text-mid);
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+
+        .ide-callout {
+            background: rgba(0, 217, 255, 0.08);
+            border-left: 3px solid var(--cyan);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-top: 24px;
+            font-style: italic;
+        }
+
+        .ide-visual {
+            background: var(--card);
+            border: 1px solid var(--border-strong);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: var(--shadow);
+        }
+
+        .ide-visual-header {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .context-layer {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .context-layer.active {
+            background: rgba(0, 217, 255, 0.12);
+            border: 1px solid var(--border-strong);
+            color: var(--cyan-dark);
+        }
+
+        .context-layer.inactive {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px dashed rgba(0, 0, 0, 0.12);
+            color: var(--text-muted);
+        }
+
+        .context-layer i { width: 16px; text-align: center; }
+
+        /* ─── CTA SECTION ─── */
+        .cta-section {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.6);
+            border-top: 1px solid var(--border);
+        }
+
+        .cta-inner {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .cta-inner h2 {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            margin-bottom: 20px;
+        }
+
+        .cta-inner p {
+            font-size: 1.1rem;
+            color: var(--text-mid);
+            margin-bottom: 40px;
+            line-height: 1.7;
+        }
+
+        .cta-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .cta-large {
+            background: linear-gradient(135deg, var(--cyan), var(--cyan-mid));
+            color: var(--white);
+            border: none;
+            padding: 18px 40px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.25s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 24px rgba(0, 180, 216, 0.4);
+        }
+        .cta-large:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 40px rgba(0, 180, 216, 0.55);
+        }
+
+        .cta-note {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* ─── FOOTER ─── */
+        footer {
+            padding: 40px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+
+        footer a { color: var(--cyan-dark); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* ─── SCROLL ANIMATION ─── */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 768px) {
+            nav { padding: 14px 20px; }
+            .hero { padding: 120px 20px 80px; }
+            section { padding: 72px 20px; }
+            .pain-cards { grid-template-columns: 1fr; }
+            .features-grid { grid-template-columns: 1fr; }
+            .hero-actions { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+    <a href="#" class="nav-logo">
+        <div class="nav-logo-dot"></div>
+        Coder1
+    </a>
+    <div class="nav-cta">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#compare" class="nav-link">Compare</a>
+        <a href="https://coder1.ai/alpha" class="btn-primary">Try Free <i class="fas fa-arrow-right"></i></a>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-badge">
+        <div class="hero-badge-dot"></div>
+        Built for the age of AI agents
+    </div>
+
+    <h1>The IDE That<br><span>Remembers Everything</span></h1>
+
+    <p class="hero-sub">
+        Every AI decision. Every reasoning step. Every session.
+        Captured, searchable, and working for you — inside the IDE where you actually code.
+    </p>
+
+    <div class="hero-actions">
+        <a href="https://coder1.ai/alpha" class="hero-cta-main">
+            Try Coder1 Free <i class="fas fa-arrow-right"></i>
+        </a>
+        <a href="#features" class="btn-secondary">
+            See How It Works <i class="fas fa-chevron-down"></i>
+        </a>
+    </div>
+
+    <div class="hero-terminal">
+        <div class="terminal-bar">
+            <div class="terminal-dot" style="background:#f87171;"></div>
+            <div class="terminal-dot" style="background:#fbbf24;"></div>
+            <div class="terminal-dot" style="background:#4ade80;"></div>
+            <span style="font-size:0.78rem;color:#5a7a8a;margin-left:8px;">Johnny5 — Session Audit Trail</span>
+        </div>
+        <div class="terminal-body">
+            <div><span class="t-dim">09:14:32</span>&nbsp;&nbsp;<span class="t-tag">file_write</span> <span class="t-cyan">api/payments/route.ts</span></div>
+            <div style="padding-left:80px;color:#2d4a5a;">↳ Reasoning: <span class="t-amber">switched from REST to Server Actions to eliminate the roundtrip latency identified in session #142</span></div>
+            <div><span class="t-dim">09:14:35</span>&nbsp;&nbsp;<span class="t-tag">command_exec</span> <span class="t-cyan">npm run test:payments</span></div>
+            <div style="padding-left:80px;color:#2d4a5a;">↳ Result: <span class="t-green">18/18 passing</span> &nbsp;|&nbsp; Risk: low</div>
+            <div><span class="t-dim">09:14:51</span>&nbsp;&nbsp;<span class="t-tag">git_commit</span> <span class="t-cyan">a3f8d91 — refactor: payment handler</span></div>
+            <div style="padding-left:80px;color:#2d4a5a;">↳ Context snapshot linked · session #143 · branch: <span class="t-cyan">feat/payments-v2</span></div>
+            <div style="margin-top:8px;color:#5a7a8a;">▸ <span style="color:#0077B6;font-weight:600;">Why was this committed?</span> <span style="color:#2d4a5a;">Session replay available →</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- PAIN SECTION -->
+<section class="pain-section">
+    <div class="container">
+        <div class="pain-quote fade-up">
+            <blockquote>
+                "Four Claude Code sessions open. By end of evening: 47 new commits across three branches.
+                And I couldn't tell you the reasoning behind half of them."
+            </blockquote>
+            <cite>— Every developer using AI agents right now</cite>
+        </div>
+
+        <div class="pain-cards">
+            <div class="pain-card fade-up">
+                <div class="pain-icon">🫥</div>
+                <h3>Context Loss</h3>
+                <p>You close a terminal and the reasoning behind every decision evaporates. Tomorrow's you has no idea why yesterday's agent made those choices.</p>
+            </div>
+            <div class="pain-card fade-up">
+                <div class="pain-icon">🔁</div>
+                <h3>Repeated Mistakes</h3>
+                <p>Agents re-discover the same bugs you already fixed. Re-explain the same constraints. Waste the same tokens. Session after session.</p>
+            </div>
+            <div class="pain-card fade-up">
+                <div class="pain-icon">📋</div>
+                <h3>Review Bottleneck</h3>
+                <p>Code reviewers see diffs without intent. When an agent generates 50 PRs in an afternoon, "what changed" isn't enough — you need "why."</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- DIFFERENTIATOR BRIDGE -->
+<section style="padding:80px 40px;">
+    <div class="container" style="text-align:center;">
+        <div class="section-label fade-up">The Coder1 Difference</div>
+        <h2 class="fade-up">Not just capture. <span>Action.</span></h2>
+        <p class="section-sub fade-up" style="margin:0 auto 0;">
+            Most tools record what happened. Coder1 uses that context to keep working after you close the laptop —
+            and makes sure tomorrow's session picks up exactly where today's left off.
+        </p>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" style="padding-top:0;">
+    <div class="container">
+        <div class="features-grid">
+
+            <div class="feature-card fade-up">
+                <div class="feature-icon">🔍</div>
+                <h3>Full Execution Audit Trail</h3>
+                <p>
+                    Every file write, command, API call, and PR is logged with its reasoning, risk level, and session trace.
+                    Not just <em>what</em> changed — the complete <em>why</em> behind it.
+                </p>
+                <div class="feature-detail">Git blame, but for AI reasoning</div>
+            </div>
+
+            <div class="feature-card fade-up">
+                <div class="feature-icon">▶️</div>
+                <h3>Session Replay</h3>
+                <p>
+                    Play back any coding session step by step. Tool calls, file changes, token usage, errors,
+                    and Claude's reasoning — with play/pause/fast-forward controls.
+                </p>
+                <div class="feature-detail">Full execution trace, always available</div>
+            </div>
+
+            <div class="feature-card fade-up">
+                <div class="feature-icon">🧠</div>
+                <h3>Persistent Memory — 4 Layers</h3>
+                <p>
+                    Session Memory recalls past work by file overlap and error pattern.
+                    Eternal Memory searches semantically across 100+ sessions.
+                    Living Files auto-update <code>project-status.md</code>, <code>learnings.md</code>, and more — injected into every prompt.
+                </p>
+                <div class="feature-detail">Never explain yourself twice</div>
+            </div>
+
+            <div class="feature-card fade-up">
+                <div class="feature-icon">👥</div>
+                <h3>Multi-Agent Crew</h3>
+                <p>
+                    7 AI personas — Researcher, Builder, Reviewer, DevOps, PM, Security, UX — run in parallel
+                    with shared memory. Smart model routing: Haiku for speed, Max for complexity.
+                </p>
+                <div class="feature-detail">Parallel execution, shared context</div>
+            </div>
+
+            <div class="feature-card fade-up">
+                <div class="feature-icon">☀️</div>
+                <h3>Morning Brief</h3>
+                <p>
+                    Wake up to a summary of what was built overnight: PRs created, trends spotted across X, GitHub,
+                    and HackerNews, tasks completed, blockers flagged, new learnings captured.
+                </p>
+                <div class="feature-detail">Proactive intelligence, not passive recording</div>
+            </div>
+
+            <div class="feature-card fade-up">
+                <div class="feature-icon">⚡</div>
+                <h3>Opportunity Engine</h3>
+                <p>
+                    Events become actions. A GitHub issue triggers analysis. Claude decides: act, prompt, or skip.
+                    A task is created, executed, and you're notified — with full audit of every decision.
+                </p>
+                <div class="feature-detail">Context that works while you sleep</div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- COMPARISON -->
+<section id="compare" class="comparison-section">
+    <div class="container">
+        <div class="comparison-header">
+            <div class="section-label fade-up">Honest Comparison</div>
+            <h2 class="fade-up">What's being <span>promised</span> vs. what <span>ships today</span></h2>
+            <p class="section-sub fade-up" style="margin:0 auto;">
+                The problem is real. The solutions differ significantly.
+            </p>
+        </div>
+
+        <div class="fade-up">
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Capability</th>
+                        <th>Entire / Checkpoints</th>
+                        <th>Coder1</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Session transcript capture</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>AI reasoning / intent storage per action</td>
+                        <td class="check">✓</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr class="row-highlight">
+                        <td>Git commit linkage (context tied to commit SHA)</td>
+                        <td class="check">✓ &nbsp;<span style="font-size:0.75rem;font-weight:400;color:#5a7a8a;">Core feature</span></td>
+                        <td class="partial">~ &nbsp;<span style="font-size:0.75rem;font-weight:400;color:#5a7a8a;">In progress</span></td>
+                    </tr>
+                    <tr>
+                        <td>Cross-session persistent memory</td>
+                        <td class="cross">✗</td>
+                        <td class="check">✓ &nbsp;<span style="font-size:0.75rem;font-weight:400;color:#5a7a8a;">4-layer system</span></td>
+                    </tr>
+                    <tr>
+                        <td>Semantic search across history (vector + FTS)</td>
+                        <td class="cross">✗</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Multi-agent coordination with shared memory</td>
+                        <td class="partial">~ &nbsp;<span style="font-size:0.75rem;font-weight:400;color:#5a7a8a;">Roadmap</span></td>
+                        <td class="check">✓ &nbsp;<span style="font-size:0.75rem;font-weight:400;color:#5a7a8a;">7 crew personas</span></td>
+                    </tr>
+                    <tr>
+                        <td>24/7 autonomous background execution</td>
+                        <td class="cross">✗</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Proactive morning brief + trend monitoring</td>
+                        <td class="cross">✗</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Security audit trail with risk scoring</td>
+                        <td class="cross">✗</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Session replay with step-by-step trace</td>
+                        <td class="cross">✗</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Self-updating Living Files (persistent project docs)</td>
+                        <td class="cross">✗</td>
+                        <td class="check">✓</td>
+                    </tr>
+                    <tr>
+                        <td>Full IDE (Monaco editor + real PTY terminal)</td>
+                        <td class="cross">✗</td>
+                        <td class="check">✓</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="comparison-note">
+                Honest table. The git commit linkage gap is real and we're closing it.
+                Everything else? Coder1 ships it today.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- IDE ADVANTAGE -->
+<section>
+    <div class="container">
+        <div class="ide-advantage">
+            <div class="ide-text fade-up">
+                <div class="section-label">Why the IDE Matters</div>
+                <h2>A git hook sees <span>commits.</span><br>Coder1 sees <span>everything.</span></h2>
+                <p>
+                    CLI tools capture what gets exposed through git hooks. Coder1 is the IDE —
+                    it sees what you're editing, what Claude is reasoning, what's running in the terminal,
+                    what files are open, and what you were trying to do.
+                </p>
+                <p>
+                    That's richer context than any hook can observe.
+                    And it's the foundation for memory, audit trails, and autonomous action that actually work.
+                </p>
+                <div class="ide-callout">
+                    "We're not a wrapper around your workflow. We're where your workflow happens."
+                </div>
+            </div>
+
+            <div class="ide-visual fade-up">
+                <div class="ide-visual-header">Context Layers in Every Coder1 Prompt</div>
+
+                <div class="context-layer active">
+                    <i class="fas fa-file-code"></i>
+                    Living Files — auto-updated project docs
+                </div>
+                <div class="context-layer active">
+                    <i class="fas fa-search"></i>
+                    Semantic skill injection (Gemini embeddings)
+                </div>
+                <div class="context-layer active">
+                    <i class="fas fa-history"></i>
+                    Session memory — past work on these files
+                </div>
+                <div class="context-layer active">
+                    <i class="fas fa-lightbulb"></i>
+                    Extracted facts — preferences, decisions, goals
+                </div>
+                <div class="context-layer active">
+                    <i class="fas fa-chart-line"></i>
+                    Learned patterns — behavior over time
+                </div>
+                <div class="context-layer active">
+                    <i class="fas fa-shield-alt"></i>
+                    Crew member context (if crew task)
+                </div>
+                <div class="context-layer inactive">
+                    <i class="fas fa-code-branch"></i>
+                    Git hook sees: commit SHA only
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-inner">
+            <div class="section-label fade-up" style="justify-content:center;">Start Free</div>
+            <h2 class="fade-up">The IDE your AI sessions <span>deserve</span></h2>
+            <p class="fade-up">
+                Use your existing Claude subscription. No separate API key.
+                No extra monthly fee. Just open Coder1 and start coding with full context.
+            </p>
+
+            <div class="cta-actions fade-up">
+                <a href="https://coder1.ai/alpha" class="cta-large">
+                    Try Coder1 Free <i class="fas fa-arrow-right"></i>
+                </a>
+                <a href="https://coder1.ai/docs" class="btn-secondary">
+                    Read the Docs
+                </a>
+            </div>
+
+            <p class="cta-note fade-up">
+                Works with your existing Claude subscription ($20–200/month from Anthropic). No extra cost.
+            </p>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>
+        &copy; 2026 Coder1 &nbsp;·&nbsp;
+        <a href="https://coder1.ai/alpha">Try Beta</a> &nbsp;·&nbsp;
+        <a href="https://github.com/MichaelrKraft/coder1-ide">GitHub</a>
+    </p>
+</footer>
+
+<script>
+    // Scroll fade-in
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, i * 60);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+    // Smooth nav highlight
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', e => {
+            const target = document.querySelector(a.getAttribute('href'));
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
