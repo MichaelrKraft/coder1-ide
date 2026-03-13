@@ -1,3 +1,53 @@
+# Terminal Claude Code Formatting Fix (Mar 12, 2026)
+
+## Completed Fixes
+
+- [x] Fix 1: Consolidate status line writes into single atomic write (Terminal.tsx line 3997)
+- [x] Fix 3: Add resize validation bounds (server.js line 4641)
+- [x] Fix 4: Disable status line during active Claude sessions (Terminal.tsx line 3964)
+- [x] Fix 5: Clear screen before Claude TUI renders (server.js line 2043) - DIDN'T WORK (race condition)
+- [x] Fix A: Emit clear screen BEFORE onData handler in bridge (claude-executor.js line 386)
+- [x] Fix B: Suppress local PTY output during Claude session (server.js lines 3546, 4137, 2103, 4010)
+- [x] **Fix C: Forward clear screen via onData callback** (claude-executor.js line 388) - THE ACTUAL FIX
+- [ ] Fix 2: RAF cleanup - SKIPPED (existing code already handles this correctly)
+- [ ] Verify fixes work in production
+
+## Changes Made (Mar 12, 2026 - Third Attempt / ACTUAL FIX)
+
+**Root Cause Found**: The clear screen in claude-executor.js was emitted via `this.emit('data',...)` which only goes to bridge-client's debug logger. It NEVER called `options.onData()` which is what actually forwards data to the server!
+
+| File | Fix | Change |
+|------|-----|--------|
+| `bridge-cli/src/claude-executor.js` | C | **Call `options.onData(clearScreen)` before emitting** - this forwards the clear screen to the server via Socket.IO |
+
+## Changes Made (Mar 12, 2026 - Second Attempt)
+
+| File | Fix | Change |
+|------|-----|--------|
+| `bridge-cli/src/claude-executor.js` | A | Emit clear screen (`\x1b[2J\x1b[H`) BEFORE onData handler is attached, fixing race condition |
+| `server.js` | B | Added `session.suppressOutput` flag check in PTY data handler (line 3546) |
+| `server.js` | B | Set `session.suppressOutput = true` when routing claude command to bridge (line 4137) |
+| `server.js` | B | Clear flag in `claude:interactive:ended` handler (line 2103) |
+| `server.js` | B | Clear flag when bridge disconnects unexpectedly (line 4010) |
+| `server.js` | B | Changed line clear (`\r\x1b[K`) to full screen clear (`\x1b[2J\x1b[H`) when starting Claude |
+
+## Root Cause Analysis
+
+**3-agent investigation revealed TWO root causes:**
+
+1. **Race Condition**: The `claude:interactive:started` event fired AFTER the onData handler was attached, so Claude's output could arrive before the clear screen.
+
+2. **Local PTY Mixing**: The local bash PTY continued outputting its prompt (`bash-3.2$`) which mixed with Claude's output from the bridge.
+
+## Previous Fixes (Keep)
+
+| File | Fix | Change |
+|------|-----|--------|
+| `components/terminal/Terminal.tsx` | 1, 4 | Consolidated 5 `term.write()` calls into single atomic write; Added `!claudeActive` check |
+| `server.js` | 3 | Added bounds validation for resize (cols: 20-500, rows: 5-200); Applied to bridge + local + spectator |
+
+---
+
 # Phase 0: Foundation + Security — COMPLETE
 
 ## Step 0.1: Fix validateAuth [DONE]

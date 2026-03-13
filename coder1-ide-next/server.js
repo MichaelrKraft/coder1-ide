@@ -214,6 +214,35 @@ try {
   j5Bridge = null;
 }
 
+// Commit Context Service — captures AI session context at each git commit
+let commitContextService = null;
+try {
+  const { commitContextService: svc, setSocketIO } = require('./services/commit-context-service');
+  commitContextService = svc;
+  // Requeue any pending summaries from last run
+  svc.requeue().catch(err => console.warn('[CommitContext] Requeue failed:', err.message));
+  console.log('[CommitContext] Service loaded');
+  // setSocketIO will be called after io is created below
+  global.__commitContextSetSocketIO = setSocketIO;
+} catch (err) {
+  console.warn('[CommitContext] Service unavailable:', err.message);
+}
+
+// FlowTrace Capture Service — ambient screen capture + vector embeddings
+// Feature-gated: only loads when FLOWTRACE_ENABLED=true
+let flowtraceCapture = null;
+if (process.env.FLOWTRACE_ENABLED === 'true') {
+  try {
+    const { startCapture, stopCapture, captureEvents } = require('./services/flowtrace/capture-service');
+    flowtraceCapture = { startCapture, stopCapture, captureEvents };
+    console.log('[FlowTrace] Service loaded');
+    // captureEvents will be wired to Socket.IO after io is created below
+    global.__flowtraceCaptureEvents = captureEvents;
+  } catch (err) {
+    console.warn('[FlowTrace] Service unavailable:', err.message);
+  }
+}
+
 /**
  * Ensure ManusLive daemon is running before connecting J5
  * Auto-starts the daemon if not already running
@@ -1741,6 +1770,19 @@ app.prepare().then(() => {
     destroyUpgradeTimeout: 1000 // But clean up failed upgrades quickly
   });
 
+  // Wire Commit Context Service with Socket.IO
+  if (global.__commitContextSetSocketIO) {
+    global.__commitContextSetSocketIO(io);
+  }
+
+  // Wire FlowTrace CTA event → Socket.IO broadcast
+  if (global.__flowtraceCaptureEvents) {
+    global.__flowtraceCaptureEvents.on('firstSessionComplete', (data) => {
+      io.emit('flowtrace:first_session_complete', data);
+      console.log('[FlowTrace] First session CTA broadcast to all clients.');
+    });
+  }
+
   // Connection limit middleware — reject new connections when at capacity
   const MAX_SOCKET_CONNECTIONS = 100;
   io.use((socket, next) => {
@@ -1894,35 +1936,26 @@ app.prepare().then(() => {
         if (data.data && data.sessionId) {
           const gitEvents = detectGitEvent(data.sessionId, data.data);
 
-          if (process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' && gitEvents.length > 0) {
-            const claudeSession = claudeCodeSessions.get(data.sessionId);
-            if (claudeSession && claudeSession.inClaudeSession) {
-              for (const event of gitEvents) {
-                if (event.type === 'commit') {
-                  const duration = claudeSession.sessionStartTime
-                    ? Date.now() - claudeSession.sessionStartTime.getTime()
-                    : 0;
-                  const session = terminalSessions.get(data.sessionId);
-                  const terminalSocket = terminalSessionSockets.get(data.sessionId);
-                  if (terminalSocket) {
-                    terminalSocket.emit('time_capsule:commit_detected', {
-                      sessionId: data.sessionId,
-                      sha: event.sha,
-                      branch: event.branch,
-                      message: event.message,
-                      claudeSessionStart: claudeSession.sessionStartTime,
-                      duration,
-                      repoPath: session?.workingDir || process.cwd(),
-                    });
-                  }
-                  console.log(`[Time Capsule] Commit detected during Claude session (bridge claude:output): ${event.sha}`);
-                }
+          // Commit Context: capture via bridge output
+          if (commitContextService && gitEvents.length > 0) {
+            const session = terminalSessions.get(data.sessionId);
+            for (const event of gitEvents) {
+              if (event.type === 'commit') {
+                const activeSession = session?.currentSessionId || null;
+                commitContextService.capture({
+                  sha: event.sha,
+                  branch: event.branch,
+                  message: event.message,
+                  sessionId: activeSession,
+                  checkpointId: null,
+                  repoPath: session?.workingDir || null,
+                }).catch(err => console.warn('[CommitContext] capture failed:', err.message));
               }
             }
           }
         }
       });
-      
+
       // Handle command completion from bridge
       socket.on('claude:complete', (data) => {
         // FIX (Jan 2026): Differentiate success vs failure messages
@@ -1944,28 +1977,20 @@ app.prepare().then(() => {
 
         if (data.data && data.sessionId) {
           const gitEvents = detectGitEvent(data.sessionId, data.data);
-          if (process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' && gitEvents.length > 0) {
-            const claudeSession = claudeCodeSessions.get(data.sessionId);
-            if (claudeSession && claudeSession.inClaudeSession) {
-              for (const event of gitEvents) {
-                if (event.type === 'commit') {
-                  const duration = claudeSession.sessionStartTime
-                    ? Date.now() - claudeSession.sessionStartTime.getTime()
-                    : 0;
-                  const session = terminalSessions.get(data.sessionId);
-                  const terminalSocket = terminalSessionSockets.get(data.sessionId);
-                  if (terminalSocket) {
-                    terminalSocket.emit('time_capsule:commit_detected', {
-                      sessionId: data.sessionId,
-                      sha: event.sha,
-                      branch: event.branch,
-                      message: event.message,
-                      claudeSessionStart: claudeSession.sessionStartTime,
-                      duration,
-                      repoPath: session?.workingDir || process.cwd(),
-                    });
-                  }
-                }
+          // Commit Context: capture via bridge output
+          if (commitContextService && gitEvents.length > 0) {
+            const session = terminalSessions.get(data.sessionId);
+            for (const event of gitEvents) {
+              if (event.type === 'commit') {
+                const activeSession = session?.currentSessionId || null;
+                commitContextService.capture({
+                  sha: event.sha,
+                  branch: event.branch,
+                  message: event.message,
+                  sessionId: activeSession,
+                  checkpointId: null,
+                  repoPath: session?.workingDir || null,
+                }).catch(err => console.warn('[CommitContext] capture failed:', err.message));
               }
             }
           }
@@ -2016,6 +2041,9 @@ app.prepare().then(() => {
           });
           console.log(`📍 Tracking interactive session for terminal: ${sessionId}`);
 
+          // NOTE: Clear screen removed - bridge handles it in claude-executor.js
+          // Sending clear here arrives AFTER some output due to race condition
+
           // 🔧 FIX (Feb 11, 2026): Also track in claudeCodeSessions for Time Capsule detection
           // On server restart/reconnect, bridge re-sends this event but claudeCodeSessions
           // is empty. Without this, Time Capsule commit detection never triggers because
@@ -2063,6 +2091,12 @@ app.prepare().then(() => {
             // 🔧 FIX (Feb 11, 2026): Also end Claude session tracking for Time Capsule
             endClaudeCodeSession(sessionId);
             console.log(`🧹 Cleaned up interactive session for terminal: ${sessionId}`);
+
+            // FIX (Mar 12, 2026): Re-enable local PTY output now that Claude session ended
+            const terminalSession = terminalSessions.get(sessionId);
+            if (terminalSession) {
+              terminalSession.suppressOutput = false;
+            }
 
             // Notify the frontend that Claude is no longer in interactive mode
             io.emit('claude:mode:changed', {
@@ -2135,29 +2169,20 @@ app.prepare().then(() => {
         if (data.data && data.sessionId) {
           const gitEvents = detectGitEvent(data.sessionId, data.data);
 
-          // Time Capsule: Detect commits during active Claude sessions (bridge path)
-          if (process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' && gitEvents.length > 0) {
-            const claudeSession = claudeCodeSessions.get(data.sessionId);
-            if (claudeSession && claudeSession.inClaudeSession) {
-              for (const event of gitEvents) {
-                if (event.type === 'commit') {
-                  const duration = claudeSession.sessionStartTime
-                    ? Date.now() - claudeSession.sessionStartTime.getTime()
-                    : 0;
-                  const session = terminalSessions.get(data.sessionId);
-                  if (terminalSocket) {
-                    terminalSocket.emit('time_capsule:commit_detected', {
-                      sessionId: data.sessionId,
-                      sha: event.sha,
-                      branch: event.branch,
-                      message: event.message,
-                      claudeSessionStart: claudeSession.sessionStartTime,
-                      duration,
-                      repoPath: session?.workingDir || process.cwd(),
-                    });
-                  }
-                  console.log(`[Time Capsule] Commit detected during Claude session (bridge): ${event.sha}`);
-                }
+          // Commit Context: capture via bridge output
+          if (commitContextService && gitEvents.length > 0) {
+            const session = terminalSessions.get(data.sessionId);
+            for (const event of gitEvents) {
+              if (event.type === 'commit') {
+                const activeSession = session?.currentSessionId || null;
+                commitContextService.capture({
+                  sha: event.sha,
+                  branch: event.branch,
+                  message: event.message,
+                  sessionId: activeSession,
+                  checkpointId: null,
+                  repoPath: session?.workingDir || null,
+                }).catch(err => console.warn('[CommitContext] capture failed:', err.message));
               }
             }
           }
@@ -3515,6 +3540,12 @@ app.prepare().then(() => {
         // Only set up PTY data handler once per session to avoid duplicates
         if (!session.dataHandlerSetup) {
           session.pty.onData((data) => {
+            // FIX (Mar 12, 2026): Skip local PTY output during bridge Claude sessions
+            // This prevents the bash prompt from mixing with Claude's TUI output
+            if (session.suppressOutput) {
+              return;
+            }
+
             // Update session activity on output so viewing logs/dev servers counts as active
             session.lastActivity = new Date();
             
@@ -3598,45 +3629,25 @@ app.prepare().then(() => {
               }
             }
 
-            // Time Capsule: Detect commits during active Claude sessions
-            if (process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' && gitEvents.length > 0) {
-              const claudeSession = claudeCodeSessions.get(sessionId);
-              if (claudeSession && claudeSession.inClaudeSession) {
-                for (const event of gitEvents) {
-                  if (event.type === 'commit') {
-                    const duration = claudeSession.sessionStartTime
-                      ? Date.now() - claudeSession.sessionStartTime.getTime()
-                      : 0;
-                    const session = terminalSessions.get(sessionId);
-                    socket.emit('time_capsule:commit_detected', {
-                      sessionId,
-                      sha: event.sha,
-                      branch: event.branch,
-                      message: event.message,
-                      claudeSessionStart: claudeSession.sessionStartTime,
-                      duration,
-                      repoPath: session?.workingDir || process.cwd(),
-                    });
-                    console.log(`[Time Capsule] Commit detected during Claude session: ${event.sha}`);
-                  }
+            // Commit Context: capture every commit
+            if (commitContextService && gitEvents.length > 0) {
+              const session = terminalSessions.get(sessionId);
+              for (const event of gitEvents) {
+                if (event.type === 'commit') {
+                  const activeSession = session?.currentSessionId || null;
+                  commitContextService.capture({
+                    sha: event.sha,
+                    branch: event.branch,
+                    message: event.message,
+                    sessionId: activeSession,
+                    checkpointId: null,
+                    repoPath: session?.workingDir || null,
+                  }).catch(err => console.warn('[CommitContext] capture failed:', err.message));
                 }
               }
             }
           });
           session.dataHandlerSetup = true;
-        }
-
-        // Time Capsule: Forward create request to bridge for git storage
-        if (process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true') {
-          socket.on('time_capsule:create', (data) => {
-            const bridge = bridgeManager?.findAnyConnectedBridge?.();
-            if (bridge?.socket?.connected) {
-              bridge.socket.emit('time_capsule:create', data);
-              console.log(`[Time Capsule] Forwarded to bridge for git storage: ${data.commitSha}`);
-            } else {
-              console.log(`[Time Capsule] No bridge connected, capsule saved to DB only`);
-            }
-          });
         }
 
         // Clean up socket reference when it disconnects
@@ -3879,7 +3890,8 @@ app.prepare().then(() => {
 
       if (isInteractiveCommand) {
         // For interactive sessions, show context message but don't modify command
-        if (eternalMemoryLoader) {
+        // FIX (Mar 12, 2026): Skip output if socket is null (called with null to suppress terminal output)
+        if (eternalMemoryLoader && socket) {
           try {
             const eternalContext = await eternalMemoryLoader.loadLastSessionContext();
             if (eternalContext.hasContext) {
@@ -3913,19 +3925,23 @@ app.prepare().then(() => {
           // SAFETY: Skip if context is unreasonably large (>10K chars)
           if (contextSize > 10000) {
             console.error(`[Eternal Memory] Context too large (${contextSize} chars) - SKIPPING to prevent crash`);
-            socket.emit('terminal:data', {
-              id: sessionId,
-              data: '\r\n⚠️  Previous session context too large - continuing without memory\r\n'
-            });
+            if (socket) {
+              socket.emit('terminal:data', {
+                id: sessionId,
+                data: '\r\n⚠️  Previous session context too large - continuing without memory\r\n'
+              });
+            }
             return command;
           }
-          
-          // Show user that context was loaded
-          const contextMessage = eternalMemoryLoader.createContextLoadedMessage(eternalContext);
-          socket.emit('terminal:data', {
-            id: sessionId,
-            data: contextMessage
-          });
+
+          // Show user that context was loaded (skip if socket is null)
+          if (socket) {
+            const contextMessage = eternalMemoryLoader.createContextLoadedMessage(eternalContext);
+            socket.emit('terminal:data', {
+              id: sessionId,
+              data: contextMessage
+            });
+          }
           
           // CORRECT METHOD: Inject context using --append-system-prompt flag
           const { injectContextIntoClaudeCommand } = require('./lib/eternal-memory-formatter.ts');
@@ -3988,6 +4004,10 @@ app.prepare().then(() => {
         } else {
           console.warn('[INTERACTIVE] Bridge socket disconnected, cleaning up stale session');
           interactiveClaudeSessions.delete(sessionId);
+          // FIX (Mar 12, 2026): Re-enable local PTY output on disconnect
+          if (session) {
+            session.suppressOutput = false;
+          }
           // Fall through to normal PTY processing
         }
       }
@@ -4121,25 +4141,21 @@ app.prepare().then(() => {
               if (bridgeStatus?.connected) {
               // Bridge is connected! Route command through bridge
               console.log('[Terminal] Routing claude command through bridge');
-              
+
+              // FIX (Mar 12, 2026): Suppress local PTY output during Claude session
+              // This prevents the bash prompt from mixing with Claude's TUI
+              session.suppressOutput = true;
+
               // Clear bash's input buffer
               const backspaces = '\b'.repeat(buffer.length);
               session.write(backspaces);
-              
-              // Clear the line visually
-              socket.emit('terminal:data', {
-                id: sessionId,
-                data: '\r\x1b[K'
-              });
-              
-              // Show command execution indicator
-              socket.emit('terminal:data', {
-                id: sessionId,
-                data: `\r\n🤖 Executing: ${buffer.trim()}\r\n`
-              });
-              
-              // 🧠 ETERNAL MEMORY: Inject previous session context (unified function)
-              let commandToExecute = await injectEternalMemoryContext(buffer.trim(), sessionId, socket);
+
+              // FIX (Mar 12, 2026): Don't clear screen here - the bridge does it
+              // Sending clear from both server and bridge causes race conditions
+              // The bridge's clear (in claude-executor.js) is closest to Claude's output
+
+              // 🧠 ETERNAL MEMORY: Inject context into command (but don't show message in terminal)
+              let commandToExecute = await injectEternalMemoryContext(buffer.trim(), sessionId, null);
 
               // Execute command through bridge (with eternal memory context if available)
               // FIX (Jan 27, 2026): Get terminal dimensions from session (stored on resize)
@@ -4645,6 +4661,10 @@ app.prepare().then(() => {
     socket.on('terminal:resize', ({ id, cols, rows }) => {
       const sessionId = id || currentSessionId;
 
+      // FIX (Mar 12, 2026): Validate resize dimensions to prevent PTY instability
+      const validCols = Math.max(20, Math.min(cols || 80, 500));
+      const validRows = Math.max(5, Math.min(rows || 24, 200));
+
       // 🎭 INTERACTIVE CLAUDE SESSION CHECK (Dec 10, 2025)
       // If there's an active interactive Claude session, forward resize to the bridge
       const interactiveSession = interactiveClaudeSessions.get(sessionId);
@@ -4654,8 +4674,8 @@ app.prepare().then(() => {
           bridge.socket.emit('claude:resize', {
             sessionId,
             commandId: interactiveSession.commandId,
-            cols,
-            rows
+            cols: validCols,
+            rows: validRows
           });
         }
       }
@@ -4663,13 +4683,13 @@ app.prepare().then(() => {
       // Also resize local session (if exists)
       const session = terminalSessions.get(sessionId);
       if (session) {
-        session.resize(cols, rows);
+        session.resize(validCols, validRows);
         // REMOVED: // REMOVED: // REMOVED: console.log(`[Terminal] Resized session ${id} to ${cols}x${rows}`);
 
-        // Spectator Mode: Forward resize to spectators
+        // Spectator Mode: Forward resize to spectators (use validated dimensions)
         try {
           if (sharedTerminals.has(sessionId)) {
-            io.to(`spectator:${sessionId}`).emit('spectator:resize', { sessionId, cols, rows });
+            io.to(`spectator:${sessionId}`).emit('spectator:resize', { sessionId, cols: validCols, rows: validRows });
           }
         } catch (spectatorErr) {
           console.error('[Spectator] Resize broadcast error (non-fatal):', spectatorErr.message);

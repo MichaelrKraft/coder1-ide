@@ -382,6 +382,21 @@ class ClaudeExecutor extends EventEmitter {
         // Start the inactivity timer
         resetInactivityTimer();
 
+        // FIX (Mar 12, 2026): Emit clear screen BEFORE onData handler is attached
+        // This ensures the terminal is cleared before any Claude output arrives,
+        // preventing the race condition where output renders before clear screen.
+        // FIX (Mar 12, 2026 v2): MUST call options.onData() to forward to server!
+        // The this.emit('data',...) only goes to bridge-client's debug logger.
+        const clearScreen = '\x1b[2J\x1b[H';
+        if (options.onData) {
+          options.onData(clearScreen);
+        }
+        this.emit('data', {
+          type: 'stdout',
+          data: clearScreen,
+          commandId
+        });
+
         // Handle PTY output
         ptyProcess.onData((data) => {
           outputBuffer += data;
