@@ -11,6 +11,32 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+
+// ============================================================================
+// Semantic Skill Matching (Gemini Embeddings)
+// ============================================================================
+
+import { skillEmbeddings } from './skill-embeddings';
+
+/**
+ * Find and inject matching skill based on user message
+ * Returns skill content to append to system prompt, or null if no match
+ */
+async function findMatchingSkill(userMessage: string): Promise<string | null> {
+  try {
+    const match = await skillEmbeddings.findBestMatch(userMessage);
+    if (!match) return null;
+
+    // Read the skill file and inject it
+    const skillContent = readFileSync(match.skill.path, 'utf-8');
+    console.log(`[Johnny5] Semantic match: "${userMessage.slice(0, 50)}..." -> ${match.skill.name} (${(match.similarity * 100).toFixed(0)}%)`);
+
+    return `\n\n## Active Skill: ${match.skill.name}\n${skillContent}`;
+  } catch (error) {
+    console.warn('[Johnny5] Skill matching failed:', error);
+    return null;
+  }
+}
 import { bridgeManager as _importedBridgeManager } from './bridge-manager';
 
 // FIX: Always use global.bridgeManager set by server.js, which has actual WebSocket connections.
@@ -338,7 +364,14 @@ Only mention code/git status if the user explicitly asks about it.
       };
     }
 
-    // 2. Build the full prompt with system context and history.
+    // 2. Semantic skill matching - find relevant skill based on user intent
+    let enhancedSystemPrompt = systemPrompt;
+    const matchedSkill = await findMatchingSkill(message);
+    if (matchedSkill) {
+      enhancedSystemPrompt = (systemPrompt || '') + matchedSkill;
+    }
+
+    // 3. Build the full prompt with system context and history.
     // Cap history at 20 messages (10 turns) to maintain conversation coherence.
     // Living files + memory search provide additional long-term context.
     const MAX_BRIDGE_HISTORY = 20;
@@ -346,10 +379,10 @@ Only mention code/git status if the user explicitly asks about it.
       message,
       conversationHistory.slice(-MAX_BRIDGE_HISTORY),
       false,
-      systemPrompt
+      enhancedSystemPrompt
     );
 
-    // 3. Execute via Bridge
+    // 4. Execute via Bridge
     const commandId = `johnny5-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     try {

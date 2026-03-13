@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "invoice-organizer": {
+      "source": "davepoon/buildwithclaude",
+      "sourceType": "github",
+      "computedHash": "babccc922504b062d2a4ceaa1dca0212e239e204cb327b32031d27077db66baa"
+    }
+  }
+}

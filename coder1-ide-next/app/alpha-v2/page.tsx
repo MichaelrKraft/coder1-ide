@@ -167,17 +167,11 @@ function ScrollReveal({
   className?: string;
   delay?: number;
 }) {
-  const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Handle hydration
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted || !ref.current) return;
+    if (!ref.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -186,23 +180,23 @@ function ScrollReveal({
         }
       },
       {
-        threshold: 0.1,
-        rootMargin: '-50px'
+        threshold: 0,
+        rootMargin: '200px 0px 200px 0px'
       }
     );
 
     observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [mounted, delay]);
 
-  // Server render: show content without animation classes
-  if (!mounted) {
-    return (
-      <div className={className}>
-        {children}
-      </div>
-    );
-  }
+    // Fallback: ensure content is always visible after 150ms
+    // Handles instant anchor navigation and Page Down jumps where
+    // IntersectionObserver may not fire for all in-viewport elements
+    const fallback = setTimeout(() => setIsVisible(true), 150);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(fallback);
+    };
+  }, [delay]);
 
   return (
     <div
@@ -355,6 +349,240 @@ function MorningBriefDemo() {
   );
 }
 
+// ============================================================================
+// MEMORY COMPARISON DEMO
+// ============================================================================
+interface DemoMessage {
+  type: 'user' | 'claude' | 'indicator' | 'code';
+  text: string;
+  delay: number;
+  side: 'without' | 'with';
+}
+
+// ChatBubble defined at module scope to prevent recreation on parent re-render
+const ChatBubble = ({ msg }: { msg: DemoMessage }) => {
+  const bubbleClasses = {
+    user: 'bg-blue-500/20 text-blue-400',
+    claude: 'bg-white/10 text-white',
+    indicator: msg.side === 'with'
+      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+      : 'bg-red-500/20 text-red-400 border border-red-500/30',
+    code: 'bg-purple-500/20 text-coder1-cyan font-mono text-xs whitespace-pre-wrap'
+  };
+
+  return (
+    <div
+      className={`mb-3 ${msg.type === 'user' ? 'text-right' : ''}`}
+      style={{
+        animation: 'fadeInMessage 0.4s ease-out forwards',
+        opacity: 0
+      }}
+    >
+      <div className={`inline-block px-3 py-2 rounded-lg max-w-[90%] text-sm ${bubbleClasses[msg.type]}`}>
+        {msg.text}
+      </div>
+    </div>
+  );
+};
+
+function MemoryComparisonDemo() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [withoutMessages, setWithoutMessages] = useState<DemoMessage[]>([]);
+  const [withMessages, setWithMessages] = useState<DemoMessage[]>([]);
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
+  const withoutScrollRef = useRef<HTMLDivElement>(null);
+  const withScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll when messages are added
+  useEffect(() => {
+    if (withoutScrollRef.current) {
+      withoutScrollRef.current.scrollTop = withoutScrollRef.current.scrollHeight;
+    }
+  }, [withoutMessages]);
+
+  useEffect(() => {
+    if (withScrollRef.current) {
+      withScrollRef.current.scrollTop = withScrollRef.current.scrollHeight;
+    }
+  }, [withMessages]);
+
+  const demoScript: DemoMessage[] = [
+    // Without Memory Flow
+    { type: 'user', text: "Let's continue working on the auth bug we discussed", delay: 500, side: 'without' },
+    { type: 'claude', text: "I'm not familiar with that bug. What project is this regarding?", delay: 2000, side: 'without' },
+    { type: 'user', text: 'My application for lawyer databases', delay: 3500, side: 'without' },
+    { type: 'claude', text: 'You have three projects. Do you know which project the bug we discussed is in?', delay: 5000, side: 'without' },
+    { type: 'user', text: 'The one I was working on three hours ago', delay: 6500, side: 'without' },
+    { type: 'claude', text: 'I apologize, I do not have session memory. Can you give me some hints or keywords?', delay: 8000, side: 'without' },
+    { type: 'indicator', text: '😤 Frustrating context loss...', delay: 10000, side: 'without' },
+
+    // With Memory Flow
+    { type: 'user', text: "Let's continue working on the auth bug we discussed", delay: 11500, side: 'with' },
+    { type: 'claude', text: 'I see the JWT timeout issue from 3 hours ago in your LawyerDB project. The token was expiring after 15 minutes instead of 24 hours. Let me apply the fix...', delay: 13000, side: 'with' },
+    { type: 'code', text: '// Fixing /lawyerdb/api/auth/route.ts\n// Line 47: Changed from 900000 to 86400000\nconst TOKEN_EXPIRY = 24 * 60 * 60 * 1000;', delay: 15500, side: 'with' },
+    { type: 'indicator', text: '✅ Instantly back to work!', delay: 18000, side: 'with' }
+  ];
+
+  const totalDuration = 20000;
+
+  const clearDemo = useCallback(() => {
+    timeoutRefs.current.forEach(clearTimeout);
+    timeoutRefs.current = [];
+    setWithoutMessages([]);
+    setWithMessages([]);
+    setProgress(0);
+    setIsPlaying(false);
+  }, []);
+
+  const startDemo = useCallback(() => {
+    if (isPlaying) {
+      clearDemo();
+      return;
+    }
+
+    setIsPlaying(true);
+    setWithoutMessages([]);
+    setWithMessages([]);
+    setProgress(0);
+
+    // Add messages based on their delays
+    demoScript.forEach((msg) => {
+      const timeout = setTimeout(() => {
+        if (msg.side === 'without') {
+          setWithoutMessages(prev => [...prev, msg]);
+        } else {
+          setWithMessages(prev => [...prev, msg]);
+        }
+      }, msg.delay);
+      timeoutRefs.current.push(timeout);
+    });
+
+    // Progress bar animation
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = prev + (100 / (totalDuration / 100));
+        if (newProgress >= 100) {
+          clearInterval(progressInterval);
+          return 100;
+        }
+        return newProgress;
+      });
+    }, 100);
+    timeoutRefs.current.push(progressInterval as unknown as NodeJS.Timeout);
+
+    // Reset after demo completes
+    const endTimeout = setTimeout(() => {
+      setIsPlaying(false);
+    }, totalDuration);
+    timeoutRefs.current.push(endTimeout);
+  }, [isPlaying, clearDemo]);
+
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach(clearTimeout);
+    };
+  }, []);
+
+  return (
+    <div className="mt-16">
+      {/* Persistent Memory Feature Box */}
+      <div
+        className="mb-24 p-6 rounded-xl border border-white/5 bg-white/[0.02] transition-all duration-300 cursor-pointer hover:border-orange-500 hover:-translate-y-1"
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = '0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(249, 115, 22, 0.2), inset 0 0 20px rgba(249, 115, 22, 0.05)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-lg bg-coder1-purple/20 flex items-center justify-center flex-shrink-0">
+            <Brain className="w-6 h-6 text-coder1-purple" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-white mb-2">Persistent Memory</h3>
+            <p className="text-white/60">
+              Remember all your context session-to-session. Unlike black-box AI tools, Coder1 maintains
+              complete context awareness across conversations, so you never have to re-explain your project,
+              codebase, or preferences.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-center mb-8">
+        <h3 className="text-3xl md:text-4xl font-bold mb-3 text-white">
+          Watch Claude Remember Everything
+        </h3>
+        <p className="text-white/50">
+          See the dramatic difference memory persistence makes in your development workflow
+        </p>
+      </div>
+
+      <div className="bg-[#0A0A0A] rounded-xl border border-white/10 overflow-hidden" style={{ boxShadow: '0 0 80px rgba(0, 217, 255, 0.2), 0 0 120px rgba(0, 217, 255, 0.12)' }}>
+        {/* Split demo view */}
+        <div className="grid md:grid-cols-2 min-h-[360px]">
+          {/* Without Memory Side */}
+          <div className="p-5 border-b md:border-b-0 md:border-r border-coder1-cyan/30 bg-gradient-to-b from-red-500/5 to-transparent">
+            <div className="flex items-center gap-2 mb-4 text-red-400">
+              <X className="w-5 h-5" />
+              <h4 className="font-semibold">Without Memory</h4>
+            </div>
+            <div ref={withoutScrollRef} className="h-[280px] overflow-y-auto scroll-smooth">
+              {withoutMessages.map((msg, idx) => (
+                <ChatBubble key={idx} msg={msg} />
+              ))}
+            </div>
+          </div>
+
+          {/* With Memory Side */}
+          <div className="p-5 bg-gradient-to-b from-emerald-500/5 to-transparent">
+            <div className="flex items-center gap-2 mb-4 text-emerald-400">
+              <Check className="w-5 h-5" />
+              <h4 className="font-semibold">With Memory</h4>
+            </div>
+            <div ref={withScrollRef} className="h-[280px] overflow-y-auto scroll-smooth">
+              {withMessages.map((msg, idx) => (
+                <ChatBubble key={idx} msg={msg} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-1 bg-white/5">
+          <div
+            className="h-full bg-gradient-to-r from-coder1-cyan to-coder1-purple transition-all duration-100"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        {/* Control button */}
+        <div className="p-4 text-center bg-white/[0.02]">
+          <button
+            onClick={startDemo}
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#0a1a1f] border border-coder1-cyan/50 text-coder1-cyan font-semibold rounded-full transition-all duration-300 hover:bg-coder1-cyan/10 hover:border-coder1-cyan animate-pulse-slow"
+            style={{ animation: isPlaying ? 'none' : 'pulse-glow 2s ease-in-out infinite' }}
+          >
+            {isPlaying ? (
+              <>
+                <X className="w-4 h-4" />
+                Stop Demo
+              </>
+            ) : (
+              <>
+                <PlayCircle className="w-4 h-4" />
+                {progress >= 100 ? 'Replay Demo' : 'Start Demo'}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 // ============================================================================
 // FEATURE CARD WITH HOVER EFFECTS
@@ -475,7 +703,8 @@ function PricingCard({
   featured = false,
   badge,
   subtext,
-  onClick
+  onClick,
+  loading = false
 }: {
   tier: string;
   price: string;
@@ -486,6 +715,7 @@ function PricingCard({
   badge?: string;
   subtext?: string;
   onClick?: () => void;
+  loading?: boolean;
 }) {
   return (
     <div className={`
@@ -528,14 +758,23 @@ function PricingCard({
 
       <button
         onClick={onClick}
+        disabled={loading}
         className={`
-        w-full py-3 rounded-xl font-semibold transition-all duration-300
+        w-full py-3 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed
         ${featured
           ? 'bg-gradient-to-r from-coder1-cyan to-coder1-purple text-white hover:shadow-lg hover:shadow-coder1-cyan/30'
           : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
         }
       `}>
-        {cta}
+        {loading ? (
+          <span className="flex items-center justify-center gap-2">
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Processing...
+          </span>
+        ) : cta}
       </button>
       {subtext && (
         <p className="text-center text-coder1-cyan text-sm mt-3 font-medium flex items-center justify-center gap-1.5">
@@ -657,9 +896,11 @@ function LiveTerminalDemo() {
 export default function AlphaLandingPage() {
   const [scrollY, setScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [github, setGithub] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -670,12 +911,13 @@ export default function AlphaLandingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormError(null);
 
     try {
       const response = await fetch('/api/alpha/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, github, source: 'alpha_landing' })
+        body: JSON.stringify({ fullName, email, source: 'alpha_landing' })
       });
 
       if (response.ok) {
@@ -683,20 +925,47 @@ export default function AlphaLandingPage() {
       } else {
         const data = await response.json();
         if (response.status === 409) {
-          alert('This email is already on our waitlist!');
+          // Existing user - redirect to IDE
+          window.location.href = '/ide';
         } else {
-          alert(data.error || 'Something went wrong');
+          setFormError(data.error || 'Something went wrong. Please try again.');
         }
       }
-    } catch (error) {
-      alert('Something went wrong. Please try again.');
+    } catch {
+      setFormError('Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Handle Stripe checkout for Pro tier
+  const handleProCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Failed to start checkout. Please try again.');
+        setCheckoutLoading(false);
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Something went wrong. Please try again.');
+      setCheckoutLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[#0A0A0A] text-white overflow-x-hidden" suppressHydrationWarning>
       <style jsx global>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
@@ -825,23 +1094,23 @@ export default function AlphaLandingPage() {
         fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[#0A0A0A]
         ${scrollY > 50 ? 'border-b border-white/5' : ''}
       `}>
-        <div className="max-w-7xl mx-auto px-6 py-2">
+        <div className="max-w-7xl mx-auto px-6 py-0.5">
           <div className="flex items-center justify-between">
             {/* Logo - Left */}
             <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/Coder1-Logo-Sharp.svg"
                 alt="Coder1"
-                width={250}
-                height={80}
-                className="h-20 w-auto"
+                width={200}
+                height={56}
+                className="h-[4.2rem] w-auto"
               />
             </Link>
 
             {/* Nav Links - Center */}
             <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
               <a href="#features" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Features</a>
-              <Link href="/teams" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Teams</Link>
+              <a href="#teams" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Teams</a>
               <a href="#johnny5" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Johnny5</a>
               <a href="#pricing" className="text-white/60 hover:text-white transition-colors text-sm font-medium tracking-wide">Pricing</a>
             </div>
@@ -866,10 +1135,29 @@ export default function AlphaLandingPage() {
             </button>
           </div>
         </div>
+
+        {/* Mobile Menu Drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-[#0A0A0A] border-t border-white/10 px-6 py-4">
+            <div className="flex flex-col gap-4">
+              <a href="#features" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Features</a>
+              <a href="#teams" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Teams</a>
+              <a href="#johnny5" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Johnny5</a>
+              <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="text-white/80 hover:text-white transition-colors text-base font-medium">Pricing</a>
+              <a
+                href="#alpha"
+                onClick={() => setMobileMenuOpen(false)}
+                className="mt-2 px-5 py-3 bg-coder1-cyan rounded-full text-base font-semibold text-black text-center hover:shadow-lg hover:shadow-coder1-cyan/30 transition-all"
+              >
+                Join Alpha
+              </a>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ===== HERO SECTION ===== */}
-      <section className="relative min-h-screen flex items-center justify-center pt-20 pb-12">
+      <section className="relative min-h-screen flex items-center justify-center pt-24 pb-12">
         {/* Pure CSS Static Dot Grid Background */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Static dot pattern - no JavaScript, no animation */}
@@ -895,12 +1183,12 @@ export default function AlphaLandingPage() {
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
           {/* Badge */}
           <div
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-purple/20 to-coder1-cyan/20 border border-coder1-purple/30 rounded-full mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 mt-4 bg-gradient-to-r from-coder1-purple/20 to-coder1-cyan/20 border border-coder1-purple/30 rounded-full mb-8"
             style={{ animation: 'float 3s ease-in-out infinite' }}
           >
             <Sparkles className="w-4 h-4 text-coder1-purple" />
             <span className="text-sm font-semibold bg-gradient-to-r from-coder1-purple to-coder1-cyan bg-clip-text text-transparent">
-              Purpose-Built for Claude Code
+              Built for Teams. Powerful for Individuals.
             </span>
           </div>
 
@@ -909,30 +1197,30 @@ export default function AlphaLandingPage() {
             <Image
               src="/Coder1-Logo-Sharp.svg"
               alt="Coder1 IDE"
-              width={400}
-              height={128}
-              className="h-20 md:h-28 w-auto animate-[flyIn_0.8s_ease-out_2.8s_forwards]"
+              width={520}
+              height={166}
+              className="h-28 md:h-36 w-auto animate-[flyIn_0.8s_ease-out_2.8s_forwards]"
               style={{ opacity: 0 }}
               priority
             />
           </div>
 
-          {/* Subtitle - Version 2: Claudebot hook */}
+          {/* Subtitle with styled text - Two lines for larger impact */}
           <div className="mb-6 subtitle-fade-in">
             <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
-              You&apos;ve Heard Of <span className="text-coder1-cyan">J5</span>.
+              The Only IDE Where Your <span className="text-coder1-cyan">Team</span>
             </p>
             <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
-              What If It Lived In Your <span className="text-coder1-cyan">IDE</span>?
+              Shares <span className="text-coder1-cyan">Claude Code</span> Sessions Live.
             </p>
           </div>
 
           {/* Description */}
-          <p className="text-lg text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
-            <span className="text-white font-semibold">Johnny5</span> is a clone of J5 and works autonomously
-            within your <span className="text-coder1-cyan">ADE</span> (Agentic Development Environment) built for
-            <span className="text-coder1-cyan"> Claude Code</span> Power Users.
+          <p className="text-lg text-white/50 max-w-2xl mx-auto mb-3 leading-relaxed">
+            Real-time session sharing, built-in video meetings, and persistent AI memory —
+            built for teams, powerful for individuals.
           </p>
+
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
@@ -943,7 +1231,7 @@ export default function AlphaLandingPage() {
               Join the Alpha
             </a>
             <a
-              href="#demo"
+              href="#demo-video"
               className="px-8 py-4 border-2 border-coder1-cyan/50 rounded-full text-lg font-semibold text-coder1-cyan hover:bg-coder1-cyan/10 transition-all"
             >
               Watch Demo
@@ -953,16 +1241,16 @@ export default function AlphaLandingPage() {
           {/* Trust stats */}
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-coder1-cyan mb-1">
-                <AnimatedCounter end={8000} suffix="+" duration={2000} />
+              <div className="text-2xl md:text-3xl font-bold text-coder1-cyan mb-1">
+                Local-First
               </div>
-              <p className="text-white/40 text-sm">MCP Integrations</p>
+              <p className="text-white/40 text-sm">Code never leaves your machine</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-coder1-purple mb-1">
-                24/7
+              <div className="text-2xl md:text-3xl font-bold text-coder1-purple mb-1">
+                Real-Time
               </div>
-              <p className="text-white/40 text-sm">Autonomous Work</p>
+              <p className="text-white/40 text-sm">Team Session Sharing</p>
             </div>
             <div className="text-center">
               <div className="text-3xl md:text-4xl font-bold text-orange-400 mb-1">
@@ -972,26 +1260,63 @@ export default function AlphaLandingPage() {
             </div>
           </div>
 
-          {/* Audience hooks */}
-          <div className="grid md:grid-cols-3 gap-6 mt-16">
-            {[
-              { audience: 'Founders', message: 'Ship faster with AI that works while you sleep' },
-              { audience: 'Developers', message: 'Full IDE + autonomous agent in one' },
-              { audience: 'Vibe Coders', message: 'User-friendly interface with AI power features' }
-            ].map((hook, idx) => (
-              <ScrollReveal key={idx} delay={idx * 100}>
-                <div className="p-6 bg-[#151515] border border-white/10 rounded-xl hover:border-white/20 transition-all">
-                  <p className="text-coder1-purple text-base font-semibold uppercase tracking-widest mb-2">{hook.audience}</p>
-                  <p className="text-white font-medium">{hook.message}</p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
+          {/* Audience line */}
+          <p className="text-base text-white/50 text-center mt-12">
+            Built for{' '}
+            <span className="text-coder1-cyan font-medium">Founders</span>,{' '}
+            <span className="text-coder1-cyan font-medium">Vibe Coders</span>,{' '}
+            and Claude Code power users.
+          </p>
+
         </div>
 
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
           <ChevronDown className="w-6 h-6 text-white/30" />
+        </div>
+      </section>
+
+      {/* ===== FOUNDER STORY SECTION ===== */}
+      <section className="py-16 bg-[#080808]">
+        <div className="max-w-4xl mx-auto px-6">
+          <ScrollReveal>
+            <div
+              className="p-8 md:p-12 rounded-2xl border border-white/10 bg-[#0D0D0D]"
+              style={{ boxShadow: '0 0 60px rgba(0, 217, 255, 0.06)' }}
+            >
+              <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                {/* Founder photo */}
+                <div className="flex-shrink-0">
+                  <div
+                    className="w-32 h-32 rounded-full overflow-hidden bg-[#1a1a1a] flex items-center justify-center"
+                    style={{ boxShadow: '0 0 0 2px rgba(0,217,255,0.35), 0 0 24px rgba(0,217,255,0.15)' }}
+                  >
+                    <Image
+                      src="/mike-founder.png"
+                      alt="Mike, Founder of Coder1"
+                      width={128}
+                      height={128}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+                {/* Story */}
+                <div className="flex-1 text-center md:text-left">
+                  <p className="text-xs text-coder1-cyan font-semibold uppercase tracking-widest mb-4">
+                    Built By a Vibe Coder, For Vibe Coders
+                  </p>
+                  <blockquote className="text-xl md:text-2xl text-white font-medium leading-relaxed mb-4">
+                    &ldquo;I&apos;m not a developer. I left my corporate job, went into debt, and taught myself
+                    to build using Claude. I built Coder1 because I needed it &mdash; this is the IDE
+                    I wish I&apos;d had from day one.&rdquo;
+                  </blockquote>
+                  <p className="text-white/50 text-sm">
+                    &mdash; Mike, Founder of Coder1
+                  </p>
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -1049,6 +1374,11 @@ export default function AlphaLandingPage() {
               </ScrollReveal>
             ))}
           </div>
+
+          {/* Summary text */}
+          <p className="text-center text-lg text-white/60 mt-12">
+            It makes Claude Code more Powerful and user-friendly at the same time.
+          </p>
         </div>
       </section>
 
@@ -1098,13 +1428,13 @@ export default function AlphaLandingPage() {
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-coder1-purple/10 border border-coder1-purple/20 rounded-full mb-6">
                 <Bot className="w-5 h-5 text-coder1-purple" />
-                <span className="text-coder1-cyan text-base font-medium">Your AI Employee</span>
+                <span className="text-coder1-cyan text-base font-medium">Inspired by ClawdBot</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
                 Meet <span className="text-shimmer">Johnny5</span>
               </h2>
               <p className="text-lg text-white/50 max-w-2xl mx-auto">
-                The autonomous agent that works while you sleep
+                Your autonomous assistant that works while you sleep
               </p>
             </div>
           </ScrollReveal>
@@ -1113,18 +1443,18 @@ export default function AlphaLandingPage() {
             {[
               {
                 icon: Moon,
-                title: 'Autonomous Overnight Work',
-                desc: 'Johnny5 builds features while you rest. Queue up tasks before bed, wake up to completed code. No more late nights.'
+                title: 'Your AI Personal Assistant',
+                desc: 'Johnny5 handles tasks, answers questions, and helps run your day — your personal AI assistant built directly into the IDE.'
               },
               {
                 icon: MessageCircle,
-                title: 'WhatsApp Communication',
-                desc: 'Message Johnny5 directly via WhatsApp. Get updates, ask questions, and give instructions from anywhere - no IDE required.'
+                title: 'WhatsApp and Telegram',
+                desc: 'Message Johnny5 directly via WhatsApp or Telegram. Get updates, ask questions, and give instructions from anywhere.'
               },
               {
                 icon: Infinity,
-                title: '8,000+ MCP Integrations',
-                desc: 'Connect to thousands of tools and services. Johnny5 works autonomously around the clock with access to your entire stack.'
+                title: 'Thousands of Integrations',
+                desc: 'Johnny5 connects to thousands of integrations and can take action across your apps — search, file management, communications, and more.'
               },
               {
                 icon: TrendingUp,
@@ -1133,8 +1463,8 @@ export default function AlphaLandingPage() {
               },
               {
                 icon: GitPullRequest,
-                title: 'Proactive PR Creation',
-                desc: 'Notices feature requests in Slack conversations and GitHub issues. Builds them automatically and creates PRs for your review.'
+                title: 'Proactive Monitoring',
+                desc: 'Notices feature requests in Slack conversations and GitHub issues. Surfaces them for you with context and suggested next steps.'
               },
               {
                 icon: Sun,
@@ -1203,7 +1533,7 @@ export default function AlphaLandingPage() {
                     </tr>
                     <tr>
                       <td className="py-4 px-4 text-white/50 border-b border-white/5">Communication</td>
-                      <td className="py-4 px-6 text-center font-medium bg-coder1-cyan/5 border-x border-coder1-cyan/20">WhatsApp / IDE</td>
+                      <td className="py-4 px-6 text-center font-medium bg-coder1-cyan/5 border-x border-coder1-cyan/20">WhatsApp/Telegram/IDE</td>
                       <td className="py-4 px-6 text-center text-white/40 border-b border-white/5">WhatsApp / Telegram</td>
                     </tr>
                     <tr>
@@ -1222,15 +1552,69 @@ export default function AlphaLandingPage() {
             </div>
           </ScrollReveal>
 
-          {/* Live terminal demo */}
-          <div className="mt-12">
-            <ScrollReveal>
-              <div className="text-center mb-8">
-                <p className="text-white/40 text-4xl uppercase tracking-widest font-bold">DEMO</p>
+        </div>
+      </section>
+
+      {/* ===== DEMO VIDEO SECTION ===== */}
+      <section className="py-24 relative overflow-hidden" id="demo-video">
+        <div className="max-w-5xl mx-auto px-6">
+          <ScrollReveal>
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-coder1-cyan/10 border border-coder1-cyan/20 rounded-full mb-6">
+                <span className="text-coder1-cyan text-lg font-medium">See It In Action</span>
               </div>
-              <LiveTerminalDemo />
-            </ScrollReveal>
-          </div>
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Demo</h2>
+            </div>
+          </ScrollReveal>
+
+          <ScrollReveal>
+            <div className="relative flex flex-col items-center">
+              {/* Cyan glow behind the screen */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'radial-gradient(ellipse 70% 50% at 50% 45%, rgba(0, 217, 255, 0.18) 0%, rgba(0, 217, 255, 0.06) 50%, transparent 100%)',
+                }}
+              />
+
+              {/* Monitor bezel */}
+              <div
+                className="relative w-full rounded-2xl overflow-hidden border-4 border-white/10"
+                style={{
+                  background: '#111',
+                  boxShadow: '0 0 60px 20px rgba(0, 217, 255, 0.2), 0 0 120px 40px rgba(0, 217, 255, 0.08), 0 30px 80px rgba(0,0,0,0.7)',
+                }}
+              >
+                {/* Fake browser top bar */}
+                <div className="flex items-center gap-2 px-4 py-3 bg-[#1a1a1a] border-b border-white/10">
+                  <div className="w-3 h-3 rounded-full bg-red-500/70" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
+                  <div className="w-3 h-3 rounded-full bg-green-500/70" />
+                  <div className="flex-1 ml-4 bg-white/5 rounded-md px-4 py-1 text-white/30 text-xs font-mono">
+                    coder1.app/ide
+                  </div>
+                </div>
+
+                {/* Video */}
+                <div className="relative w-full" style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                    suppressHydrationWarning
+                  >
+                    <source src="/videos/alpha-demo-web-optimized.mp4" type="video/mp4" />
+                  </video>
+                </div>
+              </div>
+
+              {/* Monitor stand */}
+              <div className="w-24 h-4 bg-[#1a1a1a] rounded-b-lg border-x border-b border-white/10" />
+              <div className="w-48 h-2 bg-[#111] rounded-full border border-white/10" />
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -1413,6 +1797,11 @@ export default function AlphaLandingPage() {
               </ScrollReveal>
             ))}
           </div>
+
+          {/* ===== MEMORY DEMO ===== */}
+          <ScrollReveal delay={200}>
+            <MemoryComparisonDemo />
+          </ScrollReveal>
         </div>
       </section>
 
@@ -1459,6 +1848,83 @@ export default function AlphaLandingPage() {
         </div>
       </section>
 
+      {/* ===== TEAMS SECTION ===== */}
+      <section className="py-24 bg-[#060606]" id="teams">
+        <div className="max-w-5xl mx-auto px-6">
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <div className="inline-block px-3 py-1 rounded-full bg-coder1-purple/10 border border-coder1-purple/30 text-coder1-purple text-xs font-semibold uppercase tracking-widest mb-4">
+                For Teams
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight">
+                The only IDE where your whole team<br />
+                <span className="text-coder1-cyan">shares AI memory in real time</span>
+              </h2>
+              <p className="text-white/50 text-base max-w-xl mx-auto">
+                Building with a co-founder or team? Coder1 Teams lets everyone share context, memory, and AI agents — no more re-explaining to Claude.
+              </p>
+            </div>
+          </ScrollReveal>
+
+          <ScrollReveal delay={100}>
+            <div className="overflow-x-auto rounded-xl border border-white/10">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 bg-[#0D0D0D]">
+                    <th className="text-left py-4 px-5 text-white/40 font-medium">Feature</th>
+                    <th className="py-4 px-5 text-center font-semibold text-coder1-cyan bg-coder1-cyan/5 border-x border-coder1-cyan/20">Coder1 Teams</th>
+                    <th className="py-4 px-5 text-center text-white/40 font-medium">Cursor</th>
+                    <th className="py-4 px-5 text-center text-white/40 font-medium">GitHub Copilot</th>
+                    <th className="py-4 px-5 text-center text-white/40 font-medium">VS Code Live Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Shared Team AI Memory', true, false, false, false],
+                    ['Real-time Co-editing', true, false, false, true],
+                    ['Learns from All Team Members', true, false, false, false],
+                    ['Persistent Memory Across Sessions', true, false, false, false],
+                    ['Autonomous Overnight Work', true, false, false, false],
+                    ['Merge Conflict Prevention', true, false, false, false],
+                  ].map(([feature, coder1, cursor, copilot, vslive], idx) => (
+                    <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-5 text-white/60">{feature as string}</td>
+                      <td className="py-3 px-5 text-center bg-coder1-cyan/5 border-x border-coder1-cyan/10">
+                        {coder1 ? <Check className="w-4 h-4 text-coder1-cyan mx-auto" /> : <X className="w-4 h-4 text-white/20 mx-auto" />}
+                      </td>
+                      <td className="py-3 px-5 text-center">
+                        {cursor ? <Check className="w-4 h-4 text-emerald-400 mx-auto" /> : <X className="w-4 h-4 text-white/20 mx-auto" />}
+                      </td>
+                      <td className="py-3 px-5 text-center">
+                        {copilot ? <Check className="w-4 h-4 text-emerald-400 mx-auto" /> : <X className="w-4 h-4 text-white/20 mx-auto" />}
+                      </td>
+                      <td className="py-3 px-5 text-center">
+                        {vslive ? <Check className="w-4 h-4 text-emerald-400 mx-auto" /> : <X className="w-4 h-4 text-white/20 mx-auto" />}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-[#0D0D0D]">
+                    <td className="py-3 px-5 text-white/40 font-medium">Price</td>
+                    <td className="py-3 px-5 text-center bg-coder1-cyan/5 border-x border-coder1-cyan/10 text-coder1-cyan font-semibold">$24/user/mo</td>
+                    <td className="py-3 px-5 text-center text-white/40">$20/user/mo</td>
+                    <td className="py-3 px-5 text-center text-white/40">$10/user/mo</td>
+                    <td className="py-3 px-5 text-center text-white/40">Free</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="text-center mt-8">
+              <a
+                href="#pricing"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-coder1-purple/10 border border-coder1-purple/30 rounded-full text-coder1-purple text-sm font-semibold hover:bg-coder1-purple/20 transition-all"
+              >
+                See Team Pricing <ArrowRight className="w-4 h-4" />
+              </a>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
       {/* ===== PRICING SECTION ===== */}
       <section className="py-24" id="pricing">
         <div className="max-w-5xl mx-auto px-6">
@@ -1474,7 +1940,6 @@ export default function AlphaLandingPage() {
           </ScrollReveal>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <ScrollReveal delay={0}>
               <PricingCard
                 tier="Free Forever"
                 price="$0"
@@ -1492,9 +1957,7 @@ export default function AlphaLandingPage() {
                 subtext="No credit card required"
                 onClick={() => document.getElementById('alpha')?.scrollIntoView({ behavior: 'smooth' })}
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={100}>
               <PricingCard
                 tier="Pro"
                 price="$19"
@@ -1512,11 +1975,10 @@ export default function AlphaLandingPage() {
                 cta="Start Pro Trial"
                 featured
                 badge="Most Popular"
-                onClick={() => document.getElementById('alpha')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={handleProCheckout}
+                loading={checkoutLoading}
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={200}>
               <PricingCard
                 tier="Team"
                 price="$24"
@@ -1530,15 +1992,15 @@ export default function AlphaLandingPage() {
                   'Custom integrations'
                 ]}
                 cta="Contact Sales"
+                subtext="3 users minimum."
                 onClick={() => window.location.href = 'mailto:alpha@coder1.ai?subject=Coder1 Team Plan Inquiry'}
               />
-            </ScrollReveal>
           </div>
         </div>
       </section>
 
       {/* ===== FAQ SECTION ===== */}
-      <section className="py-24 bg-[#080808]">
+      <section className="pt-24 pb-0 bg-[#080808] relative">
         <div className="max-w-3xl mx-auto px-6">
           <ScrollReveal>
             <div className="text-center mb-12">
@@ -1552,82 +2014,60 @@ export default function AlphaLandingPage() {
           </ScrollReveal>
 
           <div className="space-y-3">
-            <ScrollReveal delay={50}>
               <FAQItem
                 question="What makes Coder1 different from Cursor or GitHub Copilot?"
-                answer="Coder1 is purpose-built for Claude Code users. Unlike Cursor or Copilot which focus on code completion, Coder1 provides a complete IDE experience with Johnny5 - an autonomous agent that works overnight, creates PRs, and briefs you every morning. Plus, you get full audit trails, session replay, and security transparency that other tools don't offer."
+                answer="Coder1 is a full GUI wrapper around Claude Code — giving you a real IDE experience instead of a raw terminal. It adds persistent session memory, Monaco editor, Johnny5 personal assistant, and team features no other IDE has: real-time session sharing so co-workers can watch each other's Claude Code work live, plus built-in video meetings. And your code never leaves your machine."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={100}>
               <FAQItem
                 question="What exactly is Johnny5?"
-                answer="Johnny5 is your AI employee built into Coder1. It works autonomously while you sleep - monitoring GitHub issues, Slack conversations, and trend feeds to identify work. It then builds features, creates pull requests, and prepares a morning briefing so you wake up to completed work instead of a todo list."
+                answer="Johnny5 is your AI personal assistant built into Coder1. It handles tasks, answers questions, monitors for trends and relevant updates, and helps manage your day — all from inside the IDE. Think of it as a capable assistant alongside your Claude Code sessions, not a replacement for your judgment."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={150}>
               <FAQItem
                 question="Do I need to install anything locally?"
                 answer="Coder1 IDE runs in your browser, but to connect it to your local codebase, you'll install our lightweight bridge CLI. This creates a secure tunnel between the web IDE and your machine, letting you run terminal commands, access files, and execute Claude Code locally while using the full IDE interface."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={200}>
               <FAQItem
                 question="Is my code secure? Where is it stored?"
                 answer="Your code never leaves your machine unless you explicitly push to GitHub. The bridge CLI runs locally and only transmits terminal output and file contents to your browser session. We don't store your code on our servers. All AI processing happens through your own API keys, and you can see every action in the full audit trail."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={250}>
               <FAQItem
                 question="What is Contextual Memory and how does it work?"
                 answer="Contextual Memory eliminates the frustration of re-explaining your project to Claude. It automatically captures important decisions, breakthroughs, and architecture patterns from your sessions. When you start a new session, this context is available so Claude understands your codebase, preferences, and past decisions without you having to repeat yourself."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={300}>
               <FAQItem
                 question="Can I use my own Anthropic API key?"
                 answer="Yes! Coder1 works with your own API keys. This means you control costs, have full visibility into usage, and your conversations stay private. We never see your API traffic - it goes directly from your browser to Anthropic's servers."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={350}>
               <FAQItem
                 question="What's included in the free plan?"
-                answer="The free plan includes the full IDE experience: Monaco editor, integrated terminal, live preview, session management, and basic Johnny5 functionality (5 tasks per day). You can use it indefinitely - we believe in letting you experience the product before committing."
+                answer="The free plan includes the full IDE experience: Monaco editor, integrated terminal, live preview, session management, and 50 Johnny5 messages per month. You can use it indefinitely - we believe in letting you experience the product before committing."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={400}>
               <FAQItem
                 question="How is Johnny5 different from just running Claude Code?"
                 answer="Claude Code is reactive - you give it a task and it executes. Johnny5 is proactive. It monitors your project's ecosystem (GitHub, Slack, news feeds), identifies opportunities and issues, prioritizes them, and takes action autonomously. It's the difference between having an assistant who waits for instructions versus an employee who anticipates needs."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={450}>
               <FAQItem
                 question="What if Johnny5 makes a mistake while I'm asleep?"
                 answer="Johnny5 never pushes directly to your main branch. All work is done in feature branches with pull requests for your review. You have full session replay to see exactly what it did and why. Plus, our prompt injection detection and permission boundaries prevent it from taking destructive actions."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={500}>
               <FAQItem
                 question="Can I use Coder1 with my existing VS Code setup?"
                 answer="Coder1 is a standalone IDE, not a VS Code extension. However, it's designed to complement your existing workflow. Many users keep VS Code for certain tasks while using Coder1 for Claude Code sessions where the integrated terminal, session management, and Johnny5 features shine."
               />
-            </ScrollReveal>
 
-            <ScrollReveal delay={550}>
               <FAQItem
                 question="How do I get started with the alpha?"
                 answer="Sign up below with your email. We're onboarding alpha users in batches to ensure quality support. Once accepted, you'll get access to the full IDE, documentation, and our Discord community where the team is actively helping users and gathering feedback."
               />
-            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -1654,7 +2094,7 @@ export default function AlphaLandingPage() {
         </div>
         {/* Radial fade to soften edges */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute top-8 left-0 right-0 bottom-0 pointer-events-none"
           style={{
             background: 'radial-gradient(ellipse 100% 80% at 50% 0%, transparent 0%, transparent 40%, #0A0A0A 85%)'
           }}
@@ -1680,20 +2120,36 @@ export default function AlphaLandingPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4 mb-8">
               <input
+                type="text"
+                name="fullName"
+                id="alpha-fullname"
+                aria-label="Full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Full name"
+                required
+                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-coder1-cyan/50 transition-colors"
+              />
+              <input
                 type="email"
+                name="email"
+                id="alpha-email"
+                aria-label="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Your email address"
                 required
                 className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-coder1-cyan/50 transition-colors"
               />
-              <input
-                type="text"
-                value={github}
-                onChange={(e) => setGithub(e.target.value)}
-                placeholder="GitHub username (optional)"
-                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-coder1-cyan/50 transition-colors"
-              />
+              {formError && (
+                <div className="p-3 rounded-lg text-sm text-center" style={{
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  color: '#ef4444',
+                }}>
+                  {formError}
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -1702,6 +2158,16 @@ export default function AlphaLandingPage() {
                 {isSubmitting ? 'Joining...' : 'Request Alpha Access'}
               </button>
             </form>
+
+            {/* Already have access link */}
+            <div className="text-center mb-8">
+              <Link
+                href="/ide?skipSetup=true"
+                className="text-white/50 hover:text-coder1-cyan transition-colors text-sm inline-flex items-center gap-2"
+              >
+                Already have access? <span className="text-coder1-cyan">Go to IDE →</span>
+              </Link>
+            </div>
 
             <div className="flex flex-wrap justify-center gap-4 md:gap-6">
               <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
@@ -1730,26 +2196,19 @@ export default function AlphaLandingPage() {
               <div className="space-y-3">
                 <a href="#features" className="block text-white/50 hover:text-white transition-colors text-sm">Features</a>
                 <a href="#pricing" className="block text-white/50 hover:text-white transition-colors text-sm">Pricing</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Changelog</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Roadmap</a>
+                <a href="#johnny5" className="block text-white/50 hover:text-white transition-colors text-sm">Johnny5</a>
               </div>
             </div>
             <div>
               <h4 className="text-coder1-cyan font-semibold mb-4">Resources</h4>
               <div className="space-y-3">
                 <a href="/documentation" className="block text-white/50 hover:text-white transition-colors text-sm">Documentation</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Blog</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Tutorials</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">API Reference</a>
               </div>
             </div>
             <div>
               <h4 className="text-coder1-cyan font-semibold mb-4">Company</h4>
               <div className="space-y-3">
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">About</a>
                 <a href="mailto:alpha@coder1.ai" className="block text-white/50 hover:text-white transition-colors text-sm">Contact</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Careers</a>
-                <a href="#" className="block text-white/50 hover:text-white transition-colors text-sm">Press</a>
               </div>
             </div>
             <div>
@@ -1758,6 +2217,8 @@ export default function AlphaLandingPage() {
                 <a
                   href="https://github.com/coder1-ide"
                   target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Coder1 on GitHub"
                   className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
                 >
                   <Github className="w-5 h-5" />
@@ -1765,6 +2226,8 @@ export default function AlphaLandingPage() {
                 <a
                   href="https://discord.gg/coder1"
                   target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Coder1 Discord community"
                   className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
                 >
                   <MessageCircle className="w-5 h-5" />
@@ -1772,6 +2235,8 @@ export default function AlphaLandingPage() {
                 <a
                   href="https://twitter.com/coder1ide"
                   target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Coder1 on Twitter"
                   className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
                 >
                   <Twitter className="w-5 h-5" />

@@ -154,6 +154,32 @@ When debugging, confirm which environment (local dev vs production/Render) the i
 2. Check MCP servers: `cat ~/.mcp.json`
 3. Verify .claudeignore exists in project
 
+## Security & Architecture Rules
+
+Rules grounded in Coder1's actual security model. These apply to all new code and must be followed before committing.
+
+### Never Do These
+
+1. **No anonymous auth in non-alpha code.** The pattern `authToken || 'anonymous'` in bridge connect is an alpha-only shortcut. Any new auth flow must require a real token or return 401.
+2. **Never log API key values.** Log existence only: `console.log('ANTHROPIC_API_KEY:', !!process.env.ANTHROPIC_API_KEY)`. Never log the value, even partially.
+3. **Never trust client-provided permission claims.** Bridge permission levels (`claude-cli`, `bridge` capabilities) must be determined server-side. Never read permission level from request body.
+4. **No raw user input in PTY args.** Any string passed to `node-pty` spawn args must be validated/sanitized first — no direct interpolation of user-supplied strings.
+5. **No blocking operations in Socket.IO event handlers.** Checkpoint saves, session summaries, AI calls — must be async/background. Blocking the event loop stalls all connected clients.
+
+### Architecture Constraints
+
+- **Bridge is the security boundary.** Web server never executes local commands directly — all local execution goes through the bridge. Don't add server-side PTY spawning that bypasses bridge auth.
+- **In-memory auth Maps are alpha only.** `bridgeConnections` and `bridgeAuth` have no persistence — they reset on restart. Do not build features that assume these survive across deploys.
+- **Socket.IO timeout = 120000ms minimum.** Claude Code sessions regularly run longer than 60 seconds. Do not reduce timeouts on Socket.IO or underlying HTTP without explicit testing.
+- **Optional service loading pattern.** All services loaded in server.js use `try { require(...) } catch { warn; null }`. Follow this pattern for any new service — server must start even if a service is unavailable.
+
+### Before Adding a New API Route
+
+1. Validate all required fields at the top — return `400 { error: 'fieldName is required' }` early
+2. Check auth — does this endpoint need bridge auth, WS ticket, or API key?
+3. Wrap external calls (PTY, Socket.IO, file system) in try/catch with structured error logging
+4. Never return `process.env` values or internal paths in error responses
+
 ## Documentation
 
 For detailed documentation, see:

@@ -901,6 +901,13 @@ export default function AlphaLandingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [utmContent, setUtmContent] = useState<string>('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const utm = params.get('utm_content');
+    if (utm) setUtmContent(utm);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -917,7 +924,7 @@ export default function AlphaLandingPage() {
       const response = await fetch('/api/alpha/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, source: 'alpha_landing' })
+        body: JSON.stringify({ fullName, email, source: 'alpha_landing', utm_content: utmContent || undefined })
       });
 
       if (response.ok) {
