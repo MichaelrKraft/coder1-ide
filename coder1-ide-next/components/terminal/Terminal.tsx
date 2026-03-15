@@ -296,16 +296,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
   }, [claudeActive]);
 
-  // Clear turn history and file edits when session changes
-  useEffect(() => {
-    if (sessionId) {
-      setTurns([]);
-      turnNumberRef.current = 0;
-      turnStartTimeRef.current = null;
-      useFileEditsStore.getState().clearEdits();
-    }
-  }, [sessionId]);
-
   // 🎨 UX FIX (Feb 1, 2025): Show "thinking" message when Claude becomes active
   // This gives users visual feedback that something is happening during response delays
   useEffect(() => {
@@ -350,6 +340,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Terminal session state - needed for various features
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [terminalReady, setTerminalReady] = useState(false);
+
+  // Clear turn history and file edits when session changes (must be after sessionId declaration)
+  useEffect(() => {
+    setTurns([]);
+    turnNumberRef.current = 0;
+    turnStartTimeRef.current = null;
+    useFileEditsStore.getState().clearEdits();
+  }, [sessionId]);
   const [lastError, setLastError] = useState<string | null>(null);
   const [errorDoctorActive, setErrorDoctorActive] = useState(true);
   const socketRef = useRef<any>(null); // Will be Socket instance after async init
