@@ -1527,6 +1527,13 @@ function IDEPageContent() {
         setMissionControlActive(prev => !prev);
       }
 
+      // Session Kanban (Cmd+Shift+K / Ctrl+Shift+K)
+      else if (ctrlKey && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.dispatchEvent(new CustomEvent('showSessionKanban'));
+      }
+
       // Run shortcuts
       else if (e.key === 'F5') {
         e.preventDefault();
