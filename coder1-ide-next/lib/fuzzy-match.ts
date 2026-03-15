@@ -50,6 +50,24 @@ export interface FuzzyMatchResult {
 }
 
 /**
+ * Score a query against a single target string (0 = no match, 1 = perfect).
+ * Substring match scores higher than scattered char match.
+ * Used by SlashCommandTypeahead for real-time command filtering.
+ */
+export function fuzzyScore(query: string, target: string): number {
+  const q = query.toLowerCase();
+  const t = target.toLowerCase();
+  if (!q) return 1;
+  if (t.includes(q)) return 0.8 + (q.length / t.length) * 0.2;
+  let qi = 0;
+  let score = 0;
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) { score++; qi++; }
+  }
+  return qi < q.length ? 0 : (score / t.length) * 0.7;
+}
+
+/**
  * Find the best fuzzy matches for a query from a list of options.
  *
  * Returns matches sorted by confidence (descending).
