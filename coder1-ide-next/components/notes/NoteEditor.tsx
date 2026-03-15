@@ -62,7 +62,7 @@ export default function NoteEditor({ notePath, initialContent, onSave, onClose }
         fontSize: 13,
         fontFamily: '"JetBrains Mono", "Fira Code", Menlo, monospace',
         wordWrap: 'on',
-        lineNumbers: 'on',
+        lineNumbers: 'off',
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
         automaticLayout: true,
