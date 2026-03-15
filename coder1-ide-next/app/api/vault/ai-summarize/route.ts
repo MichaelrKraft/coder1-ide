@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       `You are summarizing a developer note for a knowledge base sidebar. Write exactly 2-3 sentences describing what this note covers. Be specific and technical. Only return the summary text, no labels or formatting.\n\nTitle: ${body.title}\n\n${(body.content as string).slice(0, 3000)}`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 150,
       messages: [{ role: 'user', content: prompt }],
     });
