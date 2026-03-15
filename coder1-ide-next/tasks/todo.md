@@ -97,3 +97,31 @@ Replaced the 625-line, 10-tab complex dashboard with a focused 211-line panel.
 - TipEngine integration: starts on mount, polls every 10s, renders max 3 tip cards
 - TipCard sub-component with priority-based border colors and action buttons
 - "Open Full Johnny5 Platform" link at bottom
+
+---
+
+# Task: Create ScreenshotShape for Screen Drop Workspace Canvas
+
+## Plan
+
+- [x] Explore existing workspace structure (WorkspaceCanvas.tsx, shapes/ directory)
+- [x] Verify tldraw v4.4.1 installed and API exports available
+- [x] Create `ScreenshotShape.tsx` in screenshotz/components/workspace/shapes/
+  - IScreenshotShape type definition with all props
+  - ScreenshotShapeUtil class (component, indicator, geometry, resize)
+  - Card rendering: image area (70%) + info area (30%)
+  - Content type badge with color mapping
+  - All inline styles using --sd-* CSS variables
+- [x] Verify TypeScript compiles cleanly (0 errors from ScreenshotShape; 5 pre-existing in other files)
+
+## Review
+
+Created `ScreenshotShape.tsx` using the tldraw v4.4.1 canonical custom shape pattern:
+
+- **Module augmentation**: `TLGlobalShapePropsMap` extended with `screenshot` key and all custom props
+- **Type**: `IScreenshotShape = TLShape<'screenshot'>` (single generic param via augmented map)
+- **BaseBoxShapeUtil**: Extends `BaseBoxShapeUtil<IScreenshotShape>` which provides `getGeometry` and `onResize` for free
+- **static props**: Validators using `T.number` / `T.string` without explicit `RecordProps` type annotation
+- **component()**: Card layout with 70% image area (img tag or placeholder) + 30% info area (title + content type badge)
+- **Badge colors**: 6 content types mapped (tweet, article, product, code, design, default)
+- **All styles inline** using `--sd-*` CSS variable fallbacks
