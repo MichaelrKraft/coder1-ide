@@ -29,7 +29,7 @@ export interface VaultLink {
   sourceId: number;
   targetId: number;
   linkText: string;
-  type: 'wikilink' | 'ai_semantic';
+  type: 'wikilink' | 'ai_semantic' | 'file-link';
 }
 
 export interface VaultSearchResult {
@@ -101,4 +101,14 @@ export interface NoteConflict {
   notePath: string;
   diskContent: string;
   editorContent: string;
+}
+
+export interface FileLink {
+  id: number;
+  noteId: number;
+  notePath: string;
+  noteTitle: string;
+  filePath: string;
+  line: number;
+  createdAt: number;
 }

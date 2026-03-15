@@ -5,6 +5,8 @@ import { ChevronRight, ChevronDown, Folder, FileText, Plus, Search } from 'lucid
 import type { VaultFolderTree, VaultNoteStub } from '@/lib/vault-types';
 import { useVaultMention } from '@/hooks/useVaultMention';
 import MentionDropdown from '@/components/notes/MentionDropdown';
+import TemplatePickerModal, { NoteTemplate, TemplateContext } from './TemplatePickerModal';
+import { useIDEStore } from '@/stores/useIDEStore';
 
 export interface NotesPanelProps {
   onNoteSelect: (path: string) => void;
@@ -82,8 +84,21 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  const [creatingNote, setCreatingNote] = useState(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Template picker (Change 1)
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const newButtonRef = useRef<HTMLButtonElement | null>(null);
+  // Orphan finder (Change 3)
+  const [orphanPaths, setOrphanPaths] = useState<Set<string>>(new Set());
+  const [orphanCount, setOrphanCount] = useState<number | null>(null);
+  const [suggestingFor, setSuggestingFor] = useState<string | null>(null);
+  const [linkSuggestions, setLinkSuggestions] = useState<Map<string, Array<{path: string; title: string; reason: string}>>>(new Map());
+  // Semantic search (Change 4)
+  const [searchMode, setSearchMode] = useState<'keyword' | 'semantic'>('keyword');
+  const [semanticResults, setSemanticResults] = useState<Array<{path: string; title: string; excerpt?: string; matchReason: string}> | null>(null);
+  const [semanticLoading, setSemanticLoading] = useState(false);
   const { mentionState, handleInputChange: handleMentionChange, handleMentionSelect, closeMention } = useVaultMention();
 
   useEffect(() => {
@@ -91,6 +106,21 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
       .then((res) => { if (!res.ok) throw new Error('unavailable'); return res.json(); })
       .then((data: VaultFolderTree[]) => setFolderTree(data))
       .catch(() => setUnavailable(true));
+
+    // Fetch graph data for orphan detection
+    fetch('/api/vault/graph')
+      .then(r => r.json())
+      .then(data => {
+        setOrphanCount(data.stats?.orphanCount ?? 0);
+        const targetIds = new Set((data.links || []).map((l: {target: string | number}) => String(l.target)));
+        const orphans = new Set<string>(
+          (data.nodes || [])
+            .filter((n: {id: number; path: string}) => !targetIds.has(String(n.id)))
+            .map((n: {path: string}) => n.path)
+        );
+        setOrphanPaths(orphans);
+      })
+      .catch(() => {}); // silent failure
   }, []);
 
   const fetchNotes = useCallback((folder: string | null) => {
@@ -104,7 +134,7 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
         setNotes([...data].sort((a, b) => b.updatedAt - a.updatedAt));
         setLoadingNotes(false);
       })
-      .catch(() => { setUnavailable(true); setLoadingNotes(false); });
+      .catch(() => { setLoadingNotes(false); });
   }, []);
 
   useEffect(() => {
@@ -125,7 +155,63 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, [searchQuery, selectedFolder, fetchNotes]);
 
-  if (unavailable) return null;
+  // Semantic search effect (Change 4c)
+  useEffect(() => {
+    if (searchMode !== 'semantic' || searchQuery.length <= 2) {
+      setSemanticResults(null);
+      return;
+    }
+    setSemanticLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/vault/semantic-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: searchQuery, topK: 8 }),
+        });
+        const data = await res.json();
+        setSemanticResults(data.results || []);
+      } catch {
+        setSemanticResults([]);
+      } finally {
+        setSemanticLoading(false);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchMode]);
+
+  const handleNewNote = useCallback(async (template: NoteTemplate) => {
+    setCreatingNote(true);
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const ctx: TemplateContext = {
+      date: dateStr,
+      activeFile: useIDEStore.getState().editor.activeFile ?? '',
+    };
+    const filename = template.buildFilename(ctx);
+    const safeName = filename.replace(/[^a-zA-Z0-9\-_]/g, '-').replace(/-+/g, '-');
+    const folder = selectedFolder ? `${selectedFolder}/` : '';
+    const path = `${folder}${safeName}.md`;
+    const content = template.buildContent(ctx);
+    try {
+      await fetch('/api/vault', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, title: safeName, content }),
+      });
+      fetchNotes(selectedFolder);
+      onNoteSelect(path);
+    } finally {
+      setCreatingNote(false);
+    }
+  }, [selectedFolder, fetchNotes, onNoteSelect]);
+
+  if (unavailable) return (
+    <div className="flex flex-col h-full bg-[#0d0d0d] items-center justify-center p-4">
+      <p className="text-xs text-[#6b7280] text-center">Knowledge base unavailable.</p>
+      <p className="text-[10px] text-[#4b5563] text-center mt-1">Check that NEXT_PUBLIC_VAULT_ENABLED=true and restart the dev server.</p>
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full bg-[#0d0d0d]">
@@ -133,13 +219,25 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
       <div className="flex items-center justify-between px-3 py-2 border-b border-[#2a2a2a] flex-shrink-0">
         <span className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Notes</span>
         <button
-          className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-[#6366f1] hover:bg-[#4f46e5] text-white transition-colors"
-          onClick={() => onNoteSelect('__new__')}
+          ref={newButtonRef}
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-[#6366f1] hover:bg-[#4f46e5] text-white transition-colors disabled:opacity-50"
+          onClick={() => setShowTemplatePicker(true)}
+          disabled={creatingNote}
           title="New Note"
         >
           <Plus className="w-3 h-3" />
           <span>New</span>
         </button>
+        {showTemplatePicker && (
+          <TemplatePickerModal
+            anchorRef={newButtonRef as React.RefObject<HTMLButtonElement>}
+            onSelect={(template) => {
+              setShowTemplatePicker(false);
+              handleNewNote(template);
+            }}
+            onDismiss={() => setShowTemplatePicker(false)}
+          />
+        )}
       </div>
 
       {/* Search */}
@@ -173,6 +271,23 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
             />
           )}
         </div>
+        {searchQuery.length > 0 && (
+          <div className="flex gap-1 mt-1">
+            {(['keyword', 'semantic'] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => { setSearchMode(mode); setSemanticResults(null); }}
+                className={`flex-1 text-[10px] py-0.5 rounded transition-colors ${
+                  searchMode === mode
+                    ? 'bg-indigo-600/30 text-indigo-300'
+                    : 'text-[#6b7280] hover:text-[#9ca3af]'
+                }`}
+              >
+                {mode === 'keyword' ? 'Keyword' : 'Semantic'}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Two-pane area */}
@@ -200,37 +315,135 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
               depth={0}
             />
           ))}
+          <button
+            onClick={() => setSelectedFolder('__orphans__')}
+            className={`w-full flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors ${
+              selectedFolder === '__orphans__'
+                ? 'bg-[#1a1a2e] text-orange-400'
+                : 'text-[#9ca3af] hover:text-[#e2e8f0] hover:bg-[#1a1a2e]'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
+            <span>Orphans</span>
+            {orphanCount !== null && <span className="ml-auto text-[#6b7280]">{orphanCount}</span>}
+          </button>
         </div>
 
         {/* Right: Note list (~60%) */}
         <div className="flex-1 overflow-y-auto">
-          {loadingNotes && (
-            <div className="px-3 py-3 text-xs text-[#4b5563]">Loading...</div>
-          )}
-          {!loadingNotes && notes.length === 0 && (
-            <div className="px-3 py-3 text-xs text-[#4b5563] italic">No notes here.</div>
-          )}
-          {!loadingNotes && notes.map((note) => (
-            <button
-              key={note.path}
-              className={`w-full text-left px-3 py-2 border-b border-[#1a1a1a] transition-colors ${
-                activeNotePath === note.path ? 'bg-[#1e1b4b]' : 'hover:bg-[#1a1a1a]'
-              }`}
-              onClick={() => onNoteSelect(note.path)}
-            >
-              <div className="flex items-start justify-between gap-1">
-                <span className="text-xs font-semibold text-[#e2e8f0] truncate leading-4">
-                  {note.title}
-                </span>
-                <span className="text-[10px] text-[#4b5563] flex-shrink-0 mt-0.5">
-                  {formatRelativeDate(note.updatedAt)}
-                </span>
+          {/* Semantic search results overlay (Change 4d) */}
+          {searchMode === 'semantic' && searchQuery.length > 2 && (
+            semanticLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="w-4 h-4 border border-indigo-400 border-t-transparent rounded-full animate-spin" />
               </div>
-              {note.excerpt && (
-                <p className="text-[10px] text-[#6b7280] truncate mt-0.5">{note.excerpt}</p>
+            ) : semanticResults ? (
+              <div className="space-y-1 p-1">
+                {semanticResults.length === 0 && (
+                  <div className="px-3 py-3 text-xs text-[#4b5563] italic">No semantic matches.</div>
+                )}
+                {semanticResults.map(result => (
+                  <button
+                    key={result.path}
+                    onClick={() => onNoteSelect(result.path)}
+                    className="w-full text-left px-2 py-2 rounded hover:bg-[#1a1a2e] transition-colors"
+                  >
+                    <p className="text-xs text-[#e2e8f0] truncate">{result.title}</p>
+                    <p className="text-[10px] text-indigo-400 italic mt-0.5 line-clamp-2">{result.matchReason}</p>
+                  </button>
+                ))}
+              </div>
+            ) : null
+          )}
+
+          {/* Standard keyword results */}
+          {(searchMode !== 'semantic' || searchQuery.length <= 2) && (
+            <>
+              {loadingNotes && (
+                <div className="px-3 py-3 text-xs text-[#4b5563]">Loading...</div>
               )}
-            </button>
-          ))}
+              {!loadingNotes && (() => {
+                // Change 3d: filter to orphans when that folder is selected
+                const displayedNotes = selectedFolder === '__orphans__'
+                  ? notes.filter(n => orphanPaths.has(n.path))
+                  : notes;
+                return (
+                  <>
+                    {displayedNotes.length === 0 && (
+                      <div className="px-3 py-3 text-xs text-[#4b5563] italic">No notes here.</div>
+                    )}
+                    {displayedNotes.map((note) => (
+                      <button
+                        key={note.path}
+                        className={`w-full text-left px-3 py-2 border-b border-[#1a1a1a] transition-colors ${
+                          activeNotePath === note.path ? 'bg-[#1e1b4b]' : 'hover:bg-[#1a1a1a]'
+                        }`}
+                        onClick={() => onNoteSelect(note.path)}
+                      >
+                        <div className="flex items-start justify-between gap-1">
+                          <span className="text-xs font-semibold text-[#e2e8f0] truncate leading-4">
+                            {note.title}
+                          </span>
+                          <span className="text-[10px] text-[#4b5563] flex-shrink-0 mt-0.5">
+                            {formatRelativeDate(note.updatedAt)}
+                          </span>
+                        </div>
+                        {/* Change 2: show AI summary from frontmatter if available, else excerpt */}
+                        <p className="text-[10px] text-[#6b7280] truncate mt-0.5">
+                          {(note.frontmatter?.summary as string | undefined) || note.excerpt || ''}
+                        </p>
+                        {/* Change 3e: AI Connect button for orphan notes */}
+                        {orphanPaths.has(note.path) && (
+                          <div className="mt-1">
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                setSuggestingFor(note.path);
+                                try {
+                                  const noteRes = await fetch(`/api/vault?path=${encodeURIComponent(note.path)}`);
+                                  const noteData = await noteRes.json();
+                                  const res = await fetch('/api/vault/suggest-links', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ notePath: note.path, noteTitle: note.title, noteContent: noteData.content || '' }),
+                                  });
+                                  const data = await res.json();
+                                  setLinkSuggestions(prev => new Map(prev).set(note.path, data.suggestions || []));
+                                } catch {
+                                  setLinkSuggestions(prev => new Map(prev).set(note.path, []));
+                                } finally {
+                                  setSuggestingFor(null);
+                                }
+                              }}
+                              disabled={suggestingFor === note.path}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
+                            >
+                              {suggestingFor === note.path ? 'Finding...' : 'AI Connect'}
+                            </button>
+                            {linkSuggestions.has(note.path) && (
+                              <div className="mt-1 space-y-0.5">
+                                {(linkSuggestions.get(note.path) || []).map((s, i) => (
+                                  <div key={i} className="text-[10px] text-[#9ca3af]">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onNoteSelect(s.path); }}
+                                      className="text-indigo-400 hover:text-indigo-300 hover:underline"
+                                    >
+                                      {s.title}
+                                    </button>
+                                    <span className="ml-1 text-[#6b7280]">— {s.reason}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </>
+                );
+              })()}
+            </>
+          )}
         </div>
       </div>
     </div>

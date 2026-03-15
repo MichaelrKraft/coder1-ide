@@ -102,11 +102,53 @@ export default function MonacoEditor({
   const monacoRef = useRef<typeof monaco | null>(null);
   const lastFileRef = useRef<string | null>(null);
   const lastValueRef = useRef<string | undefined>(undefined);
+  const fileLinksRef = useRef<Array<{ notePath: string; noteTitle: string; line: number }>>([]);
+  const decorationsCollectionRef = useRef<monaco.editor.IEditorDecorationsCollection | null>(null);
   const [setupViewed, setSetupViewed] = useState<boolean | null>(null);
   const [heroSectionDismissed, setHeroSectionDismissed] = useState<boolean | null>(null);
 
   // C1 FIX: Shared ref that blocks setValue() when Yjs is managing content
   const collabActiveRef = useRef(false);
+
+  // Fetch file-linked notes and apply glyph margin decorations
+  const applyFileLinkDecorations = useCallback(async (filePath: string | null | undefined) => {
+    if (!editorRef.current || !monacoRef.current || !filePath) return;
+
+    try {
+      const res = await fetch(`/api/vault/file-links?file=${encodeURIComponent(filePath)}`);
+      if (!res.ok) {
+        fileLinksRef.current = [];
+      } else {
+        const data = await res.json();
+        fileLinksRef.current = data.links || [];
+      }
+    } catch {
+      fileLinksRef.current = [];
+    }
+
+    if (!editorRef.current || !monacoRef.current) return;
+
+    // Clear existing decorations
+    decorationsCollectionRef.current?.clear();
+
+    if (fileLinksRef.current.length === 0) return;
+
+    const MonacoRange = monacoRef.current.Range;
+    const decorations = fileLinksRef.current.map(link => ({
+      range: new MonacoRange(link.line, 1, link.line, 1),
+      options: {
+        glyphMarginClassName: 'note-gutter-icon',
+        glyphMarginHoverMessage: { value: `\u{1F4CC} ${link.noteTitle}` },
+      },
+    }));
+
+    if (typeof editorRef.current.createDecorationsCollection === 'function') {
+      decorationsCollectionRef.current = editorRef.current.createDecorationsCollection(decorations);
+    } else {
+      // Fallback for older Monaco versions
+      (editorRef.current as any).deltaDecorations([], decorations);
+    }
+  }, []);
 
   // Removed CDN configuration - using Monaco's default loading
 
@@ -212,6 +254,11 @@ export default function MonacoEditor({
     };
   }, []);
 
+  // Apply gutter decorations whenever the active file changes
+  useEffect(() => {
+    void applyFileLinkDecorations(file);
+  }, [file, applyFileLinkDecorations]);
+
   // Cleanup function to dispose editor when component unmounts
   useEffect(() => {
     return () => {
@@ -282,7 +329,31 @@ export default function MonacoEditor({
     });
     
     monacoInstance.editor.setTheme('coder1-dark');
-    
+
+    // Register "Link Note to This Line" command palette action
+    editor.addAction({
+      id: 'vault.link-note',
+      label: 'Link Note to This Line',
+      keybindings: [],
+      run: async (ed: monaco.editor.IStandaloneCodeEditor) => {
+        const position = ed.getPosition();
+        if (!position) return;
+        const line = position.lineNumber;
+        const notePath = window.prompt('Enter note path (e.g. "Projects/auth-notes.md"):');
+        if (!notePath) return;
+        try {
+          await fetch('/api/vault/file-links', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notePath, filePath: file, line }),
+          });
+          void applyFileLinkDecorations(file);
+        } catch (err) {
+          console.error('[MonacoEditor] Failed to link note:', err);
+        }
+      },
+    });
+
     // Configure editor options
     editor.updateOptions({
       fontSize: fontSize,
@@ -292,6 +363,7 @@ export default function MonacoEditor({
       wordWrap: 'on',
       automaticLayout: true,
       tabSize: 2,
+      glyphMargin: true,
       // Disable overview ruler (removes red bars)
       overviewRulerLanes: 0,
       hideCursorInOverviewRuler: true,
