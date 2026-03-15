@@ -44,6 +44,12 @@ const LazyTerminalContainer = dynamic(
   },
 );
 
+// Dynamic import for NoteDetailView
+const NoteDetailView = dynamic(
+  () => import("@/components/notes/NoteDetailView"),
+  { ssr: false }
+);
+
 // Dynamic import for PreviewPanel
 const PreviewPanel = dynamic(
   () => import("@/components/preview/PreviewPanel"),
@@ -67,6 +73,7 @@ import { useAutoCheckpoint } from "@/lib/hooks/useAutoCheckpoint";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useTeamActivityToasts } from "@/lib/hooks/useTeamActivityToasts";
 import { useTeamStore } from "@/stores/useTeamStore";
+import { useVaultStore } from "@/stores/useVaultStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { features } from "@/lib/feature-flags";
 
@@ -156,9 +163,14 @@ const detectClaudeFilePaths = (output: string): string | null => {
   return null;
 };
 
+const vaultEnabled = process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true';
+
 function IDEPageContent() {
   // Feature flags
   const FOCUS_MODE_ENABLED = true; // ✅ ENABLED: Focus mode feature is now active
+
+  // Vault store — for note navigation in right panel
+  const { activeNotePath, openNote } = useVaultStore();
 
   // Team activity push notifications
   useTeamActivityToasts();
@@ -1998,21 +2010,29 @@ function IDEPageContent() {
                   }
                   rightPanel={
                     !focusMode ? (
-                      <PreviewPanel 
-                        activeFile={activeFile}
-                        editorContent={activeFile ? files[activeFile] || "" : ""}
-                        fileOpen={!!activeFile}
-                        isPreviewable={
-                          // SAFETY: Mark files as previewable based on extension
-                          activeFile ? 
-                          /\.(html|htm|tsx|jsx|css|js|ts)$/i.test(activeFile) : 
-                          false
-                        }
-                        onOpenFile={handleOpenFileFromPath}
-                        recentTerminalInput={recentTerminalInput}
-                        terminalCommands={terminalCommands}
-                        claudeActive={claudeActive}
-                      />
+                      vaultEnabled && activeNotePath ? (
+                        <NoteDetailView
+                          notePath={activeNotePath}
+                          onNavigate={openNote}
+                          onClose={() => useVaultStore.setState({ activeNotePath: null })}
+                        />
+                      ) : (
+                        <PreviewPanel
+                          activeFile={activeFile}
+                          editorContent={activeFile ? files[activeFile] || "" : ""}
+                          fileOpen={!!activeFile}
+                          isPreviewable={
+                            // SAFETY: Mark files as previewable based on extension
+                            activeFile ?
+                            /\.(html|htm|tsx|jsx|css|js|ts)$/i.test(activeFile) :
+                            false
+                          }
+                          onOpenFile={handleOpenFileFromPath}
+                          recentTerminalInput={recentTerminalInput}
+                          terminalCommands={terminalCommands}
+                          claudeActive={claudeActive}
+                        />
+                      )
                     ) : null
                   }
                 />

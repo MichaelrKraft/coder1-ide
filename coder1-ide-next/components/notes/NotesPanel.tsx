@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronRight, ChevronDown, Folder, FileText, Plus, Search } from 'lucide-react';
 import type { VaultFolderTree, VaultNoteStub } from '@/lib/vault-types';
+import { useVaultMention } from '@/hooks/useVaultMention';
+import MentionDropdown from '@/components/notes/MentionDropdown';
 
 export interface NotesPanelProps {
   onNoteSelect: (path: string) => void;
@@ -81,6 +83,8 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { mentionState, handleInputChange: handleMentionChange, handleMentionSelect, closeMention } = useVaultMention();
 
   useEffect(() => {
     fetch('/api/vault?tree=true')
@@ -143,12 +147,31 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
         <div className="flex items-center gap-1.5 px-2 py-1 bg-[#1a1a1a] rounded border border-[#2a2a2a]">
           <Search className="w-3 h-3 text-[#4b5563] flex-shrink-0" />
           <input
+            ref={searchInputRef}
             type="text"
-            placeholder="Search notes..."
+            placeholder="Search notes... (type @ to mention)"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchQuery(val);
+              const rect = searchInputRef.current?.getBoundingClientRect();
+              handleMentionChange(val, e.target.selectionStart ?? val.length, rect);
+            }}
+            onBlur={() => setTimeout(closeMention, 150)}
             className="flex-1 bg-transparent text-xs text-[#e2e8f0] placeholder-[#4b5563] outline-none"
           />
+          {mentionState?.isOpen && (
+            <MentionDropdown
+              query={mentionState.query}
+              position={mentionState.position}
+              onSelect={(notePath, noteTitle) => {
+                handleMentionSelect(searchQuery, notePath, noteTitle, (newVal) => {
+                  setSearchQuery(newVal);
+                });
+              }}
+              onClose={closeMention}
+            />
+          )}
         </div>
       </div>
 
