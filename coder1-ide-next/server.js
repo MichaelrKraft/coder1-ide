@@ -1049,8 +1049,9 @@ class TerminalSession {
       
       // Ensure PATH includes common locations for Claude CLI
       const enhancedPath = [
+        path.join(os.homedir(), '.coder1', 'bin'),
         '/opt/homebrew/bin',
-        '/usr/local/bin', 
+        '/usr/local/bin',
         '/usr/bin',
         '/bin',
         '/usr/sbin',
@@ -1065,7 +1066,9 @@ class TerminalSession {
         ...process.env,
         PATH: enhancedPath,
         CODER1_IDE: 'true',
-        TERMINAL_SESSION_ID: id
+        TERMINAL_SESSION_ID: id,
+        // Glow markdown renderer — auto-pipe .md files viewed with less/git
+        PAGER: 'glow'
       };
       
       // Add Z.AI configuration for GLM backend (enables full tool use at $0.10/M)
@@ -5247,6 +5250,32 @@ app.prepare().then(() => {
     }
   })();
   
+  // Set up Glow integration — create notes CLI script for Coder1 terminal
+  try {
+    const glowBinDir = path.join(os.homedir(), '.coder1', 'bin');
+    const notesScriptPath = path.join(glowBinDir, 'notes');
+    if (!fs.existsSync(notesScriptPath)) {
+      fs.mkdirSync(glowBinDir, { recursive: true });
+      const notesScript = '#!/usr/bin/env bash\n' +
+        '# Coder1 notes viewer — list or open session notes with Glow\n' +
+        'NOTES_DIR="${CODER1_VAULT_PATH:-$HOME/.coder1/knowledge}/Sessions"\n' +
+        'if [ -z "$1" ]; then\n' +
+        '  ls "$NOTES_DIR"/*.md 2>/dev/null | xargs -I{} basename {} .md\n' +
+        'else\n' +
+        '  match=$(ls "$NOTES_DIR"/*"$1"*.md 2>/dev/null | head -1)\n' +
+        '  if [ -n "$match" ]; then\n' +
+        '    glow "$match"\n' +
+        '  else\n' +
+        '    echo "No note matching: $1"\n' +
+        '  fi\n' +
+        'fi\n';
+      fs.writeFileSync(notesScriptPath, notesScript, { mode: 0o755 });
+      console.log('[Glow] Created notes script at', notesScriptPath);
+    }
+  } catch (err) {
+    console.warn('[Glow] Could not create notes script:', err.message);
+  }
+
   // Start server
   console.log('[DEBUG] Calling server.listen() on port', port);
   server.listen(port, (err) => {
