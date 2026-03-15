@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronRight, ChevronDown, Folder, FileText, Plus, Search } from 'lucide-react';
+import { ChevronRight, ChevronDown, Folder, FileText, Plus, Search, Trash2 } from 'lucide-react';
 import type { VaultFolderTree, VaultNoteStub } from '@/lib/vault-types';
 import { useVaultMention } from '@/hooks/useVaultMention';
 import MentionDropdown from '@/components/notes/MentionDropdown';
@@ -99,6 +99,7 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
   const [searchMode, setSearchMode] = useState<'keyword' | 'semantic'>('keyword');
   const [semanticResults, setSemanticResults] = useState<Array<{path: string; title: string; excerpt?: string; matchReason: string}> | null>(null);
   const [semanticLoading, setSemanticLoading] = useState(false);
+  const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const { mentionState, handleInputChange: handleMentionChange, handleMentionSelect, closeMention } = useVaultMention();
 
   useEffect(() => {
@@ -179,6 +180,18 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
     }, 600);
     return () => clearTimeout(timer);
   }, [searchQuery, searchMode]);
+
+  const handleDeleteNote = useCallback(async (e: React.MouseEvent, path: string) => {
+    e.stopPropagation();
+    setDeletingPath(path);
+    try {
+      const res = await fetch(`/api/vault?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
+      if (res.ok) {
+        setNotes((prev) => prev.filter((n) => n.path !== path));
+      }
+    } catch { /* silently fail */ }
+    setDeletingPath(null);
+  }, []);
 
   const handleNewNote = useCallback(async (template: NoteTemplate) => {
     setCreatingNote(true);
