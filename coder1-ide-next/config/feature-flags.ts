@@ -67,6 +67,41 @@ class FeatureFlagManager {
         searchIndexing: false,
         maxSearchResults: 50
       }
+    },
+
+    // AI OS: Knowledge Base (Obsidian-like notes system)
+    VAULT_ENABLED: {
+      enabled: process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true',
+      rolloutPercentage: 100,
+      config: {
+        vaultPath: process.env.NEXT_PUBLIC_VAULT_PATH || '~/.coder1/knowledge',
+        maxNoteSizeBytes: 1048576, // 1MB soft limit for editor
+        maxGraphNodes: 500,
+        ftsEnabled: true,
+        dailyNoteTemplate: 'templates/daily.md',
+      }
+    },
+
+    // AI OS: Ambient screen activity integration
+    AMBIENT_ENABLED: {
+      enabled: process.env.NEXT_PUBLIC_AMBIENT_ENABLED === 'true',
+      rolloutPercentage: 100,
+      config: {
+        dbPath: '~/.ambient/ambient.db',
+      }
+    },
+
+    // AI OS: Johnny5 Miracle features
+    JOHNNY5_MIRACLES: {
+      enabled: process.env.NEXT_PUBLIC_JOHNNY5_MIRACLES_ENABLED === 'true',
+      rolloutPercentage: 100,
+      config: {
+        dreamWeaverSchedule: '0 2 * * *', // 2 AM daily
+        decayRadarSchedule: '0 18 * * 0', // Sunday 6 PM
+        ideaCollisionTimeoutMs: 90000,
+        maxWritesPerMinute: 10,
+        maxWritesPerHour: 100,
+      }
     }
   };
   
@@ -320,6 +355,9 @@ class FeatureFlagManager {
       ACTIVITY_TRACKING: { enabled: process.env.NEXT_PUBLIC_ACTIVITY_TRACKING === 'true' },
       DYNAMIC_TITLES: { enabled: process.env.NEXT_PUBLIC_DYNAMIC_TITLES === 'true' },
       MEMORY_PANEL_V2: { enabled: process.env.NEXT_PUBLIC_MEMORY_PANEL_V2 === 'true' },
+      VAULT_ENABLED: { enabled: process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true' },
+      AMBIENT_ENABLED: { enabled: process.env.NEXT_PUBLIC_AMBIENT_ENABLED === 'true' },
+      JOHNNY5_MIRACLES: { enabled: process.env.NEXT_PUBLIC_JOHNNY5_MIRACLES_ENABLED === 'true' },
     };
 
     for (const [name, override] of Object.entries(envOverrides)) {
@@ -375,7 +413,10 @@ export const FEATURE_FLAGS = {
   ENHANCED_SESSIONS: 'ENHANCED_SESSIONS',
   ACTIVITY_TRACKING: 'ACTIVITY_TRACKING',
   DYNAMIC_TITLES: 'DYNAMIC_TITLES',
-  MEMORY_PANEL_V2: 'MEMORY_PANEL_V2'
+  MEMORY_PANEL_V2: 'MEMORY_PANEL_V2',
+  VAULT_ENABLED: 'VAULT_ENABLED',
+  AMBIENT_ENABLED: 'AMBIENT_ENABLED',
+  JOHNNY5_MIRACLES: 'JOHNNY5_MIRACLES',
 } as const;
 
 // Export thresholds for monitoring

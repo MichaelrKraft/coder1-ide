@@ -1,11 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FolderTree, Clock, Search, Terminal } from 'lucide-react';
+import { FolderTree, Clock, Search, Terminal, BookOpen } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import SafeFileExplorer from './SafeFileExplorer';
 import SessionsPanel from './SessionsPanel';
 import CodeSearch from './codebase/CodeSearch';
 import { CommandsPanel } from './commands/CommandsPanel';
+
+const NotesPanel = dynamic(() => import('@/components/notes/NotesPanel'), { ssr: false });
+
+const vaultEnabled = process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -15,7 +20,7 @@ interface LeftPanelProps {
 }
 
 export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, onRootChange }: LeftPanelProps) {
-  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'search' | 'commands'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'search' | 'commands' | 'notes'>('explorer');
   
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
@@ -132,6 +137,20 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <Terminal className="w-3 h-3" />
           <span>Commands</span>
         </button>
+        {vaultEnabled && (
+          <button
+            className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'notes'
+                ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
+                : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+            }`}
+            onClick={() => setActiveTab('notes')}
+            title="Notes - Knowledge base and graph"
+          >
+            <BookOpen className="w-3 h-3" />
+            <span>Notes</span>
+          </button>
+        )}
       </div>
       
       {/* Tab Content - Takes remaining space but leaves room for Discover */}
@@ -147,6 +166,9 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
         )}
         {activeTab === 'commands' && (
           <CommandsPanel teamId={null} />
+        )}
+        {activeTab === 'notes' && vaultEnabled && (
+          <NotesPanel />
         )}
       </div>
       

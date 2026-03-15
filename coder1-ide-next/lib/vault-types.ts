@@ -1,0 +1,104 @@
+/**
+ * Shared TypeScript types for the Knowledge Base (Vault) system.
+ * All vault-related components, services, and APIs import from here.
+ */
+
+export interface VaultNote {
+  id: number;
+  path: string;        // relative path within vault, e.g. "projects/auth/README.md"
+  title: string;
+  frontmatter: Record<string, unknown>;
+  content: string;
+  contentHash: string;
+  updatedAt: number;   // unix ms
+  tags: string[];
+}
+
+export interface VaultNoteStub {
+  id: number;
+  path: string;
+  title: string;
+  frontmatter: Record<string, unknown>;
+  contentHash: string;
+  updatedAt: number;
+  tags: string[];
+  excerpt?: string;    // first 150 chars of content, for list previews
+}
+
+export interface VaultLink {
+  sourceId: number;
+  targetId: number;
+  linkText: string;
+  type: 'wikilink' | 'ai_semantic';
+}
+
+export interface VaultSearchResult {
+  note: VaultNoteStub;
+  snippet: string;     // FTS5 highlighted snippet
+  rank: number;
+}
+
+export interface VaultGraphData {
+  nodes: VaultGraphNode[];
+  links: VaultGraphLink[];
+  stats: {
+    totalNotes: number;
+    totalLinks: number;
+    orphanCount: number;
+  };
+}
+
+export interface VaultGraphNode {
+  id: number;
+  path: string;
+  title: string;
+  tags: string[];
+  linkCount: number;
+}
+
+export interface VaultGraphLink {
+  source: number;
+  target: number;
+  type: 'wikilink' | 'ai_semantic';
+}
+
+export interface VaultFolderTree {
+  name: string;
+  path: string;        // relative path
+  children: VaultFolderTree[];
+  noteCount: number;
+}
+
+// API request/response shapes
+
+export interface CreateNoteRequest {
+  path: string;
+  title: string;
+  content?: string;
+  frontmatter?: Record<string, unknown>;
+}
+
+export interface UpdateNoteRequest {
+  content: string;
+  frontmatter?: Record<string, unknown>;
+}
+
+export interface VaultApiError {
+  error: string;
+  code?: string;
+}
+
+// Notes panel UI types
+
+export interface BacklinkEntry {
+  sourcePath: string;
+  sourceTitle: string;
+  modifiedAt: number;
+  excerpt?: string;
+}
+
+export interface NoteConflict {
+  notePath: string;
+  diskContent: string;
+  editorContent: string;
+}
