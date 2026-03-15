@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Eye, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
 import type { VaultNote } from '@/lib/vault-types';
 import NoteEditor from '@/components/notes/NoteEditor';
@@ -22,6 +22,11 @@ export default function NoteDetailView({ notePath, onClose, onNavigate }: NoteDe
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const [backlinksOpen, setBacklinksOpen] = useState(true);
   const [diskContent, setDiskContent] = useState<string | null>(null);
+  const [summarizeStatus, setSummarizeStatus] = useState<'idle' | 'summarizing' | 'done'>('idle');
+  const isSummarizingRef = useRef(false);
+  const lastSummarizedAtRef = useRef(0);
+  const [linkedFiles, setLinkedFiles] = useState<Array<{ filePath: string; line: number }>>([]);
+  const [linkedFilesOpen, setLinkedFilesOpen] = useState(false);
   const { goBack, goForward, noteHistory, noteHistoryIndex, openNote } = useVaultStore();
 
   const fetchNote = useCallback((path: string) => {
@@ -41,9 +46,56 @@ export default function NoteDetailView({ notePath, onClose, onNavigate }: NoteDe
       .catch(() => { setNotFound(true); setLoading(false); });
   }, []);
 
+  const fetchLinkedFiles = useCallback(async () => {
+    if (!notePath) return;
+    try {
+      const res = await fetch(`/api/vault/file-links?note=${encodeURIComponent(notePath)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setLinkedFiles(data.links || []);
+    } catch { /* silent */ }
+  }, [notePath]);
+
   useEffect(() => {
-    if (notePath) fetchNote(notePath);
-  }, [notePath, fetchNote]);
+    if (notePath) {
+      fetchNote(notePath);
+      void fetchLinkedFiles();
+    }
+  }, [notePath, fetchNote, fetchLinkedFiles]);
+
+  const triggerAiSummarize = useCallback(async (path: string, content: string) => {
+    // Debounce: don't re-summarize if we just did it within 5 seconds
+    if (isSummarizingRef.current || Date.now() - lastSummarizedAtRef.current < 5000) return;
+    isSummarizingRef.current = true;
+    setSummarizeStatus('summarizing');
+
+    try {
+      const res = await fetch('/api/vault/ai-summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, content, title: note?.title ?? path }),
+      });
+      const data = await res.json();
+      if (data.summary) {
+        // Patch the note's frontmatter to include the summary
+        await fetch(`/api/vault?path=${encodeURIComponent(path)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content,
+            frontmatter: { ...(note?.frontmatter as Record<string, unknown> ?? {}), summary: data.summary },
+          }),
+        });
+      }
+      setSummarizeStatus('done');
+      lastSummarizedAtRef.current = Date.now();
+      setTimeout(() => setSummarizeStatus('idle'), 3000);
+    } catch {
+      setSummarizeStatus('idle');
+    } finally {
+      isSummarizingRef.current = false;
+    }
+  }, [note]);
 
   const handleSave = useCallback(async (content: string) => {
     await fetch(`/api/vault?path=${encodeURIComponent(notePath)}`, {
@@ -53,16 +105,18 @@ export default function NoteDetailView({ notePath, onClose, onNavigate }: NoteDe
     });
     // Re-fetch to get updated note (hash, updatedAt)
     fetchNote(notePath);
-  }, [notePath, fetchNote]);
+    // Trigger background AI summarization (non-blocking)
+    void triggerAiSummarize(notePath, content);
+  }, [notePath, fetchNote, triggerAiSummarize]);
 
   const handleCreate = useCallback(() => {
-    openNote(notePath);
-    fetch(`/api/vault?path=${encodeURIComponent(notePath)}`, {
-      method: 'PUT',
+    const title = notePath.split('/').pop()?.replace(/\.md$/, '') ?? notePath;
+    fetch('/api/vault', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: notePath, title: notePath.split('/').pop()?.replace(/\.md$/, '') ?? notePath, content: '' }),
+      body: JSON.stringify({ path: notePath, title, content: '' }),
     }).then(() => fetchNote(notePath));
-  }, [notePath, fetchNote, openNote]);
+  }, [notePath, fetchNote]);
 
   const handleWikilinkClick = useCallback((target: string) => {
     if (onNavigate) onNavigate(target);
@@ -96,6 +150,12 @@ export default function NoteDetailView({ notePath, onClose, onNavigate }: NoteDe
         </button>
 
         <span className="flex-1 text-xs font-semibold text-[#e2e8f0] truncate px-1">{title}</span>
+
+        {summarizeStatus !== 'idle' && (
+          <span className={`text-[10px] ${summarizeStatus === 'summarizing' ? 'text-[#9ca3af]' : 'text-green-400'} transition-colors`}>
+            {summarizeStatus === 'summarizing' ? 'AI summarizing...' : 'Summarized \u2713'}
+          </span>
+        )}
 
         <button
           className={`flex items-center gap-1 px-2 py-0.5 rounded border text-xs transition-colors ${
@@ -187,6 +247,29 @@ export default function NoteDetailView({ notePath, onClose, onNavigate }: NoteDe
                 notePath={notePath}
                 onNoteSelect={handleWikilinkClick}
               />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Linked Files Section */}
+      {!loading && !notFound && note && linkedFiles.length > 0 && (
+        <div className="border-t border-[#2a2a4e]">
+          <button
+            onClick={() => setLinkedFilesOpen((prev) => !prev)}
+            className="w-full flex items-center justify-between px-4 py-2 text-xs text-[#9ca3af] hover:text-[#e2e8f0] transition-colors"
+          >
+            <span>Linked Files ({linkedFiles.length})</span>
+            <span>{linkedFilesOpen ? '▾' : '▸'}</span>
+          </button>
+          {linkedFilesOpen && (
+            <div className="px-4 pb-3 space-y-1">
+              {linkedFiles.map((link, i) => (
+                <div key={i} className="flex items-center gap-2 text-[10px] text-[#9ca3af]">
+                  <span className="text-indigo-400 truncate flex-1">{link.filePath}</span>
+                  <span className="text-[#6b7280] flex-shrink-0">:{link.line}</span>
+                </div>
+              ))}
             </div>
           )}
         </div>

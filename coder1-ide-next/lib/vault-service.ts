@@ -19,6 +19,7 @@ import type {
   VaultFolderTree,
   CreateNoteRequest,
   UpdateNoteRequest,
+  FileLink,
 } from './vault-types';
 
 const DEFAULT_DB_PATH = '~/.coder1/knowledge.db';
@@ -72,6 +73,17 @@ export class VaultService {
       );
       CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
       CREATE INDEX IF NOT EXISTS idx_tags_note ON tags(note_id);
+
+      CREATE TABLE IF NOT EXISTS file_links (
+        id INTEGER PRIMARY KEY,
+        note_id INTEGER REFERENCES notes(id) ON DELETE CASCADE,
+        file_path TEXT NOT NULL,
+        line INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        UNIQUE (note_id, file_path, line)
+      );
+      CREATE INDEX IF NOT EXISTS idx_file_links_file ON file_links(file_path);
+      CREATE INDEX IF NOT EXISTS idx_file_links_note ON file_links(note_id);
     `);
   }
 
@@ -432,6 +444,49 @@ export class VaultService {
   getDailyNotePath(): string {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     return `Daily/${today}.md`;
+  }
+
+  // --- File Links ---
+
+  getFileLinks(filePath: string): FileLink[] {
+    const rows = this.db.prepare(`
+      SELECT fl.id, fl.note_id as noteId, n.path as notePath, n.title as noteTitle,
+             fl.file_path as filePath, fl.line, fl.created_at as createdAt
+      FROM file_links fl
+      JOIN notes n ON n.id = fl.note_id
+      WHERE fl.file_path = ?
+      ORDER BY fl.line ASC
+    `).all(filePath) as FileLink[];
+    return rows;
+  }
+
+  getFileLinksForNote(notePath: string): FileLink[] {
+    const rows = this.db.prepare(`
+      SELECT fl.id, fl.note_id as noteId, n.path as notePath, n.title as noteTitle,
+             fl.file_path as filePath, fl.line, fl.created_at as createdAt
+      FROM file_links fl
+      JOIN notes n ON n.id = fl.note_id
+      WHERE n.path = ?
+      ORDER BY fl.file_path ASC, fl.line ASC
+    `).all(notePath) as FileLink[];
+    return rows;
+  }
+
+  createFileLink(notePath: string, filePath: string, line: number): void {
+    const note = this.db.prepare('SELECT id FROM notes WHERE path = ?').get(notePath) as { id: number } | undefined;
+    if (!note) throw new Error(`Note not found: ${notePath}`);
+    this.db.prepare(`
+      INSERT OR REPLACE INTO file_links (note_id, file_path, line, created_at)
+      VALUES (?, ?, ?, ?)
+    `).run(note.id, filePath, line, Date.now());
+  }
+
+  deleteFileLink(notePath: string, filePath: string, line: number): void {
+    const note = this.db.prepare('SELECT id FROM notes WHERE path = ?').get(notePath) as { id: number } | undefined;
+    if (!note) return;
+    this.db.prepare(`
+      DELETE FROM file_links WHERE note_id = ? AND file_path = ? AND line = ?
+    `).run(note.id, filePath, line);
   }
 
   close(): void {

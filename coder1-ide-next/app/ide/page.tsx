@@ -44,12 +44,6 @@ const LazyTerminalContainer = dynamic(
   },
 );
 
-// Dynamic import for NoteDetailView
-const NoteDetailView = dynamic(
-  () => import("@/components/notes/NoteDetailView"),
-  { ssr: false }
-);
-
 // Dynamic import for PreviewPanel
 const PreviewPanel = dynamic(
   () => import("@/components/preview/PreviewPanel"),
@@ -75,6 +69,8 @@ import { useTeamActivityToasts } from "@/lib/hooks/useTeamActivityToasts";
 import { useTeamStore } from "@/stores/useTeamStore";
 import { useVaultStore } from "@/stores/useVaultStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useIDEStore } from "@/stores/useIDEStore";
+import { useSessionNoteStore } from "@/stores/useSessionNoteStore";
 import { features } from "@/lib/feature-flags";
 
 /**
@@ -741,6 +737,41 @@ function IDEPageContent() {
 
     setup();
     return () => { cleanupFn?.(); };
+  }, []);
+
+  // Feature #14 — Session Live Notes: init/teardown when terminal session starts
+  useEffect(() => {
+    if (!terminalSessionId) return;
+    useSessionNoteStore.getState().initSession(terminalSessionId);
+    return () => {
+      useSessionNoteStore.getState().stopRecording();
+    };
+  }, [terminalSessionId]);
+
+  // Feature #14 — Session Live Notes: track active file switches
+  // Note: Zustand v5 removed the two-argument subscribe(selector, listener) overload.
+  // We use the single-argument form and manually compare the selected slice.
+  const sessionNoteActiveFileRef = useRef<string | null>(null);
+  useEffect(() => {
+    const unsubscribe = useIDEStore.subscribe((state) => {
+      const activeFile = state.editor.activeFile;
+      if (!activeFile || activeFile === sessionNoteActiveFileRef.current) return;
+      sessionNoteActiveFileRef.current = activeFile;
+      useSessionNoteStore.getState().appendLine(`- Opened: \`${activeFile}\``);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Feature #14 — Session Live Notes: track terminal commands
+  const sessionNoteLastCommandRef = useRef<string | null>(null);
+  useEffect(() => {
+    const unsubscribe = useIDEStore.subscribe((state) => {
+      const lastCommand = state.terminal.lastCommand;
+      if (!lastCommand || lastCommand === sessionNoteLastCommandRef.current) return;
+      sessionNoteLastCommandRef.current = lastCommand;
+      useSessionNoteStore.getState().appendLine(`- Terminal: \`${lastCommand.slice(0, 100)}\``);
+    });
+    return unsubscribe;
   }, []);
 
   const handleFileDrop = async (files: File[]) => {
@@ -2010,14 +2041,7 @@ function IDEPageContent() {
                   }
                   rightPanel={
                     !focusMode ? (
-                      vaultEnabled && activeNotePath ? (
-                        <NoteDetailView
-                          notePath={activeNotePath}
-                          onNavigate={openNote}
-                          onClose={() => useVaultStore.setState({ activeNotePath: null })}
-                        />
-                      ) : (
-                        <PreviewPanel
+                      <PreviewPanel
                           activeFile={activeFile}
                           editorContent={activeFile ? files[activeFile] || "" : ""}
                           fileOpen={!!activeFile}
@@ -2032,7 +2056,6 @@ function IDEPageContent() {
                           terminalCommands={terminalCommands}
                           claudeActive={claudeActive}
                         />
-                      )
                     ) : null
                   }
                 />
