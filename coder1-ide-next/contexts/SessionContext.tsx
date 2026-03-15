@@ -68,6 +68,36 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }
   }, []);
 
+  // Vault context injection: when a session becomes active, search vault for relevant notes
+  useEffect(() => {
+    if (!currentSession) return;
+    if (process.env.NEXT_PUBLIC_VAULT_ENABLED !== 'true') return;
+
+    const keyword = encodeURIComponent(currentSession.name.replace(/[^\w\s]/g, ' ').trim().slice(0, 60));
+    if (!keyword) return;
+
+    fetch(`/api/vault?search=${keyword}&limit=5`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        const notes: Array<{ path: string }> = data?.results ?? data?.notes ?? [];
+        if (notes.length === 0) return;
+
+        // Store note paths in session metadata for downstream context injection
+        currentSession.metadata = {
+          ...(currentSession.metadata || {}),
+          vaultContext: notes.map(n => n.path),
+        };
+
+        window.dispatchEvent(new CustomEvent('showToast', {
+          detail: {
+            message: `Knowledge: ${notes.length} note${notes.length === 1 ? '' : 's'} loaded`,
+            type: 'info',
+          },
+        }));
+      })
+      .catch(() => {}); // Non-critical — vault errors must never break sessions
+  }, [currentSession?.id]);
+
   // Initialize Johnny5 SessionMemory for cross-session memory tracking
   useEffect(() => {
     if (typeof window !== 'undefined') {

@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
   Copy,
   Check,
+  Bookmark,
   RefreshCw,
   Trash2,
   ChevronDown,
@@ -225,6 +226,7 @@ export default function ChatTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [quotaExceeded, setQuotaExceeded] = useState<QuotaExceeded | null>(null);
@@ -1394,6 +1396,35 @@ export default function ChatTab() {
     }
   };
 
+  // Save to Notes
+  const handleSaveToNotes = useCallback(async (messageId: string, content: string) => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const filename = `chat-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}-${pad(now.getMinutes())}`;
+    const notePath = `Claude-Chat/${filename}.md`;
+    const firstLine = content.split('\n').find(l => l.trim()) ?? filename;
+    const title = firstLine.replace(/^#+\s*/, '').slice(0, 60);
+
+    try {
+      await fetch('/api/vault', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: notePath,
+          title,
+          content,
+          frontmatter: { savedAt: now.toISOString(), source: 'claude-chat' },
+        }),
+      });
+      setSavedNoteId(messageId);
+      setTimeout(() => setSavedNoteId(null), 3000);
+      const store = useIDEStore.getState() as { addToast?: (msg: string, type: string, duration: number) => void };
+      store.addToast?.('Saved to Notes', 'success', 3000);
+    } catch (error) {
+      console.error('Failed to save to notes:', error);
+    }
+  }, []);
+
   // Clear chat
   const handleClearChat = () => {
     // Abort any in-flight request
@@ -1694,6 +1725,19 @@ export default function ChatTab() {
                       <Check className="w-3 h-3 text-green-400" />
                     ) : (
                       <Copy className="w-3 h-3" />
+                    )}
+                  </button>
+                )}
+                {message.role === 'assistant' && (
+                  <button
+                    onClick={() => handleSaveToNotes(message.id, message.content)}
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-bg-tertiary text-text-muted hover:text-text-secondary transition-all"
+                    title="Save to Notes"
+                  >
+                    {savedNoteId === message.id ? (
+                      <Check className="w-3 h-3 text-green-400" />
+                    ) : (
+                      <Bookmark className="w-3 h-3" />
                     )}
                   </button>
                 )}
