@@ -7,6 +7,7 @@ import SafeFileExplorer from './SafeFileExplorer';
 import SessionsPanel from './SessionsPanel';
 import CodeSearch from './codebase/CodeSearch';
 import { CommandsPanel } from './commands/CommandsPanel';
+import { useVaultStore } from '@/stores/useVaultStore';
 
 const NotesPanel = dynamic(() => import('@/components/notes/NotesPanel'), { ssr: false });
 
@@ -21,6 +22,7 @@ interface LeftPanelProps {
 
 export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, onRootChange }: LeftPanelProps) {
   const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'search' | 'commands' | 'notes'>('explorer');
+  const { openNote, activeNotePath } = useVaultStore();
   
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
@@ -168,7 +170,7 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <CommandsPanel teamId={null} />
         )}
         {activeTab === 'notes' && vaultEnabled && (
-          <NotesPanel />
+          <NotesPanel onNoteSelect={openNote} activeNotePath={activeNotePath ?? undefined} />
         )}
       </div>
       
