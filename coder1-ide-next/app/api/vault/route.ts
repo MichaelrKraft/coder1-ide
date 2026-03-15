@@ -26,24 +26,26 @@ export async function GET(req: NextRequest) {
 
     if (searchParams.has('search')) {
       const q = searchParams.get('search')!.trim();
-      if (!q) return NextResponse.json({ results: [] });
+      if (!q) return NextResponse.json([]);
       const results = vault.search(q, 20);
-      return NextResponse.json({ results });
+      // Return note stubs directly so the frontend can render them uniformly
+      return NextResponse.json(results.map((r) => r.note));
     }
 
     if (searchParams.has('tree')) {
-      return NextResponse.json(vault.getFolderTree());
+      // getFolderTree() returns a single root node; the UI renders its children
+      return NextResponse.json(vault.getFolderTree().children);
     }
 
     if (searchParams.has('folder')) {
       const folder = searchParams.get('folder') || undefined;
       const notes = vault.listNotes(folder);
-      return NextResponse.json({ notes });
+      return NextResponse.json(notes);
     }
 
     if (searchParams.has('list')) {
       const notes = vault.listNotes();
-      return NextResponse.json({ notes });
+      return NextResponse.json(notes);
     }
 
     const notePath = searchParams.get('path');
