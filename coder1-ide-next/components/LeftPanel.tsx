@@ -1,11 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FolderTree, Clock, Search, Terminal } from 'lucide-react';
+import { FolderTree, Search, BookOpen, Network, List } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import SafeFileExplorer from './SafeFileExplorer';
-import SessionsPanel from './SessionsPanel';
 import CodeSearch from './codebase/CodeSearch';
-import { CommandsPanel } from './commands/CommandsPanel';
+import { useVaultStore } from '@/stores/useVaultStore';
+import DevLogButton from './notes/DevLogButton';
+import SessionNoteIndicator from './notes/SessionNoteIndicator';
+
+const NotesPanel = dynamic(() => import('@/components/notes/NotesPanel'), { ssr: false });
+const NoteDetailView = dynamic(() => import('@/components/notes/NoteDetailView'), { ssr: false });
+const KnowledgeGraph = dynamic(() => import('@/components/graph/KnowledgeGraph'), { ssr: false });
+
+const vaultEnabled = process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -15,7 +23,9 @@ interface LeftPanelProps {
 }
 
 export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, onRootChange }: LeftPanelProps) {
-  const [activeTab, setActiveTab] = useState<'explorer' | 'sessions' | 'search' | 'commands'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'search' | 'notes'>('explorer');
+  const [showGraph, setShowGraph] = useState(false);
+  const { openNote, activeNotePath } = useVaultStore();
   
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
@@ -89,6 +99,20 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <FolderTree className="w-3 h-3" />
           <span>Explorer</span>
         </button>
+        {vaultEnabled && (
+          <button
+            className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'notes'
+                ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
+                : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+            }`}
+            onClick={() => setActiveTab('notes')}
+            title="Notes - Knowledge base and graph"
+          >
+            <BookOpen className="w-3 h-3" />
+            <span>Notes</span>
+          </button>
+        )}
         <button
           className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === 'search'
@@ -101,52 +125,61 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <Search className="w-3 h-3" />
           <span>Search</span>
         </button>
-        <button
-          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
-            activeTab === 'sessions'
-              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
-              : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
-          }`}
-          onClick={(e) => {
-            e.stopPropagation();
-            // REMOVED: // REMOVED: console.log('🎯 Sessions tab clicked in LeftPanel');
-            setActiveTab('sessions');
-
-            // Auto-close ContextManagerPanel if it's open
-            window.dispatchEvent(new CustomEvent('ideSessionsTabClicked'));
-          }}
-          title="Sessions - View development sessions, checkpoints, and timeline history"
-        >
-          <Clock className="w-3 h-3" />
-          <span>Sessions</span>
-        </button>
-        <button
-          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
-            activeTab === 'commands'
-              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
-              : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
-          }`}
-          onClick={() => setActiveTab('commands')}
-          title="Commands - Browse and install shared slash commands for Claude Code"
-        >
-          <Terminal className="w-3 h-3" />
-          <span>Commands</span>
-        </button>
       </div>
       
+      {/* Notes graph/list toggle sub-header */}
+      {activeTab === 'notes' && vaultEnabled && !activeNotePath && (
+        <div className="flex items-center justify-between px-2 py-1 border-b border-border-default relative z-10 flex-shrink-0">
+          <div className="flex items-center gap-1">
+            <SessionNoteIndicator />
+            <DevLogButton
+              onNoteCreated={(path) => {
+                setActiveTab('notes');
+                openNote(path);
+              }}
+            />
+          </div>
+          <div className="flex items-center gap-1 bg-bg-tertiary rounded p-0.5">
+            <button
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-all ${
+                !showGraph ? 'bg-bg-secondary text-coder1-cyan' : 'text-text-muted hover:text-text-secondary'
+              }`}
+              onClick={() => setShowGraph(false)}
+              title="List view"
+            >
+              <List className="w-3 h-3" />
+            </button>
+            <button
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-all ${
+                showGraph ? 'bg-bg-secondary text-coder1-cyan' : 'text-text-muted hover:text-text-secondary'
+              }`}
+              onClick={() => setShowGraph(true)}
+              title="Graph view"
+            >
+              <Network className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tab Content - Takes remaining space but leaves room for Discover */}
       <div className="flex-1 min-h-0 relative z-10">
         {activeTab === 'explorer' && (
           <SafeFileExplorer onFileSelect={onFileSelect} activeFile={activeFile} refreshTrigger={refreshTrigger} onRootChange={onRootChange} />
         )}
-        {activeTab === 'sessions' && (
-          <SessionsPanel isVisible={true} />
-        )}
         {activeTab === 'search' && (
           <CodeSearch onOpenFile={onFileSelect} />
         )}
-        {activeTab === 'commands' && (
-          <CommandsPanel teamId={null} />
+        {activeTab === 'notes' && vaultEnabled && (
+          activeNotePath
+            ? <NoteDetailView
+                notePath={activeNotePath}
+                onNavigate={openNote}
+                onClose={() => useVaultStore.setState({ activeNotePath: null })}
+              />
+            : showGraph
+              ? <KnowledgeGraph onNodeClick={openNote} activeNotePath={activeNotePath} />
+              : <NotesPanel onNoteSelect={openNote} activeNotePath={activeNotePath ?? undefined} />
         )}
       </div>
       

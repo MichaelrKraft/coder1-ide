@@ -67,7 +67,10 @@ import { useAutoCheckpoint } from "@/lib/hooks/useAutoCheckpoint";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useTeamActivityToasts } from "@/lib/hooks/useTeamActivityToasts";
 import { useTeamStore } from "@/stores/useTeamStore";
+import { useVaultStore } from "@/stores/useVaultStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useIDEStore } from "@/stores/useIDEStore";
+import { useSessionNoteStore } from "@/stores/useSessionNoteStore";
 import { features } from "@/lib/feature-flags";
 
 /**
@@ -156,9 +159,14 @@ const detectClaudeFilePaths = (output: string): string | null => {
   return null;
 };
 
+const vaultEnabled = process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true';
+
 function IDEPageContent() {
   // Feature flags
   const FOCUS_MODE_ENABLED = true; // ✅ ENABLED: Focus mode feature is now active
+
+  // Vault store — for note navigation in right panel
+  const { activeNotePath, openNote } = useVaultStore();
 
   // Team activity push notifications
   useTeamActivityToasts();
@@ -729,6 +737,41 @@ function IDEPageContent() {
 
     setup();
     return () => { cleanupFn?.(); };
+  }, []);
+
+  // Feature #14 — Session Live Notes: init/teardown when terminal session starts
+  useEffect(() => {
+    if (!terminalSessionId) return;
+    useSessionNoteStore.getState().initSession(terminalSessionId);
+    return () => {
+      useSessionNoteStore.getState().stopRecording();
+    };
+  }, [terminalSessionId]);
+
+  // Feature #14 — Session Live Notes: track active file switches
+  // Note: Zustand v5 removed the two-argument subscribe(selector, listener) overload.
+  // We use the single-argument form and manually compare the selected slice.
+  const sessionNoteActiveFileRef = useRef<string | null>(null);
+  useEffect(() => {
+    const unsubscribe = useIDEStore.subscribe((state) => {
+      const activeFile = state.editor.activeFile;
+      if (!activeFile || activeFile === sessionNoteActiveFileRef.current) return;
+      sessionNoteActiveFileRef.current = activeFile;
+      useSessionNoteStore.getState().appendLine(`- Opened: \`${activeFile}\``);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Feature #14 — Session Live Notes: track terminal commands
+  const sessionNoteLastCommandRef = useRef<string | null>(null);
+  useEffect(() => {
+    const unsubscribe = useIDEStore.subscribe((state) => {
+      const lastCommand = state.terminal.lastCommand;
+      if (!lastCommand || lastCommand === sessionNoteLastCommandRef.current) return;
+      sessionNoteLastCommandRef.current = lastCommand;
+      useSessionNoteStore.getState().appendLine(`- Terminal: \`${lastCommand.slice(0, 100)}\``);
+    });
+    return unsubscribe;
   }, []);
 
   const handleFileDrop = async (files: File[]) => {
@@ -1998,21 +2041,21 @@ function IDEPageContent() {
                   }
                   rightPanel={
                     !focusMode ? (
-                      <PreviewPanel 
-                        activeFile={activeFile}
-                        editorContent={activeFile ? files[activeFile] || "" : ""}
-                        fileOpen={!!activeFile}
-                        isPreviewable={
-                          // SAFETY: Mark files as previewable based on extension
-                          activeFile ? 
-                          /\.(html|htm|tsx|jsx|css|js|ts)$/i.test(activeFile) : 
-                          false
-                        }
-                        onOpenFile={handleOpenFileFromPath}
-                        recentTerminalInput={recentTerminalInput}
-                        terminalCommands={terminalCommands}
-                        claudeActive={claudeActive}
-                      />
+                      <PreviewPanel
+                          activeFile={activeFile}
+                          editorContent={activeFile ? files[activeFile] || "" : ""}
+                          fileOpen={!!activeFile}
+                          isPreviewable={
+                            // SAFETY: Mark files as previewable based on extension
+                            activeFile ?
+                            /\.(html|htm|tsx|jsx|css|js|ts)$/i.test(activeFile) :
+                            false
+                          }
+                          onOpenFile={handleOpenFileFromPath}
+                          recentTerminalInput={recentTerminalInput}
+                          terminalCommands={terminalCommands}
+                          claudeActive={claudeActive}
+                        />
                     ) : null
                   }
                 />
