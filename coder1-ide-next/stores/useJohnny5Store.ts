@@ -31,6 +31,7 @@ import {
   CrewActivityEntry,
   Johnny5ChatMessage,
 } from '@/types';
+import type { J5Tip } from '@/services/johnny5/tip-engine';
 
 // ================================================================================
 // Johnny5 Store Interface
@@ -97,6 +98,10 @@ interface Johnny5Store {
   // Chat state
   chatMessages: Johnny5ChatMessage[];
   chatSessionId: string | null;
+
+  // Proactive Tips state
+  activeTips: J5Tip[];
+  dismissedTips: Record<string, number>;  // tipId -> dismissal timestamp
 
   // ================================================================================
   // View Actions
@@ -197,6 +202,14 @@ interface Johnny5Store {
   clearChat: () => void;
   setChatSessionId: (sessionId: string | null) => void;
   markWelcomeAnimationPlayed: () => void;
+
+  // ================================================================================
+  // Tip Actions
+  // ================================================================================
+
+  setActiveTips: (tips: J5Tip[]) => void;
+  dismissTip: (tipId: string) => void;
+  clearExpiredDismissals: () => void;
 
   // ================================================================================
   // J5 Actions
@@ -348,6 +361,10 @@ const initialState = {
     animationPlayed: false,
   }] as Johnny5ChatMessage[],
   chatSessionId: null as string | null,
+
+  // Proactive Tips
+  activeTips: [] as J5Tip[],
+  dismissedTips: {} as Record<string, number>,
 };
 
 // ================================================================================
@@ -726,6 +743,46 @@ export const useJohnny5Store = create<Johnny5Store>()(
         ),
 
         // ================================================================================
+        // Tip Actions
+        // ================================================================================
+
+        setActiveTips: (tips) => set({ activeTips: tips }, false, 'setActiveTips'),
+
+        dismissTip: (tipId) => set(
+          (state) => {
+            const newDismissed = { ...state.dismissedTips, [tipId]: Date.now() };
+            // Also persist to localStorage for tip-engine to read
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem('coder1-j5-dismissed-tips', JSON.stringify(newDismissed));
+              } catch { /* ignore */ }
+            }
+            return {
+              dismissedTips: newDismissed,
+              activeTips: state.activeTips.filter(t => t.id !== tipId),
+            };
+          },
+          false,
+          'dismissTip'
+        ),
+
+        clearExpiredDismissals: () => set(
+          (state) => {
+            const now = Date.now();
+            const DAY_MS = 86400000;
+            const cleaned: Record<string, number> = {};
+            for (const [id, ts] of Object.entries(state.dismissedTips)) {
+              if (now - ts < DAY_MS) {
+                cleaned[id] = ts;
+              }
+            }
+            return { dismissedTips: cleaned };
+          },
+          false,
+          'clearExpiredDismissals'
+        ),
+
+        // ================================================================================
         // J5 Actions
         // ================================================================================
 
@@ -782,6 +839,7 @@ export const useJohnny5Store = create<Johnny5Store>()(
           setupStatus: state.setupStatus,
           connectedIntegrations: state.connectedIntegrations,
           chatSessionId: state.chatSessionId, // Persist so DB history survives page reloads
+          dismissedTips: state.dismissedTips, // Persist tip dismissals across page reloads
         }),
       }
     ),

@@ -61,3 +61,39 @@ Created `components/notes/NoteDetailView.tsx` (196 lines). Fetches note from `/a
 - Imported `useVaultStore` and destructured `activeNotePath` + `openNote` inside `IDEPageContent`.
 - Added dynamic import for `NoteDetailView`.
 - Right panel now renders `<NoteDetailView>` when `vaultEnabled && activeNotePath`, otherwise falls back to `<PreviewPanel>`. Close button calls `useVaultStore.setState({ activeNotePath: null })` to clear the active note.
+
+---
+
+# Task 3: Rewrite Johnny5Panel.tsx (Johnny5 Redesign)
+
+## Plan
+- [x] Read existing Johnny5Panel.tsx (625 lines, 10 tabs, overlays, background orbs)
+- [x] Verify store shape: `activeTips`, `setActiveTips`, `dismissTip` exist in useJohnny5Store
+- [x] Verify tip-engine exports: `J5Tip`, `getTipEngine().start/stop/getActiveTips/dismissTip`
+- [x] Write simplified 211-line replacement with: header, tip cards, ChatTab, platform link
+- [x] Run project-wide type check — zero errors for Johnny5Panel.tsx
+
+## Review
+
+Replaced the 625-line, 10-tab complex dashboard with a focused 211-line panel.
+
+**Removed:**
+- Johnny5TabBar and all tab switching logic (10 tabs)
+- All overlay modals (SettingsPanel, SetupWizard, PromptTemplates, CommandTranslator, WorkflowBuilder, AgentPersonas, CrewPanel)
+- Background gradient orbs and CSS animations
+- ContextBudgetMini, RuleSuggestion, HandoffBanner, SessionMemoryPanel, ErrorPatternCard, CoachTip banners
+- LiveFeed, security score badge, crew badge, complex header with multiple icon buttons
+- SecurityTabConnected sub-component (40+ lines)
+- URL parameter parsing for setup wizard
+
+**Kept:**
+- Same export signature: `export default function Johnny5Panel({ className }: Johnny5PanelProps)`
+- `data-tour="johnny5-panel"` attribute
+- Socket.IO listeners for `johnny5:chat-push` and `johnny5:morning-brief`
+- Intelligence service initialization on mount (pattern-detector, rule-suggester, model-advisor, session-memory, handoff-generator, error-pattern-library, session-coach)
+- ChatTab component as the main interaction area
+
+**Added:**
+- TipEngine integration: starts on mount, polls every 10s, renders max 3 tip cards
+- TipCard sub-component with priority-based border colors and action buttons
+- "Open Full Johnny5 Platform" link at bottom
