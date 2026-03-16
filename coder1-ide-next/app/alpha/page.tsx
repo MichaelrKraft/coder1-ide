@@ -1213,14 +1213,14 @@ export default function AlphaLandingPage() {
           </div>
 
           {/* Subtitle with styled text - Two lines for larger impact */}
-          <div className="mb-6 subtitle-fade-in">
-            <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
+          <h1 className="mb-6 subtitle-fade-in">
+            <span className="block text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
               The Only <span className="text-coder1-cyan">IDE</span> Built For
-            </p>
-            <p className="text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
+            </span>
+            <span className="block text-4xl md:text-5xl lg:text-6xl text-white/80 font-semibold">
               <span className="text-coder1-cyan">Claude Code</span> Users.
-            </p>
-          </div>
+            </span>
+          </h1>
 
           {/* Description */}
           <p className="text-lg text-white/50 max-w-2xl mx-auto mb-3 leading-relaxed">
