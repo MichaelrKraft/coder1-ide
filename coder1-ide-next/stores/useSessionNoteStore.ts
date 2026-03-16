@@ -41,7 +41,21 @@ export const useSessionNoteStore = create<SessionNoteState>()(
           return;
         }
 
-        const notePath = `Sessions/session-${sessionId}.md`;
+        // Strip any leading "session_" or "session-" prefix to avoid double-prefix in path
+        const cleanId = sessionId.replace(/^session[-_]/i, '');
+        const notePath = `Sessions/session-${cleanId}.md`;
+
+        // Build a human-readable title from the timestamp embedded in the session ID
+        const tsMatch = cleanId.match(/^(\d{13})/);
+        let humanTitle: string;
+        if (tsMatch) {
+          const d = new Date(parseInt(tsMatch[1]));
+          const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          const timePart = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          humanTitle = `Session ${datePart} ${timePart}`;
+        } else {
+          humanTitle = `Session ${cleanId.slice(0, 8)}`;
+        }
 
         set({
           sessionId,
@@ -57,7 +71,7 @@ export const useSessionNoteStore = create<SessionNoteState>()(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               path: notePath,
-              title: `Session ${sessionId.slice(0, 8)}`,
+              title: humanTitle,
               content: '# Session Log\n\n',
             }),
           });
