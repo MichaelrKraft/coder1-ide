@@ -1,0 +1,41 @@
+#!/bin/bash
+# Simple indicator using Terminal title bar + sounds + notifications
+
+show() {
+  # Play start sound
+  afplay /System/Library/Sounds/Blow.aiff 2>/dev/null &
+
+  # Change Terminal tab title to show recording (visible in tab bar)
+  echo -ne "\033]0;🔴 RECORDING - ⌥⌘R to stop\007"
+
+  # Show notification
+  osascript -e 'display notification "Recording started - check Terminal tab title" with title "🔴 REC" sound name "Blow"' 2>/dev/null
+
+  # Start reminder loop in background
+  (
+    while [ -f "$HOME/.screenpipe/.recording.pid" ]; do
+      sleep 30
+      if [ -f "$HOME/.screenpipe/.recording.pid" ]; then
+        osascript -e 'display notification "Still recording..." with title "🔴 REC"' 2>/dev/null
+        afplay /System/Library/Sounds/Tink.aiff 2>/dev/null
+      fi
+    done
+  ) &
+}
+
+hide() {
+  # Play stop sound
+  afplay /System/Library/Sounds/Bottle.aiff 2>/dev/null &
+
+  # Reset Terminal title
+  echo -ne "\033]0;\007"
+
+  # Show notification
+  osascript -e 'display notification "Recording saved" with title "✅ Stopped" sound name "Bottle"' 2>/dev/null
+}
+
+case "${1:-show}" in
+  show) show ;;
+  hide) hide ;;
+  *) echo "Usage: coder1-record-indicator [show|hide]" ;;
+esac
