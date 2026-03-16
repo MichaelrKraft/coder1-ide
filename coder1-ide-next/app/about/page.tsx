@@ -57,11 +57,55 @@ export default function AboutPage() {
         <div className="mt-12 bg-gray-800 rounded-lg p-8 border border-gray-700">
           <h2 className="text-2xl font-bold text-white mb-4">Mission</h2>
           <p className="text-gray-300 leading-relaxed">
-            Coder1 IDE is built specifically for Claude Code and the new generation of vibe coders. 
-            We believe coding should be intuitive, creative, and fun. Our mission is to bridge the gap 
-            between AI capabilities and human creativity, making programming accessible to newcomers 
+            Coder1 IDE is built specifically for Claude Code and the new generation of vibe coders.
+            We believe coding should be intuitive, creative, and fun. Our mission is to bridge the gap
+            between AI capabilities and human creativity, making programming accessible to newcomers
             while providing power features for experienced developers.
           </p>
+        </div>
+
+        {/* E-E-A-T: Author & Trust Signals */}
+        <div className="mt-12 bg-gray-800 rounded-lg p-8 border border-gray-700">
+          <h2 className="text-2xl font-bold text-white mb-6">About the Creator</h2>
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold text-white mb-2">Mike Kraft</h3>
+              <p className="text-gray-400 mb-2">Founder & Lead Developer</p>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                Serial SaaS founder and Claude Code power user with over 10 years of software engineering experience.
+                Built Coder1 IDE after experiencing firsthand the limitations of existing IDEs when working with AI assistants.
+                Passionate about making AI-powered development accessible to everyone.
+              </p>
+              <div className="flex gap-4">
+                <a href="https://twitter.com/coder1ai" target="_blank" rel="noopener noreferrer" className="text-coder1-cyan hover:text-white transition-colors">
+                  <Twitter className="w-5 h-5" />
+                </a>
+                <a href="https://github.com/MichaelrKraft" target="_blank" rel="noopener noreferrer" className="text-coder1-cyan hover:text-white transition-colors">
+                  <Github className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Contact & Trust */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 className="text-xl font-semibold text-white mb-4">Contact Us</h3>
+            <p className="text-gray-300 mb-2">Email: support@coder1.ai</p>
+            <p className="text-gray-300 mb-2">Discord: discord.gg/coder1</p>
+            <p className="text-gray-400 text-sm mt-4">
+              We typically respond within 24 hours.
+            </p>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 className="text-xl font-semibold text-white mb-4">Company</h3>
+            <p className="text-gray-300 mb-2">Pool Kraft LLC</p>
+            <p className="text-gray-300 mb-2">United States</p>
+            <p className="text-gray-400 text-sm mt-4">
+              Building developer tools since 2020.
+            </p>
+          </div>
         </div>
       </div>
     </div>
