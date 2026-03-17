@@ -5070,19 +5070,21 @@ app.prepare().then(() => {
       }
 
       // Remove team/collab event listeners to prevent accumulation
-      socket.off('team:presence:join');
-      socket.off('team:presence:leave');
-      socket.off('team:presence:request');
-      socket.off('team:call:join');
-      socket.off('team:call:leave');
-      socket.off('team:call:status');
-      socket.off('team:chat:message');
-      socket.off('collab:join');
-      socket.off('collab:leave');
-      socket.off('y:update');
-      socket.off('y:awareness');
-      socket.off('y:sync-request');
-      socket.off('collab:file-write');
+      // NOTE: socket.off(event) without a listener throws ERR_INVALID_ARG_TYPE.
+      // Use removeAllListeners(event) to remove all handlers for an event.
+      socket.removeAllListeners('team:presence:join');
+      socket.removeAllListeners('team:presence:leave');
+      socket.removeAllListeners('team:presence:request');
+      socket.removeAllListeners('team:call:join');
+      socket.removeAllListeners('team:call:leave');
+      socket.removeAllListeners('team:call:status');
+      socket.removeAllListeners('team:chat:message');
+      socket.removeAllListeners('collab:join');
+      socket.removeAllListeners('collab:leave');
+      socket.removeAllListeners('y:update');
+      socket.removeAllListeners('y:awareness');
+      socket.removeAllListeners('y:sync-request');
+      socket.removeAllListeners('collab:file-write');
 
       // Note: We keep terminal session alive for reconnection
       // Sessions are only destroyed explicitly or on timeout

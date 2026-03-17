@@ -7,6 +7,7 @@ import { useVaultMention } from '@/hooks/useVaultMention';
 import MentionDropdown from '@/components/notes/MentionDropdown';
 import TemplatePickerModal, { NoteTemplate, TemplateContext } from './TemplatePickerModal';
 import { useIDEStore } from '@/stores/useIDEStore';
+import CodebaseGraph from '@/components/codebase/CodebaseGraph';
 
 export interface NotesPanelProps {
   onNoteSelect: (path: string) => void;
@@ -78,6 +79,9 @@ function FolderNodeItem({ node, selectedPath, onSelect, depth }: FolderNodeItemP
 }
 
 export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelProps) {
+  // Tab state for Notes vs CodeNexus
+  const [activeTab, setActiveTab] = useState<'notes' | 'codenexus'>('notes');
+
   const [folderTree, setFolderTree] = useState<VaultFolderTree[]>([]);
   const [notes, setNotes] = useState<VaultNoteStub[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -219,15 +223,53 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
     }
   }, [selectedFolder, fetchNotes, onNoteSelect]);
 
-  if (unavailable) return (
-    <div className="flex flex-col h-full bg-[#0d0d0d] items-center justify-center p-4">
-      <p className="text-xs text-[#6b7280] text-center">Knowledge base unavailable.</p>
-      <p className="text-[10px] text-[#4b5563] text-center mt-1">Check that NEXT_PUBLIC_VAULT_ENABLED=true and restart the dev server.</p>
-    </div>
-  );
+  if (unavailable && activeTab === 'notes') {
+    // Only show unavailable for Notes tab - CodeNexus doesn't need vault
+  }
 
   return (
     <div className="flex flex-col h-full bg-[#0d0d0d]">
+      {/* Tab switcher */}
+      <div className="flex border-b border-[#2a2a4e] flex-shrink-0">
+        <button
+          onClick={() => setActiveTab('notes')}
+          className={`px-4 py-2 text-xs font-medium transition-colors ${
+            activeTab === 'notes'
+              ? 'text-[#8b5cf6] border-b-2 border-[#8b5cf6]'
+              : 'text-[#6b7280] hover:text-[#9ca3af]'
+          }`}
+        >
+          Notes
+        </button>
+        <button
+          onClick={() => setActiveTab('codenexus')}
+          className={`px-4 py-2 text-xs font-medium transition-colors ${
+            activeTab === 'codenexus'
+              ? 'text-[#8b5cf6] border-b-2 border-[#8b5cf6]'
+              : 'text-[#6b7280] hover:text-[#9ca3af]'
+          }`}
+        >
+          CodeNexus
+        </button>
+      </div>
+
+      {/* CodeNexus tab content */}
+      {activeTab === 'codenexus' && (
+        <div className="flex-1 overflow-hidden">
+          <CodebaseGraph />
+        </div>
+      )}
+
+      {/* Notes tab content */}
+      {activeTab === 'notes' && unavailable && (
+        <div className="flex flex-col flex-1 items-center justify-center p-4">
+          <p className="text-xs text-[#6b7280] text-center">Knowledge base unavailable.</p>
+          <p className="text-[10px] text-[#4b5563] text-center mt-1">Check that NEXT_PUBLIC_VAULT_ENABLED=true and restart the dev server.</p>
+        </div>
+      )}
+
+      {activeTab === 'notes' && !unavailable && (
+        <>
       {/* Top bar */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[#2a2a2a] flex-shrink-0">
         <span className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Notes</span>
@@ -425,6 +467,8 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

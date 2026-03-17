@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CommitList, type GitLogEntry } from '@/components/git-log/CommitList';
 import { CommitContextPanel } from '@/components/git-log/CommitContextPanel';
@@ -20,7 +20,7 @@ interface CommitContext {
   created_at: string;
 }
 
-function GitLogPageContent() {
+export default function GitLogPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [entries, setEntries] = useState<GitLogEntry[]>([]);
@@ -135,13 +135,5 @@ function GitLogPageContent() {
         </div>
       )}
     </div>
-  );
-}
-
-export default function GitLogPage() {
-  return (
-    <Suspense fallback={<div className="flex h-screen bg-gray-950" />}>
-      <GitLogPageContent />
-    </Suspense>
   );
 }
