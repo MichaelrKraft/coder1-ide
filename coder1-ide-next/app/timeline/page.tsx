@@ -3,8 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X, Edit3, Zap } from 'lucide-react';
+import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X, Edit3, Zap, Film } from 'lucide-react';
 import { FlowTracePanel } from '@/components/flowtrace/FlowTracePanel';
+import dynamic from 'next/dynamic';
+
+const RecordingsDashboard = dynamic(() => import('@/components/flight-recorder/RecordingsDashboard'), { ssr: false });
+const ReplayView = dynamic(() => import('@/components/flight-recorder/ReplayView'), { ssr: false });
 
 interface TimelineEvent {
   id: string;
@@ -23,7 +27,8 @@ interface Session {
 export default function TimelinePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTab = (searchParams.get('tab') ?? 'timeline') as 'timeline' | 'flowtrace';
+  const activeTab = (searchParams.get('tab') ?? 'timeline') as 'timeline' | 'flowtrace' | 'recordings';
+  const [replaySessionId, setReplaySessionId] = useState<string | null>(null);
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<string>(''); // Current viewing session (changes as user browses)
@@ -468,7 +473,33 @@ export default function TimelinePage() {
             <Zap className="w-4 h-4" />
             FlowTrace
           </button>
+          <button
+            onClick={() => router.push('/timeline?tab=recordings')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'recordings'
+                ? 'border-[#00D9FF] text-[#00D9FF]'
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            <Film className="w-4 h-4" />
+            Recordings
+          </button>
         </div>
+
+        {activeTab === 'recordings' && (
+          <div style={{ height: 'calc(100vh - 180px)' }}>
+            {replaySessionId ? (
+              <ReplayView
+                sessionId={replaySessionId}
+                onBack={() => setReplaySessionId(null)}
+              />
+            ) : (
+              <RecordingsDashboard
+                onOpenReplay={(id: string) => setReplaySessionId(id)}
+              />
+            )}
+          </div>
+        )}
 
         {activeTab === 'flowtrace' && (
           <div style={{ height: 'calc(100vh - 180px)' }}>
