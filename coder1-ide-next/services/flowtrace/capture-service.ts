@@ -121,7 +121,7 @@ interface CaptureState {
   sessionId: string;
   sessionStartTime: number;
   firstSessionFired: boolean;
-  framesCapured: number;
+  framesCaptured: number;
   framesSkipped: number;
   framesFiltered: number;
   running: boolean;
@@ -133,7 +133,7 @@ const state: CaptureState = {
   sessionId: makeSessionId(),
   sessionStartTime: 0,
   firstSessionFired: false,
-  framesCapured: 0,
+  framesCaptured: 0,
   framesSkipped: 0,
   framesFiltered: 0,
   running: false,
@@ -218,7 +218,7 @@ async function processFrame(event: {
   await upsertFrame(embedding, metadata);
 
   state.lastEmbedTime = now;
-  state.framesCapured++;
+  state.framesCaptured++;
 
   return 'captured';
 }
@@ -281,7 +281,7 @@ export async function startCapture(): Promise<void> {
         });
 
         if (result === 'captured') {
-          console.log(`[FlowTrace] Captured frame from ${event.data.app_name} (total: ${state.framesCapured})`);
+          console.log(`[FlowTrace] Captured frame from ${event.data.app_name} (total: ${state.framesCaptured})`);
         }
       } catch (frameErr) {
         // Frame processing errors are non-fatal — log and continue
@@ -298,18 +298,18 @@ export function stopCapture(): void {
   state.running = false;
   const durationMs = Date.now() - state.sessionStartTime;
   console.log(
-    `[FlowTrace] Capture stopped. Stats: captured=${state.framesCapured}, ` +
+    `[FlowTrace] Capture stopped. Stats: captured=${state.framesCaptured}, ` +
     `skipped=${state.framesSkipped}, filtered=${state.framesFiltered}, ` +
     `duration=${Math.round(durationMs / 60000)}m`
   );
 
   // CTA: fire after the first qualifying session ends (~30 min, at least 1 captured frame)
-  if (!state.firstSessionFired && durationMs >= CTA_THRESHOLD_MS && state.framesCapured > 0) {
+  if (!state.firstSessionFired && durationMs >= CTA_THRESHOLD_MS && state.framesCaptured > 0) {
     state.firstSessionFired = true;
     captureEvents.emit('firstSessionComplete', {
       sessionId: state.sessionId,
       durationMs,
-      framesCaptured: state.framesCapured,
+      framesCaptured: state.framesCaptured,
     });
     console.log('[FlowTrace] First session CTA fired.');
   }
@@ -319,7 +319,7 @@ export function getCaptureStats() {
   return {
     running: state.running,
     sessionId: state.sessionId,
-    framesCapured: state.framesCapured,
+    framesCaptured: state.framesCaptured,
     framesSkipped: state.framesSkipped,
     framesFiltered: state.framesFiltered,
     lastEmbedTime: state.lastEmbedTime ? new Date(state.lastEmbedTime).toISOString() : null,
