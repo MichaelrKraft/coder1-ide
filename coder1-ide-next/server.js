@@ -5355,22 +5355,6 @@ app.prepare().then(() => {
                     timestamp: new Date().toISOString(),
                   });
                 }
-                // Wire high-priority trends to Opportunity Engine
-                if (highPriorityAlerts.length > 0) {
-                  try {
-                    const { opportunityEngine } = require('./services/johnny5/opportunity-engine.ts');
-                    for (const alert of highPriorityAlerts) {
-                      await opportunityEngine.ingest({
-                        source: 'trend',
-                        type: 'high_relevance_trend',
-                        data: { title: alert.title, description: alert.description, url: alert.url, source: alert.source },
-                        timestamp: new Date(),
-                      });
-                    }
-                  } catch (oeError) {
-                    console.error('[Johnny5 Cron] Opportunity engine ingest failed:', oeError.message);
-                  }
-                }
 
                 console.log(`[Johnny5 Cron] Trend check complete: ${alerts.length} alerts (${highPriorityAlerts.length} high priority)`);
               } catch (error) {
@@ -5433,8 +5417,8 @@ app.prepare().then(() => {
       try {
         const { getHeartbeatService } = require('./services/johnny5/heartbeat-service.ts');
         const heartbeat = getHeartbeatService({
-          pulseIntervalMs: 30000,    // 30s pulse
-          deepCheckIntervalMs: 300000, // 5min deep check
+          pulseIntervalMs: 30000,      // 30s pulse
+          deepCheckIntervalMs: 3600000, // 60min deep check (was 5min — reduces API cost 92%)
           onPulse: (status) => {
             // Emit heartbeat pulse to all connected clients
             io.emit('johnny5:heartbeat', {
@@ -5445,19 +5429,8 @@ app.prepare().then(() => {
               timestamp: new Date().toISOString(),
             });
           },
-          onOpportunity: async (event) => {
-            // Feed heartbeat opportunities to the Opportunity Engine
-            try {
-              const { opportunityEngine } = require('./services/johnny5/opportunity-engine.ts');
-              await opportunityEngine.ingest({
-                source: 'heartbeat',
-                type: event.type,
-                data: event.data,
-                timestamp: new Date(),
-              });
-            } catch (oeErr) {
-              console.warn('[Heartbeat] Opportunity engine not available:', oeErr.message);
-            }
+          onOpportunity: async () => {
+            // Opportunity engine removed for beta simplification
           },
         });
 
@@ -5526,49 +5499,22 @@ app.prepare().then(() => {
       }
       warnings.forEach(w => console.warn(`⚠️ [Johnny5 Config] ${w}`));
 
-      // Start Opportunity Engine (give it access to Socket.IO)
-      const { opportunityEngine } = require('./services/johnny5/opportunity-engine.ts');
-      opportunityEngine.setIO(io);
-      console.log('✅ Johnny5 Opportunity Engine initialized');
-
-      // Start Telegram Bot (if configured)
-      if (config.integrations.telegram?.enabled) {
-        const { telegramBot } = require('./services/johnny5/telegram-bot.ts');
-        telegramBot.start().then(connected => {
-          if (connected) {
-            console.log('✅ Johnny5 Telegram Bot connected');
-            global.telegramBot = telegramBot; // expose to Next.js API routes
-
-            // Schedule morning brief (8 AM daily) if enabled
-            if (process.env.JOHNNY5_MORNING_BRIEF === 'true') {
-              const { scheduleMorningBrief } = require('./services/johnny5/morning-brief-service.ts');
-              const cancelBrief = scheduleMorningBrief();
-              console.log('✅ Johnny5 Morning Brief scheduled (8 AM daily)');
-              // Cleanup on server shutdown
-              process.once('SIGTERM', cancelBrief);
-              process.once('SIGINT', cancelBrief);
-            }
-
-            // Schedule self-improvement background tasks if enabled
-            if (process.env.JOHNNY5_SELF_IMPROVEMENT === 'true') {
-              const { schedulePatternMaintenance } = require('./services/johnny5/self-improvement-service.ts');
-              const cancelImprovement = schedulePatternMaintenance();
-              console.log('✅ Johnny5 Self-Improvement scheduler started (patterns every 6h, feedback every 24h)');
-              process.once('SIGTERM', cancelImprovement);
-              process.once('SIGINT', cancelImprovement);
-            }
-          } else {
-            console.warn('⚠️ Johnny5 Telegram Bot failed to connect');
-          }
-        }).catch(error => {
-          console.error('❌ Johnny5 Telegram Bot error:', error.message);
-        });
+      // Schedule morning brief (8 AM daily) if enabled
+      if (process.env.JOHNNY5_MORNING_BRIEF === 'true') {
+        try {
+          const { scheduleMorningBrief } = require('./services/johnny5/morning-brief-service.ts');
+          const cancelBrief = scheduleMorningBrief();
+          console.log('✅ Johnny5 Morning Brief scheduled (8 AM daily)');
+          process.once('SIGTERM', cancelBrief);
+          process.once('SIGINT', cancelBrief);
+        } catch (briefErr) {
+          console.warn('⚠️ Morning Brief scheduler not available:', briefErr.message);
+        }
       }
 
       console.log(`   Proactivity level: ${config.proactivityLevel}`);
-      console.log(`   Telegram: ${config.integrations.telegram?.enabled ? 'enabled' : 'disabled'}`);
     } catch (error) {
-      console.warn('⚠️ Johnny5 Proactive Services not available:', error.message);
+      console.warn('⚠️ Johnny5 config loading failed:', error.message);
     }
 
     // Initialize Memory Exporter for Claude Skills
