@@ -7,10 +7,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X, Edit3, Zap, Film } from 'lucide-react';
 import { FlowTracePanel } from '@/components/flowtrace/FlowTracePanel';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 
-const RecordingsDashboard = dynamic(() => import('@/components/flight-recorder/RecordingsDashboard'), { ssr: false });
-const ReplayView = dynamic(() => import('@/components/flight-recorder/ReplayView'), { ssr: false });
+const RecordingsDashboard = nextDynamic(() => import('@/components/flight-recorder/RecordingsDashboard'), { ssr: false });
+const ReplayView = nextDynamic(() => import('@/components/flight-recorder/ReplayView'), { ssr: false });
 
 interface TimelineEvent {
   id: string;
