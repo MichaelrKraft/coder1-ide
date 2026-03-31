@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/auth/supabase-db';
+import { addToWaitlist, getWaitlistByEmail, getWaitlistCount, deleteFromWaitlist } from '@/lib/alpha-waitlist-db';
 import { Resend } from 'resend';
 
 function isValidEmail(email: string): boolean {
@@ -81,33 +81,27 @@ export async function POST(request: NextRequest) {
                       'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('alpha_waitlist')
-      .insert({
-        email: email.toLowerCase().trim(),
-        name: displayName,
-        reddit_username: redditUsername || null,
-        source: resolvedSource,
-        ip_address: ipAddress,
-        user_agent: userAgent,
-      })
-      .select('id')
-      .single();
-
-    if (error) {
-      if (error.code === '23505') {
-        // Unique constraint — duplicate email
-        return NextResponse.json(
-          {
-            error: 'Email already registered',
-            message: 'This email is already on the waitlist',
-          },
-          { status: 409 }
-        );
-      }
-      throw error;
+    // Check if email already exists
+    const existing = getWaitlistByEmail(email);
+    if (existing) {
+      return NextResponse.json(
+        {
+          error: 'Email already registered',
+          message: 'This email is already on the waitlist',
+        },
+        { status: 409 }
+      );
     }
+
+    // Add to waitlist
+    const entry = addToWaitlist({
+      email: email.toLowerCase().trim(),
+      name: displayName,
+      reddit_username: redditUsername || null,
+      source: resolvedSource,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+    });
 
     // Fire-and-forget notification email to Mike
     sendNotificationEmail({
@@ -120,7 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Successfully added to waitlist',
-      id: data.id,
+      id: entry.id,
     });
 
   } catch (error: any) {
@@ -134,15 +128,10 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const supabase = getSupabaseClient();
-    const { count, error } = await supabase
-      .from('alpha_waitlist')
-      .select('*', { count: 'exact', head: true });
-
-    if (error) throw error;
+    const count = getWaitlistCount();
 
     return NextResponse.json({
-      totalSignups: count ?? 0,
+      totalSignups: count,
       message: 'Waitlist statistics',
     });
 
@@ -169,18 +158,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Email parameter required' }, { status: 400 });
     }
 
-    const supabase = getSupabaseClient();
-    const { error, count } = await supabase
-      .from('alpha_waitlist')
-      .delete({ count: 'exact' })
-      .eq('email', email.toLowerCase().trim());
-
-    if (error) throw error;
+    const deleted = deleteFromWaitlist(email);
 
     return NextResponse.json({
       success: true,
-      deleted: (count ?? 0) > 0,
-      message: (count ?? 0) > 0
+      deleted,
+      message: deleted
         ? `Removed ${email} from waitlist`
         : 'Email not found in waitlist',
     });
