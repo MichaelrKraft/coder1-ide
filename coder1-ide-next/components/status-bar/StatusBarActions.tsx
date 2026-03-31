@@ -418,7 +418,8 @@ const StatusBarActions = React.memo(function StatusBarActions({
           endTime: new Date().toISOString()
         };
         
-        const result = await fetch('http://localhost:57132/session-summary/generate', {
+        const { getDocsServiceUrl } = await import('@/lib/api-config');
+        const result = await fetch(`${getDocsServiceUrl()}/session-summary/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

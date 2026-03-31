@@ -8,7 +8,7 @@
  * - Provides visibility into AI operations
  * - Addresses security concerns (prompt injection, audit trails)
  */
-export type Johnny5Tab = 'chat' | 'sessions' | 'reasoning' | 'analytics' | 'context' | 'security' | 'mission-control' | 'morning-brief';
+export type Johnny5Tab = 'chat' | 'activity' | 'security';
 export type Johnny5Status = 'idle' | 'working' | 'sleeping' | 'error';
 export interface Johnny5SessionSummary {
     id: string;

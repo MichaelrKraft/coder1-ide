@@ -17,10 +17,8 @@ import {
   ExternalLink,
   Link2,
   RefreshCw,
-  Send,
   Zap,
 } from 'lucide-react';
-import { TelegramSetupCard, ZapierMCPSetupCard, WhatsAppSetupCard } from '../onboarding';
 
 interface SetupWizardProps {
   onComplete?: () => void;
@@ -28,7 +26,7 @@ interface SetupWizardProps {
   className?: string;
 }
 
-type WizardStep = 'welcome' | 'bridge' | 'aboutYou' | 'messaging' | 'integrations' | 'permissions' | 'complete';
+type WizardStep = 'welcome' | 'bridge' | 'aboutYou' | 'permissions' | 'complete';
 
 interface Permissions {
   readFiles: boolean;
@@ -71,10 +69,6 @@ export default function SetupWizard({
   });
   const [proactivityLevel, setProactivityLevel] = useState<'low' | 'medium' | 'high'>('medium');
 
-  // Telegram state
-  const [telegramToken, setTelegramToken] = useState('');
-  const [telegramBotUsername, setTelegramBotUsername] = useState('');
-
   // About You state (optional, skippable)
   const [userName, setUserName] = useState('');
   const [userRole, setUserRole] = useState('');
@@ -84,7 +78,7 @@ export default function SetupWizard({
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
 
-  const steps: WizardStep[] = ['welcome', 'bridge', 'aboutYou', 'messaging', 'integrations', 'permissions', 'complete'];
+  const steps: WizardStep[] = ['welcome', 'bridge', 'aboutYou', 'permissions', 'complete'];
   const currentStepIndex = steps.indexOf(currentStep);
 
   // Check Bridge connection status
@@ -131,8 +125,7 @@ export default function SetupWizard({
           action: 'save-config',
           permissions,
           proactivityLevel,
-          ...(telegramToken ? { telegram: { botToken: telegramToken } } : {}),
-          // User profile for living files
+          // User profile
           ...(userName || userRole || userBuilding || userWorkStyle ? {
             userProfile: {
               name: userName || undefined,
@@ -154,7 +147,7 @@ export default function SetupWizard({
     } finally {
       setIsSaving(false);
     }
-  }, [permissions, proactivityLevel, telegramToken, userName, userRole, userBuilding, userWorkStyle]);
+  }, [permissions, proactivityLevel, userName, userRole, userBuilding, userWorkStyle]);
 
   // Navigate to next step
   const goNext = async () => {
@@ -454,63 +447,6 @@ export default function SetupWizard({
 
             <p className="text-[10px] text-text-muted text-center mt-2">
               You can skip this — Johnny5 will learn about you through conversation.
-            </p>
-          </div>
-        );
-
-      case 'messaging':
-        return (
-          <div className="py-4">
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                <Send className="w-7 h-7 text-purple-400" />
-              </div>
-              <h2 className="text-xl font-bold text-text-primary mb-2">
-                Connect Messaging
-              </h2>
-              <p className="text-sm text-text-muted">
-                Let Johnny5 reach you via your preferred messaging app (optional)
-              </p>
-            </div>
-
-            {/* Responsive: stack on mobile, side-by-side on larger screens */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-              <TelegramSetupCard
-                onConnected={(token, username) => {
-                  setTelegramToken(token);
-                  setTelegramBotUsername(username);
-                }}
-              />
-              <WhatsAppSetupCard />
-            </div>
-
-            <p className="text-xs text-text-muted text-center mt-4">
-              You can skip this step and set up messaging later in Settings
-            </p>
-          </div>
-        );
-
-      case 'integrations':
-        return (
-          <div className="py-4">
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-coder1-cyan/10 flex items-center justify-center">
-                <Zap className="w-7 h-7 text-coder1-cyan" />
-              </div>
-              <h2 className="text-xl font-bold text-text-primary mb-2">
-                Expand Johnny5&apos;s Reach
-              </h2>
-              <p className="text-sm text-text-muted">
-                Connect to 8000+ apps via Zapier MCP (optional)
-              </p>
-            </div>
-
-            <div className="max-w-md mx-auto">
-              <ZapierMCPSetupCard />
-            </div>
-
-            <p className="text-xs text-text-muted text-center mt-4">
-              Free Zapier plan works! Set this up later in Settings.
             </p>
           </div>
         );

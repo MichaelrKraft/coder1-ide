@@ -17,7 +17,8 @@ import { getAuditLog, getSecurityWarnings } from './security-tracker';
 import { getUsageStats } from './usage-tracker';
 import { getRecentFacts, getRecentPatterns } from '@/lib/johnny5-db';
 import { getRecentSnapshots } from '@/lib/living-files';
-import { readLastScoutResult } from '@/services/johnny5/content-factory/scout-service';
+// Scout service removed for beta simplification
+const readLastScoutResult = (): null => null;
 
 // Storage path
 const DATA_DIR = path.join(process.cwd(), 'data', 'johnny5');
