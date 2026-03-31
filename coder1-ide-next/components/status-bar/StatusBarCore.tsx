@@ -22,6 +22,7 @@ import { features } from '@/lib/feature-flags';
 import { useBridgeConnectionState } from '@/lib/useBridgeConnectionState';
 import { logger } from '@/lib/logger';
 import NotificationCenter from '@/components/johnny5/NotificationCenter';
+import RecordingIndicator from '@/components/flight-recorder/RecordingIndicator';
 import type { IDEFile } from '@/types';
 
 interface StatusBarCoreProps {
@@ -140,6 +141,7 @@ export default function StatusBarCore({
       <div className="h-11 bg-bg-secondary border-t border-border-default flex items-center px-4" data-tour="status-bar">
         {/* Left section - Discover Button & Supervision Indicator */}
         <div className="flex items-center gap-4 text-sm text-text-muted flex-1">
+          <RecordingIndicator />
           <div className="relative">
             <DiscoverPanel />
           </div>
