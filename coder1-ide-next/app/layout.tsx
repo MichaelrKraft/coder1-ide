@@ -1,12 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { Suspense } from 'react'
 import './globals.css'
-import { SessionProvider } from '@/contexts/SessionContext'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { ToastProvider } from '@/contexts/ToastContext'
-import { PostHogProvider } from '@/components/PostHogProvider'
-// import '@/lib/logger' // Initialize global logger - DISABLED: causing client-side errors
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -14,7 +8,9 @@ export const metadata: Metadata = {
   title: 'Coder1 IDE - AI-Powered Development Environment',
   description: 'The IDE built for Claude Code and the new generation of vibe coders',
   icons: {
-    icon: '/Coder1-Logo-Sharp.svg',
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/icon.png',
   },
 }
 
@@ -25,41 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        {/* Temporarily disabled Socket.IO CDN to fix hydration issues */}
-        {/* 🔧 FIX (Nov 22, 2025): Disable companion health checks BEFORE React hydration */}
-        <script dangerouslySetInnerHTML={{__html: `window.__DISABLE_COMPANION = true;`}} />
-        {/* Theme initialization - prevents flash of wrong theme */}
-        <script dangerouslySetInnerHTML={{__html: `
-          (function() {
-            try {
-              var theme = 'dark';
-              var settings = localStorage.getItem('coder1-settings');
-              if (settings) {
-                var parsed = JSON.parse(settings);
-                if (parsed.theme) theme = parsed.theme;
-              }
-              document.documentElement.classList.add(theme);
-            } catch (e) {
-              document.documentElement.classList.add('dark');
-            }
-          })();
-        `}} />
-      </head>
-      <body className={inter.className}>
-        <ErrorBoundary>
-          <SessionProvider>
-            <ToastProvider>
-              <Suspense fallback={null}>
-                <PostHogProvider>
-                  {children}
-                </PostHogProvider>
-              </Suspense>
-            </ToastProvider>
-            {/* 🛟 SESSION RESCUE: RecoveryModal moved to /app/ide/layout.tsx (IDE-only) */}
-          </SessionProvider>
-        </ErrorBoundary>
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 }

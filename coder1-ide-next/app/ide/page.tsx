@@ -650,18 +650,6 @@ function IDEPageContent() {
     }
   }, [searchParams]); // ✅ FIX: Removed terminalSessionId from deps
 
-  // ⏰ AUTO-CHECKPOINT: Create automatic checkpoints every 10 minutes
-  useAutoCheckpoint({
-    enabled: true,
-    sessionId: terminalSessionId || undefined, // Pass terminal session ID explicitly
-    onSuccess: (checkpointId) => {
-      console.log(`✅ Auto-checkpoint created: ${checkpointId}`);
-    },
-    onError: (error) => {
-      console.error('❌ Auto-checkpoint failed:', error);
-    }
-  });
-
   // File drop handling
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState<Set<string>>(new Set());
@@ -1527,6 +1515,13 @@ function IDEPageContent() {
         setMissionControlActive(prev => !prev);
       }
 
+      // Session Kanban (Cmd+Shift+K / Ctrl+Shift+K)
+      else if (ctrlKey && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.dispatchEvent(new CustomEvent('showSessionKanban'));
+      }
+
       // Run shortcuts
       else if (e.key === 'F5') {
         e.preventDefault();
@@ -1809,6 +1804,7 @@ function IDEPageContent() {
   if (missionControlActive) {
     return (
       <SessionProvider>
+        <AutoCheckpointManager sessionId={terminalSessionId} />
         <EnhancedSupervisionProvider>
           <TerminalCommandProvider
             sessionId={terminalSessionId}
@@ -1823,6 +1819,7 @@ function IDEPageContent() {
 
   return (
     <SessionProvider>
+      <AutoCheckpointManager sessionId={terminalSessionId} />
       <EnhancedSupervisionProvider>
         <TerminalCommandProvider
           sessionId={terminalSessionId}
@@ -2200,6 +2197,21 @@ function IDEPageContent() {
       </EnhancedSupervisionProvider>
     </SessionProvider>
   );
+}
+
+// Auto-checkpoint manager — must live inside SessionProvider to access useSession via useAutoCheckpoint
+function AutoCheckpointManager({ sessionId }: { sessionId: string }) {
+  useAutoCheckpoint({
+    enabled: true,
+    sessionId: sessionId || undefined,
+    onSuccess: (checkpointId) => {
+      console.log(`✅ Auto-checkpoint created: ${checkpointId}`);
+    },
+    onError: (error) => {
+      console.error('❌ Auto-checkpoint failed:', error);
+    }
+  });
+  return null;
 }
 
 // Auth guard wrapper — keeps hooks rule safe (no useState in IDEPageContent is skipped)

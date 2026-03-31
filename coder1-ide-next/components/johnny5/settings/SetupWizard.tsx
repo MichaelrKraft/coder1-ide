@@ -632,7 +632,7 @@ export default function SetupWizard({
                   <div className="w-5 h-5 rounded-full bg-coder1-cyan/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-xs text-coder1-cyan font-medium">3</span>
                   </div>
-                  <span>Ask Johnny5 to review, explain, or improve your code</span>
+                  <span>The more info you give to Johnny5 about yourself, the more he can help you.</span>
                 </li>
               </ul>
             </div>

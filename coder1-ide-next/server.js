@@ -173,6 +173,9 @@ if (process.env.ENABLE_ETERNAL_MEMORY === 'true') {
 let memoryExporter = null;
 console.log('⚠️ Memory Exporter disabled (heap OOM prevention — separate from sqlite-vec fix)');
 
+// Track all top-level setIntervals for graceful shutdown cleanup
+const _activeIntervals = [];
+
 // Agent Terminal Manager for Phase 2: Interactive Agent Terminals
 // Uses global singleton registry to prevent multiple instances across module reloads
 let agentTerminalManager;
@@ -324,7 +327,7 @@ try {
 }
 
 // Broadcast team status updates periodically
-setInterval(() => {
+_activeIntervals.push(setInterval(() => {
   if (!io) return;
 
   // Existing agent terminal manager broadcasts
@@ -371,7 +374,7 @@ setInterval(() => {
       });
     }
   } catch (e) { /* orchestrator not available */ }
-}, 3000); // Update every 3 seconds
+}, 3000)); // Update every 3 seconds
 
 // Agent Coordinator for multi-agent workflows with terminal integration
 // IMPORTANT: Will be initialized AFTER Socket.IO is created (need io instance)
@@ -743,7 +746,7 @@ function buildCallUpdate(teamId) {
 }
 
 // Clean up stale call entries every 5 minutes (handles browser crashes without disconnect)
-setInterval(() => {
+_activeIntervals.push(setInterval(() => {
   const now = Date.now();
   for (const [teamId, state] of teamCallState.entries()) {
     if (now - state.lastActivity.getTime() > 30 * 60 * 1000) {
@@ -751,7 +754,7 @@ setInterval(() => {
       io.to(`team:${teamId}`).emit('team:call:update', buildCallUpdate(teamId));
     }
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000));
 
 function detectGitEvent(sessionId, rawData) {
   // 🔧 FIX (Feb 11, 2026): Claude CLI uses cursor-right sequences (\e[1C, \e[3C)
@@ -1049,8 +1052,9 @@ class TerminalSession {
       
       // Ensure PATH includes common locations for Claude CLI
       const enhancedPath = [
+        path.join(os.homedir(), '.coder1', 'bin'),
         '/opt/homebrew/bin',
-        '/usr/local/bin', 
+        '/usr/local/bin',
         '/usr/bin',
         '/bin',
         '/usr/sbin',
@@ -1065,7 +1069,7 @@ class TerminalSession {
         ...process.env,
         PATH: enhancedPath,
         CODER1_IDE: 'true',
-        TERMINAL_SESSION_ID: id
+        TERMINAL_SESSION_ID: id,
       };
       
       // Add Z.AI configuration for GLM backend (enables full tool use at $0.10/M)
@@ -1182,8 +1186,16 @@ function getOrCreateSession(sessionId, userId = 'default', cols = 80, rows = 30)
         terminalHistoryBuffers.delete(sessionId);
       }
     });
+
+    session.pty.on('error', (err) => {
+      console.error('[server] PTY error:', err.message);
+      const sessionSocket = terminalSessionSockets.get(sessionId);
+      if (sessionSocket?.connected) {
+        sessionSocket.emit('terminal:error', { message: 'Terminal process error: ' + err.message });
+      }
+    });
   }
-  
+
   return terminalSessions.get(sessionId);
 }
 
@@ -2131,14 +2143,8 @@ app.prepare().then(() => {
         }
       });
       
-      // Handle disconnect
-      socket.on('disconnect', () => {
-        console.log(`🔌 Bridge disconnected: ${bridgeId}`);
-        bridgeManager.unregisterBridge(bridgeId);
-      });
-      
       // Listen for bridge manager events and forward to appropriate destinations
-      bridgeManager.on('command:output', (data) => {
+      const _handleCommandOutput = (data) => {
         // Track token usage for responses
         (async () => {
           try {
@@ -2194,9 +2200,10 @@ app.prepare().then(() => {
         } catch (spectatorErr) {
           console.error('[Spectator] Bridge broadcast error (non-fatal):', spectatorErr.message);
         }
-      });
+      };
+      bridgeManager.on('command:output', _handleCommandOutput);
 
-      bridgeManager.on('command:complete', (data) => {
+      const _handleCommandComplete = (data) => {
         // Forward completion to terminal session
         // 🔧 FIX (Dec 15, 2025): Use terminalSessionSockets map instead of socket ID lookup
         const terminalSocket = terminalSessionSockets.get(data.sessionId);
@@ -2205,11 +2212,12 @@ app.prepare().then(() => {
         } else {
           console.warn(`⚠️ No socket found for session ${data.sessionId} - completion event lost`);
         }
-      });
+      };
+      bridgeManager.on('command:complete', _handleCommandComplete);
 
       // FIXED (Dec 10, 2025): Handle cancelled commands when bridge disconnects
       // Send error message to terminal so user knows what happened
-      bridgeManager.on('command:cancelled', (data) => {
+      const _handleCommandCancelled = (data) => {
         console.log(`[Bridge] Command cancelled: ${data.commandId}, reason: ${data.error}`);
         // Try to find the terminal socket by sessionId
         // Note: The sessionId might be different from the socket ID, so we broadcast
@@ -2217,11 +2225,12 @@ app.prepare().then(() => {
           id: data.sessionId,
           data: `\r\n❌ ${data.error}\r\n`
         });
-      });
+      };
+      bridgeManager.on('command:cancelled', _handleCommandCancelled);
 
       // ADDED (Dec 11, 2025): Handle claude:error events from bridge
       // Display clear error messages in terminal when commands fail
-      bridgeManager.on('command:error', (data) => {
+      const _handleCommandError = (data) => {
         console.log(`[Bridge] Command error: ${data.commandId}, error: ${data.error}`);
         // Find the terminal socket and send error message
         // 🔧 FIX (Dec 15, 2025): Use terminalSessionSockets map instead of socket ID lookup
@@ -2239,11 +2248,12 @@ app.prepare().then(() => {
             data: `\r\n\x1b[31m❌ Error: ${data.error}\x1b[0m\r\n`
           });
         }
-      });
+      };
+      bridgeManager.on('command:error', _handleCommandError);
 
       // Forward bridge connection events to all Socket.IO clients
       // This enables the frontend to hide the "Connect Bridge" button when connected
-      bridgeManager.on('bridge:connected', (data) => {
+      const _handleBridgeConnected = (data) => {
         console.log(`[Bridge] Connected: ${data.bridgeId} for user ${data.userId}`);
         io.emit('bridge:connected', data);
 
@@ -2293,11 +2303,25 @@ app.prepare().then(() => {
             }
           }
         }
-      });
+      };
+      bridgeManager.on('bridge:connected', _handleBridgeConnected);
 
-      bridgeManager.on('bridge:disconnected', (data) => {
+      const _handleBridgeDisconnected = (data) => {
         console.log(`[Bridge] Disconnected: ${data.bridgeId} for user ${data.userId}`);
         io.emit('bridge:disconnected', data);
+      };
+      bridgeManager.on('bridge:disconnected', _handleBridgeDisconnected);
+
+      // Handle disconnect
+      socket.on('disconnect', () => {
+        console.log(`🔌 Bridge disconnected: ${bridgeId}`);
+        bridgeManager.off('command:output', _handleCommandOutput);
+        bridgeManager.off('command:complete', _handleCommandComplete);
+        bridgeManager.off('command:cancelled', _handleCommandCancelled);
+        bridgeManager.off('command:error', _handleCommandError);
+        bridgeManager.off('bridge:connected', _handleBridgeConnected);
+        bridgeManager.off('bridge:disconnected', _handleBridgeDisconnected);
+        bridgeManager.unregisterBridge(bridgeId);
       });
 
       console.log(`✅ Coder1 Bridge registered: ${bridgeId}`);
@@ -3651,7 +3675,7 @@ app.prepare().then(() => {
         }
 
         // Clean up socket reference when it disconnects
-        socket.on('disconnect', () => {
+        socket.once('disconnect', () => {
           // Spectator Mode: Clean up if this socket was sharing a terminal
           try {
             for (const [sharedSessionId, shared] of sharedTerminals.entries()) {
@@ -3743,6 +3767,9 @@ app.prepare().then(() => {
                 }
               }, 30000); // 30 second grace period (was 60 min — caused OOM under concurrent load)
               
+              // Cancel any existing timer before setting a new one (prevents timer accumulation on rapid reconnects)
+              const existingTimer = sessionCleanupTimers.get(disconnectSessionId);
+              if (existingTimer) clearTimeout(existingTimer);
               sessionCleanupTimers.set(disconnectSessionId, cleanupTimer);
             }
           }
@@ -5042,6 +5069,23 @@ app.prepare().then(() => {
         io.to(`team:${socket._callTeamId}`).emit('team:call:update', buildCallUpdate(socket._callTeamId));
       }
 
+      // Remove team/collab event listeners to prevent accumulation
+      // NOTE: socket.off(event) without a listener throws ERR_INVALID_ARG_TYPE.
+      // Use removeAllListeners(event) to remove all handlers for an event.
+      socket.removeAllListeners('team:presence:join');
+      socket.removeAllListeners('team:presence:leave');
+      socket.removeAllListeners('team:presence:request');
+      socket.removeAllListeners('team:call:join');
+      socket.removeAllListeners('team:call:leave');
+      socket.removeAllListeners('team:call:status');
+      socket.removeAllListeners('team:chat:message');
+      socket.removeAllListeners('collab:join');
+      socket.removeAllListeners('collab:leave');
+      socket.removeAllListeners('y:update');
+      socket.removeAllListeners('y:awareness');
+      socket.removeAllListeners('y:sync-request');
+      socket.removeAllListeners('collab:file-write');
+
       // Note: We keep terminal session alive for reconnection
       // Sessions are only destroyed explicitly or on timeout
     });
@@ -5055,7 +5099,7 @@ app.prepare().then(() => {
   const activeCleanups = new Set(); // Track active cleanup operations
   
   // Process cleanup queue gradually to prevent cascades
-  setInterval(() => {
+  _activeIntervals.push(setInterval(() => {
     // Process queued cleanups
     if (cleanupQueue.length > 0 && activeCleanups.size < CLEANUP_BATCH_SIZE) {
       const batch = cleanupQueue.splice(0, CLEANUP_BATCH_SIZE - activeCleanups.size);
@@ -5126,10 +5170,10 @@ app.prepare().then(() => {
     if (terminalSessions.size > 5 || cleanupQueue.length > 3) {
       console.log(`📊 Session status: Active: ${terminalSessions.size}, Queued for cleanup: ${cleanupQueue.length}`);
     }
-  }, 10 * 1000); // Check every 10 seconds (more frequent for better control)
+  }, 10 * 1000)); // Check every 10 seconds (more frequent for better control)
 
   // Periodic cleanup of orphaned map entries (every 5 minutes)
-  setInterval(() => {
+  _activeIntervals.push(setInterval(() => {
     const activeSessions = new Set(terminalSessions.keys());
     let cleaned = 0;
 
@@ -5158,7 +5202,7 @@ app.prepare().then(() => {
     if (cleaned > 0) {
       console.log(`🧹 Periodic map cleanup: removed ${cleaned} orphaned entries`);
     }
-  }, 5 * 60 * 1000);
+  }, 5 * 60 * 1000));
 
   // Start memory optimizer monitoring
   memoryOptimizer.startMonitoring();
@@ -5247,6 +5291,32 @@ app.prepare().then(() => {
     }
   })();
   
+  // Set up Glow integration — create notes CLI script for Coder1 terminal
+  try {
+    const glowBinDir = path.join(os.homedir(), '.coder1', 'bin');
+    const notesScriptPath = path.join(glowBinDir, 'notes');
+    if (!fs.existsSync(notesScriptPath)) {
+      fs.mkdirSync(glowBinDir, { recursive: true });
+      const notesScript = '#!/usr/bin/env bash\n' +
+        '# Coder1 notes viewer — list or open session notes with Glow\n' +
+        'NOTES_DIR="${CODER1_VAULT_PATH:-$HOME/.coder1/knowledge}/Sessions"\n' +
+        'if [ -z "$1" ]; then\n' +
+        '  ls "$NOTES_DIR"/*.md 2>/dev/null | xargs -I{} basename {} .md\n' +
+        'else\n' +
+        '  match=$(ls "$NOTES_DIR"/*"$1"*.md 2>/dev/null | head -1)\n' +
+        '  if [ -n "$match" ]; then\n' +
+        '    glow "$match"\n' +
+        '  else\n' +
+        '    echo "No note matching: $1"\n' +
+        '  fi\n' +
+        'fi\n';
+      fs.writeFileSync(notesScriptPath, notesScript, { mode: 0o755 });
+      console.log('[Glow] Created notes script at', notesScriptPath);
+    }
+  } catch (err) {
+    console.warn('[Glow] Could not create notes script:', err.message);
+  }
+
   // Start server
   console.log('[DEBUG] Calling server.listen() on port', port);
   server.listen(port, (err) => {
@@ -5438,10 +5508,10 @@ app.prepare().then(() => {
         console.log('💓 Johnny5 Heartbeat Service started (living files enabled)');
 
         // Track user presence — update on a simple interval checking connected count
-        setInterval(() => {
+        _activeIntervals.push(setInterval(() => {
           const connectedCount = io.engine?.clientsCount || 0;
           heartbeat.updateUserPresence(connectedCount > 0, connectedCount);
-        }, 10000); // Check every 10s
+        }, 10000)); // Check every 10s
 
       } catch (heartbeatError) {
         console.warn('⚠️ Johnny5 Heartbeat Service not available:', heartbeatError.message);
@@ -5690,7 +5760,7 @@ const bufferTerminalData = (sessionId, type, content) => {
 // Fix: Fire-and-forget pattern with batch limits and activity checks
 let isFlushingContext = false;
 
-setInterval(() => {
+_activeIntervals.push(setInterval(() => {
   // Skip if another flush is running
   if (isFlushingContext) {
     return;
@@ -5727,11 +5797,12 @@ setInterval(() => {
   } else {
     isFlushingContext = false;
   }
-}, 60000); // Flush every 60 seconds (was 30s)
-  
+}, 60000)); // Flush every 60 seconds (was 30s)
+
   // Graceful shutdown
   const gracefulShutdown = async (signal) => {
     console.log(`[Server] ${signal} received, shutting down gracefully...`);
+    _activeIntervals.forEach(id => clearInterval(id));
 
     // Notify all connected clients that server is shutting down
     // This allows clients to show "Server restarting..." and prepare for reconnection

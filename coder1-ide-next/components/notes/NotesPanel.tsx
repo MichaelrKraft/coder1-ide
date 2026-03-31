@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronRight, ChevronDown, Folder, FileText, Plus, Search } from 'lucide-react';
+import { ChevronRight, ChevronDown, Folder, FileText, Plus, Search, Trash2 } from 'lucide-react';
 import type { VaultFolderTree, VaultNoteStub } from '@/lib/vault-types';
 import { useVaultMention } from '@/hooks/useVaultMention';
 import MentionDropdown from '@/components/notes/MentionDropdown';
 import TemplatePickerModal, { NoteTemplate, TemplateContext } from './TemplatePickerModal';
 import { useIDEStore } from '@/stores/useIDEStore';
+import CodebaseGraph from '@/components/codebase/CodebaseGraph';
 
 export interface NotesPanelProps {
   onNoteSelect: (path: string) => void;
@@ -78,6 +79,9 @@ function FolderNodeItem({ node, selectedPath, onSelect, depth }: FolderNodeItemP
 }
 
 export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelProps) {
+  // Tab state for Notes vs CodeNexus
+  const [activeTab, setActiveTab] = useState<'notes' | 'codenexus'>('notes');
+
   const [folderTree, setFolderTree] = useState<VaultFolderTree[]>([]);
   const [notes, setNotes] = useState<VaultNoteStub[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -99,6 +103,7 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
   const [searchMode, setSearchMode] = useState<'keyword' | 'semantic'>('keyword');
   const [semanticResults, setSemanticResults] = useState<Array<{path: string; title: string; excerpt?: string; matchReason: string}> | null>(null);
   const [semanticLoading, setSemanticLoading] = useState(false);
+  const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const { mentionState, handleInputChange: handleMentionChange, handleMentionSelect, closeMention } = useVaultMention();
 
   useEffect(() => {
@@ -180,6 +185,18 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
     return () => clearTimeout(timer);
   }, [searchQuery, searchMode]);
 
+  const handleDeleteNote = useCallback(async (e: React.MouseEvent, path: string) => {
+    e.stopPropagation();
+    setDeletingPath(path);
+    try {
+      const res = await fetch(`/api/vault?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
+      if (res.ok) {
+        setNotes((prev) => prev.filter((n) => n.path !== path));
+      }
+    } catch { /* silently fail */ }
+    setDeletingPath(null);
+  }, []);
+
   const handleNewNote = useCallback(async (template: NoteTemplate) => {
     setCreatingNote(true);
     const now = new Date();
@@ -206,15 +223,53 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
     }
   }, [selectedFolder, fetchNotes, onNoteSelect]);
 
-  if (unavailable) return (
-    <div className="flex flex-col h-full bg-[#0d0d0d] items-center justify-center p-4">
-      <p className="text-xs text-[#6b7280] text-center">Knowledge base unavailable.</p>
-      <p className="text-[10px] text-[#4b5563] text-center mt-1">Check that NEXT_PUBLIC_VAULT_ENABLED=true and restart the dev server.</p>
-    </div>
-  );
+  if (unavailable && activeTab === 'notes') {
+    // Only show unavailable for Notes tab - CodeNexus doesn't need vault
+  }
 
   return (
     <div className="flex flex-col h-full bg-[#0d0d0d]">
+      {/* Tab switcher */}
+      <div className="flex border-b border-[#2a2a4e] flex-shrink-0">
+        <button
+          onClick={() => setActiveTab('notes')}
+          className={`px-4 py-2 text-xs font-medium transition-colors ${
+            activeTab === 'notes'
+              ? 'text-[#8b5cf6] border-b-2 border-[#8b5cf6]'
+              : 'text-[#6b7280] hover:text-[#9ca3af]'
+          }`}
+        >
+          Notes
+        </button>
+        <button
+          onClick={() => setActiveTab('codenexus')}
+          className={`px-4 py-2 text-xs font-medium transition-colors ${
+            activeTab === 'codenexus'
+              ? 'text-[#8b5cf6] border-b-2 border-[#8b5cf6]'
+              : 'text-[#6b7280] hover:text-[#9ca3af]'
+          }`}
+        >
+          CodeNexus
+        </button>
+      </div>
+
+      {/* CodeNexus tab content */}
+      {activeTab === 'codenexus' && (
+        <div className="flex-1 overflow-hidden">
+          <CodebaseGraph />
+        </div>
+      )}
+
+      {/* Notes tab content */}
+      {activeTab === 'notes' && unavailable && (
+        <div className="flex flex-col flex-1 items-center justify-center p-4">
+          <p className="text-xs text-[#6b7280] text-center">Knowledge base unavailable.</p>
+          <p className="text-[10px] text-[#4b5563] text-center mt-1">Check that NEXT_PUBLIC_VAULT_ENABLED=true and restart the dev server.</p>
+        </div>
+      )}
+
+      {activeTab === 'notes' && !unavailable && (
+        <>
       {/* Top bar */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[#2a2a2a] flex-shrink-0">
         <span className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Notes</span>
@@ -373,71 +428,37 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
                       <div className="px-3 py-3 text-xs text-[#4b5563] italic">No notes here.</div>
                     )}
                     {displayedNotes.map((note) => (
-                      <button
+                      <div
                         key={note.path}
-                        className={`w-full text-left px-3 py-2 border-b border-[#1a1a1a] transition-colors ${
+                        className={`group relative border-b border-[#1a1a1a] transition-colors ${
                           activeNotePath === note.path ? 'bg-[#1e1b4b]' : 'hover:bg-[#1a1a1a]'
                         }`}
-                        onClick={() => onNoteSelect(note.path)}
                       >
-                        <div className="flex items-start justify-between gap-1">
-                          <span className="text-xs font-semibold text-[#e2e8f0] truncate leading-4">
-                            {note.title}
-                          </span>
-                          <span className="text-[10px] text-[#4b5563] flex-shrink-0 mt-0.5">
-                            {formatRelativeDate(note.updatedAt)}
-                          </span>
-                        </div>
-                        {/* Change 2: show AI summary from frontmatter if available, else excerpt */}
-                        <p className="text-[10px] text-[#6b7280] truncate mt-0.5">
-                          {(note.frontmatter?.summary as string | undefined) || note.excerpt || ''}
-                        </p>
-                        {/* Change 3e: AI Connect button for orphan notes */}
-                        {orphanPaths.has(note.path) && (
-                          <div className="mt-1">
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                setSuggestingFor(note.path);
-                                try {
-                                  const noteRes = await fetch(`/api/vault?path=${encodeURIComponent(note.path)}`);
-                                  const noteData = await noteRes.json();
-                                  const res = await fetch('/api/vault/suggest-links', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ notePath: note.path, noteTitle: note.title, noteContent: noteData.content || '' }),
-                                  });
-                                  const data = await res.json();
-                                  setLinkSuggestions(prev => new Map(prev).set(note.path, data.suggestions || []));
-                                } catch {
-                                  setLinkSuggestions(prev => new Map(prev).set(note.path, []));
-                                } finally {
-                                  setSuggestingFor(null);
-                                }
-                              }}
-                              disabled={suggestingFor === note.path}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
-                            >
-                              {suggestingFor === note.path ? 'Finding...' : 'AI Connect'}
-                            </button>
-                            {linkSuggestions.has(note.path) && (
-                              <div className="mt-1 space-y-0.5">
-                                {(linkSuggestions.get(note.path) || []).map((s, i) => (
-                                  <div key={i} className="text-[10px] text-[#9ca3af]">
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); onNoteSelect(s.path); }}
-                                      className="text-indigo-400 hover:text-indigo-300 hover:underline"
-                                    >
-                                      {s.title}
-                                    </button>
-                                    <span className="ml-1 text-[#6b7280]">— {s.reason}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                        <button
+                          className="w-full text-left px-3 py-2 pr-8"
+                          onClick={() => onNoteSelect(note.path)}
+                        >
+                          <div className="flex items-start justify-between gap-1">
+                            <span className="text-xs font-semibold text-[#e2e8f0] truncate leading-4">
+                              {note.title}
+                            </span>
+                            <span className="text-[10px] text-[#4b5563] flex-shrink-0 mt-0.5">
+                              {formatRelativeDate(note.updatedAt)}
+                            </span>
                           </div>
-                        )}
-                      </button>
+                          <p className="text-[10px] text-[#6b7280] truncate mt-0.5">
+                            {(note.frontmatter?.summary as string | undefined) || note.excerpt || ''}
+                          </p>
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteNote(e, note.path)}
+                          disabled={deletingPath === note.path}
+                          title="Delete note"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 rounded text-[#4b5563] hover:text-red-400 hover:bg-red-400/10 transition-all disabled:opacity-30"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     ))}
                   </>
                 );
@@ -446,6 +467,8 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

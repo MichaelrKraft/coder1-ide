@@ -9,7 +9,7 @@ export default function IDELayout({
 }) {
   // 🛟 SESSION RESCUE: Always show recovery modal (it checks internally if recovery is available)
   // Removed env var check - the modal itself will hide if no recovery exists
-  
+
   return (
     <>
       {children}

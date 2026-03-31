@@ -49,7 +49,10 @@ import { devLog, devWarn, perfLog } from '@/lib/dev-logger'; // Performance: dis
 // import EnhancedStatusline from '@/components/statusline/EnhancedStatusline'; // Temporarily disabled for debugging
 import StagedComposer from './StagedComposer';
 import SessionMetricsBar from './SessionMetricsBar';
+import AgentTurnSummary, { TurnRecord } from './AgentTurnSummary';
 import { useAutoCheckpoint } from '@/lib/hooks/useAutoCheckpoint';
+import { parseClaudeFileEdits } from '@/lib/claude-output-parser';
+import { useFileEditsStore } from '@/stores/useFileEditsStore';
 
 // Defensive filtering for status lines - Layer 3 protection
 const cleanStatusLines = (data: string): string => {
@@ -270,6 +273,11 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const claudeActivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const claudeActivityStartedRef = useRef(false); // ⚡ Prevent repeated setState during same response (Feb 2, 2025)
   const lastDataRef = useRef<{data: string, timestamp: number} | null>(null);
+
+  // Agent turn tracking (Feature 2: Turn Summary)
+  const [turns, setTurns] = useState<TurnRecord[]>([]);
+  const turnStartTimeRef = useRef<number | null>(null);
+  const turnNumberRef = useRef<number>(0);
   
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [currentCommand, setCurrentCommand] = useState('');
@@ -280,6 +288,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   useEffect(() => {
     onClaudeActiveChange?.(claudeActive);
   }, [claudeActive, onClaudeActiveChange]);
+
+  // Record turn start time when Claude becomes active
+  useEffect(() => {
+    if (claudeActive) {
+      turnStartTimeRef.current = Date.now();
+    }
+  }, [claudeActive]);
 
   // 🎨 UX FIX (Feb 1, 2025): Show "thinking" message when Claude becomes active
   // This gives users visual feedback that something is happening during response delays
@@ -325,6 +340,14 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   // Terminal session state - needed for various features
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [terminalReady, setTerminalReady] = useState(false);
+
+  // Clear turn history and file edits when session changes (must be after sessionId declaration)
+  useEffect(() => {
+    setTurns([]);
+    turnNumberRef.current = 0;
+    turnStartTimeRef.current = null;
+    useFileEditsStore.getState().clearEdits();
+  }, [sessionId]);
   const [lastError, setLastError] = useState<string | null>(null);
   const [errorDoctorActive, setErrorDoctorActive] = useState(true);
   const socketRef = useRef<any>(null); // Will be Socket instance after async init
@@ -4054,14 +4077,31 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         // Check for errors to trigger Error Doctor
         if (data.includes('error') || data.includes('Error') || data.includes('failed') || data.includes('command not found') || data.includes('No such file') || data.includes('permission denied') || data.includes('cannot find module') || data.includes('Permission denied')) {
-          
+
           // Clean the error data by removing ANSI escape codes
           const cleanedData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').trim();
-          
+
           setLastError(cleanedData);
           setHasActiveError(true);
           setErrorHistory(prev => [...prev.slice(-9), cleanedData]); // Keep last 10 errors
         }
+
+        // Parse file edits from Claude Code output for the Changes panel
+        const fileEdits = parseClaudeFileEdits(data);
+        fileEdits.forEach((edit) => {
+          const parts = edit.path.split('/');
+          useFileEditsStore.getState().addOrMergeEdit({
+            path: edit.path,
+            basename: parts[parts.length - 1],
+            directory: parts.slice(0, -1).join('/'),
+            additions: edit.additions,
+            deletions: edit.deletions,
+            operation: edit.operation,
+            lastEditedAt: Date.now(),
+            editCount: 1,
+            hasStats: edit.hasStats,
+          });
+        });
       }
     };
     if (socketHandlersRef.current.terminalData) {
@@ -4302,22 +4342,34 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     const claudeSessionCompleteHandler = ({ sessionId: claudeSessionId, duration }: { sessionId: string; duration: number }) => {
       if (term) {
         term.writeln(`\r\n✅ Claude session completed in ${(duration / 1000).toFixed(2)}s`);
-        
-        // Debug logging for audio alert decision
-        
+
         // Play sound alert if enabled and duration > 20s
         if (audioAlertsEnabled && duration > 20000) {
           soundAlertService.playCompletionAlert().then(() => {
           }).catch((error) => {
             console.warn('🔇 Failed to play completion alert:', error);
           });
-        } else {
-          if (!audioAlertsEnabled) {
-          }
-          if (duration <= 20000) {
-          }
         }
       }
+
+      // Record completed turn for AgentTurnSummary
+      const durationMs = turnStartTimeRef.current
+        ? Date.now() - turnStartTimeRef.current
+        : (duration ?? 0);
+      turnNumberRef.current += 1;
+      const edits = useFileEditsStore.getState().edits;
+      const newTurn: TurnRecord = {
+        turnNumber: turnNumberRef.current,
+        durationMs,
+        fileCount: edits.length,
+        additions: edits.reduce((s, e) => s + e.additions, 0),
+        deletions: edits.reduce((s, e) => s + e.deletions, 0),
+        cancelled: false,
+        startedAt: turnStartTimeRef.current ?? Date.now(),
+      };
+      setTurns((prev) => [newTurn, ...prev].slice(0, 3));
+      turnStartTimeRef.current = null;
+
       setClaudeActive(false);
       setConversationMode(false);
     };
@@ -5780,9 +5832,12 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         )}
       </div>
 
+      {/* Agent Turn Summary - shows last 3 completed turns */}
+      <AgentTurnSummary turns={turns} />
+
       {/* Claude Activity Indicator - Positioned directly under prompt box */}
       {claudeActive && (
-        <div 
+        <div
           className="flex items-center justify-center px-4 py-1"
           style={{
             height: '32px',
