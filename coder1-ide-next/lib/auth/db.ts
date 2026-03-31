@@ -9,7 +9,11 @@ let db: Database.Database | null = null;
 export function getAuthDatabase(): Database.Database {
   if (!db) {
     // Create database in data directory (separate from main app data)
-    const dbPath = path.join(process.cwd(), 'data', 'auth.db');
+    // In production (Render), use /data mount; in dev, use ./data
+    const dataDir = process.env.NODE_ENV === 'production'
+      ? '/data'
+      : path.join(process.cwd(), 'data');
+    const dbPath = path.join(dataDir, 'auth.db');
     
     db = new Database(dbPath, {
       verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
@@ -38,6 +42,7 @@ function initializeSchema() {
     
     if (!tableExists) {
       // Read and execute main schema
+      // Schema files are always in the app directory, not the data mount
       const schemaPath = path.join(process.cwd(), 'db', 'auth-schema.sql');
       const schema = readFileSync(schemaPath, 'utf-8');
       
@@ -86,8 +91,9 @@ function initializeSchema() {
     // Migrate: Add Johnny5 tier tracking columns if they don't exist
     migrateJohnny5TierColumns();
   } catch (error) {
-    logger?.error('Error initializing auth database schema:', error);
-    // Don't throw - allow app to continue even if auth setup fails
+    console.error('❌ FATAL: Auth database schema initialization failed:', error);
+    // Re-throw - auth database must be properly initialized
+    throw new Error(`Failed to initialize auth database: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
