@@ -41,7 +41,6 @@ export default function SessionsTab() {
     selectSession,
     setSessions,
     setSessionsLoading,
-    setActiveTab,
   } = useJohnny5Store();
 
   // Ensure sessions is always an array (Zustand persist can hydrate with unexpected types)
@@ -128,15 +127,6 @@ export default function SessionsTab() {
     selectSession(null);
   }, [selectSession]);
 
-  // Handle start replay
-  const handleStartReplay = useCallback(
-    (sessionId: string) => {
-      selectSession(sessionId);
-      setActiveTab('reasoning');
-    },
-    [selectSession, setActiveTab]
-  );
-
   // Handle refresh
   const handleRefresh = async () => {
     setSessionsLoading(true);
@@ -173,7 +163,6 @@ export default function SessionsTab() {
       <SessionDetail
         sessionId={selectedSessionId}
         onClose={handleCloseDetail}
-        onStartReplay={handleStartReplay}
       />
     );
   }

@@ -1,16 +1,4 @@
 /**
  * Johnny5 Onboarding Components
- *
- * Interview Mode - Discovers "unknown unknowns"
- *
- * From Alex Finn: "The issue most people have when they use any AI tool is
- * they don't hunt the unknown unknowns... you want to spend a lot of time saying
- * 'Hey here's everything about me, what can you do for me?'"
+ * Simplified for beta - enterprise integrations removed
  */
-
-export { default as InterviewMode } from './InterviewMode';
-export { default as CapabilityCard } from './CapabilityCard';
-export { default as UserProfileSummary } from './UserProfileSummary';
-export { default as ZapierMCPSetupCard } from './ZapierMCPSetupCard';
-export { default as TelegramSetupCard } from './TelegramSetupCard';
-export { default as WhatsAppSetupCard } from './WhatsAppSetupCard';

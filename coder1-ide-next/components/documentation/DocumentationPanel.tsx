@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Trash2, ExternalLink, Clock, FileText, Brain, Loader2, Upload, FileImage, File, ClipboardCopy, Check, X } from 'lucide-react';
 import { copyDocForClaude } from '@/lib/doc-utils';
 import { getCompanionClient } from '@/lib/companion-client';
+import { getDocsServiceUrl } from '@/lib/api-config';
 import RecommendedDocs from './RecommendedDocs';
 
 interface DocumentationResult {
@@ -100,7 +101,7 @@ const DocumentationPanel: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:57132/docs/list');
+      const response = await fetch(`${getDocsServiceUrl()}/docs/list`);
       if (response.ok) {
         const data = await response.json();
         // Normalize companion response fields to match DocumentationDoc interface
@@ -132,7 +133,7 @@ const DocumentationPanel: React.FC = () => {
     if (!companionClient.isConnected()) return;
 
     try {
-      const response = await fetch('http://localhost:57132/docs/stats');
+      const response = await fetch(`${getDocsServiceUrl()}/docs/stats`);
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -195,7 +196,7 @@ const DocumentationPanel: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:57132/docs/add', {
+      const response = await fetch(`${getDocsServiceUrl()}/docs/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -231,7 +232,7 @@ const DocumentationPanel: React.FC = () => {
     if (!companionClient.isConnected()) return;
 
     try {
-      const response = await fetch(`http://localhost:57132/docs/${docId}`, {
+      const response = await fetch(`${getDocsServiceUrl()}/docs/${docId}`, {
         method: 'DELETE'
       });
 
@@ -432,7 +433,7 @@ const DocumentationPanel: React.FC = () => {
     if (companionClient.isConnected()) {
       setIsAdding(true);
       try {
-        const response = await fetch('http://localhost:57132/docs/add', {
+        const response = await fetch(`${getDocsServiceUrl()}/docs/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url, options: { timeout: 30000, retries: 3 } })

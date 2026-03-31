@@ -21,7 +21,7 @@ import { useJohnny5Store } from '@/stores/useJohnny5Store';
 import type { Johnny5MorningBrief, Johnny5BriefItem } from '@/types/johnny5';
 import BriefSection from './BriefSection';
 import WeatherWidget from './WeatherWidget';
-import { generateMorningBriefFromActivity } from '@/services/johnny5/accomplishment-detector';
+
 
 interface MorningBriefTabProps {
   className?: string;
@@ -57,7 +57,7 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
   const [selectedBriefDate, setSelectedBriefDate] = useState<string | null>(null);
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const [showWeather, setShowWeather] = useState(true);
-  const [clientActivityData, setClientActivityData] = useState<ReturnType<typeof generateMorningBriefFromActivity> | null>(null);
+  const [clientActivityData, setClientActivityData] = useState<any>(null);
 
   // Track when brief was last viewed (for "since last brief" logic)
   useEffect(() => {
@@ -66,18 +66,8 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
     }
   }, []);
 
-  // Load client-side activity data from localStorage
-  const loadClientActivity = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const lastViewed = localStorage.getItem('johnny5_lastBriefViewedAt');
-      const sinceDate = lastViewed ? new Date(lastViewed) : undefined;
-      const activityBrief = generateMorningBriefFromActivity(sinceDate);
-      setClientActivityData(activityBrief);
-    } catch (e) {
-      console.warn('[MorningBriefTab] Failed to load client activity:', e);
-    }
-  }, []);
+  // Client-side activity loading removed (service deleted for beta simplification)
+  const loadClientActivity = useCallback(() => {}, []);
 
   // Fetch today's brief on mount
   useEffect(() => {
