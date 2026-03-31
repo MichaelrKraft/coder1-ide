@@ -102,6 +102,23 @@ class FeatureFlagManager {
         maxWritesPerMinute: 10,
         maxWritesPerHour: 100,
       }
+    },
+
+    // Flight Recorder: Session recording for replay
+    FLIGHT_RECORDER: {
+      enabled: process.env.NEXT_PUBLIC_FLIGHT_RECORDER_ENABLED === 'true',
+      rolloutPercentage: 100,
+      config: {
+        captureTerminal: true,
+        captureFiles: true,
+        captureAI: true,
+        captureErrors: true,
+        flushIntervalMs: 3000,
+        maxBufferSize: 200,
+        terminalChunkThreshold: 10240,
+        retentionDays: 30,
+        maxStorageMB: 2048,
+      }
     }
   };
   
@@ -358,6 +375,7 @@ class FeatureFlagManager {
       VAULT_ENABLED: { enabled: process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true' },
       AMBIENT_ENABLED: { enabled: process.env.NEXT_PUBLIC_AMBIENT_ENABLED === 'true' },
       JOHNNY5_MIRACLES: { enabled: process.env.NEXT_PUBLIC_JOHNNY5_MIRACLES_ENABLED === 'true' },
+      FLIGHT_RECORDER: { enabled: process.env.NEXT_PUBLIC_FLIGHT_RECORDER_ENABLED === 'true' },
     };
 
     for (const [name, override] of Object.entries(envOverrides)) {
@@ -417,6 +435,7 @@ export const FEATURE_FLAGS = {
   VAULT_ENABLED: 'VAULT_ENABLED',
   AMBIENT_ENABLED: 'AMBIENT_ENABLED',
   JOHNNY5_MIRACLES: 'JOHNNY5_MIRACLES',
+  FLIGHT_RECORDER: 'FLIGHT_RECORDER',
 } as const;
 
 // Export thresholds for monitoring

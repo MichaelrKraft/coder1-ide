@@ -53,6 +53,14 @@ export function getApiUrl(): string {
 }
 
 /**
+ * Get the companion/docs service URL
+ * Used by DocumentationPanel and StatusBarActions for the local companion service
+ */
+export function getDocsServiceUrl(): string {
+  return process.env.NEXT_PUBLIC_DOCS_SERVICE_URL || 'http://localhost:57132';
+}
+
+/**
  * Legacy support - use getBackendUrl() for new code
  */
 export const EXPRESS_BACKEND_URL = getBackendUrl();
