@@ -1,9 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addToWaitlist, getWaitlistByEmail, getWaitlistCount, deleteFromWaitlist } from '@/lib/alpha-waitlist-db';
+import { addToWaitlist, getWaitlistByEmail } from '@/lib/alpha-waitlist-db';
+import { createUser, getUserByEmail, getUserByUsername, createSession } from '@/lib/auth/db';
+import { generateTokens } from '@/lib/auth/jwt';
+import { hashPassword } from '@/lib/auth/bcrypt';
+import { randomBytes } from 'crypto';
 import { Resend } from 'resend';
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+/**
+ * Generate a unique username from email prefix
+ * Handles collisions by appending numbers (mike, mike1, mike2, etc.)
+ */
+function findAvailableUsername(base: string): string {
+  // Sanitize base: alphanumeric + underscores only
+  const sanitized = base.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  if (!sanitized) return 'user'; // Fallback for invalid email prefixes
+
+  let username = sanitized;
+  let suffix = 1;
+
+  // Check database for collisions
+  while (getUserByUsername(username)) {
+    username = `${sanitized}${suffix}`;
+    suffix++;
+    // Safety: prevent infinite loop
+    if (suffix > 1000) {
+      username = `${sanitized}${Date.now()}`;
+      break;
+    }
+  }
+
+  return username;
 }
 
 async function sendNotificationEmail(data: {
@@ -76,102 +106,166 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ipAddress = request.headers.get('x-forwarded-for') ||
-                      request.headers.get('x-real-ip') ||
-                      'unknown';
-    const userAgent = request.headers.get('user-agent') || 'unknown';
+    const normalizedEmail = email.toLowerCase().trim();
 
-    // Check if email already exists
-    const existing = getWaitlistByEmail(email);
-    if (existing) {
-      return NextResponse.json(
-        {
-          error: 'Email already registered',
-          message: 'This email is already on the waitlist',
-        },
-        { status: 409 }
-      );
+    // Step 1: Check if email already registered
+    const existingUser = getUserByEmail(normalizedEmail);
+
+    if (existingUser) {
+      // User exists → create session and auto-login
+      const { accessToken, refreshToken, expiresAt } = generateTokens({
+        userId: existingUser.id,
+        email: existingUser.email,
+        username: existingUser.username,
+        subscriptionTier: existingUser.subscription_tier,
+      });
+
+      // Get request metadata
+      const userAgent = request.headers.get('user-agent') || undefined;
+      const ip = request.headers.get('x-forwarded-for') ||
+                 request.headers.get('x-real-ip') || undefined;
+
+      createSession({
+        user_id: existingUser.id,
+        token: accessToken,
+        refresh_token: refreshToken,
+        expires_at: expiresAt,
+        user_agent: userAgent,
+        ip_address: ip,
+      });
+
+      const response = NextResponse.json({
+        success: true,
+        message: 'Welcome back! Logging you in...',
+      });
+
+      // Set auth cookies
+      response.cookies.set('auth-token', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60, // 15 minutes
+        path: '/',
+      });
+
+      response.cookies.set('refresh-token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        path: '/',
+      });
+
+      return response;
     }
 
-    // Add to waitlist
-    const entry = addToWaitlist({
-      email: email.toLowerCase().trim(),
-      name: displayName,
-      reddit_username: redditUsername || null,
-      source: resolvedSource,
-      ip_address: ipAddress,
+    // Step 2: Generate unique username from email
+    const baseUsername = normalizedEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const username = findAvailableUsername(baseUsername);
+
+    // Step 3: Generate secure random password
+    const password = randomBytes(32).toString('hex');
+    const passwordHash = await hashPassword(password);
+
+    // Step 4: Create user account (with UNIQUE constraint error handling)
+    let user;
+    try {
+      user = createUser({
+        email: normalizedEmail,
+        username,
+        password_hash: passwordHash,
+      });
+    } catch (dbError: any) {
+      // Handle race condition: username taken between check and insert
+      if (dbError.message?.includes('UNIQUE constraint failed')) {
+        // Try once more with timestamped username
+        const retryUsername = `${baseUsername}${Date.now()}`;
+        user = createUser({
+          email: normalizedEmail,
+          username: retryUsername,
+          password_hash: passwordHash,
+        });
+      } else {
+        throw dbError;
+      }
+    }
+
+    // Step 5: Generate tokens
+    const { accessToken, refreshToken, expiresAt } = generateTokens({
+      userId: user.id,
+      email: user.email,
+      username: user.username,
+      subscriptionTier: user.subscription_tier,
+    });
+
+    // Step 6: Create session
+    const userAgent = request.headers.get('user-agent') || undefined;
+    const ip = request.headers.get('x-forwarded-for') ||
+               request.headers.get('x-real-ip') || undefined;
+
+    createSession({
+      user_id: user.id,
+      token: accessToken,
+      refresh_token: refreshToken,
+      expires_at: expiresAt,
       user_agent: userAgent,
+      ip_address: ip,
     });
 
-    // Fire-and-forget notification email to Mike
-    sendNotificationEmail({
-      email: email.toLowerCase().trim(),
-      name: displayName,
-      redditUsername: redditUsername || null,
-      source: resolvedSource,
-    });
+    // Step 7: Add to waitlist for analytics (fire-and-forget)
+    try {
+      const ipAddress = ip || 'unknown';
+      const ua = userAgent || 'unknown';
 
-    return NextResponse.json({
-      success: true,
-      message: 'Successfully added to waitlist',
-      id: entry.id,
-    });
+      addToWaitlist({
+        email: normalizedEmail,
+        name: displayName,
+        reddit_username: redditUsername || null,
+        source: resolvedSource,
+        ip_address: ipAddress,
+        user_agent: ua,
+      });
 
-  } catch (error: any) {
-    console.error('[Waitlist] Signup error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET() {
-  try {
-    const count = getWaitlistCount();
-
-    return NextResponse.json({
-      totalSignups: count,
-      message: 'Waitlist statistics',
-    });
-
-  } catch (error: any) {
-    console.error('[Waitlist] Stats error:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve statistics' },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE — remove email from waitlist (dev only)
-export async function DELETE(request: NextRequest) {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
-  }
-
-  try {
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email');
-
-    if (!email) {
-      return NextResponse.json({ error: 'Email parameter required' }, { status: 400 });
+      // Send notification email to Mike
+      sendNotificationEmail({
+        email: normalizedEmail,
+        name: displayName,
+        redditUsername: redditUsername || null,
+        source: resolvedSource,
+      });
+    } catch (waitlistError) {
+      // Non-blocking - don't fail account creation if waitlist insert fails
+      console.error('[Waitlist] Analytics insert failed:', waitlistError);
     }
 
-    const deleted = deleteFromWaitlist(email);
-
-    return NextResponse.json({
+    // Step 8: Set auth cookies and return success
+    const response = NextResponse.json({
       success: true,
-      deleted,
-      message: deleted
-        ? `Removed ${email} from waitlist`
-        : 'Email not found in waitlist',
+      message: 'Account created successfully!',
+    }, { status: 201 });
+
+    response.cookies.set('auth-token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60,
+      path: '/',
     });
 
+    response.cookies.set('refresh-token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
+
+    return response;
+
   } catch (error: any) {
-    console.error('[Waitlist] Delete error:', error);
+    console.error('[AlphaWaitlist] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to delete', details: error.message },
+      { success: false, error: 'Failed to process signup' },
       { status: 500 }
     );
   }
