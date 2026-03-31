@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FolderTree, Search, BookOpen, Network, List } from 'lucide-react';
+import { FolderTree, Search, BookOpen, Network, List, GitBranch } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import SafeFileExplorer from './SafeFileExplorer';
 import CodeSearch from './codebase/CodeSearch';
 import { useVaultStore } from '@/stores/useVaultStore';
 import DevLogButton from './notes/DevLogButton';
 import SessionNoteIndicator from './notes/SessionNoteIndicator';
+import { useFileEditsStore } from '@/stores/useFileEditsStore';
 
 const NotesPanel = dynamic(() => import('@/components/notes/NotesPanel'), { ssr: false });
 const NoteDetailView = dynamic(() => import('@/components/notes/NoteDetailView'), { ssr: false });
 const KnowledgeGraph = dynamic(() => import('@/components/graph/KnowledgeGraph'), { ssr: false });
+const FileEditsPanel = dynamic(() => import('@/components/file-edits/FileEditsPanel'), { ssr: false });
 
 const vaultEnabled = process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true';
 
@@ -23,9 +25,10 @@ interface LeftPanelProps {
 }
 
 export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, onRootChange }: LeftPanelProps) {
-  const [activeTab, setActiveTab] = useState<'explorer' | 'search' | 'notes'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'search' | 'notes' | 'files'>('explorer');
   const [showGraph, setShowGraph] = useState(false);
   const { openNote, activeNotePath } = useVaultStore();
+  const fileEditsCount = useFileEditsStore((s) => s.edits.length);
   
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
@@ -125,6 +128,23 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <Search className="w-3 h-3" />
           <span>Search</span>
         </button>
+        <button
+          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+            activeTab === 'files'
+              ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
+              : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+          }`}
+          onClick={() => setActiveTab('files')}
+          title="Changes - Files modified in this session"
+        >
+          <GitBranch className="w-3 h-3" />
+          <span>Changes</span>
+          {fileEditsCount > 0 && (
+            <span className="px-1.5 py-0.5 bg-coder1-cyan/20 text-coder1-cyan text-[10px] rounded-full font-bold leading-none">
+              {fileEditsCount}
+            </span>
+          )}
+        </button>
       </div>
       
       {/* Notes graph/list toggle sub-header */}
@@ -169,6 +189,9 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
         )}
         {activeTab === 'search' && (
           <CodeSearch onOpenFile={onFileSelect} />
+        )}
+        {activeTab === 'files' && (
+          <FileEditsPanel />
         )}
         {activeTab === 'notes' && vaultEnabled && (
           activeNotePath

@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, Mic, GitBranch, Edit3, Settings, ArrowLeftRight } from 'lucide-react';
+import { Clock, Play, Pause, Save, FileText, DollarSign, RefreshCw, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, Mic, GitBranch, Edit3, Settings, ArrowLeftRight, LayoutGrid } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useSession } from '@/contexts/SessionContext';
 import { sessionEnhancementService } from '@/services/session-enhancement-service';
 import { getSessionTypeById } from '@/lib/session-types';
 import { filterThinkingAnimations } from '@/lib/checkpoint-utils';
 import HandoffMode from './SessionsPanel/HandoffMode';
+
+const SessionKanban = dynamic(() => import('@/components/sessions/SessionKanban'), { ssr: false });
 
 interface Session {
   id: string;
@@ -41,7 +44,7 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   const [restorationStage, setRestorationStage] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<{type: 'success' | 'error' | 'info', message: string, details?: string} | null>(null);
   const [showAllSessions, setShowAllSessions] = useState(false);
-  const [viewMode, setViewMode] = useState<'standard' | 'handoff'>('standard');
+  const [viewMode, setViewMode] = useState<'standard' | 'handoff' | 'kanban'>('standard');
   
   // Guard against concurrent checkpoint restorations
   const restorationInProgressRef = useRef<boolean>(false);
@@ -138,14 +141,18 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   
   // Update event listeners when callbacks change to avoid stale closures
   useEffect(() => {
+    const handleShowKanban = () => setViewMode('kanban');
+
     window.addEventListener('checkpointCreated', handleCheckpointCreated as EventListener);
     window.addEventListener('sessionChanged', handleSessionChanged as EventListener);
     window.addEventListener('openHandoffMode', handleOpenHandoffMode as EventListener);
-    
+    window.addEventListener('showSessionKanban', handleShowKanban);
+
     return () => {
       window.removeEventListener('checkpointCreated', handleCheckpointCreated as EventListener);
       window.removeEventListener('sessionChanged', handleSessionChanged as EventListener);
       window.removeEventListener('openHandoffMode', handleOpenHandoffMode as EventListener);
+      window.removeEventListener('showSessionKanban', handleShowKanban);
     };
   }, [handleCheckpointCreated, handleSessionChanged, handleOpenHandoffMode]); // Re-register when callbacks change
   
@@ -624,6 +631,35 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
     );
   }
 
+  // Render kanban mode if selected
+  if (viewMode === 'kanban') {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="p-2 bg-bg-tertiary border-b border-border-default flex items-center gap-2">
+          <button
+            onClick={() => setViewMode('standard')}
+            className="flex items-center gap-2 px-3 py-1.5 bg-bg-secondary hover:bg-bg-primary text-text-secondary hover:text-text-primary rounded transition-colors text-xs"
+          >
+            <ArrowLeftRight className="w-3 h-3" />
+            Standard View
+          </button>
+          <span className="text-xs text-text-muted font-medium">Session Kanban</span>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <SessionKanban
+            sessions={sessions}
+            currentSessionId={currentSession?.id}
+            onSessionSelect={(id) => {
+              const session = sessions.find((s) => s.id === id);
+              if (session) switchSession(session);
+            }}
+            onNewSession={() => createSession()}
+          />
+        </div>
+      </div>
+    );
+  }
+
   // Render handoff mode if selected
   if (viewMode === 'handoff') {
     return (
@@ -647,15 +683,22 @@ export default function SessionsPanel({ isVisible = true }: SessionsPanelProps) 
   
   return (
     <div className="h-full flex flex-col">
-      {/* View Toggle Button (Standard View) */}
-      <div className="p-2 bg-bg-tertiary border-b border-border-default">
+      {/* View Toggle Buttons (Standard View) */}
+      <div className="p-2 bg-bg-tertiary border-b border-border-default flex items-center gap-2">
         <button
           onClick={() => setViewMode('handoff')}
-          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded transition-colors text-xs font-medium"
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded transition-colors text-xs font-medium"
           title="Create a handoff document to preserve session context"
         >
           <FileText className="w-3 h-3" />
-          Create Handoff Document
+          Handoff
+        </button>
+        <button
+          onClick={() => setViewMode('kanban')}
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-bg-secondary hover:bg-bg-primary text-text-muted hover:text-coder1-cyan rounded transition-colors text-xs"
+          title="Session Kanban (⌘⇧K)"
+        >
+          <LayoutGrid className="w-3 h-3" />
         </button>
       </div>
       

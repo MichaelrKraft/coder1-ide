@@ -59,6 +59,15 @@ export default function RecoveryModal({ onClose }: RecoveryModalProps) {
 
   const checkForRecovery = async () => {
     try {
+      // Check if Session Rescue is enabled (client-side check)
+      if (process.env.NEXT_PUBLIC_ENABLE_SESSION_RESCUE !== 'true') {
+        console.log('Session Rescue is disabled');
+        setIsVisible(false);
+        setLoading(false);
+        if (onClose) onClose();
+        return;
+      }
+
       // Check if recovery was recently consumed (within last 5 minutes)
       const consumedTimestamp = localStorage.getItem('recovery-consumed-timestamp');
       if (consumedTimestamp) {
@@ -76,7 +85,24 @@ export default function RecoveryModal({ onClose }: RecoveryModalProps) {
         }
       }
       
-      const response = await fetch('/api/recovery/check/');
+      // Add timeout to prevent indefinite hang
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      let response: Response;
+      try {
+        response = await fetch('/api/recovery/check', {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          console.warn('Recovery check timed out after 10s');
+        }
+        throw fetchError;
+      }
+
       const data: RecoveryData = await response.json();
       
       if (data.hasRecovery && data.recovery) {
@@ -112,7 +138,7 @@ export default function RecoveryModal({ onClose }: RecoveryModalProps) {
     
     try {
       console.log('📡 Calling /api/recovery/restore...');
-      const response = await fetch('/api/recovery/restore/', {
+      const response = await fetch('/api/recovery/restore', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

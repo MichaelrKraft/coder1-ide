@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { X, Send, Clock, Hash, FileText, Image as ImageIcon, ChevronDown, GitBranch, Eye, FilePlus, Undo2, Redo2, Bookmark, Plus, Save, Expand, Minimize, Mic, MicOff } from 'lucide-react';
 import { commandHistoryService, CommandHistoryEntry } from '@/services/command-history-service';
 import { commandSnippetsService, CommandSnippet } from '@/services/command-snippets-service';
+import SlashCommandTypeahead, { SlashCommandTypeaheadHandle } from '@/components/commands/SlashCommandTypeahead';
+import { useTeamAssets } from '@/hooks/useTeamAssets';
+import { useTeamStore } from '@/stores/useTeamStore';
+import { useRecentCommands } from '@/hooks/useRecentCommands';
+import type { SlashCommand, SlashCommandAssetData } from '@/types/slash-command';
+import type { TeamAsset } from '@/services/team-assets-service';
 // OCR functionality is optional - only import if available
 // import { createWorker } from 'tesseract.js';
 
@@ -83,6 +89,41 @@ export default function StagedComposer({
   // Voice input state
   const [recognition, setRecognition] = useState<any>(null);
   const [voiceListening, setVoiceListening] = useState(false);
+
+  // Slash command typeahead state
+  const [typeaheadOpen, setTypeaheadOpen] = useState(false);
+  const [typeaheadQuery, setTypeaheadQuery] = useState('');
+  const typeaheadRef = useRef<SlashCommandTypeaheadHandle>(null);
+  const composerAnchorRef = useRef<HTMLDivElement>(null);
+  const currentTeamId = useTeamStore((s) => s.syncTeam?.id ?? null);
+  const { assets: commandAssets, isLoading: commandsLoading } = useTeamAssets<SlashCommandAssetData>({
+    teamId: currentTeamId,
+    assetType: 'slash_command',
+  });
+  const commands: SlashCommand[] = useMemo(
+    () =>
+      commandAssets.map((asset: TeamAsset<SlashCommandAssetData>) => ({
+        id: asset.id,
+        teamId: asset.teamId,
+        slug: asset.data.slug,
+        name: asset.data.name,
+        description: asset.data.description,
+        content: asset.data.content,
+        category: asset.data.category,
+        scope: asset.data.scope,
+        hasArguments: asset.data.hasArguments,
+        argumentsDescription: asset.data.argumentsDescription,
+        createdBy: asset.data.createdBy,
+        createdByName: asset.data.createdByName,
+        version: asset.data.version,
+        isInstalled: false,
+        tags: asset.data.tags ?? [],
+        createdAt: asset.createdAt,
+        updatedAt: asset.updatedAt,
+      })),
+    [commandAssets]
+  );
+  const { recentSlugs, recordUsage } = useRecentCommands();
 
   // Debug effect for multilineMode changes
   useEffect(() => {
@@ -923,6 +964,28 @@ export default function StagedComposer({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Handle slash command typeahead keyboard routing
+    if (typeaheadOpen) {
+      if (['ArrowUp', 'ArrowDown', 'Enter', 'Tab'].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+        typeaheadRef.current?.handleKey(e.key);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setTypeaheadOpen(false);
+        return;
+      }
+    }
+
+    // Cmd+/ to open typeahead
+    if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+      e.preventDefault();
+      setTypeaheadQuery('');
+      setTypeaheadOpen(true);
+      return;
+    }
+
     // Handle snippets navigation when snippets are visible
     if (showSnippets && snippets.length > 0) {
       if (e.key === 'ArrowDown') {
@@ -1702,11 +1765,50 @@ export default function StagedComposer({
         )}
 
         {/* Text area */}
-        <div className="p-4 flex-1 overflow-hidden">
+        <div className="p-4 flex-1 overflow-hidden" ref={composerAnchorRef}>
+          <SlashCommandTypeahead
+            ref={typeaheadRef}
+            query={typeaheadQuery}
+            isOpen={typeaheadOpen}
+            anchorRef={composerAnchorRef as React.RefObject<HTMLElement>}
+            commands={commands}
+            isLoading={commandsLoading}
+            recentSlugs={recentSlugs}
+            onDismiss={() => setTypeaheadOpen(false)}
+            onSelect={(cmd) => {
+              recordUsage(cmd.slug);
+              const cursorPos = textareaRef.current?.selectionStart ?? command.length;
+              const before = command.slice(0, cursorPos).replace(/(?:^|\s)\/([\w-]*)$/, (match) => {
+                const ws = match.startsWith(' ') ? ' ' : '';
+                return `${ws}/${cmd.slug}${cmd.hasArguments ? ' ' : ''}`;
+              });
+              const after = command.slice(cursorPos);
+              setCommand(before + after);
+              setTypeaheadOpen(false);
+              setTimeout(() => {
+                const newPos = before.length;
+                textareaRef.current?.setSelectionRange(newPos, newPos);
+                textareaRef.current?.focus();
+              }, 0);
+            }}
+          />
           <textarea
             ref={textareaRef}
             value={command}
-            onChange={(e) => setCommand(e.target.value)}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              setCommand(newValue);
+              // Detect slash command trigger: "/" at word boundary
+              const cursorPos = e.target.selectionStart ?? newValue.length;
+              const textUpToCursor = newValue.slice(0, cursorPos);
+              const slashMatch = textUpToCursor.match(/(?:^|\s)\/([\w-]*)$/);
+              if (slashMatch) {
+                setTypeaheadQuery(slashMatch[1]);
+                setTypeaheadOpen(true);
+              } else {
+                setTypeaheadOpen(false);
+              }
+            }}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             placeholder={

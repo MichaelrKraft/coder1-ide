@@ -18,6 +18,31 @@ const getDataDirectory = () => {
   return path.join(projectRoot, 'data');
 };
 
+// Helper to read checkpoints from a directory in parallel
+async function readCheckpointsFromDir(dir: string, type: string): Promise<any[]> {
+  try {
+    const files = await fs.readdir(dir);
+    const jsonFiles = files.filter(f => f.endsWith('.json'));
+
+    const checkpoints = await Promise.all(
+      jsonFiles.map(async (file) => {
+        try {
+          const content = await fs.readFile(path.join(dir, file), 'utf8');
+          const checkpoint = JSON.parse(content);
+          checkpoint.type = checkpoint.type || type;
+          return checkpoint;
+        } catch {
+          return null; // Skip invalid files
+        }
+      })
+    );
+
+    return checkpoints.filter(Boolean);
+  } catch {
+    return []; // Directory doesn't exist
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Check if Session Rescue is enabled
@@ -53,49 +78,26 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // Scan all sessions for checkpoints
-    const allCheckpoints: any[] = [];
-    
-    for (const sessionId of sessions) {
+    // Scan all sessions for checkpoints in parallel
+    const sessionPromises = sessions.map(async (sessionId) => {
       const checkpointsBaseDir = path.join(sessionsDir, sessionId, 'checkpoints');
-      
+
       try {
-        // Check auto/ subdirectory (priority for recovery)
-        const autoDir = path.join(checkpointsBaseDir, 'auto');
-        try {
-          const autoFiles = await fs.readdir(autoDir);
-          const autoJsonFiles = autoFiles.filter(f => f.endsWith('.json'));
-          
-          for (const file of autoJsonFiles) {
-            const content = await fs.readFile(path.join(autoDir, file), 'utf8');
-            const checkpoint = JSON.parse(content);
-            checkpoint.type = checkpoint.type || 'auto';
-            allCheckpoints.push(checkpoint);
-          }
-        } catch {
-          // Auto directory doesn't exist - that's fine
-        }
-        
-        // Check manual/ subdirectory (fallback)
-        const manualDir = path.join(checkpointsBaseDir, 'manual');
-        try {
-          const manualFiles = await fs.readdir(manualDir);
-          const manualJsonFiles = manualFiles.filter(f => f.endsWith('.json'));
-          
-          for (const file of manualJsonFiles) {
-            const content = await fs.readFile(path.join(manualDir, file), 'utf8');
-            const checkpoint = JSON.parse(content);
-            checkpoint.type = checkpoint.type || 'manual';
-            allCheckpoints.push(checkpoint);
-          }
-        } catch {
-          // Manual directory doesn't exist - that's fine
-        }
-        
+        // Read auto and manual directories in parallel
+        const [autoCheckpoints, manualCheckpoints] = await Promise.all([
+          readCheckpointsFromDir(path.join(checkpointsBaseDir, 'auto'), 'auto'),
+          readCheckpointsFromDir(path.join(checkpointsBaseDir, 'manual'), 'manual')
+        ]);
+
+        return [...autoCheckpoints, ...manualCheckpoints];
       } catch (error) {
         console.warn(`Failed to read checkpoints for session ${sessionId}:`, error);
+        return [];
       }
-    }
+    });
+
+    const allCheckpointArrays = await Promise.all(sessionPromises);
+    const allCheckpoints = allCheckpointArrays.flat();
     
     if (allCheckpoints.length === 0) {
       return NextResponse.json({
