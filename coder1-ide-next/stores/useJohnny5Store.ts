@@ -832,7 +832,6 @@ export const useJohnny5Store = create<Johnny5Store>()(
         name: 'coder1-johnny5-store',
         partialize: (state) => ({
           // Only persist essential state
-          activeTab: state.activeTab,
           isCollapsed: state.isCollapsed,
           analyticsRange: state.analyticsRange,
           settings: state.settings,
