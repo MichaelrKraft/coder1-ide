@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Clock, FileEdit, Terminal, Save, AlertCircle, RefreshCw, Download, History, X, Edit3, Zap, Film } from 'lucide-react';
@@ -24,7 +24,7 @@ interface Session {
   createdAt: string;
 }
 
-export default function TimelinePage() {
+function TimelineContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = (searchParams.get('tab') ?? 'timeline') as 'timeline' | 'flowtrace' | 'recordings';
@@ -761,5 +761,13 @@ export default function TimelinePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TimelinePage() {
+  return (
+    <Suspense fallback={null}>
+      <TimelineContent />
+    </Suspense>
   );
 }
