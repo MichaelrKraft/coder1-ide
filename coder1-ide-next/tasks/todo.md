@@ -1,3 +1,46 @@
+# Agent Hub Phase 2 — Tasks Panel + Bridge Integration
+
+## Todo
+- [x] Step 1: Add 3 new tables to `lib/agent-hub/db.ts` (tasks, runs, run_log_chunks)
+- [x] Step 2: Create `lib/agent-hub/tasks.ts` (CRUD)
+- [x] Step 3: Create `lib/agent-hub/runs.ts` (minimal stub)
+- [x] Step 4: Create `lib/agent-hub/bridge-integration.ts`
+- [x] Step 5: Add agent event handlers to `server.js`
+- [x] Step 6: Create API routes (tasks CRUD + run + decompose + runs stop)
+- [x] Step 7: Create UI components (6 files)
+- [x] Step 8: Update `app/ide/agent-hub/tasks/page.tsx`
+
+## Review
+
+All 8 steps complete. Key decisions:
+
+- **Bridge lookup**: `bridge-integration.ts` uses `global.bridgeManager.getBridgeForUser(userId)` with `findAnyConnectedBridge()` fallback. Workspace path is on the agent record, not on the bridge connection, so lookup is by userId.
+- **server.js handlers**: Inserted before the `disconnect` handler inside the bridge namespace `connection` block. All async work wrapped in `setImmediate` to avoid blocking the event loop.
+- **runs.ts `getRun`**: Uses a relaxed userId check (`|| userId !== 'default'`) so server.js handlers using `socket.userId || 'default'` can look up runs across users during bridge events.
+- **UI**: `TaskKanban` polls every 15s — no WebSocket subscription needed for Phase 2. Drag-drop deferred per spec.
+- **decompose route**: Calls `claude-haiku-4-5` directly, returns proposed task array for user approval before creating.
+
+## Files Created/Modified
+- `lib/agent-hub/db.ts` — added 3 tables
+- `lib/agent-hub/tasks.ts` — new
+- `lib/agent-hub/runs.ts` — new
+- `lib/agent-hub/bridge-integration.ts` — new
+- `server.js` — added 4 Socket.IO event handlers
+- `app/api/agent-hub/tasks/route.ts` — new
+- `app/api/agent-hub/tasks/[id]/route.ts` — new
+- `app/api/agent-hub/tasks/[id]/run/route.ts` — new
+- `app/api/agent-hub/tasks/decompose/route.ts` — new
+- `app/api/agent-hub/runs/[id]/stop/route.ts` — new
+- `components/agent-hub/tasks/PriorityChip.tsx` — new
+- `components/agent-hub/tasks/TaskCard.tsx` — new
+- `components/agent-hub/tasks/TaskDetail.tsx` — new
+- `components/agent-hub/tasks/TaskForm.tsx` — new
+- `components/agent-hub/tasks/PreRunChecklist.tsx` — new
+- `components/agent-hub/tasks/TaskKanban.tsx` — new
+- `app/ide/agent-hub/tasks/page.tsx` — updated
+
+---
+
 # Agent Hub Phase 1 — SQLite Data Layer + Agents Panel
 
 ## Decisions

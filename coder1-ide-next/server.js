@@ -2312,6 +2312,88 @@ app.prepare().then(() => {
       };
       bridgeManager.on('bridge:disconnected', _handleBridgeDisconnected);
 
+      // ── Agent Hub: bridge-side execution events ──────────────────────────
+
+      // Bridge confirms agent process started
+      socket.on('agent:started', ({ runId, sessionId }) => {
+        setImmediate(() => {
+          try {
+            const { updateRun } = require('./lib/agent-hub/runs');
+            updateRun(runId, socket.userId || 'default', { sessionId });
+            io.to(`run:${runId}`).emit('run:status', { status: 'running', sessionId });
+          } catch (e) {
+            console.warn('[agent-hub] agent:started handler error:', e.message);
+          }
+        });
+      });
+
+      // Bridge streams stdout/stderr chunks
+      socket.on('agent:output', ({ runId, chunk, type }) => {
+        io.to(`run:${runId}`).emit(type === 'stderr' ? 'run:stderr' : 'run:stdout', {
+          chunk,
+          timestamp: new Date().toISOString(),
+        });
+        setImmediate(() => {
+          try {
+            const { appendRunLogChunk } = require('./lib/agent-hub/runs');
+            appendRunLogChunk(runId, chunk, type || 'stdout');
+          } catch (e) {
+            console.warn('[agent-hub] chunk storage error:', e.message);
+          }
+        });
+      });
+
+      // Bridge reports agent completed
+      socket.on('agent:complete', ({ runId, exitCode, costCents }) => {
+        setImmediate(() => {
+          try {
+            const { updateRun, getRun } = require('./lib/agent-hub/runs');
+            const { updateTask } = require('./lib/agent-hub/tasks');
+            const run = getRun(runId, socket.userId || 'default');
+            if (run) {
+              updateRun(runId, run.userId, {
+                status: exitCode === 0 ? 'awaiting_approval' : 'failed',
+                exitCode,
+                costCents: costCents || 0,
+                completedAt: new Date().toISOString(),
+              });
+              updateTask(run.taskId, run.userId, {
+                status: exitCode === 0 ? 'in_review' : 'backlog',
+              });
+              io.to(`run:${runId}`).emit('run:complete', {
+                exitCode,
+                totalCostCents: costCents || 0,
+              });
+            }
+          } catch (e) {
+            console.warn('[agent-hub] agent:complete handler error:', e.message);
+          }
+        });
+      });
+
+      // Bridge reports agent error
+      socket.on('agent:error', ({ runId, error }) => {
+        setImmediate(() => {
+          try {
+            const { updateRun, getRun } = require('./lib/agent-hub/runs');
+            const { updateTask } = require('./lib/agent-hub/tasks');
+            const run = getRun(runId, socket.userId || 'default');
+            if (run) {
+              updateRun(runId, run.userId, {
+                status: 'failed',
+                errorSummary: String(error).slice(0, 500),
+                completedAt: new Date().toISOString(),
+              });
+              updateTask(run.taskId, run.userId, { status: 'backlog' });
+            }
+          } catch (e) {
+            console.warn('[agent-hub] agent:error handler error:', e.message);
+          }
+        });
+      });
+
+      // ─────────────────────────────────────────────────────────────────────
+
       // Handle disconnect
       socket.on('disconnect', () => {
         console.log(`🔌 Bridge disconnected: ${bridgeId}`);
