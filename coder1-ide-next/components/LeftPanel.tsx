@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FolderTree, Search, BookOpen, Network, List, GitBranch } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { FolderTree, Search, BookOpen, Network, List, GitBranch, Cpu } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import SafeFileExplorer from './SafeFileExplorer';
 import CodeSearch from './codebase/CodeSearch';
@@ -16,6 +17,7 @@ const KnowledgeGraph = dynamic(() => import('@/components/graph/KnowledgeGraph')
 const FileEditsPanel = dynamic(() => import('@/components/file-edits/FileEditsPanel'), { ssr: false });
 
 const vaultEnabled = process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true';
+const agentHubEnabled = process.env.NEXT_PUBLIC_ENABLE_AGENT_HUB === 'true';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -27,6 +29,7 @@ interface LeftPanelProps {
 export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, onRootChange }: LeftPanelProps) {
   const [activeTab, setActiveTab] = useState<'explorer' | 'search' | 'notes' | 'files'>('explorer');
   const [showGraph, setShowGraph] = useState(false);
+  const router = useRouter();
   const { openNote, activeNotePath } = useVaultStore();
   const fileEditsCount = useFileEditsStore((s) => s.edits.length);
   
@@ -145,6 +148,16 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
             </span>
           )}
         </button>
+        {agentHubEnabled && (
+          <button
+            className="flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-text-muted hover:text-text-secondary hover:bg-bg-tertiary"
+            onClick={() => router.push('/ide/agent-hub/agents')}
+            title="Agent Hub — Manage autonomous agents and tasks"
+          >
+            <Cpu className="w-3 h-3" />
+            <span>Agents</span>
+          </button>
+        )}
       </div>
       
       {/* Notes graph/list toggle sub-header */}
