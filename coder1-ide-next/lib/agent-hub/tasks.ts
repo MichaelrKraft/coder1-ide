@@ -23,11 +23,15 @@ export interface Task {
   scheduleDay: number | null;
   scheduleEnabled: boolean;
   nextRunAt: string | null;
+  issueNumber: number | null;
+  labels: string[];
+  projectId: string | null;
 }
 
 export type CreateTaskInput = Pick<Task, 'userId' | 'agentId' | 'title'> &
   Partial<Pick<Task, 'description' | 'githubIssueUrl' | 'priority' | 'parentTaskId'>> &
-  Partial<Pick<Task, 'scheduleType' | 'scheduleTime' | 'scheduleDay' | 'scheduleEnabled'>>;
+  Partial<Pick<Task, 'scheduleType' | 'scheduleTime' | 'scheduleDay' | 'scheduleEnabled'>> &
+  Partial<Pick<Task, 'labels' | 'projectId'>>;
 
 export type UpdateTaskInput = Partial<Omit<Task, 'id' | 'userId' | 'createdAt'>>;
 
@@ -53,6 +57,9 @@ interface TaskRow {
   schedule_day: number | null;
   schedule_enabled: number;
   next_run_at: string | null;
+  issue_number: number | null;
+  labels: string;
+  project_id: string | null;
 }
 
 function rowToTask(row: TaskRow): Task {
@@ -78,6 +85,9 @@ function rowToTask(row: TaskRow): Task {
     scheduleDay: row.schedule_day,
     scheduleEnabled: row.schedule_enabled === 1,
     nextRunAt: row.next_run_at,
+    issueNumber: row.issue_number,
+    labels: JSON.parse(row.labels || '[]') as string[],
+    projectId: row.project_id,
   };
 }
 
@@ -91,14 +101,18 @@ export function createTask(input: CreateTaskInput): Task {
     nextRunAt = computeNextRunAt(input.scheduleType, input.scheduleTime, input.scheduleDay ?? null);
   }
 
+  const maxRow = db.prepare('SELECT MAX(issue_number) as maxNum FROM agent_hub_tasks WHERE user_id = ?').get(input.userId) as { maxNum: number | null } | undefined;
+  const issueNumber = (maxRow?.maxNum ?? 0) + 1;
+
   const row = db
     .prepare(
       `INSERT INTO agent_hub_tasks (
         id, user_id, agent_id, parent_task_id, title, description,
         github_issue_url, priority, status, estimated_cost_cents,
         actual_cost_cents, run_ids, modified_files, created_at, started_at, completed_at,
-        schedule_type, schedule_time, schedule_day, schedule_enabled, next_run_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'backlog', NULL, 0, '[]', '[]', ?, NULL, NULL, ?, ?, ?, ?, ?)
+        schedule_type, schedule_time, schedule_day, schedule_enabled, next_run_at,
+        issue_number, labels, project_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'backlog', NULL, 0, '[]', '[]', ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *`
     )
     .get(
@@ -115,7 +129,10 @@ export function createTask(input: CreateTaskInput): Task {
       input.scheduleTime ?? null,
       input.scheduleDay ?? null,
       input.scheduleEnabled ? 1 : 0,
-      nextRunAt
+      nextRunAt,
+      issueNumber,
+      JSON.stringify(input.labels ?? []),
+      input.projectId ?? null
     ) as TaskRow;
 
   return rowToTask(row);
@@ -169,6 +186,9 @@ export function updateTask(id: string, userId: string, input: UpdateTaskInput): 
     scheduleDay: 'schedule_day',
     scheduleEnabled: 'schedule_enabled',
     nextRunAt: 'next_run_at',
+    issueNumber: 'issue_number',
+    labels: 'labels',
+    projectId: 'project_id',
   };
 
   const setClauses: string[] = [];
@@ -180,7 +200,7 @@ export function updateTask(id: string, userId: string, input: UpdateTaskInput): 
       const val = input[jsKey as keyof UpdateTaskInput];
       if (jsKey === 'scheduleEnabled') {
         values.push(val ? 1 : 0);
-      } else if ((jsKey === 'runIds' || jsKey === 'modifiedFiles') && Array.isArray(val)) {
+      } else if ((jsKey === 'runIds' || jsKey === 'modifiedFiles' || jsKey === 'labels') && Array.isArray(val)) {
         values.push(JSON.stringify(val));
       } else {
         values.push(val ?? null);
