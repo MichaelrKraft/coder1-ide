@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTask, updateTask } from '@/lib/agent-hub/tasks';
 import { getAgent } from '@/lib/agent-hub/agents';
-import { createRun, listRunsForTask } from '@/lib/agent-hub/runs';
+import { createRun, listRunsForAgent } from '@/lib/agent-hub/runs';
 import { startAgentRun } from '@/lib/agent-hub/bridge-integration';
 import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 
@@ -42,19 +42,19 @@ export async function POST(request: NextRequest, { params }: Params): Promise<Ne
     );
   }
 
-  // 3c. Pre-run check: monthly budget
+  // 3c. Pre-run check: monthly budget (scoped to all runs for this agent this month)
   if (agent.monthlyBudgetCents > 0) {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const allRuns = listRunsForTask(taskId, userId);
-    const monthlySpent = allRuns
-      .filter((r) => r.startedAt >= monthStart)
-      .reduce((sum, r) => sum + r.costCents, 0);
-    if (monthlySpent >= agent.monthlyBudgetCents) {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const monthStartISO = monthStart.toISOString();
+    const agentRunsThisMonth = listRunsForAgent(agent.id, userId).filter(
+      (r) => r.startedAt >= monthStartISO
+    );
+    const totalSpentThisMonth = agentRunsThisMonth.reduce((sum, r) => sum + r.costCents, 0);
+    if (totalSpentThisMonth >= agent.monthlyBudgetCents) {
       return NextResponse.json(
-        {
-          error: `Monthly budget of $${(agent.monthlyBudgetCents / 100).toFixed(2)} exceeded`,
-        },
+        { error: 'Monthly budget exhausted for this agent.' },
         { status: 402 }
       );
     }
@@ -86,7 +86,10 @@ export async function POST(request: NextRequest, { params }: Params): Promise<Ne
     return NextResponse.json({ error: result.error }, { status: 503 });
   }
 
-  // 6. Update task status
+  // 6. Append run ID to task's run history, then update task status
+  updateTask(taskId, userId, {
+    runIds: [...task.runIds, run.id],
+  });
   updateTask(taskId, userId, {
     status: 'in_progress',
     startedAt: new Date().toISOString(),

@@ -170,3 +170,13 @@ export function listRunsForTask(taskId: string, userId: string): Run[] {
     .all(taskId, userId) as RunRow[];
   return rows.map(rowToRun);
 }
+
+export function listRunsForAgent(agentId: string, userId: string): Run[] {
+  const db = getAgentHubDatabase();
+  const rows = db
+    .prepare(
+      'SELECT * FROM agent_hub_runs WHERE agent_id = ? AND user_id = ? ORDER BY started_at DESC'
+    )
+    .all(agentId, userId) as RunRow[];
+  return rows.map(rowToRun);
+}
