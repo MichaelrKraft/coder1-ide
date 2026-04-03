@@ -50,6 +50,16 @@ export function PreRunChecklist({ task, agent, onConfirm, onCancel }: PreRunChec
       status: agent.status === 'archived' ? 'error' : 'ok',
       detail: agent.status === 'archived' ? 'Agent is archived — cannot run tasks' : undefined,
     },
+    {
+      label: 'Workspace is a git repository',
+      status: 'pending',
+      detail: 'Verified when creating isolated workspace',
+    },
+    {
+      label: 'Creating isolated workspace',
+      status: 'pending',
+      detail: 'Git worktree created on run start',
+    },
     { label: 'Bridge connection', status: 'pending', detail: 'Verified on run start' },
   ];
 

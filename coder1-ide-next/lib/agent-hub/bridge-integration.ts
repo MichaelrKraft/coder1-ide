@@ -6,6 +6,10 @@
  * and will reply with agent:started, agent:output, agent:complete, agent:error.
  */
 
+import { createWorktreeForRun } from './git-tracker';
+import { updateRun } from './runs';
+import { listSubordinates } from './agents';
+
 export interface AgentRunContext {
   runId: string;
   agentId: string;
@@ -48,6 +52,41 @@ function buildInjectedPrompt(ctx: AgentRunContext): string {
     .join('\n');
 }
 
+function buildSupervisorSection(ctx: AgentRunContext): string | null {
+  const subordinates = listSubordinates(ctx.agentId, ctx.userId);
+  if (subordinates.length === 0) return null;
+
+  const serverUrl = process.env.CODER1_SERVER_URL || `http://localhost:${process.env.PORT || 3001}`;
+  const token = process.env.AGENT_HUB_INTERNAL_TOKEN || '';
+
+  if (!token) {
+    console.warn('[bridge-integration] AGENT_HUB_INTERNAL_TOKEN not set — supervisor tools disabled');
+    return null;
+  }
+
+  const teamList = subordinates
+    .slice(0, 10)
+    .map((a) => `- ${a.name} | Role: ${a.role} | agentId: ${a.id} | workspace: ${a.workspacePath}`)
+    .join('\n');
+
+  return [
+    '## Supervisor Tools',
+    'You can delegate work to your team by creating tasks via HTTP:',
+    '',
+    '```',
+    `curl -X POST ${serverUrl}/api/agent-hub/internal/create-task \\`,
+    `  -H "X-Internal-Token: ${token}" \\`,
+    '  -H "Content-Type: application/json" \\',
+    `  -d '{"title":"...","description":"...","agentId":"<ID>","parentTaskId":"${ctx.taskId}","userId":"${ctx.userId}","autoRun":true}'`,
+    '```',
+    '',
+    `YOUR TEAM (${Math.min(subordinates.length, 10)} of ${subordinates.length}):`,
+    teamList,
+    '',
+    'Wait for subordinate tasks to complete before summarizing results.',
+  ].join('\n');
+}
+
 export async function startAgentRun(
   ctx: AgentRunContext
 ): Promise<{ success: true; sessionId: string } | { success: false; error: string }> {
@@ -67,12 +106,32 @@ export async function startAgentRun(
     };
   }
 
-  const injectedPrompt = buildInjectedPrompt(ctx);
+  // Create isolated worktree for this run
+  let worktreePath: string;
+  try {
+    worktreePath = await createWorktreeForRun(ctx.workspacePath, ctx.runId);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: `Failed to create worktree: ${msg}` };
+  }
+
+  // Persist worktree path on the run record
+  updateRun(ctx.runId, ctx.userId, { worktreePath });
+
+  // Build prompt with worktree as the working directory
+  const injectedPrompt = buildInjectedPrompt({ ...ctx, workspacePath: worktreePath });
+
+  // Append supervisor tools if this agent has subordinates
+  const supervisorSection = buildSupervisorSection(ctx);
+
+  const fullPrompt = supervisorSection
+    ? injectedPrompt + '\n\n' + supervisorSection
+    : injectedPrompt;
 
   bridge.socket.emit('agent:start', {
     runId: ctx.runId,
-    workspacePath: ctx.workspacePath,
-    prompt: injectedPrompt,
+    workspacePath: worktreePath,
+    prompt: fullPrompt,
     model: ctx.model,
   });
 

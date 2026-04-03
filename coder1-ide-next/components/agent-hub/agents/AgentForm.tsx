@@ -27,6 +27,7 @@ interface FormState {
   maxConcurrentRuns: string;
   skills: string[];
   systemPrompt: string;
+  supervisorAgentId: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -39,17 +40,20 @@ const EMPTY_FORM: FormState = {
   maxConcurrentRuns: '1',
   skills: [],
   systemPrompt: '',
+  supervisorAgentId: '',
 };
 
 export default function AgentForm({ agentId, onSave, onClose }: Props) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [availableSkills, setAvailableSkills] = useState<SkillInfo[]>([]);
+  const [allAgents, setAllAgents] = useState<Agent[]>([]);
   const [saving, setSaving] = useState(false);
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
 
   useEffect(() => {
     void loadSkills();
+    void loadAllAgents();
     if (agentId) void loadAgent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
@@ -62,6 +66,17 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
       setAvailableSkills(data.skills);
     } catch {
       // Skills list is optional
+    }
+  }
+
+  async function loadAllAgents() {
+    try {
+      const res = await fetch('/api/agent-hub/agents');
+      if (!res.ok) return;
+      const data = await res.json() as { agents: Agent[] };
+      setAllAgents(data.agents);
+    } catch {
+      // Agent list is optional for the dropdown
     }
   }
 
@@ -81,6 +96,7 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
         maxConcurrentRuns: String(a.maxConcurrentRuns),
         skills: a.skills,
         systemPrompt: a.systemPrompt,
+        supervisorAgentId: a.supervisorAgentId ?? '',
       });
     } catch {
       // Fall back to empty form
@@ -150,6 +166,7 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
         maxConcurrentRuns: parseInt(form.maxConcurrentRuns, 10) || 1,
         skills: form.skills,
         systemPrompt: form.systemPrompt.trim(),
+        supervisorAgentId: form.supervisorAgentId || null,
       };
 
       const url = agentId ? `/api/agent-hub/agents/${agentId}` : '/api/agent-hub/agents';
@@ -218,6 +235,21 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
               rows={2}
               className="input-field resize-none"
             />
+          </FormField>
+
+          <FormField label="Reports to (optional)">
+            <select
+              value={form.supervisorAgentId}
+              onChange={e => set('supervisorAgentId', e.target.value)}
+              className="input-field"
+            >
+              <option value="">None (top-level agent)</option>
+              {allAgents
+                .filter(a => a.id !== agentId && a.status !== 'archived')
+                .map(a => (
+                  <option key={a.id} value={a.id}>{a.name} — {a.role}</option>
+                ))}
+            </select>
           </FormField>
 
           <FormField label="Workspace Path" error={errors.workspacePath} required>

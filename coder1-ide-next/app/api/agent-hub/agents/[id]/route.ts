@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
-import { getAgent, updateAgent, archiveAgent, type UpdateAgentInput } from '@/lib/agent-hub/agents';
+import { getAgent, updateAgent, archiveAgent, isSupervisorCyclic, type UpdateAgentInput } from '@/lib/agent-hub/agents';
 import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 
 export const dynamic = 'force-dynamic';
@@ -64,6 +64,18 @@ export async function PATCH(request: NextRequest, context: RouteContext): Promis
   if (typeof body.monthlyBudgetCents === 'number') input.monthlyBudgetCents = body.monthlyBudgetCents;
   if (typeof body.maxConcurrentRuns === 'number') input.maxConcurrentRuns = body.maxConcurrentRuns;
   if (typeof body.status === 'string') input.status = body.status as UpdateAgentInput['status'];
+  if (typeof body.supervisorAgentId === 'string' || body.supervisorAgentId === null) {
+    const newSupervisor = body.supervisorAgentId as string | null;
+    if (newSupervisor) {
+      if (isSupervisorCyclic(id, newSupervisor, userId)) {
+        return NextResponse.json(
+          { error: 'This would create a circular supervisor relationship' },
+          { status: 400 }
+        );
+      }
+    }
+    input.supervisorAgentId = newSupervisor;
+  }
 
   try {
     const agent = updateAgent(id, userId, input);

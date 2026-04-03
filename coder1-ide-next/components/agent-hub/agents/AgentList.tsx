@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, List, GitBranch } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import AgentStatusChip from './AgentStatusChip';
 import AgentForm from './AgentForm';
+
+const AgentHierarchy = dynamic(() => import('./AgentHierarchy'), { ssr: false });
 import type { Agent } from '@/lib/agent-hub/agents';
 
 interface Props {
@@ -27,6 +30,7 @@ export default function AgentList({ onAgentSelect, selectedAgentId }: Props) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'hierarchy'>('list');
 
   async function loadAgents() {
     try {
@@ -59,9 +63,31 @@ export default function AgentList({ onAgentSelect, selectedAgentId }: Props) {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border-default">
-        <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
-          Agents
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
+            Agents
+          </h2>
+          <div className="flex items-center gap-0.5 bg-bg-tertiary rounded p-0.5">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1 rounded transition-colors ${
+                viewMode === 'list' ? 'bg-bg-secondary text-coder1-cyan' : 'text-text-muted hover:text-text-secondary'
+              }`}
+              title="List view"
+            >
+              <List size={12} />
+            </button>
+            <button
+              onClick={() => setViewMode('hierarchy')}
+              className={`p-1 rounded transition-colors ${
+                viewMode === 'hierarchy' ? 'bg-bg-secondary text-coder1-cyan' : 'text-text-muted hover:text-text-secondary'
+              }`}
+              title="Hierarchy view"
+            >
+              <GitBranch size={12} />
+            </button>
+          </div>
+        </div>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-coder1-cyan/10 hover:bg-coder1-cyan/20 text-coder1-cyan text-xs font-medium border border-coder1-cyan/30 transition-colors"
@@ -87,7 +113,7 @@ export default function AgentList({ onAgentSelect, selectedAgentId }: Props) {
               Create agent
             </button>
           </div>
-        ) : (
+        ) : viewMode === 'list' ? (
           <ul className="divide-y divide-border-default">
             {agents.map(agent => (
               <li key={agent.id}>
@@ -113,6 +139,12 @@ export default function AgentList({ onAgentSelect, selectedAgentId }: Props) {
               </li>
             ))}
           </ul>
+        ) : (
+          <AgentHierarchy
+            agents={agents}
+            selectedAgentId={selectedAgentId}
+            onAgentSelect={onAgentSelect}
+          />
         )}
       </div>
 
