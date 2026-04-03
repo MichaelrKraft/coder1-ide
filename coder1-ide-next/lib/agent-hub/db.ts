@@ -103,4 +103,20 @@ function initializeSchema(database: Database.Database): void {
       created_at TEXT NOT NULL
     )
   `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_goals (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      owner_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      due_date TEXT,
+      task_ids TEXT NOT NULL DEFAULT '[]',
+      progress_percent INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
 }

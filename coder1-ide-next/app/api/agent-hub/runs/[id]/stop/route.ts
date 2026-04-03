@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: Params): Promise<Ne
   const agent = getAgent(run.agentId, userId);
   const workspacePath = agent?.workspacePath ?? '';
 
-  const sent = await stopAgentRun(runId, workspacePath);
+  const sent = await stopAgentRun(runId, userId, workspacePath);
 
   if (!sent) {
     return NextResponse.json(

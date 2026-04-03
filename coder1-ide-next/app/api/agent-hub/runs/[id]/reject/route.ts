@@ -7,14 +7,14 @@ import { rejectRun } from '@/lib/agent-hub/git-tracker';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   const userId = getAuthenticatedUserId(request);
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   if (!id) {
     return NextResponse.json({ error: 'id is required' }, { status: 400 });
   }
