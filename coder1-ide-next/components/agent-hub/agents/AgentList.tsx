@@ -12,6 +12,7 @@ import type { Agent } from '@/lib/agent-hub/agents';
 interface Props {
   onAgentSelect: (id: string) => void;
   selectedAgentId: string | null;
+  refreshTrigger?: number;
 }
 
 function relativeTime(iso: string | null): string {
@@ -26,7 +27,7 @@ function relativeTime(iso: string | null): string {
   return `${days}d ago`;
 }
 
-export default function AgentList({ onAgentSelect, selectedAgentId }: Props) {
+export default function AgentList({ onAgentSelect, selectedAgentId, refreshTrigger }: Props) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -47,7 +48,7 @@ export default function AgentList({ onAgentSelect, selectedAgentId }: Props) {
 
   useEffect(() => {
     void loadAgents();
-  }, []);
+  }, [refreshTrigger]);
 
   function handleSave(agent: Agent) {
     setAgents(prev => {

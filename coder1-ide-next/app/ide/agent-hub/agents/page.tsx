@@ -6,6 +6,7 @@ import AgentDetail from '@/components/agent-hub/agents/AgentDetail';
 
 export default function AgentsPage() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   return (
     <div className="flex h-full bg-bg-primary">
@@ -14,6 +15,7 @@ export default function AgentsPage() {
         <AgentList
           onAgentSelect={setSelectedAgentId}
           selectedAgentId={selectedAgentId}
+          refreshTrigger={refreshTrigger}
         />
       </div>
 
@@ -23,6 +25,7 @@ export default function AgentsPage() {
           <AgentDetail
             agentId={selectedAgentId}
             onClose={() => setSelectedAgentId(null)}
+            onAgentUpdated={() => setRefreshTrigger((n) => n + 1)}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-text-muted text-sm">

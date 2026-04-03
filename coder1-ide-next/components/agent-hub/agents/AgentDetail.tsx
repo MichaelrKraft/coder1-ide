@@ -9,9 +9,10 @@ import type { Agent } from '@/lib/agent-hub/agents';
 interface Props {
   agentId: string;
   onClose: () => void;
+  onAgentUpdated?: () => void;
 }
 
-export default function AgentDetail({ agentId, onClose }: Props) {
+export default function AgentDetail({ agentId, onClose, onAgentUpdated }: Props) {
   const [agent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -57,6 +58,7 @@ export default function AgentDetail({ agentId, onClose }: Props) {
   function handleSave(updated: Agent) {
     setAgent(updated);
     setShowEditForm(false);
+    onAgentUpdated?.();
   }
 
   if (loading) {
