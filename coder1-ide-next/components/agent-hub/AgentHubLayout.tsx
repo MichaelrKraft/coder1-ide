@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, ListTodo, Play, Target } from 'lucide-react';
+import { LayoutDashboard, Bot, ListTodo, Play, Target } from 'lucide-react';
 
 const tabs = [
+  { href: '/ide/agent-hub/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/ide/agent-hub/agents', label: 'Agents', icon: Bot },
   { href: '/ide/agent-hub/tasks',  label: 'Tasks',  icon: ListTodo },
   { href: '/ide/agent-hub/runs',   label: 'Runs',   icon: Play },

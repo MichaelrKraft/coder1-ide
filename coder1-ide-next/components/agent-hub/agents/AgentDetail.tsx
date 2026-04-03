@@ -1,10 +1,46 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Edit2, Archive } from 'lucide-react';
+import {
+  X,
+  Edit2,
+  Archive,
+  ChevronRight,
+  Bot,
+  ListPlus,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  DollarSign,
+} from 'lucide-react';
 import AgentStatusChip from './AgentStatusChip';
 import AgentForm from './AgentForm';
 import type { Agent } from '@/lib/agent-hub/agents';
+
+/* ── Types ─────────────────────────────────────────── */
+
+interface AgentStats {
+  latestRun: {
+    id: string;
+    status: string;
+    started_at: string;
+    completed_at: string | null;
+    cost_cents: number;
+    error_summary: string | null;
+  } | null;
+  runActivity: { date: string; succeeded: number; failed: number }[];
+  tasksByPriority: Record<string, number>;
+  tasksByStatus: Record<string, number>;
+  successRate: { total: number; succeeded: number };
+  totalSpentCents: number;
+  recentTasks: {
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+    created_at: string;
+  }[];
+}
 
 interface Props {
   agentId: string;
@@ -12,8 +48,119 @@ interface Props {
   onAgentUpdated?: () => void;
 }
 
-export default function AgentDetail({ agentId, onClose, onAgentUpdated }: Props) {
+/* ── Color maps ────────────────────────────────────── */
+
+const RUN_STATUS_COLORS: Record<string, string> = {
+  running: 'text-amber-400 bg-amber-400/10',
+  approved: 'text-green-400 bg-green-400/10',
+  completed: 'text-green-400 bg-green-400/10',
+  failed: 'text-red-400 bg-red-400/10',
+  awaiting_approval: 'text-blue-400 bg-blue-400/10',
+  rejected: 'text-red-400 bg-red-400/10',
+};
+
+const TASK_STATUS_COLORS: Record<string, string> = {
+  done: 'bg-green-400',
+  in_progress: 'bg-amber-400',
+  in_review: 'bg-blue-400',
+  backlog: 'bg-gray-500',
+  todo: 'bg-gray-400',
+  cancelled: 'bg-red-400',
+};
+
+const PRIORITY_COLORS: Record<string, string> = {
+  high: '#ef4444',
+  medium: '#f59e0b',
+  low: '#22c55e',
+};
+
+/* ── Helpers ───────────────────────────────────────── */
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+/* ── Mini bar chart (pure CSS) ─────────────────────── */
+
+function MiniBarChart({
+  data,
+  title,
+  subtitle,
+}: {
+  data: { label: string; value: number; color: string }[];
+  title: string;
+  subtitle: string;
+}) {
+  const max = Math.max(...data.map((d) => d.value), 1);
+  return (
+    <div className="bg-bg-secondary border border-border-default rounded-lg p-3 flex-1 min-w-0">
+      <p className="text-xs font-semibold text-text-secondary">{title}</p>
+      <p className="text-[10px] text-text-muted mb-3">{subtitle}</p>
+      <div className="flex items-end gap-1 h-16">
+        {data.map((d, i) => (
+          <div
+            key={i}
+            className="flex-1 flex flex-col items-center justify-end h-full"
+          >
+            <div
+              className="w-full rounded-sm min-h-[2px]"
+              style={{
+                height: `${(d.value / max) * 100}%`,
+                backgroundColor: d.color,
+              }}
+              title={`${d.label}: ${d.value}`}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Success rate card ─────────────────────────────── */
+
+function SuccessRateCard({
+  total,
+  succeeded,
+}: {
+  total: number;
+  succeeded: number;
+}) {
+  const pct = total > 0 ? Math.round((succeeded / total) * 100) : 0;
+  return (
+    <div className="bg-bg-secondary border border-border-default rounded-lg p-3 flex-1 min-w-0">
+      <p className="text-xs font-semibold text-text-secondary">Success Rate</p>
+      <p className="text-[10px] text-text-muted mb-3">
+        {succeeded}/{total} runs
+      </p>
+      <div className="flex items-end h-16">
+        <span className="text-2xl font-bold text-green-400">{pct}%</span>
+      </div>
+      <div className="mt-2 h-1.5 bg-bg-tertiary rounded-full overflow-hidden">
+        <div
+          className="h-full bg-green-400 rounded-full transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Main component ────────────────────────────────── */
+
+export default function AgentDetail({
+  agentId,
+  onClose,
+  onAgentUpdated,
+}: Props) {
   const [agent, setAgent] = useState<Agent | null>(null);
+  const [stats, setStats] = useState<AgentStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
@@ -24,7 +171,7 @@ export default function AgentDetail({ agentId, onClose, onAgentUpdated }: Props)
     try {
       const res = await fetch(`/api/agent-hub/agents/${agentId}`);
       if (!res.ok) throw new Error('Not found');
-      const data = await res.json() as { agent: Agent };
+      const data = (await res.json()) as { agent: Agent };
       setAgent(data.agent);
     } catch {
       setAgent(null);
@@ -33,8 +180,21 @@ export default function AgentDetail({ agentId, onClose, onAgentUpdated }: Props)
     }
   }
 
+  async function loadStats() {
+    try {
+      const res = await fetch(`/api/agent-hub/agents/${agentId}/stats`);
+      if (res.ok) {
+        const data = (await res.json()) as AgentStats;
+        setStats(data);
+      }
+    } catch {
+      /* silent */
+    }
+  }
+
   useEffect(() => {
     void loadAgent();
+    void loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
 
@@ -61,6 +221,8 @@ export default function AgentDetail({ agentId, onClose, onAgentUpdated }: Props)
     onAgentUpdated?.();
   }
 
+  /* ── Loading / not-found states ── */
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full text-text-muted text-sm p-8">
@@ -77,108 +239,311 @@ export default function AgentDetail({ agentId, onClose, onAgentUpdated }: Props)
     );
   }
 
+  /* ── Chart data ── */
+
+  const runActivityData = (stats?.runActivity ?? []).map((r) => ({
+    label: r.date,
+    value: r.succeeded,
+    color: '#22c55e',
+  }));
+
+  const priorityData = ['high', 'medium', 'low'].map((p) => ({
+    label: p,
+    value: stats?.tasksByPriority[p] ?? 0,
+    color: PRIORITY_COLORS[p] ?? '#6b7280',
+  }));
+
+  const statusKeys = Object.keys(stats?.tasksByStatus ?? {});
+  const statusData = statusKeys.map((s) => ({
+    label: s,
+    value: stats?.tasksByStatus[s] ?? 0,
+    color:
+      TASK_STATUS_COLORS[s]?.replace('bg-', '').replace('-400', '') ===
+      'green'
+        ? '#22c55e'
+        : TASK_STATUS_COLORS[s]?.includes('amber')
+          ? '#f59e0b'
+          : TASK_STATUS_COLORS[s]?.includes('blue')
+            ? '#3b82f6'
+            : TASK_STATUS_COLORS[s]?.includes('red')
+              ? '#ef4444'
+              : '#6b7280',
+  }));
+
+  const latestRun = stats?.latestRun ?? null;
+
+  /* ── Render ── */
+
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-start justify-between px-5 py-4 border-b border-border-default">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-base font-semibold text-text-secondary truncate">{agent.name}</h2>
-            <AgentStatusChip status={agent.status} />
-          </div>
-          <p className="text-xs text-text-muted">{agent.role}</p>
+      {/* Breadcrumb header */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border-default">
+        <div className="flex items-center gap-1.5 text-xs text-text-muted">
+          <button onClick={onClose} className="hover:text-text-secondary">
+            Agents
+          </button>
+          <ChevronRight size={12} />
+          <span className="text-text-secondary">{agent.name}</span>
         </div>
-        <button onClick={onClose} className="text-text-muted hover:text-text-secondary ml-3">
+        <button
+          onClick={onClose}
+          className="text-text-muted hover:text-text-secondary"
+        >
           <X size={16} />
         </button>
       </div>
 
-      {/* Body */}
+      {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-        {agent.description && (
-          <section>
-            <Label>Description</Label>
-            <p className="text-sm text-text-secondary">{agent.description}</p>
-          </section>
-        )}
+        {/* Agent identity + actions */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-bg-tertiary border border-border-default flex items-center justify-center shrink-0">
+              <Bot size={20} className="text-text-muted" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-semibold text-text-secondary truncate">
+                  {agent.name}
+                </h2>
+                <AgentStatusChip status={agent.status} />
+              </div>
+              <p className="text-xs text-text-muted truncate">{agent.role}</p>
+            </div>
+          </div>
 
-        <section className="grid grid-cols-2 gap-4">
-          <Field label="Model" value={agent.model} />
-          <Field label="Max Concurrent Runs" value={String(agent.maxConcurrentRuns)} />
-          <Field
-            label="Monthly Budget"
-            value={agent.monthlyBudgetCents === 0 ? 'No limit' : `$${(agent.monthlyBudgetCents / 100).toFixed(2)}`}
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 shrink-0 ml-3">
+            <button
+              onClick={() => setShowEditForm(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-bg-tertiary hover:bg-bg-secondary text-text-secondary text-xs font-medium border border-border-default transition-colors"
+            >
+              <Edit2 size={12} />
+              Edit
+            </button>
+            <button
+              onClick={() =>
+                (window.location.href = '/ide/agent-hub/tasks')
+              }
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-bg-tertiary hover:bg-bg-secondary text-text-secondary text-xs font-medium border border-border-default transition-colors"
+            >
+              <ListPlus size={12} />
+              Assign Task
+            </button>
+            <button
+              onClick={() => void handleArchive()}
+              disabled={archiving || agent.status === 'archived'}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                confirmArchive
+                  ? 'bg-red-500/10 text-red-400 border-red-500/40 hover:bg-red-500/20'
+                  : 'bg-bg-tertiary hover:bg-bg-secondary text-text-muted border-border-default'
+              } disabled:opacity-40`}
+            >
+              <Archive size={12} />
+              {confirmArchive ? 'Confirm' : 'Archive'}
+            </button>
+            {confirmArchive && (
+              <button
+                onClick={() => setConfirmArchive(false)}
+                className="text-xs text-text-muted underline"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Stat summary row */}
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard
+            icon={<CheckCircle2 size={14} className="text-green-400" />}
+            label="Total Runs"
+            value={String(stats?.successRate.total ?? 0)}
           />
-          <Field label="Last Run" value={agent.lastRunAt ? new Date(agent.lastRunAt).toLocaleString() : 'Never'} />
-        </section>
+          <StatCard
+            icon={<DollarSign size={14} className="text-amber-400" />}
+            label="Total Spent"
+            value={`$${((stats?.totalSpentCents ?? 0) / 100).toFixed(2)}`}
+          />
+          <StatCard
+            icon={<Clock size={14} className="text-blue-400" />}
+            label="Last Run"
+            value={
+              agent.lastRunAt ? relativeTime(agent.lastRunAt) : 'Never'
+            }
+          />
+        </div>
 
+        {/* Latest run */}
         <section>
-          <Label>Workspace Path</Label>
-          <code className="text-xs text-text-muted bg-bg-tertiary px-2 py-1 rounded block break-all">
-            {agent.workspacePath}
-          </code>
+          <div className="flex items-center justify-between mb-2">
+            <Label>Latest Run</Label>
+            {latestRun && (
+              <span className="text-[10px] text-text-muted hover:text-text-secondary cursor-pointer flex items-center gap-0.5">
+                View details <ChevronRight size={10} />
+              </span>
+            )}
+          </div>
+          {latestRun ? (
+            <div className="bg-bg-secondary border border-border-default rounded-lg p-3">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${RUN_STATUS_COLORS[latestRun.status] ?? 'text-text-muted bg-bg-tertiary'}`}
+                  >
+                    {latestRun.status === 'approved' ||
+                    latestRun.status === 'completed'
+                      ? 'succeeded'
+                      : latestRun.status}
+                  </span>
+                  <span className="text-[10px] text-text-muted font-mono">
+                    {latestRun.id.slice(0, 8)}
+                  </span>
+                </div>
+                <span className="text-[10px] text-text-muted">
+                  {relativeTime(latestRun.started_at)}
+                </span>
+              </div>
+              <p className="text-xs text-text-muted">
+                {latestRun.error_summary
+                  ? latestRun.error_summary
+                  : 'No errors. Clean run.'}
+              </p>
+              {latestRun.cost_cents > 0 && (
+                <p className="text-[10px] text-text-muted mt-1">
+                  Cost: ${(latestRun.cost_cents / 100).toFixed(2)}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="bg-bg-secondary border border-border-default rounded-lg p-3">
+              <p className="text-xs text-text-muted">No runs yet.</p>
+            </div>
+          )}
         </section>
 
-        {agent.skills.length > 0 && (
-          <section>
-            <Label>Skills</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {agent.skills.map(skill => (
-                <span
-                  key={skill}
-                  className="px-2 py-0.5 text-xs rounded-full bg-bg-tertiary text-text-muted border border-border-default"
+        {/* Charts grid */}
+        <section>
+          <Label>Analytics</Label>
+          <div className="grid grid-cols-2 gap-3 mt-1">
+            <MiniBarChart
+              data={
+                runActivityData.length > 0
+                  ? runActivityData
+                  : [{ label: 'No data', value: 0, color: '#22c55e' }]
+              }
+              title="Run Activity"
+              subtitle="Last 14 days"
+            />
+            <SuccessRateCard
+              total={stats?.successRate.total ?? 0}
+              succeeded={stats?.successRate.succeeded ?? 0}
+            />
+            <MiniBarChart
+              data={
+                priorityData.some((d) => d.value > 0)
+                  ? priorityData
+                  : [{ label: 'No tasks', value: 0, color: '#6b7280' }]
+              }
+              title="Tasks by Priority"
+              subtitle="high / medium / low"
+            />
+            <MiniBarChart
+              data={
+                statusData.length > 0
+                  ? statusData
+                  : [{ label: 'No tasks', value: 0, color: '#6b7280' }]
+              }
+              title="Tasks by Status"
+              subtitle={statusKeys.join(' / ') || 'none'}
+            />
+          </div>
+        </section>
+
+        {/* Recent tasks */}
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <Label>Recent Tasks</Label>
+            <button
+              onClick={() =>
+                (window.location.href = '/ide/agent-hub/tasks')
+              }
+              className="text-[10px] text-text-muted hover:text-text-secondary flex items-center gap-0.5"
+            >
+              See all <ChevronRight size={10} />
+            </button>
+          </div>
+          {(stats?.recentTasks ?? []).length > 0 ? (
+            <div className="bg-bg-secondary border border-border-default rounded-lg divide-y divide-border-default">
+              {stats!.recentTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex items-center justify-between px-3 py-2"
                 >
-                  {skill}
-                </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${TASK_STATUS_COLORS[task.status] ?? 'bg-gray-500'}`}
+                    />
+                    <span className="text-xs text-text-secondary truncate">
+                      {task.title}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-text-muted shrink-0 ml-2">
+                    {task.status.replace('_', ' ')}
+                  </span>
+                </div>
               ))}
             </div>
-          </section>
-        )}
-
-        <section>
-          <Label>System Prompt</Label>
-          <pre className="text-xs text-text-muted bg-bg-tertiary px-3 py-2 rounded whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
-            {agent.systemPrompt}
-          </pre>
+          ) : (
+            <div className="bg-bg-secondary border border-border-default rounded-lg p-3">
+              <p className="text-xs text-text-muted">No tasks yet.</p>
+            </div>
+          )}
         </section>
 
+        {/* Agent metadata (collapsed section) */}
         <section>
-          <Label>Created</Label>
-          <p className="text-xs text-text-muted">{new Date(agent.createdAt).toLocaleString()}</p>
+          <Label>Configuration</Label>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Model" value={agent.model} />
+            <Field
+              label="Max Concurrent Runs"
+              value={String(agent.maxConcurrentRuns)}
+            />
+            <Field
+              label="Monthly Budget"
+              value={
+                agent.monthlyBudgetCents === 0
+                  ? 'No limit'
+                  : `$${(agent.monthlyBudgetCents / 100).toFixed(2)}`
+              }
+            />
+            <Field
+              label="Workspace"
+              value={agent.workspacePath}
+            />
+          </div>
+          {agent.skills.length > 0 && (
+            <div className="mt-3">
+              <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">
+                Skills
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {agent.skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="px-2 py-0.5 text-[10px] rounded-full bg-bg-tertiary text-text-muted border border-border-default"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 px-5 py-3 border-t border-border-default">
-        <button
-          onClick={() => setShowEditForm(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-bg-tertiary hover:bg-bg-secondary text-text-secondary text-xs font-medium border border-border-default transition-colors"
-        >
-          <Edit2 size={12} />
-          Edit
-        </button>
-        <button
-          onClick={() => void handleArchive()}
-          disabled={archiving || agent.status === 'archived'}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-            confirmArchive
-              ? 'bg-red-500/10 text-red-400 border-red-500/40 hover:bg-red-500/20'
-              : 'bg-bg-tertiary hover:bg-bg-secondary text-text-muted border-border-default'
-          } disabled:opacity-40`}
-        >
-          <Archive size={12} />
-          {confirmArchive ? 'Confirm Archive' : 'Archive'}
-        </button>
-        {confirmArchive && (
-          <button
-            onClick={() => setConfirmArchive(false)}
-            className="text-xs text-text-muted underline"
-          >
-            Cancel
-          </button>
-        )}
-      </div>
-
+      {/* Edit form modal */}
       {showEditForm && (
         <AgentForm
           agentId={agentId}
@@ -186,6 +551,32 @@ export default function AgentDetail({ agentId, onClose, onAgentUpdated }: Props)
           onClose={() => setShowEditForm(false)}
         />
       )}
+    </div>
+  );
+}
+
+/* ── Shared sub-components ─────────────────────────── */
+
+function StatCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="bg-bg-secondary border border-border-default rounded-lg p-3 flex items-center gap-2.5">
+      <div className="w-7 h-7 rounded-md bg-bg-tertiary flex items-center justify-center shrink-0">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] text-text-muted">{label}</p>
+        <p className="text-sm font-semibold text-text-secondary truncate">
+          {value}
+        </p>
+      </div>
     </div>
   );
 }
@@ -201,8 +592,12 @@ function Label({ children }: { children: React.ReactNode }) {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <Label>{label}</Label>
-      <p className="text-sm text-text-secondary">{value}</p>
+      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-0.5">
+        {label}
+      </p>
+      <p className="text-xs text-text-secondary truncate" title={value}>
+        {value}
+      </p>
     </div>
   );
 }
