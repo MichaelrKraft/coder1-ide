@@ -7,7 +7,7 @@ export interface Run {
   taskId: string;
   userId: string;
   sessionId: string | null;
-  status: 'running' | 'awaiting_approval' | 'approved' | 'failed' | 'cancelled';
+  status: 'running' | 'awaiting_approval' | 'approved' | 'rejected' | 'failed' | 'cancelled';
   model: string;
   inputTokens: number;
   outputTokens: number;
@@ -179,4 +179,47 @@ export function listRunsForAgent(agentId: string, userId: string): Run[] {
     )
     .all(agentId, userId) as RunRow[];
   return rows.map(rowToRun);
+}
+
+export function listRuns(userId: string): Run[] {
+  const db = getAgentHubDatabase();
+  const rows = db
+    .prepare('SELECT * FROM agent_hub_runs WHERE user_id = ? ORDER BY started_at DESC')
+    .all(userId) as RunRow[];
+  return rows.map(rowToRun);
+}
+
+export interface RunLogChunk {
+  id: string;
+  runId: string;
+  chunkIndex: number;
+  content: string;
+  logType: 'stdout' | 'stderr';
+  createdAt: string;
+}
+
+interface RunLogChunkRow {
+  id: string;
+  run_id: string;
+  chunk_index: number;
+  content: string;
+  log_type: string;
+  created_at: string;
+}
+
+export function getRunLogChunks(runId: string): RunLogChunk[] {
+  const db = getAgentHubDatabase();
+  const rows = db
+    .prepare(
+      'SELECT * FROM agent_hub_run_log_chunks WHERE run_id = ? ORDER BY chunk_index ASC'
+    )
+    .all(runId) as RunLogChunkRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    runId: row.run_id,
+    chunkIndex: row.chunk_index,
+    content: row.content,
+    logType: row.log_type as 'stdout' | 'stderr',
+    createdAt: row.created_at,
+  }));
 }
