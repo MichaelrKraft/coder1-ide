@@ -17,7 +17,7 @@ export default function AgentHubLayout({ children }: { children: React.ReactNode
     <div className="h-full flex flex-col">
       <nav className="flex border-b border-border-default shrink-0">
         {tabs.map(({ href, label, icon: Icon }) => {
-          const active = pathname.startsWith(href);
+          const active = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
               key={href}
