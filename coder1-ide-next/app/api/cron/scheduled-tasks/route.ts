@@ -72,8 +72,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       // Fetch agent — skip if archived or missing
       const agent = getAgent(row.agent_id, row.user_id);
-      if (!agent || agent.status === 'archived') {
-        console.warn(`[scheduler] Skipping task ${row.id}: agent ${row.agent_id} unavailable`);
+      if (!agent || agent.status === 'archived' || agent.status === 'paused') {
+        console.warn(`[scheduler] Skipping task ${row.id}: agent ${row.agent_id} unavailable/paused`);
         skipped++;
         continue;
       }

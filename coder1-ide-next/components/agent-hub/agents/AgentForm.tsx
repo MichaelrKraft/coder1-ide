@@ -21,6 +21,7 @@ interface FormState {
   name: string;
   role: string;
   description: string;
+  projectId: string;
   workspacePath: string;
   model: string;
   monthlyBudgetDollars: string;
@@ -28,12 +29,15 @@ interface FormState {
   skills: string[];
   systemPrompt: string;
   supervisorAgentId: string;
+  telegramBotToken: string;
+  telegramChatId: string;
 }
 
 const EMPTY_FORM: FormState = {
   name: '',
   role: '',
   description: '',
+  projectId: '',
   workspacePath: '',
   model: 'claude-sonnet-4-6',
   monthlyBudgetDollars: '0',
@@ -41,6 +45,8 @@ const EMPTY_FORM: FormState = {
   skills: [],
   systemPrompt: '',
   supervisorAgentId: '',
+  telegramBotToken: '',
+  telegramChatId: '',
 };
 
 export default function AgentForm({ agentId, onSave, onClose }: Props) {
@@ -48,12 +54,16 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [availableSkills, setAvailableSkills] = useState<SkillInfo[]>([]);
   const [allAgents, setAllAgents] = useState<Agent[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string; color: string; workspacePath: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
+  const [testingTelegram, setTestingTelegram] = useState(false);
+  const [telegramTestResult, setTelegramTestResult] = useState<string | null>(null);
 
   useEffect(() => {
     void loadSkills();
     void loadAllAgents();
+    void loadProjects();
     if (agentId) void loadAgent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
@@ -80,6 +90,17 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
     }
   }
 
+  async function loadProjects() {
+    try {
+      const res = await fetch('/api/agent-hub/projects');
+      if (!res.ok) return;
+      const data = await res.json() as { projects: { id: string; name: string; color: string; workspacePath: string }[] };
+      setProjects(data.projects);
+    } catch {
+      // Projects list is optional
+    }
+  }
+
   async function loadAgent() {
     try {
       const res = await fetch(`/api/agent-hub/agents/${agentId}`);
@@ -90,6 +111,7 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
         name: a.name,
         role: a.role,
         description: a.description,
+        projectId: a.projectId ?? '',
         workspacePath: a.workspacePath,
         model: a.model,
         monthlyBudgetDollars: String(a.monthlyBudgetCents / 100),
@@ -97,6 +119,8 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
         skills: a.skills,
         systemPrompt: a.systemPrompt,
         supervisorAgentId: a.supervisorAgentId ?? '',
+        telegramBotToken: '',
+        telegramChatId: a.telegramChatId ?? '',
       });
     } catch {
       // Fall back to empty form
@@ -160,6 +184,7 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
         name: form.name.trim(),
         role: form.role.trim(),
         description: form.description.trim(),
+        projectId: form.projectId || null,
         workspacePath: form.workspacePath.trim(),
         model: form.model,
         monthlyBudgetCents: isNaN(budgetCents) ? 0 : budgetCents,
@@ -167,6 +192,8 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
         skills: form.skills,
         systemPrompt: form.systemPrompt.trim(),
         supervisorAgentId: form.supervisorAgentId || null,
+        ...(form.telegramBotToken ? { telegramBotToken: form.telegramBotToken } : {}),
+        ...(form.telegramChatId ? { telegramChatId: form.telegramChatId } : {}),
       };
 
       const url = agentId ? `/api/agent-hub/agents/${agentId}` : '/api/agent-hub/agents';
@@ -249,6 +276,24 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
                 .map(a => (
                   <option key={a.id} value={a.id}>{a.name} — {a.role}</option>
                 ))}
+            </select>
+          </FormField>
+
+          <FormField label="Project (optional)">
+            <select
+              value={form.projectId}
+              onChange={e => {
+                const pid = e.target.value;
+                set('projectId', pid);
+                const project = projects.find(p => p.id === pid);
+                if (project) set('workspacePath', project.workspacePath);
+              }}
+              className="input-field"
+            >
+              <option value="">No project</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
             </select>
           </FormField>
 
@@ -341,6 +386,65 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
               </button>
             </div>
           </FormField>
+
+          {/* Telegram Notifications */}
+          <div className="border-t border-border-default pt-4 mt-2">
+            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
+              Telegram Notifications (optional)
+            </p>
+
+            <div className="space-y-3">
+              <FormField label="Bot Token" error={errors.telegramBotToken}>
+                <input
+                  type="password"
+                  value={form.telegramBotToken}
+                  onChange={e => set('telegramBotToken', e.target.value)}
+                  placeholder="From @BotFather"
+                  className="input-field font-mono text-xs"
+                />
+              </FormField>
+
+              <FormField label="Chat ID">
+                <input
+                  type="text"
+                  value={form.telegramChatId}
+                  onChange={e => set('telegramChatId', e.target.value)}
+                  placeholder="Your chat or group ID"
+                  className="input-field font-mono text-xs"
+                />
+              </FormField>
+
+              {agentId && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setTestingTelegram(true);
+                      setTelegramTestResult(null);
+                      try {
+                        const res = await fetch(`/api/agent-hub/agents/${agentId}/test-telegram`, { method: 'POST' });
+                        const data = await res.json() as { success: boolean; error?: string };
+                        setTelegramTestResult(data.success ? 'Message sent!' : `Failed: ${data.error}`);
+                      } catch {
+                        setTelegramTestResult('Connection error');
+                      } finally {
+                        setTestingTelegram(false);
+                      }
+                    }}
+                    disabled={testingTelegram}
+                    className="text-xs text-coder1-cyan hover:text-coder1-cyan/80 disabled:opacity-50"
+                  >
+                    {testingTelegram ? 'Testing...' : 'Test Connection'}
+                  </button>
+                  {telegramTestResult && (
+                    <span className={`text-xs ${telegramTestResult.startsWith('Message') ? 'text-green-400' : 'text-red-400'}`}>
+                      {telegramTestResult}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
 
           {errors.submit && (
             <p className="text-xs text-red-400">{errors.submit}</p>

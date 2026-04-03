@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 import { getRun, updateRun } from '@/lib/agent-hub/runs';
 import { getTask, updateTask } from '@/lib/agent-hub/tasks';
-import { getAgent } from '@/lib/agent-hub/agents';
+import { getAgent, getAgentRawTelegramToken } from '@/lib/agent-hub/agents';
+import { sendAgentNotification } from '@/lib/agent-hub/telegram';
 import { commitApprovedRun, mergeWorktreeBranch, removeWorktree } from '@/lib/agent-hub/git-tracker';
 
 export async function POST(
@@ -78,6 +79,16 @@ export async function POST(
         status: 'done',
         completedAt: new Date().toISOString(),
       });
+    }
+
+    // Send per-agent Telegram notification if configured (best-effort)
+    if (agent && task && agent.telegramChatId) {
+      const rawToken = getAgentRawTelegramToken(agent.id, userId);
+      if (rawToken) {
+        sendAgentNotification(rawToken, agent.telegramChatId,
+          `Task *${task.title}* has been approved and committed.`
+        ).catch(() => {});
+      }
     }
 
     return NextResponse.json({ success: true });

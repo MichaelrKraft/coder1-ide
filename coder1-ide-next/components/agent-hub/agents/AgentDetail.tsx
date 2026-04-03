@@ -12,6 +12,8 @@ import {
   XCircle,
   Clock,
   DollarSign,
+  Pause,
+  Play,
 } from 'lucide-react';
 import AgentStatusChip from './AgentStatusChip';
 import AgentForm from './AgentForm';
@@ -165,6 +167,7 @@ export default function AgentDetail({
   const [showEditForm, setShowEditForm] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [pausing, setPausing] = useState(false);
 
   async function loadAgent() {
     setLoading(true);
@@ -212,6 +215,28 @@ export default function AgentDetail({
     } finally {
       setArchiving(false);
       setConfirmArchive(false);
+    }
+  }
+
+  async function handlePauseResume() {
+    if (!agent) return;
+    setPausing(true);
+    try {
+      const newStatus = agent.status === 'paused' ? 'idle' : 'paused';
+      const res = await fetch(`/api/agent-hub/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { agent: Agent };
+        setAgent(data.agent);
+        onAgentUpdated?.();
+      }
+    } catch {
+      /* silent */
+    } finally {
+      setPausing(false);
     }
   }
 
@@ -314,6 +339,18 @@ export default function AgentDetail({
 
           {/* Actions */}
           <div className="flex items-center gap-1.5 shrink-0 ml-3">
+            <button
+              onClick={() => void handlePauseResume()}
+              disabled={pausing || agent.status === 'archived'}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                agent.status === 'paused'
+                  ? 'bg-green-500/10 text-green-400 border-green-500/30 hover:bg-green-500/20'
+                  : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+              } disabled:opacity-40`}
+            >
+              {agent.status === 'paused' ? <Play size={12} /> : <Pause size={12} />}
+              {agent.status === 'paused' ? 'Resume' : 'Pause'}
+            </button>
             <button
               onClick={() => setShowEditForm(true)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-bg-tertiary hover:bg-bg-secondary text-text-secondary text-xs font-medium border border-border-default transition-colors"
@@ -522,6 +559,18 @@ export default function AgentDetail({
               label="Workspace"
               value={agent.workspacePath}
             />
+          </div>
+          {/* Telegram Status */}
+          <div className="flex items-center gap-2 text-xs mt-3">
+            <span className="text-text-muted">Telegram:</span>
+            {agent.telegramChatId ? (
+              <span className="text-green-400 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                Connected (Chat: {agent.telegramChatId})
+              </span>
+            ) : (
+              <span className="text-text-muted">Not configured</span>
+            )}
           </div>
           {agent.skills.length > 0 && (
             <div className="mt-3">
