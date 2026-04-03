@@ -1,3 +1,30 @@
+# Agent Hub Phase 1 — SQLite Data Layer + Agents Panel
+
+## Decisions
+- `uuid` v11 available → use `import { v4 as uuidv4 } from 'uuid'`
+- `better-sqlite3` v12.2.0, `@anthropic-ai/sdk` v0.63.0 both available
+- Auth pattern: `verifyAccessToken` + `extractTokenFromHeader` from `lib/auth/jwt`, `auth-token` cookie fallback, dev fallback `'default'`
+- DB pattern: singleton getter `getAgentHubDatabase()`, inline `CREATE TABLE IF NOT EXISTS`, WAL+pragmas
+
+## Todo
+- [x] `lib/agent-hub/db.ts`
+- [x] `lib/agent-hub/agents.ts`
+- [x] `lib/agent-hub/skills-registry.ts`
+- [x] `app/api/agent-hub/agents/route.ts`
+- [x] `app/api/agent-hub/agents/[id]/route.ts`
+- [x] `app/api/agent-hub/agents/generate-prompt/route.ts`
+- [x] `app/api/agent-hub/skills/route.ts`
+- [x] `components/agent-hub/agents/AgentStatusChip.tsx`
+- [x] `components/agent-hub/agents/AgentList.tsx`
+- [x] `components/agent-hub/agents/AgentDetail.tsx`
+- [x] `components/agent-hub/agents/AgentForm.tsx`
+- [x] `app/ide/agent-hub/agents/page.tsx`
+
+## Review
+All 12 files created. Phase 1 complete.
+
+---
+
 # Coder1 IDE: Beta Readiness + Johnny5 Simplification
 
 ## Part 1: Beta Readiness Fixes
