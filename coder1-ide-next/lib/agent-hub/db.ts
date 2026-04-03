@@ -23,9 +23,34 @@ export function getAgentHubDatabase(): Database.Database {
     db.exec('PRAGMA busy_timeout = 5000');
 
     initializeSchema(db);
+    migrateSchema(db);
   }
 
   return db;
+}
+
+function migrateSchema(database: Database.Database): void {
+  const addColumnIfMissing = (table: string, column: string, definition: string) => {
+    try {
+      const cols = database.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+      if (!cols.some(c => c.name === column)) {
+        database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      }
+    } catch { /* table may not exist */ }
+  };
+  addColumnIfMissing('agent_hub_agents', 'supervisor_agent_id', 'TEXT');
+  addColumnIfMissing('agent_hub_agents', 'project_id', 'TEXT');
+  addColumnIfMissing('agent_hub_agents', 'telegram_bot_token', 'TEXT');
+  addColumnIfMissing('agent_hub_agents', 'telegram_chat_id', 'TEXT');
+  addColumnIfMissing('agent_hub_tasks', 'schedule_type', 'TEXT');
+  addColumnIfMissing('agent_hub_tasks', 'schedule_time', 'TEXT');
+  addColumnIfMissing('agent_hub_tasks', 'schedule_day', 'INTEGER');
+  addColumnIfMissing('agent_hub_tasks', 'schedule_enabled', 'INTEGER DEFAULT 0');
+  addColumnIfMissing('agent_hub_tasks', 'next_run_at', 'TEXT');
+  addColumnIfMissing('agent_hub_tasks', 'issue_number', 'INTEGER');
+  addColumnIfMissing('agent_hub_tasks', 'labels', "TEXT DEFAULT '[]'");
+  addColumnIfMissing('agent_hub_tasks', 'project_id', 'TEXT');
+  addColumnIfMissing('agent_hub_runs', 'worktree_path', 'TEXT');
 }
 
 function initializeSchema(database: Database.Database): void {
@@ -87,7 +112,10 @@ function initializeSchema(database: Database.Database): void {
       schedule_time TEXT,
       schedule_day INTEGER,
       schedule_enabled INTEGER NOT NULL DEFAULT 0,
-      next_run_at TEXT
+      next_run_at TEXT,
+      issue_number INTEGER,
+      labels TEXT NOT NULL DEFAULT '[]',
+      project_id TEXT
     )
   `);
 
@@ -122,6 +150,16 @@ function initializeSchema(database: Database.Database): void {
       chunk_index INTEGER NOT NULL,
       content TEXT NOT NULL,
       log_type TEXT NOT NULL DEFAULT 'stdout',
+      created_at TEXT NOT NULL
+    )
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_comments (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      content TEXT NOT NULL,
       created_at TEXT NOT NULL
     )
   `);

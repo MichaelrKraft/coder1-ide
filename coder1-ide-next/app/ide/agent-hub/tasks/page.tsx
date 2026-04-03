@@ -1,9 +1,11 @@
-import { TaskKanban } from '@/components/agent-hub/tasks/TaskKanban';
+'use client';
+
+import IssueList from '@/components/agent-hub/issues/IssueList';
 
 export default function TasksPage() {
   return (
     <div className="h-full flex flex-col">
-      <TaskKanban />
+      <IssueList />
     </div>
   );
 }

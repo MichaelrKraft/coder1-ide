@@ -3,12 +3,13 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
-import { LayoutDashboard, Bot, ListTodo, Play, Target, Plus, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Bot, CircleDot, Calendar, Play, Target, Plus, ChevronDown } from 'lucide-react';
 
 const tabs = [
   { href: '/ide/agent-hub/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/ide/agent-hub/agents', label: 'Agents', icon: Bot },
-  { href: '/ide/agent-hub/tasks',  label: 'Tasks',  icon: ListTodo },
+  { href: '/ide/agent-hub/tasks',  label: 'Issues',  icon: CircleDot },
+  { href: '/ide/agent-hub/calendar', label: 'Calendar', icon: Calendar },
   { href: '/ide/agent-hub/runs',   label: 'Runs',   icon: Play },
   { href: '/ide/agent-hub/goals',  label: 'Goals',  icon: Target },
 ];
