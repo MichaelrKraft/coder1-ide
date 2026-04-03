@@ -68,7 +68,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     taskIds: Array.isArray(body.taskIds)
       ? body.taskIds.filter((t: unknown): t is string => typeof t === 'string')
       : [],
-    progressPercent: typeof body.progressPercent === 'number' ? body.progressPercent : 0,
+    progressPercent: typeof body.progressPercent === 'number' ? Math.max(0, Math.min(100, body.progressPercent)) : 0,
   };
 
   try {

@@ -31,6 +31,7 @@ export default function GoalDetail({ goalId, onDeleted, onUpdated }: Props) {
   });
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -75,8 +76,9 @@ export default function GoalDetail({ goalId, onDeleted, onUpdated }: Props) {
       setGoal(data.goal);
       onUpdated(data.goal);
       setEditing(false);
-    } catch {
-      // Silent fail — user can retry
+      setMutationError(null);
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : 'Failed to save goal');
     } finally {
       setSaving(false);
     }
@@ -88,8 +90,8 @@ export default function GoalDetail({ goalId, onDeleted, onUpdated }: Props) {
       const res = await fetch(`/api/agent-hub/goals/${goal.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete');
       onDeleted();
-    } catch {
-      // Silent fail
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : 'Failed to delete goal');
     }
   }
 
@@ -148,6 +150,11 @@ export default function GoalDetail({ goalId, onDeleted, onUpdated }: Props) {
           )}
         </div>
       </div>
+
+      {/* Mutation error */}
+      {mutationError && (
+        <p className="px-5 py-2 text-red-400 text-sm">{mutationError}</p>
+      )}
 
       {/* Body */}
       <div className="flex-1 px-5 py-4 space-y-5">

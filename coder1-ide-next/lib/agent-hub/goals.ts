@@ -147,7 +147,7 @@ export function updateGoal(
     .prepare(
       `UPDATE agent_hub_goals SET ${setClauses.join(', ')} WHERE id = ? AND user_id = ? RETURNING *`
     )
-    .get(...(values as Parameters<typeof db.prepare>)) as GoalRow | undefined;
+    .get(...(values as unknown[])) as GoalRow | undefined;
 
   return row ? rowToGoal(row) : null;
 }
