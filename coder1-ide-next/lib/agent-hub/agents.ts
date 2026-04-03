@@ -18,6 +18,9 @@ export interface Agent {
   createdAt: string;
   updatedAt: string;
   supervisorAgentId: string | null;
+  projectId: string | null;
+  telegramBotToken: string | null;
+  telegramChatId: string | null;
 }
 
 export type CreateAgentInput = Omit<
@@ -47,6 +50,9 @@ interface AgentRow {
   created_at: string;
   updated_at: string;
   supervisor_agent_id: string | null;
+  project_id: string | null;
+  telegram_bot_token: string | null;
+  telegram_chat_id: string | null;
 }
 
 function rowToAgent(row: AgentRow): Agent {
@@ -67,6 +73,11 @@ function rowToAgent(row: AgentRow): Agent {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     supervisorAgentId: row.supervisor_agent_id,
+    projectId: row.project_id,
+    telegramBotToken: row.telegram_bot_token
+      ? `••••••${row.telegram_bot_token.slice(-4)}`
+      : null,
+    telegramChatId: row.telegram_chat_id,
   };
 }
 
@@ -79,8 +90,9 @@ export function createAgent(input: CreateAgentInput): Agent {
     INSERT INTO agent_hub_agents (
       id, user_id, name, role, description, system_prompt, skills,
       workspace_path, model, monthly_budget_cents, max_concurrent_runs,
-      status, last_run_at, created_at, updated_at, supervisor_agent_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', NULL, ?, ?, ?)
+      status, last_run_at, created_at, updated_at, supervisor_agent_id,
+      project_id, telegram_bot_token, telegram_chat_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', NULL, ?, ?, ?, ?, ?, ?)
     RETURNING *
   `);
 
@@ -98,7 +110,10 @@ export function createAgent(input: CreateAgentInput): Agent {
     input.maxConcurrentRuns,
     now,
     now,
-    input.supervisorAgentId ?? null
+    input.supervisorAgentId ?? null,
+    input.projectId ?? null,
+    input.telegramBotToken ?? null,
+    input.telegramChatId ?? null
   ) as AgentRow;
 
   return rowToAgent(row);
@@ -148,6 +163,9 @@ export function updateAgent(
     status: 'status',
     lastRunAt: 'last_run_at',
     supervisorAgentId: 'supervisor_agent_id',
+    projectId: 'project_id',
+    telegramBotToken: 'telegram_bot_token',
+    telegramChatId: 'telegram_chat_id',
   };
 
   const setClauses: string[] = ['updated_at = ?'];
@@ -210,4 +228,11 @@ export function isSupervisorCyclic(agentId: string, proposedSupervisorId: string
     hops++;
   }
   return false;
+}
+
+export function getAgentRawTelegramToken(id: string, userId: string): string | null {
+  const db = getAgentHubDatabase();
+  const row = db.prepare('SELECT telegram_bot_token FROM agent_hub_agents WHERE id = ? AND user_id = ?')
+    .get(id, userId) as { telegram_bot_token: string | null } | undefined;
+  return row?.telegram_bot_token ?? null;
 }

@@ -1,7 +1,7 @@
 'use client';
 
 interface Props {
-  status: 'idle' | 'running' | 'error' | 'archived';
+  status: 'idle' | 'running' | 'error' | 'archived' | 'paused';
 }
 
 const STATUS_CONFIG = {
@@ -18,6 +18,11 @@ const STATUS_CONFIG = {
   error: {
     label: 'Error',
     className: 'bg-red-500/10 text-red-400 border-red-500/40',
+    pulse: false,
+  },
+  paused: {
+    label: 'Paused',
+    className: 'bg-amber-400/10 text-amber-400 border-amber-400/30',
     pulse: false,
   },
   archived: {

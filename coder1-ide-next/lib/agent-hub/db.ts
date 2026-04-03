@@ -46,7 +46,22 @@ function initializeSchema(database: Database.Database): void {
       last_run_at TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
-      supervisor_agent_id TEXT
+      supervisor_agent_id TEXT,
+      project_id TEXT,
+      telegram_bot_token TEXT,
+      telegram_chat_id TEXT
+    )
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_projects (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT '#00d9ff',
+      workspace_path TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
     )
   `);
 

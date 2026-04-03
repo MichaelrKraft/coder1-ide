@@ -51,6 +51,11 @@ export function PreRunChecklist({ task, agent, onConfirm, onCancel }: PreRunChec
       detail: agent.status === 'archived' ? 'Agent is archived — cannot run tasks' : undefined,
     },
     {
+      label: 'Agent not paused',
+      status: agent.status === 'paused' ? 'error' : 'ok',
+      detail: agent.status === 'paused' ? 'Agent is paused — resume it before running tasks' : undefined,
+    },
+    {
       label: 'Workspace is a git repository',
       status: 'pending',
       detail: 'Verified when creating isolated workspace',

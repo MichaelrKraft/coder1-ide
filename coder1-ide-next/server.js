@@ -2388,6 +2388,17 @@ app.prepare().then(() => {
                 totalCostCents: costCents || 0,
               });
 
+              // Fire per-agent Telegram notification via internal API (best-effort)
+              {
+                const port = process.env.PORT || 3001;
+                const internalToken = process.env.AGENT_HUB_INTERNAL_TOKEN || '';
+                fetch(`http://localhost:${port}/api/agent-hub/runs/${runId}/notify`, {
+                  method: 'POST',
+                  headers: { 'X-Internal-Token': internalToken },
+                }).catch(() => {});
+              }
+
+              // Legacy global Telegram notification (env-based, kept for backward compat)
               if (exitCode === 0) {
                 setImmediate(async () => {
                   try {
@@ -2430,6 +2441,14 @@ app.prepare().then(() => {
                 completedAt: new Date().toISOString(),
               });
               updateTask(run.taskId, run.userId, { status: 'backlog' });
+
+              // Fire per-agent Telegram notification via internal API (best-effort)
+              const port = process.env.PORT || 3001;
+              const internalToken = process.env.AGENT_HUB_INTERNAL_TOKEN || '';
+              fetch(`http://localhost:${port}/api/agent-hub/runs/${runId}/notify`, {
+                method: 'POST',
+                headers: { 'X-Internal-Token': internalToken },
+              }).catch(() => {});
             }
           } catch (e) {
             console.warn('[agent-hub] agent:error handler error:', e.message);
