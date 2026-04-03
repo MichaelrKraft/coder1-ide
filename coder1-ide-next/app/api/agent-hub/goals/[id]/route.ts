@@ -5,7 +5,7 @@ import { checkSubscription } from '@/lib/agent-hub/paywall';
 
 export const dynamic = 'force-dynamic';
 
-type RouteContext = { params: { id: string } };
+type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, { params }: RouteContext): Promise<NextResponse> {
   const userId = getAuthenticatedUserId(request);
@@ -18,8 +18,10 @@ export async function GET(request: NextRequest, { params }: RouteContext): Promi
     return NextResponse.json({ error: 'Goals panel requires a paid plan' }, { status: 402 });
   }
 
+  const { id } = await params;
+
   try {
-    const goal = getGoal(params.id, userId);
+    const goal = getGoal(id, userId);
     if (!goal) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
     }
@@ -40,6 +42,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext): Pro
   if (!subscription.isPaid) {
     return NextResponse.json({ error: 'Goals panel requires a paid plan' }, { status: 402 });
   }
+
+  const { id } = await params;
 
   let body: Record<string, unknown>;
   try {
@@ -65,7 +69,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext): Pro
   }
 
   try {
-    const goal = updateGoal(params.id, userId, updates);
+    const goal = updateGoal(id, userId, updates);
     if (!goal) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
     }
@@ -87,12 +91,14 @@ export async function DELETE(request: NextRequest, { params }: RouteContext): Pr
     return NextResponse.json({ error: 'Goals panel requires a paid plan' }, { status: 402 });
   }
 
+  const { id } = await params;
+
   try {
-    const existing = getGoal(params.id, userId);
+    const existing = getGoal(id, userId);
     if (!existing) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
     }
-    deleteGoal(params.id, userId);
+    deleteGoal(id, userId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[agent-hub] DELETE /goals/[id] error:', error);

@@ -131,10 +131,11 @@ export function updateRun(id: string, userId: string, input: UpdateRunInput): Ru
   if (setClauses.length === 0) return getRun(id, userId);
 
   values.push(id);
+  values.push(userId);
 
   const row = db
     .prepare(
-      `UPDATE agent_hub_runs SET ${setClauses.join(', ')} WHERE id = ? RETURNING *`
+      `UPDATE agent_hub_runs SET ${setClauses.join(', ')} WHERE id = ? AND user_id = ? RETURNING *`
     )
     .get(...(values as Parameters<typeof db.prepare>)) as RunRow | undefined;
 
