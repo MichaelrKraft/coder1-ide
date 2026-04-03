@@ -38,13 +38,18 @@ export async function POST(
       try {
         if (run.worktreePath) {
           await mergeWorktreeBranch(agent.workspacePath, run.id, task.title);
-          await removeWorktree(run.worktreePath);
         } else {
           await commitApprovedRun(agent.workspacePath, task.title, run.id);
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error';
         const isMergeConflict = errorMsg.includes('Merge conflict');
+        // Mark run as failed on merge conflict or git error
+        updateRun(id, userId, {
+          status: 'failed',
+          errorSummary: errorMsg.slice(0, 500),
+          completedAt: new Date().toISOString(),
+        });
         return NextResponse.json(
           { error: `Git operation failed: ${errorMsg}` },
           { status: isMergeConflict ? 409 : 500 }
@@ -52,11 +57,21 @@ export async function POST(
       }
     }
 
+    // Mark approved BEFORE worktree cleanup (cleanup is best-effort)
     updateRun(id, userId, {
       status: 'approved',
       approvalStatus: 'approved',
       approvedBy: userId,
     });
+
+    // Clean up worktree after approval — non-fatal if it fails
+    if (run.worktreePath) {
+      try {
+        await removeWorktree(run.worktreePath);
+      } catch (err) {
+        console.warn(`[approve] Worktree cleanup failed (non-fatal): ${err instanceof Error ? err.message : err}`);
+      }
+    }
 
     if (task) {
       updateTask(run.taskId, userId, {

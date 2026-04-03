@@ -83,7 +83,7 @@ function buildSupervisorSection(ctx: AgentRunContext): string | null {
     `YOUR TEAM (${Math.min(subordinates.length, 10)} of ${subordinates.length}):`,
     teamList,
     '',
-    'Wait for subordinate tasks to complete before summarizing results.',
+    'After creating subtasks, track their IDs. Report their status in your final summary.',
   ].join('\n');
 }
 

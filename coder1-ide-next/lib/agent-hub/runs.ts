@@ -155,6 +155,12 @@ export function appendRunLogChunk(
   const now = new Date().toISOString();
   const id = uuidv4();
 
+  // Redact internal token from log content
+  const internalToken = process.env.AGENT_HUB_INTERNAL_TOKEN;
+  const safeContent = internalToken
+    ? content.replaceAll(internalToken, '[REDACTED]')
+    : content;
+
   // Get next chunk index
   const countRow = db
     .prepare('SELECT COUNT(*) as cnt FROM agent_hub_run_log_chunks WHERE run_id = ?')
@@ -163,7 +169,7 @@ export function appendRunLogChunk(
   db.prepare(
     `INSERT INTO agent_hub_run_log_chunks (id, run_id, chunk_index, content, log_type, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(id, runId, countRow.cnt, content, type, now);
+  ).run(id, runId, countRow.cnt, safeContent, type, now);
 }
 
 export function listRunsForTask(taskId: string, userId: string): Run[] {
