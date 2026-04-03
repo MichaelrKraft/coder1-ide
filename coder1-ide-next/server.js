@@ -5803,6 +5803,23 @@ app.prepare().then(() => {
         console.error('❌ Johnny5 Memory Sources module failed to load:', error.message);
       }
     });
+
+    // ========================================================================
+    // Agent Hub: Scheduled Task Runner (every 60s)
+    // ========================================================================
+    const SCHEDULER_INTERVAL_MS = 60_000;
+    setInterval(() => {
+      const schedulerToken = process.env.AGENT_HUB_INTERNAL_TOKEN || '';
+      if (!schedulerToken) return; // Scheduler disabled if no token
+      fetch(`http://localhost:${port}/api/cron/scheduled-tasks`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${schedulerToken}` },
+      }).catch(err => {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[agent-hub scheduler] Tick failed:', err.message);
+        }
+      });
+    }, SCHEDULER_INTERVAL_MS);
 });
 
 // Helper functions for context capture integration

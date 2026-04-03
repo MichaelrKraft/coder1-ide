@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { Clock } from 'lucide-react';
 import type { Task } from '@/lib/agent-hub/tasks';
 import { PriorityChip } from './PriorityChip';
 
@@ -46,7 +47,12 @@ export function TaskCard({ task, agentName, onClick }: TaskCardProps) {
       <p className="text-xs text-text-muted mt-1 truncate">{agentName}</p>
 
       <div className="flex items-center justify-between mt-2">
-        <PriorityChip priority={task.priority} />
+        <div className="flex items-center gap-1.5">
+          <PriorityChip priority={task.priority} />
+          {task.scheduleEnabled && (
+            <Clock className="w-3 h-3 text-coder1-cyan" title="Scheduled task" />
+          )}
+        </div>
         {task.status === 'in_progress' && elapsed && (
           <span className="text-xs text-coder1-cyan animate-pulse">{elapsed}</span>
         )}

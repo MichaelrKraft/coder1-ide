@@ -3,7 +3,7 @@ import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 import { getRun, updateRun } from '@/lib/agent-hub/runs';
 import { getTask, updateTask } from '@/lib/agent-hub/tasks';
 import { getAgent } from '@/lib/agent-hub/agents';
-import { commitApprovedRun } from '@/lib/agent-hub/git-tracker';
+import { commitApprovedRun, mergeWorktreeBranch, removeWorktree } from '@/lib/agent-hub/git-tracker';
 
 export async function POST(
   request: NextRequest,
@@ -36,11 +36,18 @@ export async function POST(
 
     if (task && agent) {
       try {
-        await commitApprovedRun(agent.workspacePath, task.title, run.id);
+        if (run.worktreePath) {
+          await mergeWorktreeBranch(agent.workspacePath, run.id, task.title);
+          await removeWorktree(run.worktreePath);
+        } else {
+          await commitApprovedRun(agent.workspacePath, task.title, run.id);
+        }
       } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+        const isMergeConflict = errorMsg.includes('Merge conflict');
         return NextResponse.json(
-          { error: `Git commit failed: ${err instanceof Error ? err.message : 'Unknown error'}` },
-          { status: 500 }
+          { error: `Git operation failed: ${errorMsg}` },
+          { status: isMergeConflict ? 409 : 500 }
         );
       }
     }

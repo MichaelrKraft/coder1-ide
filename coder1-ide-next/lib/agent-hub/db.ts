@@ -45,7 +45,8 @@ function initializeSchema(database: Database.Database): void {
       status TEXT NOT NULL DEFAULT 'idle',
       last_run_at TEXT,
       created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
+      updated_at TEXT NOT NULL,
+      supervisor_agent_id TEXT
     )
   `);
 
@@ -66,7 +67,12 @@ function initializeSchema(database: Database.Database): void {
       modified_files TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL,
       started_at TEXT,
-      completed_at TEXT
+      completed_at TEXT,
+      schedule_type TEXT,
+      schedule_time TEXT,
+      schedule_day INTEGER,
+      schedule_enabled INTEGER NOT NULL DEFAULT 0,
+      next_run_at TEXT
     )
   `);
 
@@ -89,7 +95,8 @@ function initializeSchema(database: Database.Database): void {
       approved_by TEXT,
       error_summary TEXT,
       started_at TEXT NOT NULL,
-      completed_at TEXT
+      completed_at TEXT,
+      worktree_path TEXT
     )
   `);
 

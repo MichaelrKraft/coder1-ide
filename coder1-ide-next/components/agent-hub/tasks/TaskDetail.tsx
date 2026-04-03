@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Play, Square, ExternalLink } from 'lucide-react';
+import { X, Play, Square, ExternalLink, Clock } from 'lucide-react';
 import type { Task } from '@/lib/agent-hub/tasks';
 import type { Agent } from '@/lib/agent-hub/agents';
 import { PriorityChip } from './PriorityChip';
@@ -23,9 +23,24 @@ const STATUS_LABELS: Record<Task['status'], string> = {
   cancelled: 'Cancelled',
 };
 
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function scheduleLabel(t: Task): string | null {
+  if (!t.scheduleType) return null;
+  const time = t.scheduleTime ?? '00:00';
+  switch (t.scheduleType) {
+    case 'daily': return `Daily at ${time} UTC`;
+    case 'weekly': return `Weekly on ${DAY_NAMES[t.scheduleDay ?? 0]} at ${time} UTC`;
+    case 'monthly': return `Monthly on day ${t.scheduleDay ?? 1} at ${time} UTC`;
+    case 'once': return `One-time at ${time} UTC`;
+    default: return null;
+  }
+}
+
 export function TaskDetail({ task, agent, onClose, onTaskUpdated }: TaskDetailProps) {
   const [showChecklist, setShowChecklist] = useState(false);
   const [stopping, setStopping] = useState(false);
+  const [togglingSchedule, setTogglingSchedule] = useState(false);
 
   const isRunning = task.status === 'in_progress';
 
@@ -37,6 +52,20 @@ export function TaskDetail({ task, agent, onClose, onTaskUpdated }: TaskDetailPr
     }
     setShowChecklist(false);
     onTaskUpdated();
+  };
+
+  const handleToggleSchedule = async () => {
+    setTogglingSchedule(true);
+    try {
+      await fetch(`/api/agent-hub/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduleEnabled: !task.scheduleEnabled }),
+      });
+      onTaskUpdated();
+    } finally {
+      setTogglingSchedule(false);
+    }
   };
 
   const handleStop = async () => {
@@ -107,6 +136,33 @@ export function TaskDetail({ task, agent, onClose, onTaskUpdated }: TaskDetailPr
               </div>
             )}
           </div>
+
+          {task.scheduleType && (
+            <div className="flex items-center justify-between bg-bg-secondary rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-coder1-cyan" />
+                <div>
+                  <p className="text-xs text-text-primary">{scheduleLabel(task)}</p>
+                  {task.nextRunAt && (
+                    <p className="text-xs text-text-muted">
+                      Next: {new Date(task.nextRunAt).toLocaleString()} UTC
+                    </p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => void handleToggleSchedule()}
+                disabled={togglingSchedule}
+                className={`px-2 py-1 text-xs rounded-md border transition-colors ${
+                  task.scheduleEnabled
+                    ? 'bg-coder1-cyan/10 text-coder1-cyan border-coder1-cyan/30'
+                    : 'bg-bg-tertiary text-text-muted border-border-default'
+                }`}
+              >
+                {task.scheduleEnabled ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+          )}
 
           {task.githubIssueUrl && (
             <a

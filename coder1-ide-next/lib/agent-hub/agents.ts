@@ -17,6 +17,7 @@ export interface Agent {
   lastRunAt: string | null;
   createdAt: string;
   updatedAt: string;
+  supervisorAgentId: string | null;
 }
 
 export type CreateAgentInput = Omit<
@@ -45,6 +46,7 @@ interface AgentRow {
   last_run_at: string | null;
   created_at: string;
   updated_at: string;
+  supervisor_agent_id: string | null;
 }
 
 function rowToAgent(row: AgentRow): Agent {
@@ -64,6 +66,7 @@ function rowToAgent(row: AgentRow): Agent {
     lastRunAt: row.last_run_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    supervisorAgentId: row.supervisor_agent_id,
   };
 }
 
@@ -76,8 +79,8 @@ export function createAgent(input: CreateAgentInput): Agent {
     INSERT INTO agent_hub_agents (
       id, user_id, name, role, description, system_prompt, skills,
       workspace_path, model, monthly_budget_cents, max_concurrent_runs,
-      status, last_run_at, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', NULL, ?, ?)
+      status, last_run_at, created_at, updated_at, supervisor_agent_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', NULL, ?, ?, ?)
     RETURNING *
   `);
 
@@ -94,7 +97,8 @@ export function createAgent(input: CreateAgentInput): Agent {
     input.monthlyBudgetCents,
     input.maxConcurrentRuns,
     now,
-    now
+    now,
+    input.supervisorAgentId ?? null
   ) as AgentRow;
 
   return rowToAgent(row);
@@ -143,6 +147,7 @@ export function updateAgent(
     maxConcurrentRuns: 'max_concurrent_runs',
     status: 'status',
     lastRunAt: 'last_run_at',
+    supervisorAgentId: 'supervisor_agent_id',
   };
 
   const setClauses: string[] = ['updated_at = ?'];
@@ -178,4 +183,31 @@ export function archiveAgent(id: string, userId: string): boolean {
     .run(now, id, userId);
 
   return result.changes > 0;
+}
+
+export function listSubordinates(supervisorId: string, userId: string): Agent[] {
+  const db = getAgentHubDatabase();
+  const rows = db
+    .prepare(
+      'SELECT * FROM agent_hub_agents WHERE supervisor_agent_id = ? AND user_id = ? AND status != ? ORDER BY name ASC'
+    )
+    .all(supervisorId, userId, 'archived') as AgentRow[];
+  return rows.map(rowToAgent);
+}
+
+export function isSupervisorCyclic(agentId: string, proposedSupervisorId: string, userId: string): boolean {
+  const db = getAgentHubDatabase();
+  let currentId: string | null = proposedSupervisorId;
+  let hops = 0;
+  const MAX_HOPS = 20;
+
+  while (currentId && hops < MAX_HOPS) {
+    if (currentId === agentId) return true;
+    const row = db
+      .prepare('SELECT supervisor_agent_id FROM agent_hub_agents WHERE id = ? AND user_id = ?')
+      .get(currentId, userId) as { supervisor_agent_id: string | null } | undefined;
+    currentId = row?.supervisor_agent_id ?? null;
+    hops++;
+  }
+  return false;
 }

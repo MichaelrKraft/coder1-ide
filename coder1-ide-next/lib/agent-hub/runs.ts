@@ -20,6 +20,7 @@ export interface Run {
   errorSummary: string | null;
   startedAt: string;
   completedAt: string | null;
+  worktreePath: string | null;
 }
 
 export type CreateRunInput = Pick<Run, 'agentId' | 'taskId' | 'userId' | 'model'>;
@@ -44,6 +45,7 @@ interface RunRow {
   error_summary: string | null;
   started_at: string;
   completed_at: string | null;
+  worktree_path: string | null;
 }
 
 function rowToRun(row: RunRow): Run {
@@ -66,6 +68,7 @@ function rowToRun(row: RunRow): Run {
     errorSummary: row.error_summary,
     startedAt: row.started_at,
     completedAt: row.completed_at,
+    worktreePath: row.worktree_path,
   };
 }
 
@@ -80,8 +83,8 @@ export function createRun(input: CreateRunInput): Run {
         id, agent_id, task_id, user_id, session_id, status, model,
         input_tokens, output_tokens, cache_read_tokens, cost_cents,
         exit_code, git_diff, approval_status, approved_by, error_summary,
-        started_at, completed_at
-      ) VALUES (?, ?, ?, ?, NULL, 'running', ?, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, ?, NULL)
+        started_at, completed_at, worktree_path
+      ) VALUES (?, ?, ?, ?, NULL, 'running', ?, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, ?, NULL, NULL)
       RETURNING *`
     )
     .get(id, input.agentId, input.taskId, input.userId, input.model, now) as RunRow;
@@ -116,6 +119,7 @@ export function updateRun(id: string, userId: string, input: UpdateRunInput): Ru
     approvedBy: 'approved_by',
     errorSummary: 'error_summary',
     completedAt: 'completed_at',
+    worktreePath: 'worktree_path',
   };
 
   const setClauses: string[] = [];

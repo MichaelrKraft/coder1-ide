@@ -24,6 +24,12 @@ export function TaskForm({ agents, onClose, onCreated }: TaskFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Schedule state
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduleType, setScheduleType] = useState<'daily' | 'weekly' | 'monthly' | 'once'>('daily');
+  const [scheduleTime, setScheduleTime] = useState('02:00');
+  const [scheduleDay, setScheduleDay] = useState(1);
+
   // PRD decompose state
   const [showPrd, setShowPrd] = useState(false);
   const [prdText, setPrdText] = useState('');
@@ -72,7 +78,18 @@ export function TaskForm({ agents, onClose, onCreated }: TaskFormProps) {
         const res = await fetch('/api/agent-hub/tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: title.trim(), description, agentId, priority }),
+          body: JSON.stringify({
+            title: title.trim(),
+            description,
+            agentId,
+            priority,
+            ...(scheduleEnabled ? {
+              scheduleType,
+              scheduleTime,
+              scheduleDay: scheduleType === 'weekly' || scheduleType === 'monthly' ? scheduleDay : null,
+              scheduleEnabled: true,
+            } : {}),
+          }),
         });
         const data = await res.json() as { error?: string };
         if (!res.ok) throw new Error(data.error ?? 'Failed to create task');
@@ -201,6 +218,82 @@ export function TaskForm({ agents, onClose, onCreated }: TaskFormProps) {
                   <option value="high">High</option>
                 </select>
               </div>
+            </div>
+            {/* Schedule section */}
+            <div className="border-t border-border-default pt-3 mt-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={scheduleEnabled}
+                  onChange={(e) => setScheduleEnabled(e.target.checked)}
+                  className="accent-coder1-cyan"
+                />
+                <span className="text-xs text-text-muted">Enable recurring schedule</span>
+              </label>
+
+              {scheduleEnabled && (
+                <div className="mt-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-text-muted block mb-1">Frequency</label>
+                      <select
+                        value={scheduleType}
+                        onChange={(e) => setScheduleType(e.target.value as typeof scheduleType)}
+                        className="w-full bg-bg-secondary border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-coder1-cyan/50"
+                      >
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="once">One-time</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-text-muted block mb-1">Time (UTC)</label>
+                      <input
+                        type="time"
+                        value={scheduleTime}
+                        onChange={(e) => setScheduleTime(e.target.value)}
+                        className="w-full bg-bg-secondary border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-coder1-cyan/50"
+                      />
+                    </div>
+                  </div>
+
+                  {scheduleType === 'weekly' && (
+                    <div>
+                      <label className="text-xs text-text-muted block mb-1">Day of week</label>
+                      <select
+                        value={scheduleDay}
+                        onChange={(e) => setScheduleDay(Number(e.target.value))}
+                        className="w-full bg-bg-secondary border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-coder1-cyan/50"
+                      >
+                        <option value={0}>Sunday</option>
+                        <option value={1}>Monday</option>
+                        <option value={2}>Tuesday</option>
+                        <option value={3}>Wednesday</option>
+                        <option value={4}>Thursday</option>
+                        <option value={5}>Friday</option>
+                        <option value={6}>Saturday</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {scheduleType === 'monthly' && (
+                    <div>
+                      <label className="text-xs text-text-muted block mb-1">Day of month</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={31}
+                        value={scheduleDay}
+                        onChange={(e) => setScheduleDay(Number(e.target.value))}
+                        className="w-full bg-bg-secondary border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-coder1-cyan/50"
+                      />
+                    </div>
+                  )}
+
+                  <p className="text-xs text-text-muted">All times are in UTC.</p>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -18,10 +18,16 @@ export interface Task {
   createdAt: string;
   startedAt: string | null;
   completedAt: string | null;
+  scheduleType: 'daily' | 'weekly' | 'monthly' | 'once' | null;
+  scheduleTime: string | null;
+  scheduleDay: number | null;
+  scheduleEnabled: boolean;
+  nextRunAt: string | null;
 }
 
 export type CreateTaskInput = Pick<Task, 'userId' | 'agentId' | 'title'> &
-  Partial<Pick<Task, 'description' | 'githubIssueUrl' | 'priority' | 'parentTaskId'>>;
+  Partial<Pick<Task, 'description' | 'githubIssueUrl' | 'priority' | 'parentTaskId'>> &
+  Partial<Pick<Task, 'scheduleType' | 'scheduleTime' | 'scheduleDay' | 'scheduleEnabled'>>;
 
 export type UpdateTaskInput = Partial<Omit<Task, 'id' | 'userId' | 'createdAt'>>;
 
@@ -42,6 +48,11 @@ interface TaskRow {
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
+  schedule_type: string | null;
+  schedule_time: string | null;
+  schedule_day: number | null;
+  schedule_enabled: number;
+  next_run_at: string | null;
 }
 
 function rowToTask(row: TaskRow): Task {
@@ -62,6 +73,11 @@ function rowToTask(row: TaskRow): Task {
     createdAt: row.created_at,
     startedAt: row.started_at,
     completedAt: row.completed_at,
+    scheduleType: row.schedule_type as Task['scheduleType'],
+    scheduleTime: row.schedule_time,
+    scheduleDay: row.schedule_day,
+    scheduleEnabled: row.schedule_enabled === 1,
+    nextRunAt: row.next_run_at,
   };
 }
 
@@ -70,13 +86,19 @@ export function createTask(input: CreateTaskInput): Task {
   const now = new Date().toISOString();
   const id = uuidv4();
 
+  let nextRunAt: string | null = null;
+  if (input.scheduleType && input.scheduleTime && input.scheduleEnabled) {
+    nextRunAt = computeNextRunAt(input.scheduleType, input.scheduleTime, input.scheduleDay ?? null);
+  }
+
   const row = db
     .prepare(
       `INSERT INTO agent_hub_tasks (
         id, user_id, agent_id, parent_task_id, title, description,
         github_issue_url, priority, status, estimated_cost_cents,
-        actual_cost_cents, run_ids, modified_files, created_at, started_at, completed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'backlog', NULL, 0, '[]', '[]', ?, NULL, NULL)
+        actual_cost_cents, run_ids, modified_files, created_at, started_at, completed_at,
+        schedule_type, schedule_time, schedule_day, schedule_enabled, next_run_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'backlog', NULL, 0, '[]', '[]', ?, NULL, NULL, ?, ?, ?, ?, ?)
       RETURNING *`
     )
     .get(
@@ -88,7 +110,12 @@ export function createTask(input: CreateTaskInput): Task {
       input.description ?? null,
       input.githubIssueUrl ?? null,
       input.priority ?? 'medium',
-      now
+      now,
+      input.scheduleType ?? null,
+      input.scheduleTime ?? null,
+      input.scheduleDay ?? null,
+      input.scheduleEnabled ? 1 : 0,
+      nextRunAt
     ) as TaskRow;
 
   return rowToTask(row);
@@ -137,6 +164,11 @@ export function updateTask(id: string, userId: string, input: UpdateTaskInput): 
     modifiedFiles: 'modified_files',
     startedAt: 'started_at',
     completedAt: 'completed_at',
+    scheduleType: 'schedule_type',
+    scheduleTime: 'schedule_time',
+    scheduleDay: 'schedule_day',
+    scheduleEnabled: 'schedule_enabled',
+    nextRunAt: 'next_run_at',
   };
 
   const setClauses: string[] = [];
@@ -146,7 +178,9 @@ export function updateTask(id: string, userId: string, input: UpdateTaskInput): 
     if (jsKey in input) {
       setClauses.push(`${dbCol} = ?`);
       const val = input[jsKey as keyof UpdateTaskInput];
-      if ((jsKey === 'runIds' || jsKey === 'modifiedFiles') && Array.isArray(val)) {
+      if (jsKey === 'scheduleEnabled') {
+        values.push(val ? 1 : 0);
+      } else if ((jsKey === 'runIds' || jsKey === 'modifiedFiles') && Array.isArray(val)) {
         values.push(JSON.stringify(val));
       } else {
         values.push(val ?? null);
@@ -176,4 +210,51 @@ export function cancelTask(id: string, userId: string): boolean {
     )
     .run(now, id, userId);
   return result.changes > 0;
+}
+
+export function computeNextRunAt(
+  scheduleType: 'daily' | 'weekly' | 'monthly' | 'once',
+  scheduleTime: string,
+  scheduleDay: number | null,
+  after?: Date
+): string {
+  const now = after ?? new Date();
+  const [hours, minutes] = scheduleTime.split(':').map(Number);
+
+  if (scheduleType === 'daily') {
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hours, minutes, 0, 0));
+    if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+    return next.toISOString();
+  }
+
+  if (scheduleType === 'weekly') {
+    const targetDay = scheduleDay ?? 0;
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hours, minutes, 0, 0));
+    const currentDay = next.getUTCDay();
+    let daysUntilTarget = targetDay - currentDay;
+    if (daysUntilTarget < 0 || (daysUntilTarget === 0 && next <= now)) {
+      daysUntilTarget += 7;
+    }
+    next.setUTCDate(next.getUTCDate() + daysUntilTarget);
+    if (next <= now) next.setUTCDate(next.getUTCDate() + 7);
+    return next.toISOString();
+  }
+
+  if (scheduleType === 'monthly') {
+    const targetDay = scheduleDay ?? 1;
+    let next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, hours, minutes, 0, 0));
+    const lastDay = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
+    next.setUTCDate(Math.min(targetDay, lastDay));
+    if (next <= now) {
+      next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, hours, minutes, 0, 0));
+      const nextLastDay = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
+      next.setUTCDate(Math.min(targetDay, nextLastDay));
+    }
+    return next.toISOString();
+  }
+
+  // 'once' -- return the time today or tomorrow
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hours, minutes, 0, 0));
+  if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString();
 }

@@ -3,7 +3,7 @@ import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 import { getRun, updateRun } from '@/lib/agent-hub/runs';
 import { getTask, updateTask } from '@/lib/agent-hub/tasks';
 import { getAgent } from '@/lib/agent-hub/agents';
-import { rejectRun } from '@/lib/agent-hub/git-tracker';
+import { rejectRun, removeWorktree } from '@/lib/agent-hub/git-tracker';
 
 export async function POST(
   request: NextRequest,
@@ -35,7 +35,11 @@ export async function POST(
     const agent = getAgent(run.agentId, userId);
 
     if (agent) {
-      await rejectRun(agent.workspacePath);
+      if (run.worktreePath) {
+        await removeWorktree(run.worktreePath);
+      } else {
+        await rejectRun(agent.workspacePath);
+      }
     }
 
     updateRun(id, userId, {
