@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext): Pro
     updates.status = body.status as UpdateGoalInput['status'];
   }
   if (typeof body.dueDate === 'string') updates.dueDate = body.dueDate;
-  if (typeof body.progressPercent === 'number') updates.progressPercent = body.progressPercent;
+  if (typeof body.progressPercent === 'number') updates.progressPercent = Math.max(0, Math.min(100, body.progressPercent));
   if (Array.isArray(body.taskIds)) {
     updates.taskIds = body.taskIds.filter((t: unknown): t is string => typeof t === 'string');
   }

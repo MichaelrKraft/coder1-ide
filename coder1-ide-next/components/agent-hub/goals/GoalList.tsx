@@ -64,9 +64,10 @@ export default function GoalList({ onGoalSelect, selectedGoalId }: Props) {
       setGoals((prev) => [data.goal, ...prev]);
       setForm({ title: '', description: '' });
       setShowForm(false);
+      setError(null);
       onGoalSelect(data.goal.id);
-    } catch {
-      // Silent fail — user can retry
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create goal');
     } finally {
       setSubmitting(false);
     }
@@ -109,6 +110,9 @@ export default function GoalList({ onGoalSelect, selectedGoalId }: Props) {
             placeholder="Description (optional)"
             className="w-full mb-2 px-3 py-1.5 rounded bg-bg-primary border border-border-default text-xs text-text-secondary placeholder-text-muted focus:outline-none focus:border-coder1-cyan/50"
           />
+          {error && showForm && (
+            <p className="text-red-400 text-xs mb-2">{error}</p>
+          )}
           <div className="flex gap-2">
             <button
               type="submit"

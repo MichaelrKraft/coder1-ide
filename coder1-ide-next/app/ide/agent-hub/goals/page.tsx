@@ -22,7 +22,7 @@ export default function GoalsPage() {
           setIsPaid(true);
         }
       })
-      .catch(() => setIsPaid(true)); // Optimistic fallback
+      .catch(() => setIsPaid(false)); // Fail closed — deny access on error
   }, []);
 
   function handleGoalUpdated(goal: Goal) {
