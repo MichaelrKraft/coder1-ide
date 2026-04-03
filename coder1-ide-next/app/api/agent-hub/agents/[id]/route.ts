@@ -1,31 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+import path from 'path';
 import { getAgent, updateAgent, archiveAgent, type UpdateAgentInput } from '@/lib/agent-hub/agents';
+import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 
 export const dynamic = 'force-dynamic';
-
-function getAuthenticatedUserId(request: NextRequest): string | null {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader) {
-    const token = extractTokenFromHeader(authHeader);
-    if (token) {
-      const decoded = verifyAccessToken(token);
-      if (decoded) return decoded.userId;
-    }
-  }
-
-  const cookieToken = request.cookies.get('auth-token')?.value;
-  if (cookieToken) {
-    const decoded = verifyAccessToken(cookieToken);
-    if (decoded) return decoded.userId;
-  }
-
-  if (process.env.NODE_ENV === 'development') {
-    return 'default';
-  }
-
-  return null;
-}
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -73,8 +51,13 @@ export async function PATCH(request: NextRequest, context: RouteContext): Promis
   if (typeof body.role === 'string') input.role = body.role;
   if (typeof body.description === 'string') input.description = body.description;
   if (typeof body.systemPrompt === 'string') input.systemPrompt = body.systemPrompt;
-  if (Array.isArray(body.skills)) input.skills = body.skills as string[];
-  if (typeof body.workspacePath === 'string') input.workspacePath = body.workspacePath;
+  if (Array.isArray(body.skills)) input.skills = body.skills.filter((s: unknown): s is string => typeof s === 'string');
+  if (typeof body.workspacePath === 'string') {
+    if (!path.isAbsolute(body.workspacePath)) {
+      return NextResponse.json({ error: 'workspacePath must be an absolute path' }, { status: 400 });
+    }
+    input.workspacePath = body.workspacePath;
+  }
   if (typeof body.model === 'string' && allowedModels.includes(body.model)) {
     input.model = body.model as UpdateAgentInput['model'];
   }
