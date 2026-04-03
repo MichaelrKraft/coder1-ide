@@ -1,31 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+import path from 'path';
 import { createAgent, listAgents, type CreateAgentInput } from '@/lib/agent-hub/agents';
+import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 
 export const dynamic = 'force-dynamic';
-
-function getAuthenticatedUserId(request: NextRequest): string | null {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader) {
-    const token = extractTokenFromHeader(authHeader);
-    if (token) {
-      const decoded = verifyAccessToken(token);
-      if (decoded) return decoded.userId;
-    }
-  }
-
-  const cookieToken = request.cookies.get('auth-token')?.value;
-  if (cookieToken) {
-    const decoded = verifyAccessToken(cookieToken);
-    if (decoded) return decoded.userId;
-  }
-
-  if (process.env.NODE_ENV === 'development') {
-    return 'default';
-  }
-
-  return null;
-}
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const userId = getAuthenticatedUserId(request);
@@ -66,6 +44,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!workspacePath || typeof workspacePath !== 'string') {
     return NextResponse.json({ error: 'workspacePath is required' }, { status: 400 });
   }
+  if (!path.isAbsolute(workspacePath)) {
+    return NextResponse.json({ error: 'workspacePath must be an absolute path' }, { status: 400 });
+  }
   if (!systemPrompt || typeof systemPrompt !== 'string') {
     return NextResponse.json({ error: 'systemPrompt is required' }, { status: 400 });
   }
@@ -81,7 +62,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     role: role as string,
     description: typeof body.description === 'string' ? body.description : '',
     systemPrompt: systemPrompt as string,
-    skills: Array.isArray(body.skills) ? (body.skills as string[]) : [],
+    skills: Array.isArray(body.skills) ? body.skills.filter((s: unknown): s is string => typeof s === 'string') : [],
     workspacePath: workspacePath as string,
     model: resolvedModel,
     monthlyBudgetCents:

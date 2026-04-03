@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 
 let db: Database.Database | null = null;
 
@@ -10,6 +11,8 @@ export function getAgentHubDatabase(): Database.Database {
         ? '/data'
         : path.join(process.cwd(), 'data');
     const dbPath = path.join(dataDir, 'agent-hub.db');
+
+    fs.mkdirSync(dataDir, { recursive: true });
 
     db = new Database(dbPath, {
       verbose: process.env.NODE_ENV === 'development' ? console.log : undefined,

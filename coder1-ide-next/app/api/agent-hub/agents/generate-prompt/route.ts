@@ -1,31 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 import Anthropic from '@anthropic-ai/sdk';
+import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 
 export const dynamic = 'force-dynamic';
-
-function getAuthenticatedUserId(request: NextRequest): string | null {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader) {
-    const token = extractTokenFromHeader(authHeader);
-    if (token) {
-      const decoded = verifyAccessToken(token);
-      if (decoded) return decoded.userId;
-    }
-  }
-
-  const cookieToken = request.cookies.get('auth-token')?.value;
-  if (cookieToken) {
-    const decoded = verifyAccessToken(cookieToken);
-    if (decoded) return decoded.userId;
-  }
-
-  if (process.env.NODE_ENV === 'development') {
-    return 'default';
-  }
-
-  return null;
-}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const userId = getAuthenticatedUserId(request);
