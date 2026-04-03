@@ -41,7 +41,6 @@ export async function POST(
     updateRun(id, userId, {
       status: 'rejected',
       approvalStatus: 'rejected',
-      approvedBy: userId,
     });
 
     if (task) {
