@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAgentHubDatabase } from '@/lib/agent-hub/db';
 import { getAgent } from '@/lib/agent-hub/agents';
-import { updateTask, computeNextRunAt } from '@/lib/agent-hub/tasks';
+import { getTask, updateTask, computeNextRunAt } from '@/lib/agent-hub/tasks';
 import { createRun } from '@/lib/agent-hub/runs';
 import { startAgentRun } from '@/lib/agent-hub/bridge-integration';
 
@@ -109,6 +109,33 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
       }
 
+      // Atomically claim this task by advancing next_run_at
+      // If another process already claimed it, this returns 0 changes
+      const claimed = db
+        .prepare(
+          `UPDATE agent_hub_tasks SET next_run_at = ? WHERE id = ? AND next_run_at = ?`
+        )
+        .run(
+          row.schedule_type === 'once' ? null : computeNextRunAt(
+            row.schedule_type as 'daily' | 'weekly' | 'monthly',
+            row.schedule_time,
+            row.schedule_day,
+            now
+          ),
+          row.id,
+          row.next_run_at  // Only succeeds if no other process changed it
+        );
+
+      if (claimed.changes === 0) {
+        skipped++;
+        continue; // Another scheduler instance already claimed this
+      }
+
+      // For 'once' schedules, also disable
+      if (row.schedule_type === 'once') {
+        db.prepare('UPDATE agent_hub_tasks SET schedule_enabled = 0 WHERE id = ?').run(row.id);
+      }
+
       // Fire the run
       const run = createRun({
         agentId: row.agent_id,
@@ -134,26 +161,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         console.warn(`[scheduler] Run start failed for task ${row.id}: ${result.error}`);
       }
 
-      // Update task: set status to in_progress and compute next run
-      const updates: Record<string, unknown> = {
-        status: 'in_progress' as const,
+      // Fetch current task to append to runIds (not overwrite)
+      const currentTask = getTask(row.id, row.user_id);
+      const updatedRunIds = currentTask ? [...currentTask.runIds, run.id] : [run.id];
+
+      // nextRunAt and scheduleEnabled already handled by atomic claim above
+      updateTask(row.id, row.user_id, {
+        status: 'in_progress',
         startedAt: nowIso,
-        runIds: [run.id],
-      };
-
-      if (row.schedule_type === 'once') {
-        updates.scheduleEnabled = false;
-        updates.nextRunAt = null;
-      } else {
-        updates.nextRunAt = computeNextRunAt(
-          row.schedule_type as 'daily' | 'weekly' | 'monthly',
-          row.schedule_time,
-          row.schedule_day,
-          now
-        );
-      }
-
-      updateTask(row.id, row.user_id, updates);
+        runIds: updatedRunIds,
+      });
       fired++;
     }
 
