@@ -69,6 +69,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       typeof body.monthlyBudgetCents === 'number' ? body.monthlyBudgetCents : 0,
     maxConcurrentRuns:
       typeof body.maxConcurrentRuns === 'number' ? body.maxConcurrentRuns : 1,
+    supervisorAgentId:
+      typeof body.supervisorAgentId === 'string' && body.supervisorAgentId
+        ? body.supervisorAgentId
+        : null,
   };
 
   try {
