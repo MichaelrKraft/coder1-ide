@@ -2312,6 +2312,14 @@ app.prepare().then(() => {
       };
       bridgeManager.on('bridge:disconnected', _handleBridgeDisconnected);
 
+      // ── Agent Hub: run room join/leave ───────────────────────────────────
+      socket.on('run:join', ({ runId }) => {
+        if (runId) socket.join(`run:${runId}`);
+      });
+      socket.on('run:leave', ({ runId }) => {
+        if (runId) socket.leave(`run:${runId}`);
+      });
+
       // ── Agent Hub: bridge-side execution events ──────────────────────────
 
       // Bridge confirms agent process started
@@ -2379,6 +2387,23 @@ app.prepare().then(() => {
                 exitCode,
                 totalCostCents: costCents || 0,
               });
+
+              if (exitCode === 0) {
+                setImmediate(async () => {
+                  try {
+                    const { notifyRunComplete } = require('./lib/agent-hub/telegram-notifications');
+                    const { getAgent } = require('./lib/agent-hub/agents');
+                    const { getTask } = require('./lib/agent-hub/tasks');
+                    const agent = getAgent(run.agentId, run.userId);
+                    const task = getTask(run.taskId, run.userId);
+                    if (agent && task) {
+                      await notifyRunComplete(agent.name, task.title, runId);
+                    }
+                  } catch (e) {
+                    console.warn('[agent-hub] telegram notification error:', e.message);
+                  }
+                });
+              }
             }
           } catch (e) {
             console.warn('[agent-hub] agent:complete handler error:', e.message);
