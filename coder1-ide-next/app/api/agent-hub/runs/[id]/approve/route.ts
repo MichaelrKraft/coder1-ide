@@ -35,7 +35,14 @@ export async function POST(
     const agent = getAgent(run.agentId, userId);
 
     if (task && agent) {
-      await commitApprovedRun(agent.workspacePath, task.title, run.id);
+      try {
+        await commitApprovedRun(agent.workspacePath, task.title, run.id);
+      } catch (err) {
+        return NextResponse.json(
+          { error: `Git commit failed: ${err instanceof Error ? err.message : 'Unknown error'}` },
+          { status: 500 }
+        );
+      }
     }
 
     updateRun(id, userId, {
