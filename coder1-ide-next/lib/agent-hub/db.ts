@@ -48,4 +48,59 @@ function initializeSchema(database: Database.Database): void {
       updated_at TEXT NOT NULL
     )
   `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_tasks (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      parent_task_id TEXT,
+      title TEXT NOT NULL,
+      description TEXT,
+      github_issue_url TEXT,
+      priority TEXT NOT NULL DEFAULT 'medium',
+      status TEXT NOT NULL DEFAULT 'backlog',
+      estimated_cost_cents INTEGER,
+      actual_cost_cents INTEGER NOT NULL DEFAULT 0,
+      run_ids TEXT NOT NULL DEFAULT '[]',
+      modified_files TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL,
+      started_at TEXT,
+      completed_at TEXT
+    )
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_runs (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL,
+      task_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      session_id TEXT,
+      status TEXT NOT NULL DEFAULT 'running',
+      model TEXT NOT NULL,
+      input_tokens INTEGER NOT NULL DEFAULT 0,
+      output_tokens INTEGER NOT NULL DEFAULT 0,
+      cache_read_tokens INTEGER NOT NULL DEFAULT 0,
+      cost_cents INTEGER NOT NULL DEFAULT 0,
+      exit_code INTEGER,
+      git_diff TEXT,
+      approval_status TEXT,
+      approved_by TEXT,
+      error_summary TEXT,
+      started_at TEXT NOT NULL,
+      completed_at TEXT
+    )
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_run_log_chunks (
+      id TEXT PRIMARY KEY,
+      run_id TEXT NOT NULL,
+      chunk_index INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      log_type TEXT NOT NULL DEFAULT 'stdout',
+      created_at TEXT NOT NULL
+    )
+  `);
 }

@@ -1,3 +1,9 @@
+import { TaskKanban } from '@/components/agent-hub/tasks/TaskKanban';
+
 export default function TasksPage() {
-  return <div className="p-6 text-text-secondary">Tasks panel — coming soon</div>;
+  return (
+    <div className="h-full flex flex-col">
+      <TaskKanban />
+    </div>
+  );
 }
