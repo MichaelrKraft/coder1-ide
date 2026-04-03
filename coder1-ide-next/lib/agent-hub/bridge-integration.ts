@@ -21,7 +21,6 @@ export interface AgentRunContext {
 
 interface BridgeManager {
   getBridgeForUser(userId: string): { socket: { id: string; connected: boolean; emit: (event: string, data: unknown) => void } } | null;
-  findAnyConnectedBridge(): { id: string; userId: string } | null;
 }
 
 function getBridgeManager(): BridgeManager | null {
@@ -60,20 +59,11 @@ export async function startAgentRun(
     };
   }
 
-  // Try user-specific bridge first, fall back to any connected bridge
-  let bridge = manager.getBridgeForUser(ctx.userId);
-  if (!bridge) {
-    const any = manager.findAnyConnectedBridge?.();
-    if (any) {
-      bridge = manager.getBridgeForUser(any.userId);
-    }
-  }
-
+  const bridge = manager.getBridgeForUser(ctx.userId);
   if (!bridge || !bridge.socket.connected) {
     return {
       success: false,
-      error:
-        'No bridge connected for this workspace. Start coder1-bridge on the target machine first.',
+      error: 'No bridge connected for this workspace. Start coder1-bridge on the target machine first.',
     };
   }
 
@@ -93,37 +83,27 @@ export async function startAgentRun(
 
 export async function stopAgentRun(
   runId: string,
-  workspacePath: string
+  workspacePath: string,
+  userId: string
 ): Promise<boolean> {
   const manager = getBridgeManager();
   if (!manager) return false;
 
-  // Find a bridge that might own this run — try any connected bridge since
-  // we don't track run→bridge mapping at this layer.
-  const any = manager.findAnyConnectedBridge?.();
-  if (!any) return false;
-
-  const bridge = manager.getBridgeForUser(any.userId);
+  const bridge = manager.getBridgeForUser(userId);
   if (!bridge || !bridge.socket.connected) return false;
 
   bridge.socket.emit('agent:stop', { runId, workspacePath });
   return true;
 }
 
-export function findBridgeSocketForWorkspace(workspacePath: string): string | null {
+export function findBridgeSocketForWorkspace(workspacePath: string, userId: string): string | null {
   const manager = getBridgeManager();
   if (!manager) return null;
 
-  // Bridge connections are keyed by userId, not workspace path.
-  // Try any connected bridge as a best-effort lookup.
-  const any = manager.findAnyConnectedBridge?.();
-  if (!any) return null;
-
-  const bridge = manager.getBridgeForUser(any.userId);
+  const bridge = manager.getBridgeForUser(userId);
   if (!bridge || !bridge.socket.connected) return null;
 
-  // Suppress unused-param lint — workspacePath is available for future
-  // bridge-side workspace registry lookups.
+  // workspacePath is available for future bridge-side workspace registry lookups.
   void workspacePath;
 
   return bridge.socket.id;

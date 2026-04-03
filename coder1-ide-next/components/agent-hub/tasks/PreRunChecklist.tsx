@@ -48,7 +48,7 @@ export function PreRunChecklist({ task, agent, onConfirm, onCancel }: PreRunChec
     {
       label: 'Agent not archived',
       status: agent.status === 'archived' ? 'error' : 'ok',
-      detail: agent.status === 'archived' ? 'Archive the agent to run tasks' : undefined,
+      detail: agent.status === 'archived' ? 'Agent is archived — cannot run tasks' : undefined,
     },
     { label: 'Bridge connection', status: 'pending', detail: 'Verified on run start' },
   ];

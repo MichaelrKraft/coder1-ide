@@ -2316,10 +2316,15 @@ app.prepare().then(() => {
 
       // Bridge confirms agent process started
       socket.on('agent:started', ({ runId, sessionId }) => {
+        const userId = socket.userId;
+        if (!userId) {
+          console.warn('[agent-hub] agent:started received with no userId on socket, ignoring');
+          return;
+        }
         setImmediate(() => {
           try {
             const { updateRun } = require('./lib/agent-hub/runs');
-            updateRun(runId, socket.userId || 'default', { sessionId });
+            updateRun(runId, userId, { sessionId });
             io.to(`run:${runId}`).emit('run:status', { status: 'running', sessionId });
           } catch (e) {
             console.warn('[agent-hub] agent:started handler error:', e.message);
@@ -2329,6 +2334,11 @@ app.prepare().then(() => {
 
       // Bridge streams stdout/stderr chunks
       socket.on('agent:output', ({ runId, chunk, type }) => {
+        const userId = socket.userId;
+        if (!userId) {
+          console.warn('[agent-hub] agent:output received with no userId on socket, ignoring');
+          return;
+        }
         io.to(`run:${runId}`).emit(type === 'stderr' ? 'run:stderr' : 'run:stdout', {
           chunk,
           timestamp: new Date().toISOString(),
@@ -2345,11 +2355,16 @@ app.prepare().then(() => {
 
       // Bridge reports agent completed
       socket.on('agent:complete', ({ runId, exitCode, costCents }) => {
+        const userId = socket.userId;
+        if (!userId) {
+          console.warn('[agent-hub] agent:complete received with no userId on socket, ignoring');
+          return;
+        }
         setImmediate(() => {
           try {
             const { updateRun, getRun } = require('./lib/agent-hub/runs');
             const { updateTask } = require('./lib/agent-hub/tasks');
-            const run = getRun(runId, socket.userId || 'default');
+            const run = getRun(runId, userId);
             if (run) {
               updateRun(runId, run.userId, {
                 status: exitCode === 0 ? 'awaiting_approval' : 'failed',
@@ -2373,11 +2388,16 @@ app.prepare().then(() => {
 
       // Bridge reports agent error
       socket.on('agent:error', ({ runId, error }) => {
+        const userId = socket.userId;
+        if (!userId) {
+          console.warn('[agent-hub] agent:error received with no userId on socket, ignoring');
+          return;
+        }
         setImmediate(() => {
           try {
             const { updateRun, getRun } = require('./lib/agent-hub/runs');
             const { updateTask } = require('./lib/agent-hub/tasks');
-            const run = getRun(runId, socket.userId || 'default');
+            const run = getRun(runId, userId);
             if (run) {
               updateRun(runId, run.userId, {
                 status: 'failed',
