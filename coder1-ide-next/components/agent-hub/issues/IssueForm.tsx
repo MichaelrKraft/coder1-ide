@@ -70,7 +70,7 @@ export function IssueForm({ agents, defaultStatus, onClose, onCreated }: IssueFo
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-bg-primary border border-border-default rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-text-primary">New Issue</h2>
+          <h2 className="text-base font-semibold text-text-primary">New Task</h2>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary">
             <X className="w-4 h-4" />
           </button>
@@ -172,7 +172,7 @@ export function IssueForm({ agents, defaultStatus, onClose, onCreated }: IssueFo
             className="flex-1 px-4 py-2 text-sm rounded-lg bg-coder1-cyan text-bg-primary font-medium hover:bg-coder1-cyan/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
             {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-            Create Issue
+            Create Task
           </button>
         </div>
       </div>

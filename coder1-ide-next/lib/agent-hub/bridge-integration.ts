@@ -33,23 +33,33 @@ function getBridgeManager(): BridgeManager | null {
   return (g['bridgeManager'] as BridgeManager) ?? null;
 }
 
-function buildInjectedPrompt(ctx: AgentRunContext): string {
-  const skillsSection =
-    ctx.skills.length > 0 ? `\n\nEnabled skills: ${ctx.skills.join(', ')}` : '';
+async function buildInjectedPrompt(ctx: AgentRunContext): Promise<string> {
+  const { buildContextStack } = await import('./context-stack');
 
-  return [
-    ctx.systemPrompt,
-    skillsSection,
-    '',
-    `## Task`,
-    `**Title**: ${ctx.taskTitle}`,
-    ctx.taskDescription ? `**Description**: ${ctx.taskDescription}` : '',
-    '',
-    `Working directory: ${ctx.workspacePath}`,
-    `Run ID: ${ctx.runId}`,
-  ]
-    .filter((line) => line !== undefined)
-    .join('\n');
+  // Recall relevant memories for this agent based on the task description
+  let memorySection: string | null = null;
+  try {
+    const { recallMemory } = await import('./memory');
+    const query = `${ctx.taskTitle} ${ctx.taskDescription || ''}`.trim();
+    const memories = recallMemory(ctx.agentId, ctx.userId, query, 5);
+    if (memories.length > 0) {
+      memorySection = '## Previous Context\n\n' +
+        memories.map(m => m.summary).join('\n\n---\n\n');
+    }
+  } catch {
+    // Memory module may not be available yet — skip silently
+  }
+
+  return buildContextStack({
+    systemPrompt: ctx.systemPrompt,
+    skills: ctx.skills,
+    taskTitle: ctx.taskTitle,
+    taskDescription: ctx.taskDescription,
+    runId: ctx.runId,
+    workspacePath: ctx.workspacePath,
+    supervisorSection: null,
+    memorySection,
+  });
 }
 
 function buildSupervisorSection(ctx: AgentRunContext): string | null {
@@ -119,7 +129,7 @@ export async function startAgentRun(
   updateRun(ctx.runId, ctx.userId, { worktreePath });
 
   // Build prompt with worktree as the working directory
-  const injectedPrompt = buildInjectedPrompt({ ...ctx, workspacePath: worktreePath });
+  const injectedPrompt = await buildInjectedPrompt({ ...ctx, workspacePath: worktreePath });
 
   // Append supervisor tools if this agent has subordinates
   const supervisorSection = buildSupervisorSection(ctx);

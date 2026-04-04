@@ -55,6 +55,38 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       ORDER BY r.started_at DESC LIMIT 15
     `).all(userId);
 
+    // Stuck agents: running agents with no log activity for 10+ minutes
+    const STUCK_THRESHOLD_MS = 10 * 60 * 1000;
+    const runningAgentRuns = db.prepare(`
+      SELECT a.id as agent_id, a.name as agent_name, r.id as run_id, r.started_at,
+        (SELECT MAX(created_at) FROM agent_hub_run_log_chunks WHERE run_id = r.id) as last_activity
+      FROM agent_hub_agents a
+      JOIN agent_hub_runs r ON r.agent_id = a.id AND r.status = 'running'
+      WHERE a.user_id = ? AND a.status != 'archived'
+      ORDER BY r.started_at DESC
+    `).all(userId) as {
+      agent_id: string;
+      agent_name: string;
+      run_id: string;
+      started_at: string;
+      last_activity: string | null;
+    }[];
+
+    const stuckAgents = runningAgentRuns
+      .map((row) => {
+        const referenceTime = row.last_activity || row.started_at;
+        const idleMs = Date.now() - new Date(referenceTime).getTime();
+        return {
+          agentId: row.agent_id,
+          agentName: row.agent_name,
+          runId: row.run_id,
+          startedAt: row.started_at,
+          lastActivity: row.last_activity,
+          minutesIdle: Math.floor(idleMs / 60000),
+        };
+      })
+      .filter((r) => r.minutesIdle * 60000 >= STUCK_THRESHOLD_MS);
+
     // Recent tasks - last 10
     const recentTasks = db.prepare(`
       SELECT t.id, t.title, t.status, t.priority, t.created_at,
@@ -79,6 +111,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
       recentRuns,
       recentTasks,
+      stuckAgents,
     });
   } catch (err: unknown) {
     console.error('[dashboard] error:', err instanceof Error ? err.message : err);

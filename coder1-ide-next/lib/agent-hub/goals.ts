@@ -11,6 +11,7 @@ export interface Goal {
   dueDate?: string;
   taskIds: string[];
   progressPercent: number;
+  turn: 'user' | 'claude' | 'done';
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +41,7 @@ interface GoalRow {
   due_date: string | null;
   task_ids: string;
   progress_percent: number;
+  turn: string;
   created_at: string;
   updated_at: string;
 }
@@ -55,6 +57,7 @@ function rowToGoal(row: GoalRow): Goal {
     dueDate: row.due_date ?? undefined,
     taskIds: JSON.parse(row.task_ids) as string[],
     progressPercent: row.progress_percent,
+    turn: (row.turn || 'user') as Goal['turn'],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -128,6 +131,7 @@ export function updateGoal(
     dueDate: 'due_date',
     taskIds: 'task_ids',
     progressPercent: 'progress_percent',
+    turn: 'turn',
   };
 
   const setClauses: string[] = ['updated_at = ?'];

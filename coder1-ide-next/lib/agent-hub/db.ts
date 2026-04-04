@@ -14,9 +14,7 @@ export function getAgentHubDatabase(): Database.Database {
 
     fs.mkdirSync(dataDir, { recursive: true });
 
-    db = new Database(dbPath, {
-      verbose: process.env.NODE_ENV === 'development' ? console.log : undefined,
-    });
+    db = new Database(dbPath);
 
     db.exec('PRAGMA foreign_keys = ON');
     db.exec('PRAGMA journal_mode = WAL');
@@ -42,6 +40,7 @@ function migrateSchema(database: Database.Database): void {
   addColumnIfMissing('agent_hub_agents', 'project_id', 'TEXT');
   addColumnIfMissing('agent_hub_agents', 'telegram_bot_token', 'TEXT');
   addColumnIfMissing('agent_hub_agents', 'telegram_chat_id', 'TEXT');
+  addColumnIfMissing('agent_hub_agents', 'mcp_servers', "TEXT NOT NULL DEFAULT '[]'");
   addColumnIfMissing('agent_hub_tasks', 'schedule_type', 'TEXT');
   addColumnIfMissing('agent_hub_tasks', 'schedule_time', 'TEXT');
   addColumnIfMissing('agent_hub_tasks', 'schedule_day', 'INTEGER');
@@ -51,6 +50,7 @@ function migrateSchema(database: Database.Database): void {
   addColumnIfMissing('agent_hub_tasks', 'labels', "TEXT DEFAULT '[]'");
   addColumnIfMissing('agent_hub_tasks', 'project_id', 'TEXT');
   addColumnIfMissing('agent_hub_runs', 'worktree_path', 'TEXT');
+  addColumnIfMissing('agent_hub_goals', 'turn', "TEXT DEFAULT 'user'");
 }
 
 function initializeSchema(database: Database.Database): void {
@@ -165,6 +165,18 @@ function initializeSchema(database: Database.Database): void {
   `);
 
   database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_chat_messages (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      session_id TEXT,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )
+  `);
+
+  database.exec(`
     CREATE TABLE IF NOT EXISTS agent_hub_goals (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -179,4 +191,27 @@ function initializeSchema(database: Database.Database): void {
       updated_at TEXT NOT NULL
     )
   `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_memory (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      run_id TEXT,
+      summary TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )
+  `);
+
+  // Self-managed FTS5 table (no content= clause to avoid trigger complexity)
+  try {
+    database.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS agent_hub_memory_fts USING fts5(
+        id UNINDEXED, summary
+      )
+    `);
+  } catch {
+    // FTS5 may not be available in all SQLite builds
+    console.warn('[agent-hub] FTS5 not available — memory search will use fallback');
+  }
 }
