@@ -228,6 +228,16 @@ class BridgeClient extends EventEmitter {
       lastError: null
     };
 
+    // Clean up stale MCP config files from previous runs
+    const os = require('os');
+    const path = require('path');
+    const fs = require('fs');
+    const tmpDir = os.tmpdir();
+    try {
+      const staleFiles = fs.readdirSync(tmpDir).filter(f => f.startsWith('coder1-mcp-') && f.endsWith('.json'));
+      staleFiles.forEach(f => { try { fs.unlinkSync(path.join(tmpDir, f)); } catch {} });
+    } catch {}
+
     logger.info('Bridge client initialized', {
       serverUrl: this.serverUrl,
       maxReconnectAttempts: this.maxReconnectAttempts,
@@ -803,7 +813,7 @@ class BridgeClient extends EventEmitter {
        * Streams output back as agent:output, ends with agent:complete or agent:error.
        */
       this.socket.on('agent:start', async (data) => {
-        const { runId, workspacePath, prompt, model } = data;
+        const { runId, workspacePath, prompt, model, mcpServers } = data;
         logger.info('[Agent] Starting run', { runId, workspacePath, model });
 
         if (this.agentSessions.has(runId)) {
@@ -811,14 +821,64 @@ class BridgeClient extends EventEmitter {
           return;
         }
 
+        // Build MCP config if mcpServers is non-empty
+        const os = require('os');
+        const path = require('path');
+        const fs = require('fs');
+        let mcpConfigPath = null;
+        if (Array.isArray(mcpServers) && mcpServers.length > 0) {
+          try {
+            const mcpJsonPath = path.join(os.homedir(), '.mcp.json');
+            if (fs.existsSync(mcpJsonPath)) {
+              const mcpConfig = JSON.parse(fs.readFileSync(mcpJsonPath, 'utf-8'));
+              const allServers = mcpConfig.mcpServers || {};
+              const filtered = {};
+              const validName = /^[a-zA-Z0-9_-]+$/;
+
+              for (const name of mcpServers) {
+                if (!validName.test(name)) continue; // skip invalid names
+                if (allServers[name]) {
+                  filtered[name] = allServers[name];
+                } else {
+                  // Warn about missing server in run logs
+                  this.socket.emit('agent:output', {
+                    runId, chunk: `[Warning] MCP server "${name}" not found in ~/.mcp.json, skipping\n`, type: 'stderr'
+                  });
+                }
+              }
+
+              if (Object.keys(filtered).length > 0) {
+                mcpConfigPath = path.join(os.tmpdir(), `coder1-mcp-${runId}.json`);
+                fs.writeFileSync(mcpConfigPath, JSON.stringify({ mcpServers: filtered }, null, 2), { mode: 0o600 });
+                console.log('[bridge] Created MCP config for run', runId, 'with servers:', Object.keys(filtered).join(', '));
+              }
+            } else {
+              this.socket.emit('agent:output', {
+                runId, chunk: '[Warning] ~/.mcp.json not found, running without MCP servers\n', type: 'stderr'
+              });
+            }
+          } catch (err) {
+            console.warn('[bridge] MCP config error:', err.message);
+          }
+        }
+
+        // Cleanup helper for temp MCP config file
+        const cleanupMcpConfig = () => {
+          if (mcpConfigPath) {
+            try { fs.unlinkSync(mcpConfigPath); } catch {}
+            mcpConfigPath = null;
+          }
+        };
+
         // Build the Claude CLI command — use stdinData to pipe the prompt (avoids shell escaping)
         const ALLOWED_MODELS = /^claude-[a-z0-9\-\.]+$/;
         const safeModel = model && ALLOWED_MODELS.test(model) ? model : 'claude-sonnet-4-6';
         const modelFlag = ` --model ${safeModel}`;
+        const mcpFlag = mcpConfigPath ? ` --mcp-config '${mcpConfigPath.replace(/'/g, "'\\''")}' --strict-mcp-config` : '';
         const safePath = workspacePath.replace(/'/g, "'\\''");
-        const command = `cd '${safePath}' && claude -p --output-format stream-json${modelFlag} -`;
+        const command = `cd '${safePath}' && claude -p --output-format stream-json${modelFlag}${mcpFlag} -`;
 
-        const sessionEntry = { killed: false, process: null };
+        const sessionEntry = { killed: false, process: null, cleanupMcpConfig };
         this.agentSessions.set(runId, sessionEntry);
 
         // Notify server we're starting
@@ -849,6 +909,7 @@ class BridgeClient extends EventEmitter {
           });
 
           this.agentSessions.delete(runId);
+          cleanupMcpConfig();
 
           if (!sessionEntry.killed) {
             this.socket.emit('agent:complete', {
@@ -859,6 +920,7 @@ class BridgeClient extends EventEmitter {
           }
         } catch (err) {
           this.agentSessions.delete(runId);
+          cleanupMcpConfig();
 
           if (!sessionEntry.killed) {
             logger.error('[Agent] Run error', { runId, error: err.message });
@@ -892,6 +954,7 @@ class BridgeClient extends EventEmitter {
               logger.warn('[Agent] Error killing process', { runId, error: err.message });
             }
           }
+          if (session.cleanupMcpConfig) session.cleanupMcpConfig();
           this.agentSessions.delete(runId);
           this.socket.emit('agent:complete', { runId, exitCode: -1, costCents: 0 });
         } else {
