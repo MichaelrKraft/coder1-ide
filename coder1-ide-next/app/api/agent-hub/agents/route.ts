@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
-import { createAgent, listAgents, type CreateAgentInput } from '@/lib/agent-hub/agents';
+import { createAgent, listAgents, seedDefaultAgents, type CreateAgentInput } from '@/lib/agent-hub/agents';
 import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 
 export const dynamic = 'force-dynamic';
@@ -12,6 +12,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    seedDefaultAgents(userId);
     const agents = listAgents(userId);
     return NextResponse.json({ agents });
   } catch (error) {
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     description: typeof body.description === 'string' ? body.description : '',
     systemPrompt: systemPrompt as string,
     skills: Array.isArray(body.skills) ? body.skills.filter((s: unknown): s is string => typeof s === 'string') : [],
+    mcpServers: Array.isArray(body.mcpServers) ? body.mcpServers.filter((s: unknown): s is string => typeof s === 'string') : [],
     workspacePath: workspacePath as string,
     model: resolvedModel,
     monthlyBudgetCents:

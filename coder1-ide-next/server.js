@@ -2354,7 +2354,9 @@ app.prepare().then(() => {
         setImmediate(() => {
           try {
             const { appendRunLogChunk } = require('./lib/agent-hub/runs');
-            appendRunLogChunk(runId, chunk, type || 'stdout');
+            const token = process.env.AGENT_HUB_INTERNAL_TOKEN;
+            const safeChunk = token ? chunk.replace(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '[REDACTED]') : chunk;
+            appendRunLogChunk(runId, safeChunk, type || 'stdout');
           } catch (e) {
             console.warn('[agent-hub] chunk storage error:', e.message);
           }
@@ -2415,6 +2417,16 @@ app.prepare().then(() => {
                   }
                 });
               }
+
+              // Auto-summarize completed run for agent memory (Phase 6e)
+              setImmediate(async () => {
+                try {
+                  const { autoSummarize } = require('./lib/agent-hub/memory');
+                  await autoSummarize(runId, run.agentId, run.userId);
+                } catch (e) {
+                  console.warn('[agent-hub] auto-summarize error:', e.message);
+                }
+              });
             }
           } catch (e) {
             console.warn('[agent-hub] agent:complete handler error:', e.message);
@@ -2595,6 +2607,75 @@ app.prepare().then(() => {
         timestamp: data?.timestamp || now,
         serverTime: now
       });
+    });
+
+    // ── Agent Chat (Command Center) relay ──
+    // Receives events from browser, relays to bridge, and streams responses back
+
+    socket.on('agent:chat:start', (data) => {
+      const { agentId, workspacePath } = data;
+      const context = typeof data.context === 'string' ? data.context.slice(0, 32 * 1024) : '';
+      console.log(`[Agent Chat] Start request from browser`, { agentId });
+
+      const bm = global.bridgeManager;
+      if (!bm) {
+        socket.emit('agent:chat:stopped', { agentId, reason: 'error', error: 'Bridge manager not available' });
+        return;
+      }
+
+      const userId = socket.userId || 'local-user';
+      const bridge = bm.getBridgeForUser(userId);
+      if (!bridge || !bridge.socket.connected) {
+        socket.emit('agent:chat:stopped', { agentId, reason: 'error', error: 'No bridge connected. Start coder1-bridge first.' });
+        return;
+      }
+
+      bridge.socket.emit('agent:chat:start', { agentId, workspacePath, context });
+
+      const onChatStarted = (d) => { if (d.agentId === agentId) socket.emit('agent:chat:started', d); };
+      const onChatOutput = (d) => { if (d.agentId === agentId) socket.emit('agent:chat:output', d); };
+      const onChatStopped = (d) => {
+        if (d.agentId === agentId) {
+          socket.emit('agent:chat:stopped', d);
+          bridge.socket.off('agent:chat:started', onChatStarted);
+          bridge.socket.off('agent:chat:output', onChatOutput);
+          bridge.socket.off('agent:chat:stopped', onChatStopped);
+        }
+      };
+
+      bridge.socket.on('agent:chat:started', onChatStarted);
+      bridge.socket.on('agent:chat:output', onChatOutput);
+      bridge.socket.on('agent:chat:stopped', onChatStopped);
+
+      if (!socket._chatCleanups) socket._chatCleanups = [];
+      socket._chatCleanups.push(() => {
+        bridge.socket.off('agent:chat:started', onChatStarted);
+        bridge.socket.off('agent:chat:output', onChatOutput);
+        bridge.socket.off('agent:chat:stopped', onChatStopped);
+        bridge.socket.emit('agent:chat:stop', { agentId });
+      });
+    });
+
+    socket.on('agent:chat:input', (data) => {
+      const { agentId, message } = data;
+      const bm = global.bridgeManager;
+      if (!bm) return;
+      const userId = socket.userId || 'local-user';
+      const bridge = bm.getBridgeForUser(userId);
+      if (bridge?.socket.connected) {
+        bridge.socket.emit('agent:chat:input', { agentId, message });
+      }
+    });
+
+    socket.on('agent:chat:stop', (data) => {
+      const { agentId } = data;
+      const bm = global.bridgeManager;
+      if (!bm) return;
+      const userId = socket.userId || 'local-user';
+      const bridge = bm.getBridgeForUser(userId);
+      if (bridge?.socket.connected) {
+        bridge.socket.emit('agent:chat:stop', { agentId });
+      }
     });
 
     // Johnny5 command execution audit logging
@@ -5231,6 +5312,12 @@ app.prepare().then(() => {
       socket.removeAllListeners('y:awareness');
       socket.removeAllListeners('y:sync-request');
       socket.removeAllListeners('collab:file-write');
+
+      // Clean up any active Agent Hub chat relays
+      if (socket._chatCleanups) {
+        socket._chatCleanups.forEach(cleanup => cleanup());
+        socket._chatCleanups = [];
+      }
 
       // Note: We keep terminal session alive for reconnection
       // Sessions are only destroyed explicitly or on timeout

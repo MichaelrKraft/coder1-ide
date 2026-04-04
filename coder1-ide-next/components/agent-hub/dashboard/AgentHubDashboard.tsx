@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Clock, DollarSign, CheckCircle } from 'lucide-react';
+import { Users, Clock, DollarSign, CheckCircle, AlertTriangle, Calendar } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const AgentHubCalendar = dynamic(
+  () => import('@/components/agent-hub/calendar/AgentHubCalendar'),
+  { ssr: false, loading: () => <div className="text-xs text-text-muted p-4">Loading calendar...</div> }
+);
 
 interface DashboardStats {
   agentsEnabled: number;
@@ -23,6 +29,15 @@ interface RecentRun {
   cost_cents: number;
   agent_name: string | null;
   task_title: string | null;
+}
+
+interface StuckAgent {
+  agentId: string;
+  agentName: string;
+  runId: string;
+  startedAt: string;
+  lastActivity: string | null;
+  minutesIdle: number;
 }
 
 interface RecentTask {
@@ -94,6 +109,7 @@ export default function AgentHubDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentRuns, setRecentRuns] = useState<RecentRun[]>([]);
   const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
+  const [stuckAgents, setStuckAgents] = useState<StuckAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,6 +124,7 @@ export default function AgentHubDashboard() {
         setStats(data.stats);
         setRecentRuns(data.recentRuns || []);
         setRecentTasks(data.recentTasks || []);
+        setStuckAgents(data.stuckAgents || []);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Failed to load dashboard');
       } finally {
@@ -164,6 +181,28 @@ export default function AgentHubDashboard() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Stuck Agents Alert */}
+      {stuckAgents.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <p className="text-sm font-medium text-amber-400">
+              {stuckAgents.length} agent{stuckAgents.length > 1 ? 's' : ''} may be stuck
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {stuckAgents.map((sa) => (
+              <div key={sa.runId} className="flex items-center justify-between text-xs">
+                <span className="text-text-secondary font-medium">{sa.agentName}</span>
+                <span className="text-text-muted">
+                  No activity for {sa.minutesIdle}m (run {sa.runId.slice(0, 8)})
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => {
@@ -259,6 +298,19 @@ export default function AgentHubDashboard() {
               ))
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Calendar */}
+      <div className="bg-bg-secondary border border-border-default rounded-lg">
+        <div className="px-4 py-3 border-b border-border-default flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-text-muted" />
+          <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider">
+            Calendar
+          </h2>
+        </div>
+        <div className="p-4">
+          <AgentHubCalendar />
         </div>
       </div>
     </div>

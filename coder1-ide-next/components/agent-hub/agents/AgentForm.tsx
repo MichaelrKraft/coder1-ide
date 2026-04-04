@@ -27,6 +27,7 @@ interface FormState {
   monthlyBudgetDollars: string;
   maxConcurrentRuns: string;
   skills: string[];
+  mcpServers: string[];
   systemPrompt: string;
   supervisorAgentId: string;
   telegramBotToken: string;
@@ -43,6 +44,7 @@ const EMPTY_FORM: FormState = {
   monthlyBudgetDollars: '0',
   maxConcurrentRuns: '1',
   skills: [],
+  mcpServers: [],
   systemPrompt: '',
   supervisorAgentId: '',
   telegramBotToken: '',
@@ -53,6 +55,7 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [availableSkills, setAvailableSkills] = useState<SkillInfo[]>([]);
+  const [availableMcpServers, setAvailableMcpServers] = useState<{ name: string }[]>([]);
   const [allAgents, setAllAgents] = useState<Agent[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string; color: string; workspacePath: string }[]>([]);
   const [saving, setSaving] = useState(false);
@@ -62,6 +65,7 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
 
   useEffect(() => {
     void loadSkills();
+    void loadMcpServers();
     void loadAllAgents();
     void loadProjects();
     if (agentId) void loadAgent();
@@ -76,6 +80,17 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
       setAvailableSkills(data.skills);
     } catch {
       // Skills list is optional
+    }
+  }
+
+  async function loadMcpServers() {
+    try {
+      const res = await fetch('/api/agent-hub/mcp-servers');
+      if (!res.ok) return;
+      const data = await res.json() as { servers: { name: string }[] };
+      setAvailableMcpServers(data.servers);
+    } catch {
+      // MCP servers list is optional
     }
   }
 
@@ -117,6 +132,7 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
         monthlyBudgetDollars: String(a.monthlyBudgetCents / 100),
         maxConcurrentRuns: String(a.maxConcurrentRuns),
         skills: a.skills,
+        mcpServers: a.mcpServers ?? [],
         systemPrompt: a.systemPrompt,
         supervisorAgentId: a.supervisorAgentId ?? '',
         telegramBotToken: '',
@@ -138,6 +154,15 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
       skills: prev.skills.includes(name)
         ? prev.skills.filter(s => s !== name)
         : [...prev.skills, name],
+    }));
+  }
+
+  function toggleMcpServer(name: string) {
+    setForm(prev => ({
+      ...prev,
+      mcpServers: prev.mcpServers.includes(name)
+        ? prev.mcpServers.filter(s => s !== name)
+        : [...prev.mcpServers, name],
     }));
   }
 
@@ -190,6 +215,7 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
         monthlyBudgetCents: isNaN(budgetCents) ? 0 : budgetCents,
         maxConcurrentRuns: parseInt(form.maxConcurrentRuns, 10) || 1,
         skills: form.skills,
+        mcpServers: form.mcpServers,
         systemPrompt: form.systemPrompt.trim(),
         supervisorAgentId: form.supervisorAgentId || null,
         ...(form.telegramBotToken ? { telegramBotToken: form.telegramBotToken } : {}),
@@ -365,6 +391,31 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
               </div>
             </FormField>
           )}
+
+          <FormField label="MCP Servers">
+            {availableMcpServers.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {availableMcpServers.map(server => (
+                  <button
+                    key={server.name}
+                    type="button"
+                    onClick={() => toggleMcpServer(server.name)}
+                    className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
+                      form.mcpServers.includes(server.name)
+                        ? 'bg-coder1-cyan/10 text-coder1-cyan border-coder1-cyan/40'
+                        : 'bg-bg-tertiary text-text-muted border-border-default hover:border-border-default/80'
+                    }`}
+                  >
+                    {server.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted pt-1">
+                No MCP servers configured. Add servers to ~/.mcp.json
+              </p>
+            )}
+          </FormField>
 
           <FormField label="System Prompt" error={errors.systemPrompt} required>
             <div className="space-y-1.5">

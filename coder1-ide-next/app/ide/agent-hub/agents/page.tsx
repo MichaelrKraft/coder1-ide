@@ -10,8 +10,8 @@ export default function AgentsPage() {
 
   return (
     <div className="flex h-full bg-bg-primary">
-      {/* Left: Agent List — 40% */}
-      <div className="w-[40%] min-w-[240px] border-r border-border-default flex flex-col">
+      {/* Left: Agent List — narrow when agent selected, full when not */}
+      <div className={`${selectedAgentId ? 'w-[220px] min-w-[220px]' : 'w-full'} border-r border-border-default flex flex-col shrink-0`}>
         <AgentList
           onAgentSelect={setSelectedAgentId}
           selectedAgentId={selectedAgentId}
@@ -19,20 +19,16 @@ export default function AgentsPage() {
         />
       </div>
 
-      {/* Right: Agent Detail — 60% */}
-      <div className="flex-1 flex flex-col">
-        {selectedAgentId ? (
+      {/* Right: Agent Detail */}
+      {selectedAgentId && (
+        <div className="flex-1 flex flex-col min-w-0">
           <AgentDetail
             agentId={selectedAgentId}
             onClose={() => setSelectedAgentId(null)}
             onAgentUpdated={() => setRefreshTrigger((n) => n + 1)}
           />
-        ) : (
-          <div className="flex items-center justify-center h-full text-text-muted text-sm">
-            Select an agent to view details
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

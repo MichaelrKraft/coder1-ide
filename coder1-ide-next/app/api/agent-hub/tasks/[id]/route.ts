@@ -57,6 +57,18 @@ export async function PATCH(request: NextRequest, { params }: Params): Promise<N
   }
   if (typeof body.agentId === 'string') input.agentId = body.agentId;
 
+  // Schedule fields
+  const allowedScheduleTypes = ['daily', 'weekly', 'monthly', 'once'];
+  if (typeof body.scheduleType === 'string' && allowedScheduleTypes.includes(body.scheduleType)) {
+    input.scheduleType = body.scheduleType as UpdateTaskInput['scheduleType'];
+  }
+  if (typeof body.scheduleTime === 'string') input.scheduleTime = body.scheduleTime;
+  if (typeof body.scheduleDay === 'number') input.scheduleDay = body.scheduleDay;
+  if (body.scheduleDay === null) input.scheduleDay = null;
+  if (typeof body.scheduleEnabled === 'boolean') input.scheduleEnabled = body.scheduleEnabled;
+  if (typeof body.nextRunAt === 'string') input.nextRunAt = body.nextRunAt;
+  if (body.nextRunAt === null) input.nextRunAt = null;
+
   try {
     const task = updateTask(id, userId, input);
     if (!task) {

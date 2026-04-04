@@ -128,7 +128,13 @@ export default function AgentList({ onAgentSelect, selectedAgentId, refreshTrigg
                     <span className="text-sm font-medium text-text-secondary truncate">
                       {agent.name}
                     </span>
-                    <AgentStatusChip status={agent.status} />
+                    <div className="flex items-center gap-1.5">
+                      {agent.status === 'running' && agent.lastRunAt &&
+                       (Date.now() - new Date(agent.lastRunAt).getTime() > 10 * 60 * 1000) && (
+                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" title="May be stuck" />
+                      )}
+                      <AgentStatusChip status={agent.status} />
+                    </div>
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-text-muted truncate">{agent.role}</span>

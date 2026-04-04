@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, MessageSquare, Activity, Send, Play, Square, Tag } from 'lucide-react';
+import { X, MessageSquare, Activity, Send, Play, Square, Tag, Clock, Calendar } from 'lucide-react';
 import type { Task } from '@/lib/agent-hub/tasks';
 import type { Agent } from '@/lib/agent-hub/agents';
 
@@ -53,6 +53,33 @@ function formatTimestamp(iso: string): string {
     hour: 'numeric',
     minute: '2-digit',
   });
+}
+
+const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const SCHEDULE_TYPES = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+];
+
+function computeNextRun(type: string, time: string, day?: number): string {
+  const now = new Date();
+  const [hours, minutes] = time.split(':').map(Number);
+  const next = new Date(now);
+  next.setHours(hours, minutes, 0, 0);
+
+  if (type === 'daily') {
+    if (next <= now) next.setDate(next.getDate() + 1);
+  } else if (type === 'weekly' && day !== undefined) {
+    const daysUntil = (day - next.getDay() + 7) % 7 || 7;
+    next.setDate(next.getDate() + daysUntil);
+    if (next <= now) next.setDate(next.getDate() + 7);
+  } else if (type === 'monthly' && day !== undefined) {
+    next.setDate(day);
+    if (next <= now) next.setMonth(next.getMonth() + 1);
+  }
+  return next.toISOString();
 }
 
 export function IssueDetail({ task, agent, onClose, onTaskUpdated }: IssueDetailProps) {
@@ -131,6 +158,36 @@ export function IssueDetail({ task, agent, onClose, onTaskUpdated }: IssueDetail
     }
   };
 
+  const handleScheduleChange = async (updates: {
+    scheduleEnabled?: boolean;
+    scheduleType?: string;
+    scheduleTime?: string;
+    scheduleDay?: number;
+  }) => {
+    const enabled = updates.scheduleEnabled ?? task.scheduleEnabled;
+    const type = updates.scheduleType ?? task.scheduleType ?? 'daily';
+    const time = updates.scheduleTime ?? task.scheduleTime ?? '09:00';
+    const day = updates.scheduleDay ?? task.scheduleDay ?? undefined;
+
+    let nextRunAt: string | null = null;
+    if (enabled && time) {
+      nextRunAt = computeNextRun(type, time, day);
+    }
+
+    await fetch(`/api/agent-hub/tasks/${task.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scheduleEnabled: enabled,
+        scheduleType: type,
+        scheduleTime: time,
+        scheduleDay: updates.scheduleDay ?? task.scheduleDay,
+        nextRunAt,
+      }),
+    });
+    onTaskUpdated();
+  };
+
   const statusCfg = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.backlog;
   const priorityCfg = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.medium;
   const isRunning = task.status === 'in_progress';
@@ -140,7 +197,7 @@ export function IssueDetail({ task, agent, onClose, onTaskUpdated }: IssueDetail
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-border-default shrink-0">
         <div className="flex items-center gap-2 text-xs text-text-muted">
-          <span>Issues</span>
+          <span>Tasks</span>
           <span>/</span>
           <span className="text-text-primary font-medium truncate max-w-[300px]">
             {task.title}
@@ -215,7 +272,7 @@ export function IssueDetail({ task, agent, onClose, onTaskUpdated }: IssueDetail
           {showRunConfirm && (
             <div className="bg-bg-secondary border border-border-default rounded-lg p-3 space-y-2">
               <p className="text-xs text-text-secondary">
-                Run this issue with <strong className="text-text-primary">{agent?.name ?? 'agent'}</strong>?
+                Run this task with <strong className="text-text-primary">{agent?.name ?? 'agent'}</strong>?
               </p>
               <div className="flex gap-2">
                 <button
@@ -403,6 +460,109 @@ export function IssueDetail({ task, agent, onClose, onTaskUpdated }: IssueDetail
               <p className="text-xs text-text-secondary">{formatDate(task.completedAt)}</p>
             </div>
           )}
+
+          {/* Schedule */}
+          <div className="border-t border-border-default pt-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Clock className="w-3 h-3 text-text-muted" />
+              <p className="text-[10px] font-semibold text-text-muted uppercase tracking-widest">
+                Schedule
+              </p>
+            </div>
+
+            {/* Enable toggle */}
+            <label className="flex items-center gap-2 cursor-pointer mb-2">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={task.scheduleEnabled}
+                onClick={() => { handleScheduleChange({ scheduleEnabled: !task.scheduleEnabled }).catch(() => {}); }}
+                className={`relative w-7 h-4 rounded-full transition-colors ${
+                  task.scheduleEnabled ? 'bg-coder1-cyan' : 'bg-bg-tertiary border border-border-default'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+                    task.scheduleEnabled ? 'translate-x-3' : ''
+                  }`}
+                />
+              </button>
+              <span className="text-xs text-text-secondary">
+                {task.scheduleEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+            </label>
+
+            {task.scheduleEnabled && (
+              <div className="space-y-2">
+                {/* Frequency */}
+                <div>
+                  <p className="text-[10px] text-text-muted mb-1">Frequency</p>
+                  <select
+                    value={task.scheduleType ?? 'daily'}
+                    onChange={(e) => { handleScheduleChange({ scheduleType: e.target.value }).catch(() => {}); }}
+                    className="w-full bg-bg-secondary border border-border-default rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-coder1-cyan/50"
+                  >
+                    {SCHEDULE_TYPES.map((st) => (
+                      <option key={st.value} value={st.value}>{st.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Time */}
+                <div>
+                  <p className="text-[10px] text-text-muted mb-1">Time</p>
+                  <input
+                    type="time"
+                    value={task.scheduleTime ?? '09:00'}
+                    onChange={(e) => { handleScheduleChange({ scheduleTime: e.target.value }).catch(() => {}); }}
+                    className="w-full bg-bg-secondary border border-border-default rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-coder1-cyan/50"
+                  />
+                </div>
+
+                {/* Day picker - Weekly */}
+                {task.scheduleType === 'weekly' && (
+                  <div>
+                    <p className="text-[10px] text-text-muted mb-1">Day of Week</p>
+                    <select
+                      value={task.scheduleDay ?? 1}
+                      onChange={(e) => { handleScheduleChange({ scheduleDay: Number(e.target.value) }).catch(() => {}); }}
+                      className="w-full bg-bg-secondary border border-border-default rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-coder1-cyan/50"
+                    >
+                      {DAYS_OF_WEEK.map((day, i) => (
+                        <option key={i} value={i}>{day}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Day picker - Monthly */}
+                {task.scheduleType === 'monthly' && (
+                  <div>
+                    <p className="text-[10px] text-text-muted mb-1">Day of Month</p>
+                    <input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={task.scheduleDay ?? 1}
+                      onChange={(e) => { handleScheduleChange({ scheduleDay: Number(e.target.value) }).catch(() => {}); }}
+                      className="w-full bg-bg-secondary border border-border-default rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-coder1-cyan/50"
+                    />
+                  </div>
+                )}
+
+                {/* Next run */}
+                {task.nextRunAt && (
+                  <div>
+                    <p className="text-[10px] text-text-muted mb-1">Next Run</p>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-coder1-cyan" />
+                      <p className="text-xs text-coder1-cyan">{formatTimestamp(task.nextRunAt)}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

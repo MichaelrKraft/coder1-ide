@@ -21,6 +21,7 @@ export interface Agent {
   projectId: string | null;
   telegramBotToken: string | null;
   telegramChatId: string | null;
+  mcpServers: string[];
 }
 
 export type CreateAgentInput = Omit<
@@ -53,6 +54,7 @@ interface AgentRow {
   project_id: string | null;
   telegram_bot_token: string | null;
   telegram_chat_id: string | null;
+  mcp_servers: string;
 }
 
 function rowToAgent(row: AgentRow): Agent {
@@ -78,6 +80,7 @@ function rowToAgent(row: AgentRow): Agent {
       ? `••••••${row.telegram_bot_token.slice(-4)}`
       : null,
     telegramChatId: row.telegram_chat_id,
+    mcpServers: JSON.parse(row.mcp_servers || '[]') as string[],
   };
 }
 
@@ -91,8 +94,8 @@ export function createAgent(input: CreateAgentInput): Agent {
       id, user_id, name, role, description, system_prompt, skills,
       workspace_path, model, monthly_budget_cents, max_concurrent_runs,
       status, last_run_at, created_at, updated_at, supervisor_agent_id,
-      project_id, telegram_bot_token, telegram_chat_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', NULL, ?, ?, ?, ?, ?, ?)
+      project_id, telegram_bot_token, telegram_chat_id, mcp_servers
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'idle', NULL, ?, ?, ?, ?, ?, ?, ?)
     RETURNING *
   `);
 
@@ -113,7 +116,8 @@ export function createAgent(input: CreateAgentInput): Agent {
     input.supervisorAgentId ?? null,
     input.projectId ?? null,
     input.telegramBotToken ?? null,
-    input.telegramChatId ?? null
+    input.telegramChatId ?? null,
+    JSON.stringify(input.mcpServers ?? [])
   ) as AgentRow;
 
   return rowToAgent(row);
@@ -166,6 +170,7 @@ export function updateAgent(
     projectId: 'project_id',
     telegramBotToken: 'telegram_bot_token',
     telegramChatId: 'telegram_chat_id',
+    mcpServers: 'mcp_servers',
   };
 
   const setClauses: string[] = ['updated_at = ?'];
@@ -175,7 +180,7 @@ export function updateAgent(
     if (jsKey in input) {
       setClauses.push(`${dbCol} = ?`);
       const val = input[jsKey as keyof UpdateAgentInput];
-      values.push(jsKey === 'skills' && Array.isArray(val) ? JSON.stringify(val) : val);
+      values.push((jsKey === 'skills' || jsKey === 'mcpServers') && Array.isArray(val) ? JSON.stringify(val) : val);
     }
   }
 
@@ -235,4 +240,40 @@ export function getAgentRawTelegramToken(id: string, userId: string): string | n
   const row = db.prepare('SELECT telegram_bot_token FROM agent_hub_agents WHERE id = ? AND user_id = ?')
     .get(id, userId) as { telegram_bot_token: string | null } | undefined;
   return row?.telegram_bot_token ?? null;
+}
+
+/**
+ * Seed default CEO agent if the user has no agents yet.
+ * Called on first dashboard/agents page load.
+ */
+export function seedDefaultAgents(userId: string): boolean {
+  const existing = listAgents(userId);
+  if (existing.length > 0) return false;
+
+  createAgent({
+    userId,
+    name: 'CEO Agent',
+    role: 'Chief Executive Officer',
+    description: 'The top-level orchestrator agent. Delegates work to subordinate agents, reviews their output, and makes strategic decisions. Coordinates across all projects.',
+    systemPrompt: `You are the CEO Agent for this workspace. Your responsibilities:
+
+1. **Delegate** — Break down high-level goals into concrete tasks and assign them to the right subordinate agents
+2. **Coordinate** — Ensure agents aren't conflicting or duplicating work
+3. **Review** — Check the quality of completed work before approval
+4. **Report** — Summarize progress and blockers clearly
+
+When given a task, first assess whether you should handle it directly or delegate to a specialist. Prefer delegation when possible. Always explain your reasoning.`,
+    skills: [],
+    mcpServers: [],
+    workspacePath: process.env.HOME || '/tmp',
+    model: 'claude-sonnet-4-6',
+    monthlyBudgetCents: 0,
+    maxConcurrentRuns: 1,
+    supervisorAgentId: null,
+    projectId: null,
+    telegramBotToken: null,
+    telegramChatId: null,
+  });
+
+  return true;
 }

@@ -52,6 +52,7 @@ export async function PATCH(request: NextRequest, context: RouteContext): Promis
   if (typeof body.description === 'string') input.description = body.description;
   if (typeof body.systemPrompt === 'string') input.systemPrompt = body.systemPrompt;
   if (Array.isArray(body.skills)) input.skills = body.skills.filter((s: unknown): s is string => typeof s === 'string');
+  if (Array.isArray(body.mcpServers)) input.mcpServers = body.mcpServers.filter((s: unknown): s is string => typeof s === 'string');
   if (typeof body.workspacePath === 'string') {
     if (!path.isAbsolute(body.workspacePath)) {
       return NextResponse.json({ error: 'workspacePath must be an absolute path' }, { status: 400 });
@@ -64,6 +65,11 @@ export async function PATCH(request: NextRequest, context: RouteContext): Promis
   if (typeof body.monthlyBudgetCents === 'number') input.monthlyBudgetCents = body.monthlyBudgetCents;
   if (typeof body.maxConcurrentRuns === 'number') input.maxConcurrentRuns = body.maxConcurrentRuns;
   if (typeof body.status === 'string') input.status = body.status as UpdateAgentInput['status'];
+  if (typeof body.projectId === 'string' || body.projectId === null) {
+    input.projectId = body.projectId as string | null;
+  }
+  if (typeof body.telegramBotToken === 'string') input.telegramBotToken = body.telegramBotToken;
+  if (typeof body.telegramChatId === 'string') input.telegramChatId = body.telegramChatId;
   if (typeof body.supervisorAgentId === 'string' || body.supervisorAgentId === null) {
     const newSupervisor = body.supervisorAgentId as string | null;
     if (newSupervisor) {
