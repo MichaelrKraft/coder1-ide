@@ -282,6 +282,7 @@ export default function AgentDetail({
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [pausing, setPausing] = useState(false);
+  const [availableMcpServers, setAvailableMcpServers] = useState<string[]>([]);
 
   async function loadAgent() {
     setLoading(true);
@@ -309,9 +310,20 @@ export default function AgentDetail({
     }
   }
 
+  async function loadMcpServers() {
+    try {
+      const res = await fetch('/api/agent-hub/mcp-servers');
+      if (res.ok) {
+        const data = (await res.json()) as { servers: { name: string }[] };
+        setAvailableMcpServers(data.servers.map(s => s.name));
+      }
+    } catch { /* silent */ }
+  }
+
   useEffect(() => {
     void loadAgent();
     void loadStats();
+    void loadMcpServers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
 
@@ -725,23 +737,70 @@ export default function AgentDetail({
                 <span className="text-text-muted">Not configured</span>
               )}
             </div>
-            {agent.skills.length > 0 && (
-              <div className="mt-3">
-                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">
+          </section>
+
+          {/* Tools */}
+          <section>
+            <Label>Tools</Label>
+            <div className="bg-bg-secondary border border-border-default rounded-lg p-3 space-y-3">
+              {/* MCP Servers */}
+              <div>
+                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                  MCP Servers
+                </p>
+                {agent.mcpServers && agent.mcpServers.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {agent.mcpServers.map(server => {
+                      const isMissing = !availableMcpServers.includes(server);
+                      return (
+                        <span
+                          key={server}
+                          className={`px-2 py-0.5 text-[10px] rounded-full border ${
+                            isMissing
+                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                              : 'bg-coder1-cyan/10 text-coder1-cyan border-coder1-cyan/30'
+                          }`}
+                          title={isMissing ? 'Not found in ~/.mcp.json' : ''}
+                        >
+                          {server}{isMissing ? ' (missing)' : ''}
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-text-muted">None configured</p>
+                )}
+              </div>
+
+              {/* Skills */}
+              <div>
+                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">
                   Skills
                 </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {agent.skills.map((skill) => (
-                    <span
-                      key={skill}
-                      className="px-2 py-0.5 text-[10px] rounded-full bg-bg-tertiary text-text-muted border border-border-default"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
+                {agent.skills.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {agent.skills.map(skill => (
+                      <span
+                        key={skill}
+                        className="px-2 py-0.5 text-[10px] rounded-full bg-bg-tertiary text-text-muted border border-border-default"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-text-muted">None configured</p>
+                )}
               </div>
-            )}
+
+              {/* Edit button */}
+              <button
+                onClick={() => setShowEditForm(true)}
+                className="text-[10px] text-coder1-cyan hover:text-coder1-cyan/80 transition-colors"
+              >
+                Edit tools &rarr;
+              </button>
+            </div>
           </section>
 
           {/* Agent Memory */}

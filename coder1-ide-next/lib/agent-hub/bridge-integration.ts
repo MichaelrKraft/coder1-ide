@@ -18,6 +18,7 @@ export interface AgentRunContext {
   workspacePath: string;
   systemPrompt: string;
   skills: string[];
+  mcpServers: string[];
   taskTitle: string;
   taskDescription: string;
   model: string;
@@ -143,6 +144,7 @@ export async function startAgentRun(
     workspacePath: worktreePath,
     prompt: fullPrompt,
     model: ctx.model,
+    mcpServers: ctx.mcpServers,
   });
 
   // sessionId is assigned by the bridge when it starts the Claude process;

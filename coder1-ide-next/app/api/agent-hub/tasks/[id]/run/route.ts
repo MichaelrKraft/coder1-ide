@@ -77,6 +77,7 @@ export async function POST(request: NextRequest, { params }: Params): Promise<Ne
     workspacePath: agent.workspacePath,
     systemPrompt: agent.systemPrompt,
     skills: agent.skills,
+    mcpServers: agent.mcpServers ?? [],
     taskTitle: task.title,
     taskDescription: task.description,
     model: agent.model,
