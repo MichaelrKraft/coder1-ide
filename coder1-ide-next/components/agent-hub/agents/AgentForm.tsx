@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import type { Agent } from '@/lib/agent-hub/agents';
 import type { SkillInfo } from '@/lib/agent-hub/skills-registry';
+import type { AgentTemplate } from '@/lib/agent-hub/templates';
+import AgentTemplateSelector from './AgentTemplateSelector';
 
 interface Props {
   agentId?: string;
@@ -62,6 +64,20 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
   const [testingTelegram, setTestingTelegram] = useState(false);
   const [telegramTestResult, setTelegramTestResult] = useState<string | null>(null);
+  const [templateApplied, setTemplateApplied] = useState(false);
+
+  function applyTemplate(template: AgentTemplate) {
+    setForm(prev => ({
+      ...prev,
+      name: template.defaults.name,
+      role: template.defaults.role,
+      description: template.defaults.description,
+      model: template.defaults.model,
+      skills: template.defaults.skills,
+      systemPrompt: template.defaults.systemPrompt,
+    }));
+    setTemplateApplied(true);
+  }
 
   useEffect(() => {
     void loadSkills();
@@ -258,6 +274,13 @@ export default function AgentForm({ agentId, onSave, onClose }: Props) {
             <X size={16} />
           </button>
         </div>
+
+        {!agentId && !templateApplied && (
+          <AgentTemplateSelector
+            onSelect={applyTemplate}
+            onSkip={() => setTemplateApplied(true)}
+          />
+        )}
 
         <form onSubmit={(e) => void handleSubmit(e)} className="px-5 py-4 space-y-4">
           <FormField label="Name" error={errors.name} required>
