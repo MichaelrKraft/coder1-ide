@@ -465,6 +465,19 @@ class BridgeClient extends EventEmitter {
         this.bridgeId = data.bridgeId;
         this.emit('accepted', data);
 
+        // Send MCP server names to server for Agent Hub discovery
+        try {
+          const mcpPath = path.join(os.homedir(), '.mcp.json');
+          if (fs.existsSync(mcpPath)) {
+            const mcpConfig = JSON.parse(fs.readFileSync(mcpPath, 'utf-8'));
+            const serverNames = Object.keys(mcpConfig.mcpServers || {});
+            if (serverNames.length > 0) {
+              this.socket.emit('bridge:mcp-servers', { servers: serverNames });
+              this.log(`Sent ${serverNames.length} MCP server names to server`);
+            }
+          }
+        } catch { /* Non-critical — MCP discovery is best-effort */ }
+
         // Start ManusLive proxy — connects to local ManusLive daemon if running
         if (!this.manusLiveProxy) {
           this.manusLiveProxy = new ManusLiveProxy(this.socket);

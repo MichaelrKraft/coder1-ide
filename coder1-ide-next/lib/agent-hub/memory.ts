@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getAgentHubDatabase } from './db';
 
+export type MemoryScope = 'agent' | 'project' | 'user';
+
 export interface MemoryEntry {
   id: string;
   agentId: string;
@@ -8,6 +10,8 @@ export interface MemoryEntry {
   runId: string | null;
   summary: string;
   createdAt: string;
+  scope: MemoryScope;
+  projectId: string | null;
 }
 
 interface MemoryRow {
@@ -17,6 +21,8 @@ interface MemoryRow {
   run_id: string | null;
   summary: string;
   created_at: string;
+  scope: string;
+  project_id: string | null;
 }
 
 const MAX_MEMORIES_PER_AGENT = 100;
@@ -29,6 +35,8 @@ function rowToMemory(row: MemoryRow): MemoryEntry {
     runId: row.run_id,
     summary: row.summary,
     createdAt: row.created_at,
+    scope: (row.scope as MemoryScope) || 'agent',
+    projectId: row.project_id ?? null,
   };
 }
 
@@ -48,16 +56,18 @@ export function storeMemory(
   agentId: string,
   userId: string,
   runId: string | null,
-  summary: string
+  summary: string,
+  scope: MemoryScope = 'agent',
+  projectId: string | null = null
 ): MemoryEntry {
   const db = getAgentHubDatabase();
   const id = uuidv4();
   const now = new Date().toISOString();
 
   db.prepare(
-    `INSERT INTO agent_hub_memory (id, agent_id, user_id, run_id, summary, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(id, agentId, userId, runId, summary, now);
+    `INSERT INTO agent_hub_memory (id, agent_id, user_id, run_id, summary, created_at, scope, project_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, agentId, userId, runId, summary, now, scope, projectId);
 
   // Sync to FTS5 if available
   if (hasFts(db)) {
@@ -93,7 +103,7 @@ export function storeMemory(
     }
   }
 
-  return { id, agentId, userId, runId, summary, createdAt: now };
+  return { id, agentId, userId, runId, summary, createdAt: now, scope, projectId };
 }
 
 export function recallMemory(
@@ -184,6 +194,102 @@ export function clearMemory(agentId: string, userId: string): void {
   db.prepare(
     `DELETE FROM agent_hub_memory WHERE agent_id = ? AND user_id = ?`
   ).run(agentId, userId);
+}
+
+/**
+ * List memories visible to an agent: agent-scope + project-scope + user-scope.
+ */
+export function listMemoryForAgent(
+  agentId: string,
+  userId: string,
+  projectId: string | null
+): MemoryEntry[] {
+  const db = getAgentHubDatabase();
+
+  // Agent-scope memories for this agent
+  const agentMemories = db.prepare(
+    `SELECT * FROM agent_hub_memory WHERE agent_id = ? AND user_id = ? AND scope = 'agent'
+     ORDER BY created_at DESC`
+  ).all(agentId, userId) as MemoryRow[];
+
+  // Project-scope memories (if agent has a project)
+  let projectMemories: MemoryRow[] = [];
+  if (projectId) {
+    projectMemories = db.prepare(
+      `SELECT * FROM agent_hub_memory WHERE user_id = ? AND scope = 'project' AND project_id = ?
+       ORDER BY created_at DESC`
+    ).all(userId, projectId) as MemoryRow[];
+  }
+
+  // User-scope memories (global)
+  const userMemories = db.prepare(
+    `SELECT * FROM agent_hub_memory WHERE user_id = ? AND scope = 'user'
+     ORDER BY created_at DESC`
+  ).all(userId) as MemoryRow[];
+
+  return [...agentMemories, ...projectMemories, ...userMemories].map(rowToMemory);
+}
+
+/**
+ * List memories by scope.
+ */
+export function listMemoryByScope(
+  userId: string,
+  scope: MemoryScope,
+  projectId?: string
+): MemoryEntry[] {
+  const db = getAgentHubDatabase();
+
+  if (scope === 'user') {
+    const rows = db.prepare(
+      `SELECT * FROM agent_hub_memory WHERE user_id = ? AND scope = 'user'
+       ORDER BY created_at DESC`
+    ).all(userId) as MemoryRow[];
+    return rows.map(rowToMemory);
+  }
+
+  if (scope === 'project' && projectId) {
+    const rows = db.prepare(
+      `SELECT * FROM agent_hub_memory WHERE user_id = ? AND scope = 'project' AND project_id = ?
+       ORDER BY created_at DESC`
+    ).all(userId, projectId) as MemoryRow[];
+    return rows.map(rowToMemory);
+  }
+
+  return [];
+}
+
+/**
+ * Store a scoped memory (not tied to a specific agent run).
+ */
+export function storeScopedMemory(
+  userId: string,
+  summary: string,
+  scope: MemoryScope,
+  projectId: string | null = null
+): MemoryEntry {
+  // Use empty string for agentId on user/project scope memories
+  return storeMemory('', userId, null, summary, scope, projectId);
+}
+
+/**
+ * Delete a single memory by ID.
+ */
+export function deleteMemory(id: string, userId: string): boolean {
+  const db = getAgentHubDatabase();
+  const result = db.prepare(
+    `DELETE FROM agent_hub_memory WHERE id = ? AND user_id = ?`
+  ).run(id, userId);
+
+  if (hasFts(db)) {
+    try {
+      db.prepare(`DELETE FROM agent_hub_memory_fts WHERE id = ?`).run(id);
+    } catch {
+      // FTS cleanup non-critical
+    }
+  }
+
+  return result.changes > 0;
 }
 
 /**

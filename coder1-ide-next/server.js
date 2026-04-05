@@ -1934,6 +1934,20 @@ app.prepare().then(() => {
         capabilities: ['claude', 'files', 'git']
       });
       
+      // Cache MCP server names from bridge for Agent Hub
+      socket.on('bridge:mcp-servers', (data) => {
+        if (data?.servers && Array.isArray(data.servers)) {
+          if (!global._bridgeMcpServers) global._bridgeMcpServers = new Map();
+          global._bridgeMcpServers.set(socket.userId, data.servers);
+          console.log(`[Agent Hub] Cached ${data.servers.length} MCP servers for user ${socket.userId}`);
+        }
+      });
+
+      // Clear MCP cache on disconnect
+      socket.on('disconnect', () => {
+        if (global._bridgeMcpServers) global._bridgeMcpServers.delete(socket.userId);
+      });
+
       // Handle command output from bridge
       socket.on('claude:output', (data) => {
         // Forward output to the terminal session

@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import type { Run, RunLogChunk } from '@/lib/agent-hub/runs';
 import { RunStatusChip } from './RunStatusChip';
+import WorktreeMergePanel from './WorktreeMergePanel';
 import { getSocket } from '@/lib/socket';
 
 // Dynamic imports — SSR unsafe
@@ -171,6 +172,11 @@ export function RunViewer({ runId }: Props): React.ReactElement {
         )}
         {!run && <span className="text-text-muted">Loading run...</span>}
       </div>
+
+      {/* Worktree merge panel */}
+      {run?.worktreePath && (
+        <WorktreeMergePanel runId={runId} />
+      )}
 
       {/* Two-pane body */}
       <div className="flex flex-1 min-h-0">
