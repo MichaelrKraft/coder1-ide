@@ -46,7 +46,31 @@ interface StatusResult {
 // Sub-components
 // ============================================================================
 
-function SetupCard() {
+function SetupCard({ screenpipeOnly = false }: { screenpipeOnly?: boolean }) {
+  if (screenpipeOnly) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+        <div className="w-12 h-12 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center mb-4">
+          <Zap className="w-6 h-6 text-orange-400" />
+        </div>
+        <h2 className="text-white font-semibold text-lg mb-2">Screenpipe not running</h2>
+        <p className="text-gray-400 text-sm max-w-sm mb-4">
+          FlowTrace is configured, but Screenpipe isn&apos;t running — so there&apos;s nothing to search yet.
+          Start Screenpipe to begin capturing your session.
+        </p>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 text-left w-full max-w-sm">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Start Screenpipe:
+          </p>
+          <ol className="text-xs text-gray-400 space-y-1.5 list-decimal list-inside">
+            <li>Open the Screenpipe desktop app (or run <code className="text-orange-400">screenpipe</code> in a terminal)</li>
+            <li>Reload this page — status will show &ldquo;Capturing&rdquo;</li>
+          </ol>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
       <div className="w-12 h-12 rounded-full bg-[#00D9FF]/10 border border-[#00D9FF]/30 flex items-center justify-center mb-4">
@@ -169,7 +193,8 @@ export function FlowTracePanel({ hideBackButton = false }: { hideBackButton?: bo
     }
   };
 
-  const isSetupNeeded = !status || !status.enabled || !status.configured;
+  const isSetupNeeded = !status || !status.enabled || !status.configured || !status.screenpipeRunning;
+  const screenpipeOnly = !!(status && status.enabled && status.configured && !status.screenpipeRunning);
 
   return (
     <div className="flex flex-col h-full bg-gray-900 text-white">
@@ -190,14 +215,16 @@ export function FlowTracePanel({ hideBackButton = false }: { hideBackButton?: bo
           <div className="ml-auto flex items-center gap-1.5">
             <div
               className={`w-1.5 h-1.5 rounded-full ${
-                status.running ? 'bg-green-400' : 'bg-gray-600'
+                status.running ? 'bg-green-400' : status.screenpipeRunning ? 'bg-yellow-400' : 'bg-gray-600'
               }`}
             />
             <span className="text-[10px] text-gray-500">
               {status.running
                 ? `Capturing · ${status.framesCaptured ?? 0} frames`
-                : status.enabled
+                : status.screenpipeRunning
                 ? 'Idle'
+                : status.enabled
+                ? 'Screenpipe not running'
                 : 'Disabled'}
             </span>
           </div>
@@ -205,7 +232,7 @@ export function FlowTracePanel({ hideBackButton = false }: { hideBackButton?: bo
       </div>
 
       {isSetupNeeded ? (
-        <SetupCard />
+        <SetupCard screenpipeOnly={screenpipeOnly} />
       ) : (
         <>
           {/* Query input */}

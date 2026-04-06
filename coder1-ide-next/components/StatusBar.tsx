@@ -209,7 +209,7 @@ export default function StatusBar({
       if (response.ok) {
         console.log('📊 Timeline data:', data);
         // Open timeline page with sessionId
-        window.open(`/timeline?sessionId=${sessionId}`, '_blank');
+        window.open(`/memory?sessionId=${sessionId}`, '_blank');
         showToast('📊 Opening timeline view');
       } else {
         throw new Error('Failed to fetch timeline');
