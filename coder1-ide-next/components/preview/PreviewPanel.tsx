@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Eye, X, RefreshCw, ExternalLink, Sparkles, Search, Users } from '@/lib/icons';
-import { Camera, Bot } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import ScreenshotToCode from '@/components/screenshot-to-code/ScreenshotToCode';
 import { colors, glows } from '@/lib/design-tokens';
 import ContextualMemoryPanel from '@/components/contextual-memory/ContextualMemoryPanel';
@@ -305,15 +305,6 @@ const PreviewPanel = React.memo(function PreviewPanel({
       {/* Tabs */}
       <div className="flex items-center justify-between px-4 h-12 shrink-0">
         <div className="flex items-center gap-1">
-          {/* Agents — opens agent orchestration overlay */}
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('openMissionControl'))}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 text-text-secondary border-transparent hover:text-text-primary hover:border-border-hover"
-            title="Open agent orchestration"
-          >
-            <Bot className="w-4 h-4" />
-            <span>Agents</span>
-          </button>
           {features().teamFeatures && (
             <button
               onClick={() => setMode('teams')}

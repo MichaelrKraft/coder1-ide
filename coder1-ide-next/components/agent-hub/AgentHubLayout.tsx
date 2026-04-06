@@ -3,7 +3,8 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Bot, FolderKanban, CheckSquare, Target, Settings } from 'lucide-react';
+import { LayoutDashboard, Bot, FolderKanban, CheckSquare, Target, Settings, ArrowLeft } from 'lucide-react';
+import Image from 'next/image';
 
 const tabs = [
   { href: '/ide/agent-hub/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -17,15 +18,32 @@ function AgentHubLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="h-full flex flex-col">
-      <nav className="flex items-center px-2 py-2 border-b border-border-default shrink-0 gap-1">
+    <div className="h-full flex flex-col" style={{ '--border-default': 'rgba(0, 217, 255, 0.3)' } as React.CSSProperties}>
+      {/* Header bar with centered logo */}
+      <header className="flex items-center justify-center px-4 py-2 shrink-0 border-b border-border-default bg-bg-secondary">
+        <Image src="/coder1-logo.png" alt="Coder1" height={32} width={120} className="object-contain" />
+      </header>
+
+      {/* Body: sidebar + content */}
+      <div className="flex flex-row flex-1 min-h-0">
+      {/* Left sidebar nav */}
+      <nav className="flex flex-col w-40 shrink-0 border-r border-border-default px-2 py-3 gap-1">
+        <Link
+          href="/ide"
+          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-all text-text-muted hover:text-text-secondary hover:bg-bg-tertiary mb-2"
+          title="Back to IDE"
+        >
+          <ArrowLeft className="w-3 h-3" />
+          Back to IDE
+        </Link>
+        <div className="h-px bg-border-default mb-2" />
         {tabs.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-md transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-all ${
                 active
                   ? 'text-coder1-cyan bg-coder1-cyan/10'
                   : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
@@ -37,9 +55,10 @@ function AgentHubLayoutInner({ children }: { children: React.ReactNode }) {
           );
         })}
         <div className="flex-1" />
+        <div className="h-px bg-border-default mb-2" />
         <Link
           href="/ide/agent-hub/settings"
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-md transition-all ${
+          className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-all ${
             pathname.startsWith('/ide/agent-hub/settings')
               ? 'text-coder1-cyan bg-coder1-cyan/10'
               : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
@@ -51,6 +70,7 @@ function AgentHubLayoutInner({ children }: { children: React.ReactNode }) {
       </nav>
 
       <div className="flex-1 min-h-0 overflow-auto">{children}</div>
+      </div>{/* end body */}
     </div>
   );
 }

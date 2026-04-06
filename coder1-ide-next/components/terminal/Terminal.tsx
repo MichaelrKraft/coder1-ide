@@ -16,7 +16,7 @@ if (typeof window !== 'undefined') {
 }
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
 import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus, Users } from '@/lib/icons';
-import { Edit3, GitBranch, X, Stethoscope, Loader2 } from 'lucide-react';
+import { Edit3, GitBranch, X, Stethoscope, Loader2, Bot } from 'lucide-react';
 import SandboxPanel from '@/components/sandbox/SandboxPanel';
 import { useModelStore } from '@/stores/useModelStore';
 import TerminalSettings, { TerminalSettingsState } from './TerminalSettings';
@@ -5703,6 +5703,16 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             )}
             <Users className="w-4 h-4" />
             <span>AI Team</span>
+          </button>
+
+          {/* Agents button — navigates to autonomous agent management page */}
+          <button
+            onClick={() => { window.location.href = '/ide/agent-hub'; }}
+            className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-coder1-cyan/20"
+            title="Agents Hub — Manage autonomous agents"
+          >
+            <Bot className="w-4 h-4" />
+            <span>Agents</span>
           </button>
 
           {/* Enhanced Supervision button */}

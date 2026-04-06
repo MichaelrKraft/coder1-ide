@@ -41,3 +41,15 @@ Note: UI scope filter tabs deferred — the API layer is complete and the agent 
 - Added `listMemoryByScope()`, `storeScopedMemory()`, `deleteMemory()` helper functions
 - Updated `/api/agent-hub/agents/[id]/memory` — GET returns all scopes (filterable via ?scope=), POST accepts scope
 - Created `/api/agent-hub/memory` — global endpoint for user/project scoped memories not tied to any agent
+
+---
+
+## Fix: Move Agents Button
+
+### Tasks
+- [ ] Remove Agents button from PreviewPanel.tsx (right panel)
+- [ ] Add Agents Hub button to Terminal.tsx header after AI Team button
+
+### Files
+- `components/preview/PreviewPanel.tsx` — remove Agents button (lines 308-316)
+- `components/terminal/Terminal.tsx` — add Agents Hub button after AI Team button (~line 5706)
