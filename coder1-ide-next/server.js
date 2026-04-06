@@ -1934,6 +1934,20 @@ app.prepare().then(() => {
         capabilities: ['claude', 'files', 'git']
       });
       
+      // Cache MCP server names from bridge for Agent Hub
+      socket.on('bridge:mcp-servers', (data) => {
+        if (data?.servers && Array.isArray(data.servers)) {
+          if (!global._bridgeMcpServers) global._bridgeMcpServers = new Map();
+          global._bridgeMcpServers.set(socket.userId, data.servers);
+          console.log(`[Agent Hub] Cached ${data.servers.length} MCP servers for user ${socket.userId}`);
+        }
+      });
+
+      // Clear MCP cache on disconnect
+      socket.on('disconnect', () => {
+        if (global._bridgeMcpServers) global._bridgeMcpServers.delete(socket.userId);
+      });
+
       // Handle command output from bridge
       socket.on('claude:output', (data) => {
         // Forward output to the terminal session
@@ -2312,6 +2326,164 @@ app.prepare().then(() => {
       };
       bridgeManager.on('bridge:disconnected', _handleBridgeDisconnected);
 
+      // ── Agent Hub: run room join/leave ───────────────────────────────────
+      socket.on('run:join', ({ runId }) => {
+        if (runId) socket.join(`run:${runId}`);
+      });
+      socket.on('run:leave', ({ runId }) => {
+        if (runId) socket.leave(`run:${runId}`);
+      });
+
+      // ── Agent Hub: bridge-side execution events ──────────────────────────
+
+      // Bridge confirms agent process started
+      socket.on('agent:started', ({ runId, sessionId }) => {
+        const userId = socket.userId;
+        if (!userId) {
+          console.warn('[agent-hub] agent:started received with no userId on socket, ignoring');
+          return;
+        }
+        setImmediate(() => {
+          try {
+            const { updateRun } = require('./lib/agent-hub/runs');
+            updateRun(runId, userId, { sessionId });
+            io.to(`run:${runId}`).emit('run:status', { status: 'running', sessionId });
+          } catch (e) {
+            console.warn('[agent-hub] agent:started handler error:', e.message);
+          }
+        });
+      });
+
+      // Bridge streams stdout/stderr chunks
+      socket.on('agent:output', ({ runId, chunk, type }) => {
+        const userId = socket.userId;
+        if (!userId) {
+          console.warn('[agent-hub] agent:output received with no userId on socket, ignoring');
+          return;
+        }
+        io.to(`run:${runId}`).emit(type === 'stderr' ? 'run:stderr' : 'run:stdout', {
+          chunk,
+          timestamp: new Date().toISOString(),
+        });
+        setImmediate(() => {
+          try {
+            const { appendRunLogChunk } = require('./lib/agent-hub/runs');
+            const token = process.env.AGENT_HUB_INTERNAL_TOKEN;
+            const safeChunk = token ? chunk.replace(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '[REDACTED]') : chunk;
+            appendRunLogChunk(runId, safeChunk, type || 'stdout');
+          } catch (e) {
+            console.warn('[agent-hub] chunk storage error:', e.message);
+          }
+        });
+      });
+
+      // Bridge reports agent completed
+      socket.on('agent:complete', ({ runId, exitCode, costCents }) => {
+        const userId = socket.userId;
+        if (!userId) {
+          console.warn('[agent-hub] agent:complete received with no userId on socket, ignoring');
+          return;
+        }
+        setImmediate(() => {
+          try {
+            const { updateRun, getRun } = require('./lib/agent-hub/runs');
+            const { updateTask } = require('./lib/agent-hub/tasks');
+            const run = getRun(runId, userId);
+            if (run) {
+              updateRun(runId, run.userId, {
+                status: exitCode === 0 ? 'awaiting_approval' : 'failed',
+                exitCode,
+                costCents: costCents || 0,
+                completedAt: new Date().toISOString(),
+              });
+              updateTask(run.taskId, run.userId, {
+                status: exitCode === 0 ? 'in_review' : 'backlog',
+              });
+              io.to(`run:${runId}`).emit('run:complete', {
+                exitCode,
+                totalCostCents: costCents || 0,
+              });
+
+              // Fire per-agent Telegram notification via internal API (best-effort)
+              {
+                const port = process.env.PORT || 3001;
+                const internalToken = process.env.AGENT_HUB_INTERNAL_TOKEN || '';
+                fetch(`http://localhost:${port}/api/agent-hub/runs/${runId}/notify`, {
+                  method: 'POST',
+                  headers: { 'X-Internal-Token': internalToken },
+                }).catch(() => {});
+              }
+
+              // Legacy global Telegram notification (env-based, kept for backward compat)
+              if (exitCode === 0) {
+                setImmediate(async () => {
+                  try {
+                    const { notifyRunComplete } = require('./lib/agent-hub/telegram-notifications');
+                    const { getAgent } = require('./lib/agent-hub/agents');
+                    const { getTask } = require('./lib/agent-hub/tasks');
+                    const agent = getAgent(run.agentId, run.userId);
+                    const task = getTask(run.taskId, run.userId);
+                    if (agent && task) {
+                      await notifyRunComplete(agent.name, task.title, runId);
+                    }
+                  } catch (e) {
+                    console.warn('[agent-hub] telegram notification error:', e.message);
+                  }
+                });
+              }
+
+              // Auto-summarize completed run for agent memory (Phase 6e)
+              setImmediate(async () => {
+                try {
+                  const { autoSummarize } = require('./lib/agent-hub/memory');
+                  await autoSummarize(runId, run.agentId, run.userId);
+                } catch (e) {
+                  console.warn('[agent-hub] auto-summarize error:', e.message);
+                }
+              });
+            }
+          } catch (e) {
+            console.warn('[agent-hub] agent:complete handler error:', e.message);
+          }
+        });
+      });
+
+      // Bridge reports agent error
+      socket.on('agent:error', ({ runId, error }) => {
+        const userId = socket.userId;
+        if (!userId) {
+          console.warn('[agent-hub] agent:error received with no userId on socket, ignoring');
+          return;
+        }
+        setImmediate(() => {
+          try {
+            const { updateRun, getRun } = require('./lib/agent-hub/runs');
+            const { updateTask } = require('./lib/agent-hub/tasks');
+            const run = getRun(runId, userId);
+            if (run) {
+              updateRun(runId, run.userId, {
+                status: 'failed',
+                errorSummary: String(error).slice(0, 500),
+                completedAt: new Date().toISOString(),
+              });
+              updateTask(run.taskId, run.userId, { status: 'backlog' });
+
+              // Fire per-agent Telegram notification via internal API (best-effort)
+              const port = process.env.PORT || 3001;
+              const internalToken = process.env.AGENT_HUB_INTERNAL_TOKEN || '';
+              fetch(`http://localhost:${port}/api/agent-hub/runs/${runId}/notify`, {
+                method: 'POST',
+                headers: { 'X-Internal-Token': internalToken },
+              }).catch(() => {});
+            }
+          } catch (e) {
+            console.warn('[agent-hub] agent:error handler error:', e.message);
+          }
+        });
+      });
+
+      // ─────────────────────────────────────────────────────────────────────
+
       // Handle disconnect
       socket.on('disconnect', () => {
         console.log(`🔌 Bridge disconnected: ${bridgeId}`);
@@ -2449,6 +2621,75 @@ app.prepare().then(() => {
         timestamp: data?.timestamp || now,
         serverTime: now
       });
+    });
+
+    // ── Agent Chat (Command Center) relay ──
+    // Receives events from browser, relays to bridge, and streams responses back
+
+    socket.on('agent:chat:start', (data) => {
+      const { agentId, workspacePath } = data;
+      const context = typeof data.context === 'string' ? data.context.slice(0, 32 * 1024) : '';
+      console.log(`[Agent Chat] Start request from browser`, { agentId });
+
+      const bm = global.bridgeManager;
+      if (!bm) {
+        socket.emit('agent:chat:stopped', { agentId, reason: 'error', error: 'Bridge manager not available' });
+        return;
+      }
+
+      const userId = socket.userId || 'local-user';
+      const bridge = bm.getBridgeForUser(userId);
+      if (!bridge || !bridge.socket.connected) {
+        socket.emit('agent:chat:stopped', { agentId, reason: 'error', error: 'No bridge connected. Start coder1-bridge first.' });
+        return;
+      }
+
+      bridge.socket.emit('agent:chat:start', { agentId, workspacePath, context });
+
+      const onChatStarted = (d) => { if (d.agentId === agentId) socket.emit('agent:chat:started', d); };
+      const onChatOutput = (d) => { if (d.agentId === agentId) socket.emit('agent:chat:output', d); };
+      const onChatStopped = (d) => {
+        if (d.agentId === agentId) {
+          socket.emit('agent:chat:stopped', d);
+          bridge.socket.off('agent:chat:started', onChatStarted);
+          bridge.socket.off('agent:chat:output', onChatOutput);
+          bridge.socket.off('agent:chat:stopped', onChatStopped);
+        }
+      };
+
+      bridge.socket.on('agent:chat:started', onChatStarted);
+      bridge.socket.on('agent:chat:output', onChatOutput);
+      bridge.socket.on('agent:chat:stopped', onChatStopped);
+
+      if (!socket._chatCleanups) socket._chatCleanups = [];
+      socket._chatCleanups.push(() => {
+        bridge.socket.off('agent:chat:started', onChatStarted);
+        bridge.socket.off('agent:chat:output', onChatOutput);
+        bridge.socket.off('agent:chat:stopped', onChatStopped);
+        bridge.socket.emit('agent:chat:stop', { agentId });
+      });
+    });
+
+    socket.on('agent:chat:input', (data) => {
+      const { agentId, message } = data;
+      const bm = global.bridgeManager;
+      if (!bm) return;
+      const userId = socket.userId || 'local-user';
+      const bridge = bm.getBridgeForUser(userId);
+      if (bridge?.socket.connected) {
+        bridge.socket.emit('agent:chat:input', { agentId, message });
+      }
+    });
+
+    socket.on('agent:chat:stop', (data) => {
+      const { agentId } = data;
+      const bm = global.bridgeManager;
+      if (!bm) return;
+      const userId = socket.userId || 'local-user';
+      const bridge = bm.getBridgeForUser(userId);
+      if (bridge?.socket.connected) {
+        bridge.socket.emit('agent:chat:stop', { agentId });
+      }
     });
 
     // Johnny5 command execution audit logging
@@ -5086,6 +5327,12 @@ app.prepare().then(() => {
       socket.removeAllListeners('y:sync-request');
       socket.removeAllListeners('collab:file-write');
 
+      // Clean up any active Agent Hub chat relays
+      if (socket._chatCleanups) {
+        socket._chatCleanups.forEach(cleanup => cleanup());
+        socket._chatCleanups = [];
+      }
+
       // Note: We keep terminal session alive for reconnection
       // Sessions are only destroyed explicitly or on timeout
     });
@@ -5676,6 +5923,23 @@ app.prepare().then(() => {
         console.error('❌ Johnny5 Memory Sources module failed to load:', error.message);
       }
     });
+
+    // ========================================================================
+    // Agent Hub: Scheduled Task Runner (every 60s)
+    // ========================================================================
+    const SCHEDULER_INTERVAL_MS = 60_000;
+    setInterval(() => {
+      const schedulerToken = process.env.AGENT_HUB_INTERNAL_TOKEN || '';
+      if (!schedulerToken) return; // Scheduler disabled if no token
+      fetch(`http://localhost:${port}/api/cron/scheduled-tasks`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${schedulerToken}` },
+      }).catch(err => {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[agent-hub scheduler] Tick failed:', err.message);
+        }
+      });
+    }, SCHEDULER_INTERVAL_MS);
 });
 
 // Helper functions for context capture integration

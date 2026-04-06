@@ -228,6 +228,16 @@ class BridgeClient extends EventEmitter {
       lastError: null
     };
 
+    // Clean up stale MCP config files from previous runs
+    const os = require('os');
+    const path = require('path');
+    const fs = require('fs');
+    const tmpDir = os.tmpdir();
+    try {
+      const staleFiles = fs.readdirSync(tmpDir).filter(f => f.startsWith('coder1-mcp-') && f.endsWith('.json'));
+      staleFiles.forEach(f => { try { fs.unlinkSync(path.join(tmpDir, f)); } catch {} });
+    } catch {}
+
     logger.info('Bridge client initialized', {
       serverUrl: this.serverUrl,
       maxReconnectAttempts: this.maxReconnectAttempts,
@@ -454,6 +464,19 @@ class BridgeClient extends EventEmitter {
         this.log('Connection accepted by server');
         this.bridgeId = data.bridgeId;
         this.emit('accepted', data);
+
+        // Send MCP server names to server for Agent Hub discovery
+        try {
+          const mcpPath = path.join(os.homedir(), '.mcp.json');
+          if (fs.existsSync(mcpPath)) {
+            const mcpConfig = JSON.parse(fs.readFileSync(mcpPath, 'utf-8'));
+            const serverNames = Object.keys(mcpConfig.mcpServers || {});
+            if (serverNames.length > 0) {
+              this.socket.emit('bridge:mcp-servers', { servers: serverNames });
+              this.log(`Sent ${serverNames.length} MCP server names to server`);
+            }
+          }
+        } catch { /* Non-critical — MCP discovery is best-effort */ }
 
         // Start ManusLive proxy — connects to local ManusLive daemon if running
         if (!this.manusLiveProxy) {
@@ -776,6 +799,293 @@ class BridgeClient extends EventEmitter {
           });
         }
       });
+
+      // ──────────────────────────────────────────────────────────
+      // Agent Hub — agent run lifecycle handlers
+      // ──────────────────────────────────────────────────────────
+
+      // Track active agent run processes: runId → { process, killed }
+      if (!this.agentSessions) this.agentSessions = new Map();
+      // Track active command center chat sessions: agentId → { pty, idle timer }
+      if (!this.chatSessions) this.chatSessions = new Map();
+
+      // Listen for process:spawned events from executor to capture child process refs
+      this.claudeExecutor.on('process:spawned', ({ commandId, process: childProc }) => {
+        if (commandId?.startsWith('agent-')) {
+          const runId = commandId.replace('agent-', '');
+          const session = this.agentSessions.get(runId);
+          if (session) {
+            session.process = childProc;
+          }
+        }
+      });
+
+      /**
+       * agent:start — server requests an agent run.
+       * Spawns Claude Code in one-shot mode with the injected prompt.
+       * Streams output back as agent:output, ends with agent:complete or agent:error.
+       */
+      this.socket.on('agent:start', async (data) => {
+        const { runId, workspacePath, prompt, model, mcpServers } = data;
+        logger.info('[Agent] Starting run', { runId, workspacePath, model });
+
+        if (this.agentSessions.has(runId)) {
+          logger.warn('[Agent] Run already active, ignoring duplicate start', { runId });
+          return;
+        }
+
+        // Build MCP config if mcpServers is non-empty
+        const os = require('os');
+        const path = require('path');
+        const fs = require('fs');
+        let mcpConfigPath = null;
+        if (Array.isArray(mcpServers) && mcpServers.length > 0) {
+          try {
+            const mcpJsonPath = path.join(os.homedir(), '.mcp.json');
+            if (fs.existsSync(mcpJsonPath)) {
+              const mcpConfig = JSON.parse(fs.readFileSync(mcpJsonPath, 'utf-8'));
+              const allServers = mcpConfig.mcpServers || {};
+              const filtered = {};
+              const validName = /^[a-zA-Z0-9_-]+$/;
+
+              for (const name of mcpServers) {
+                if (!validName.test(name)) continue; // skip invalid names
+                if (allServers[name]) {
+                  filtered[name] = allServers[name];
+                } else {
+                  // Warn about missing server in run logs
+                  this.socket.emit('agent:output', {
+                    runId, chunk: `[Warning] MCP server "${name}" not found in ~/.mcp.json, skipping\n`, type: 'stderr'
+                  });
+                }
+              }
+
+              if (Object.keys(filtered).length > 0) {
+                mcpConfigPath = path.join(os.tmpdir(), `coder1-mcp-${runId}.json`);
+                fs.writeFileSync(mcpConfigPath, JSON.stringify({ mcpServers: filtered }, null, 2), { mode: 0o600 });
+                console.log('[bridge] Created MCP config for run', runId, 'with servers:', Object.keys(filtered).join(', '));
+              }
+            } else {
+              this.socket.emit('agent:output', {
+                runId, chunk: '[Warning] ~/.mcp.json not found, running without MCP servers\n', type: 'stderr'
+              });
+            }
+          } catch (err) {
+            console.warn('[bridge] MCP config error:', err.message);
+          }
+        }
+
+        // Cleanup helper for temp MCP config file
+        const cleanupMcpConfig = () => {
+          if (mcpConfigPath) {
+            try { fs.unlinkSync(mcpConfigPath); } catch {}
+            mcpConfigPath = null;
+          }
+        };
+
+        // Build the Claude CLI command — use stdinData to pipe the prompt (avoids shell escaping)
+        const ALLOWED_MODELS = /^claude-[a-z0-9\-\.]+$/;
+        const safeModel = model && ALLOWED_MODELS.test(model) ? model : 'claude-sonnet-4-6';
+        const modelFlag = ` --model ${safeModel}`;
+        const mcpFlag = mcpConfigPath ? ` --mcp-config '${mcpConfigPath.replace(/'/g, "'\\''")}' --strict-mcp-config` : '';
+        const safePath = workspacePath.replace(/'/g, "'\\''");
+        const command = `cd '${safePath}' && claude -p --output-format stream-json${modelFlag}${mcpFlag} -`;
+
+        const sessionEntry = { killed: false, process: null, cleanupMcpConfig };
+        this.agentSessions.set(runId, sessionEntry);
+
+        // Notify server we're starting
+        this.socket.emit('agent:started', { runId, sessionId: `bridge-${runId}` });
+
+        try {
+          const result = await this.claudeExecutor.execute(command, {
+            commandId: `agent-${runId}`,
+            stdinData: prompt, // Pipe prompt via stdin — safe for any length
+            onData: (chunk) => {
+              if (!sessionEntry.killed) {
+                this.socket.emit('agent:output', {
+                  runId,
+                  chunk: chunk.toString(),
+                  type: 'stdout',
+                });
+              }
+            },
+            onError: (chunk) => {
+              if (!sessionEntry.killed) {
+                this.socket.emit('agent:output', {
+                  runId,
+                  chunk: chunk.toString(),
+                  type: 'stderr',
+                });
+              }
+            },
+          });
+
+          this.agentSessions.delete(runId);
+          cleanupMcpConfig();
+
+          if (!sessionEntry.killed) {
+            this.socket.emit('agent:complete', {
+              runId,
+              exitCode: result.exitCode ?? 0,
+              costCents: 0,
+            });
+          }
+        } catch (err) {
+          this.agentSessions.delete(runId);
+          cleanupMcpConfig();
+
+          if (!sessionEntry.killed) {
+            logger.error('[Agent] Run error', { runId, error: err.message });
+            this.socket.emit('agent:error', {
+              runId,
+              error: err.message || 'Unknown bridge error',
+            });
+          }
+        }
+      });
+
+      /**
+       * agent:stop — server requests to kill a running agent.
+       * Uses the captured child process reference for graceful termination.
+       */
+      this.socket.on('agent:stop', (data) => {
+        const { runId } = data;
+        logger.info('[Agent] Stopping run', { runId });
+
+        const session = this.agentSessions.get(runId);
+        if (session) {
+          session.killed = true;
+          if (session.process) {
+            try {
+              session.process.kill('SIGTERM');
+              // Force-kill after 5s if still alive
+              setTimeout(() => {
+                try { session.process?.kill('SIGKILL'); } catch {}
+              }, 5000);
+            } catch (err) {
+              logger.warn('[Agent] Error killing process', { runId, error: err.message });
+            }
+          }
+          if (session.cleanupMcpConfig) session.cleanupMcpConfig();
+          this.agentSessions.delete(runId);
+          this.socket.emit('agent:complete', { runId, exitCode: -1, costCents: 0 });
+        } else {
+          logger.warn('[Agent] No active session for run', { runId });
+        }
+      });
+
+      /**
+       * agent:chat:start — spawn an interactive Claude Code session for Command Center.
+       * Uses PTY mode so user can have a conversation with the agent.
+       */
+      this.socket.on('agent:chat:start', async (data) => {
+        const { agentId, context, workspacePath } = data;
+        logger.info('[Agent Chat] Starting session', { agentId });
+
+        // Kill existing chat session for this agent if any
+        const existing = this.chatSessions.get(agentId);
+        if (existing) {
+          try { existing.pty?.kill?.(); } catch {}
+          clearTimeout(existing.idleTimer);
+          this.chatSessions.delete(agentId);
+        }
+
+        try {
+          const pty = require('node-pty');
+          const chatPty = pty.spawn('claude', ['chat', '--tools', ''], {
+            name: 'xterm-256color',
+            cols: 120,
+            rows: 40,
+            cwd: workspacePath || process.env.HOME,
+            env: { ...process.env },
+          });
+
+          // Send initial context as the first message
+          if (context) {
+            chatPty.write(context + '\n');
+          }
+
+          const chatEntry = {
+            pty: chatPty,
+            idleTimer: null,
+          };
+
+          // Reset idle timer function (15 min timeout)
+          const resetIdle = () => {
+            if (chatEntry.idleTimer) clearTimeout(chatEntry.idleTimer);
+            chatEntry.idleTimer = setTimeout(() => {
+              logger.info('[Agent Chat] Idle timeout', { agentId });
+              try { chatPty.kill(); } catch {}
+              this.chatSessions.delete(agentId);
+              this.socket.emit('agent:chat:output', {
+                agentId,
+                chunk: '\n[Session timed out after 15 minutes of inactivity]',
+              });
+              this.socket.emit('agent:chat:stopped', { agentId, reason: 'idle_timeout' });
+            }, 15 * 60 * 1000);
+          };
+
+          chatPty.onData((chunk) => {
+            this.socket.emit('agent:chat:output', { agentId, chunk });
+            resetIdle();
+          });
+
+          chatPty.onExit(({ exitCode }) => {
+            logger.info('[Agent Chat] Session exited', { agentId, exitCode });
+            if (chatEntry.idleTimer) clearTimeout(chatEntry.idleTimer);
+            this.chatSessions.delete(agentId);
+            this.socket.emit('agent:chat:stopped', { agentId, reason: 'exited' });
+          });
+
+          this.chatSessions.set(agentId, chatEntry);
+          resetIdle();
+
+          this.socket.emit('agent:chat:started', { agentId });
+        } catch (err) {
+          logger.error('[Agent Chat] Failed to start', { agentId, error: err.message });
+          this.socket.emit('agent:chat:stopped', {
+            agentId,
+            reason: 'error',
+            error: err.message,
+          });
+        }
+      });
+
+      /**
+       * agent:chat:input — pipe a message from the user to the chat PTY.
+       */
+      this.socket.on('agent:chat:input', (data) => {
+        const { agentId, message } = data;
+        const session = this.chatSessions.get(agentId);
+        if (session?.pty) {
+          // Sanitize: strip control characters, cap length (security rule: no raw user input in PTY)
+          const safe = String(message || '').replace(/[\x00-\x1F\x7F]/g, ' ').slice(0, 4096);
+          session.pty.write(safe + '\n');
+        } else {
+          logger.warn('[Agent Chat] No active chat session', { agentId });
+          this.socket.emit('agent:chat:stopped', { agentId, reason: 'no_session' });
+        }
+      });
+
+      /**
+       * agent:chat:stop — cleanly end a chat session.
+       */
+      this.socket.on('agent:chat:stop', (data) => {
+        const { agentId } = data;
+        logger.info('[Agent Chat] Stopping session', { agentId });
+        const session = this.chatSessions.get(agentId);
+        if (session) {
+          if (session.idleTimer) clearTimeout(session.idleTimer);
+          try { session.pty?.kill?.(); } catch {}
+          this.chatSessions.delete(agentId);
+          this.socket.emit('agent:chat:stopped', { agentId, reason: 'user_closed' });
+        }
+      });
+
+      // ──────────────────────────────────────────────────────────
+      // End Agent Hub handlers
+      // ──────────────────────────────────────────────────────────
 
       // Connection error
       this.socket.on('connect_error', (error) => {

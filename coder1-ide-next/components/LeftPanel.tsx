@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { FolderTree, Search, BookOpen, Network, List, GitBranch } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { FolderTree, Search, BookOpen, Network, List, GitBranch, Cpu, Target } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import SafeFileExplorer from './SafeFileExplorer';
 import CodeSearch from './codebase/CodeSearch';
@@ -14,8 +15,10 @@ const NotesPanel = dynamic(() => import('@/components/notes/NotesPanel'), { ssr:
 const NoteDetailView = dynamic(() => import('@/components/notes/NoteDetailView'), { ssr: false });
 const KnowledgeGraph = dynamic(() => import('@/components/graph/KnowledgeGraph'), { ssr: false });
 const FileEditsPanel = dynamic(() => import('@/components/file-edits/FileEditsPanel'), { ssr: false });
+const GoalsPanel = dynamic(() => import('./goals/GoalsPanel'), { ssr: false });
 
 const vaultEnabled = process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true';
+const agentHubEnabled = process.env.NEXT_PUBLIC_ENABLE_AGENT_HUB === 'true';
 
 interface LeftPanelProps {
   onFileSelect: (path: string) => void;
@@ -25,11 +28,30 @@ interface LeftPanelProps {
 }
 
 export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, onRootChange }: LeftPanelProps) {
-  const [activeTab, setActiveTab] = useState<'explorer' | 'search' | 'notes' | 'files'>('explorer');
+  const [activeTab, setActiveTab] = useState<'explorer' | 'search' | 'notes' | 'files' | 'goals'>('explorer');
   const [showGraph, setShowGraph] = useState(false);
+  const router = useRouter();
   const { openNote, activeNotePath } = useVaultStore();
   const fileEditsCount = useFileEditsStore((s) => s.edits.length);
-  
+  const [goalsYourTurn, setGoalsYourTurn] = useState(0);
+
+  useEffect(() => {
+    if (!agentHubEnabled) return;
+    const fetchCounts = () => {
+      fetch('/api/agent-hub/goals/counts')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data && typeof data.yourTurn === 'number') {
+            setGoalsYourTurn(data.yourTurn);
+          }
+        })
+        .catch(() => {});
+    };
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
   // REMOVED: // REMOVED: console.log('🔄 LeftPanel rendered with activeTab:', activeTab);
   
   return (
@@ -145,6 +167,35 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
             </span>
           )}
         </button>
+        {agentHubEnabled && (
+          <button
+            className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'goals'
+                ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
+                : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
+            }`}
+            onClick={() => setActiveTab('goals')}
+            title="Goals — Track objectives and progress"
+          >
+            <Target className="w-3 h-3" />
+            <span>Goals</span>
+            {goalsYourTurn > 0 && (
+              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] rounded-full font-bold leading-none">
+                {goalsYourTurn}
+              </span>
+            )}
+          </button>
+        )}
+        {agentHubEnabled && (
+          <button
+            className="flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-text-muted hover:text-text-secondary hover:bg-bg-tertiary"
+            onClick={() => router.push('/ide/agent-hub/agents')}
+            title="Agent Hub — Manage autonomous agents and tasks"
+          >
+            <Cpu className="w-3 h-3" />
+            <span>Agents</span>
+          </button>
+        )}
       </div>
       
       {/* Notes graph/list toggle sub-header */}
@@ -192,6 +243,9 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
         )}
         {activeTab === 'files' && (
           <FileEditsPanel />
+        )}
+        {activeTab === 'goals' && agentHubEnabled && (
+          <GoalsPanel />
         )}
         {activeTab === 'notes' && vaultEnabled && (
           activeNotePath
