@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS='--max-old-space-size=4096' node server.js",
+    "dev": "NODE_OPTIONS='--max-old-space-size=1024' node server.js",
     "dev:custom": "node server.js",
     "dev:legacy": "next dev",
     "dev:unified": "node server.js",

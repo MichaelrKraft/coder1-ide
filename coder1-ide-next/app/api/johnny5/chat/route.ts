@@ -777,8 +777,8 @@ export async function POST(
         }
 
         // 🔧 FIX (Feb 2026): Truncate J5 message to prevent "Prompt too long" errors
-        // Two fixes: (1) aggressive truncation, (2) unique session key to prevent history accumulation
-        const MAX_J5_MESSAGE_LENGTH = 5000; // ~1.25k tokens - aggressive to leave room for ManusLive overhead
+        // Increased from 5K to 10K to allow richer context while maintaining ManusLive compatibility
+        const MAX_J5_MESSAGE_LENGTH = 10000; // ~2.5k tokens - allows more context for better memory
         console.log(`[Johnny5/J5] Message size: ${j5Message.length} chars, limit: ${MAX_J5_MESSAGE_LENGTH}`);
         let truncatedJ5Message = j5Message;
         if (j5Message.length > MAX_J5_MESSAGE_LENGTH) {
@@ -798,8 +798,8 @@ export async function POST(
           console.log(`[Johnny5/J5] Truncated to ${truncatedJ5Message.length} chars`);
         }
 
-        // Use unique session key per message to prevent ManusLive from accumulating history
-        const j5SessionKey = `dashboard:${Date.now()}`;
+        // Reuse session UUID to maintain conversation state across messages
+        const j5SessionKey = `dashboard:${claudeSessionUuid}`;
         console.log(`[Johnny5/J5] Sending to session: ${j5SessionKey}, final size: ${truncatedJ5Message.length} chars`);
         const j5Response = await j5Bridge!.sendMessage(j5SessionKey, truncatedJ5Message);
 
@@ -926,6 +926,9 @@ export async function POST(
       }
     }
 
+    // Log session UUID to verify proper reuse
+    console.log(`[Johnny5] Session UUID: ${claudeSessionUuid} (reused=${!!session.claude_session_uuid})`);
+
     // 5. Save user message to database
     // SECURITY: Mask secrets in messages before storage to prevent sensitive data leakage
     const messageForStorage = containsSecret(message)
@@ -963,8 +966,8 @@ export async function POST(
         .map((m) => ({ role: m.role, content: m.content, id: '', session_id: session.id, created_at: '' })) as Awaited<ReturnType<typeof getMessages>>;
     }
 
-    // 6.1. Simple token-aware truncation: estimate ~4 chars per token, cap at 16000 tokens
-    const TOKEN_BUDGET = 16000;
+    // 6.1. Simple token-aware truncation: estimate ~4 chars per token, cap at 100K tokens for better memory
+    const TOKEN_BUDGET = 100000;
     let estimatedHistoryTokens = 0;
     const truncatedHistory: typeof history = [];
     for (let i = history.length - 1; i >= 0; i--) {
@@ -1013,7 +1016,7 @@ export async function POST(
               const embeddings = await Promise.race([
                 provider.embed([message]),
                 new Promise<never>((_, reject) =>
-                  setTimeout(() => reject(new Error('Embedding timeout (2s)')), 2000)
+                  setTimeout(() => reject(new Error('Embedding timeout (500ms)')), 500)
                 ),
               ]);
               if (embeddings.length > 0) {
@@ -1027,11 +1030,11 @@ export async function POST(
 
         // Use unified session search for session_recall queries, regular search otherwise
         if (sessionIntent.intent !== 'general' && sessionIntent.confidence > 0.3) {
-          // Session-aware unified search — 4-second timeout to prevent blocking the response
+          // Session-aware unified search — 1-second timeout to prevent blocking the response
           const unifiedResult = await Promise.race([
             unifiedSessionSearch(message, queryEmbedding, userId, sessionIntent, session.id),
             new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('Memory search timeout (4s)')), 4000)
+              setTimeout(() => reject(new Error('Memory search timeout (1s)')), 1000)
             ),
           ]).catch((err: Error) => {
             console.warn('[Johnny5] Memory search timed out or failed:', err.message);

@@ -1,19 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Eye, X, RefreshCw, ExternalLink, Brain, Sparkles, Search, Zap, Users, BookOpen } from '@/lib/icons';
+import { Eye, X, RefreshCw, ExternalLink, Sparkles, Search, Users } from '@/lib/icons';
+import { Camera, Bot } from 'lucide-react';
+import ScreenshotToCode from '@/components/screenshot-to-code/ScreenshotToCode';
 import { colors, glows } from '@/lib/design-tokens';
 import ContextualMemoryPanel from '@/components/contextual-memory/ContextualMemoryPanel';
-import ParallelReasoningDashboard from '@/components/beta/ParallelReasoningDashboard';
-import { Johnny5Panel } from '@/components/johnny5';
-import LivingFilesPanel from '@/components/johnny5/LivingFilesPanel';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
 import TeamPanel from '@/components/team/TeamPanel';
 import { useTeamStore } from '@/stores/useTeamStore';
 import { useVoiceCallStore } from '@/stores/useVoiceCallStore';
 import { features } from '@/lib/feature-flags';
 
-type PreviewMode = 'preview' | 'terminal' | 'parathink' | 'contextual-memory' | 'johnny5' | 'teams' | 'living-files';
+type PreviewMode = 'preview' | 'contextual-memory' | 'teams' | 'screenshot-to-code';
 
 interface PreviewPanelProps {
   fileOpen?: boolean;
@@ -42,14 +41,12 @@ const PreviewPanel = React.memo(function PreviewPanel({
   terminalCommands = [],
   claudeActive = false, // 🔧 FIX (Feb 1, 2025): Default to false
 }: PreviewPanelProps) {
-  // 🤖 Johnny5 is now the default mode (replacing Memory UX)
-  const [mode, setMode] = useState<PreviewMode>('johnny5');
+  const [mode, setMode] = useState<PreviewMode>('preview');
 
   // Team store reads for badge indicators on the Teams tab
   const { syncTeam, onlineMembers } = useTeamStore();
   const { teamCallActive } = useVoiceCallStore();
-  const [paraThinkSessionId, setParaThinkSessionId] = useState<string | null>(null);
-  
+
   // Live preview state
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -148,28 +145,12 @@ const PreviewPanel = React.memo(function PreviewPanel({
     return () => window.removeEventListener('openTeamPanel', handleOpenTeamPanel);
   }, []);
 
-  // Listen for ParaThinker dashboard open events
-  useEffect(() => {
-    const handleOpenParaThinker = (event: CustomEvent) => {
-      const { sessionId } = event.detail;
-      setParaThinkSessionId(sessionId);
-      setMode('parathink');
-    };
-
-    window.addEventListener('openParaThinkerDashboard', handleOpenParaThinker as EventListener);
-    
-    return () => {
-      window.removeEventListener('openParaThinkerDashboard', handleOpenParaThinker as EventListener);
-    };
-  }, []);
-
   // Listen for session refresh events
   useEffect(() => {
     const handleSessionRefreshed = () => {
       // Reset preview to clean default state on browser refresh
       console.log('🔄 PreviewPanel: Session refresh detected, resetting to default state');
       setMode('preview');
-      setParaThinkSessionId(null);
     };
 
     window.addEventListener('sessionRefreshed', handleSessionRefreshed as EventListener);
@@ -324,20 +305,15 @@ const PreviewPanel = React.memo(function PreviewPanel({
       {/* Tabs */}
       <div className="flex items-center justify-between px-4 h-12 shrink-0">
         <div className="flex items-center gap-1">
-          {/* 🤖 Johnny5 - Your AI Employee Dashboard (replaces Memory UX) */}
-          {renderTabButton(
-            'johnny5',
-            <Zap className="w-4 h-4" />,
-            'Johnny5',
-            'Your AI employee dashboard - sessions, security, analytics, and autonomous features'
-          )}
-          {/* J5 Living Files — view and edit Johnny5's 9 memory .md files */}
-          {renderTabButton(
-            'living-files',
-            <BookOpen className="w-4 h-4" />,
-            'J5 Files',
-            "View and edit Johnny5's living memory files (SOUL, USER, MEMORY, etc.)"
-          )}
+          {/* Agents — opens agent orchestration overlay */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('openMissionControl'))}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium transition-all duration-200 border-b-2 text-text-secondary border-transparent hover:text-text-primary hover:border-border-hover"
+            title="Open agent orchestration"
+          >
+            <Bot className="w-4 h-4" />
+            <span>Agents</span>
+          </button>
           {features().teamFeatures && (
             <button
               onClick={() => setMode('teams')}
@@ -364,17 +340,16 @@ const PreviewPanel = React.memo(function PreviewPanel({
             </button>
           )}
           {renderTabButton(
+            'screenshot-to-code',
+            <Camera className="w-4 h-4" />,
+            'Screenshot',
+            'Drop a UI screenshot to generate React/Next.js component scaffolding'
+          )}
+          {renderTabButton(
             'preview',
             <Eye className="w-4 h-4" />,
             'Preview',
             'Live preview of your HTML, CSS, and JavaScript code'
-          )}
-          {/* Only show ParaThinker tab when we have a session */}
-          {paraThinkSessionId && renderTabButton(
-            'parathink',
-            <Brain className="w-4 h-4" />,
-            'ParaThinker',
-            'Advanced parallel reasoning dashboard for complex problem solving'
           )}
         </div>
         
@@ -394,17 +369,10 @@ const PreviewPanel = React.memo(function PreviewPanel({
       {/* Content Area */}
       <div className="flex-1 overflow-auto">
 
-            {/* 🤖 Johnny5 AI Employee Dashboard */}
-            {mode === 'johnny5' && (
-              <div className="h-full">
-                <Johnny5Panel />
-              </div>
-            )}
-
-            {/* 📖 Johnny5 Living Files — view and edit memory .md files */}
-            {mode === 'living-files' && (
-              <div className="h-full">
-                <LivingFilesPanel />
+            {/* 📸 Screenshot to Code */}
+            {mode === 'screenshot-to-code' && (
+              <div className="h-full overflow-y-auto">
+                <ScreenshotToCode />
               </div>
             )}
 
@@ -422,19 +390,6 @@ const PreviewPanel = React.memo(function PreviewPanel({
                   }}
                   onExpandMemory={(memory) => {
                     console.log('User expanded memory:', memory);
-                  }}
-                />
-              </div>
-            )}
-
-            {/* ParaThinker Dashboard */}
-            {mode === 'parathink' && paraThinkSessionId && (
-              <div className="h-full">
-                <ParallelReasoningDashboard 
-                  sessionId={paraThinkSessionId}
-                  onClose={() => {
-                    setParaThinkSessionId(null);
-                    setMode('preview');
                   }}
                 />
               </div>

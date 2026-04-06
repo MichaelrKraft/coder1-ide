@@ -43,6 +43,7 @@ Users experience a broken authentication flow when signing up via the alpha wait
 1. **Auto-create account + auto-login** when email submitted
 2. **Auto-generate credentials**: username from email, random password
 3. **Handle duplicates gracefully**: auto-login if email already exists
+4. **Alpha users**: Default `subscription_tier` is 'free' (schema default) - alpha status tracked separately via analytics
 
 ### Architecture
 
@@ -83,6 +84,16 @@ User lands in IDE authenticated
 
 ### Primary File: `/app/api/alpha/waitlist/route.ts`
 
+#### Required Imports
+
+```typescript
+import { NextResponse } from 'next/server';
+import { createUser, getUserByEmail, getUserByUsername, createSession } from '@/lib/auth/db';
+import { generateTokens } from '@/lib/auth/jwt';
+import { hashPassword } from '@/lib/auth/bcrypt';
+import { randomBytes } from 'crypto';
+```
+
 #### New Logic Flow
 
 ```typescript
@@ -91,53 +102,131 @@ export async function POST(request: Request) {
 
   try {
     // Step 1: Check if email already registered
-    const existingUser = await db.getUserByEmail(email);
+    const existingUser = getUserByEmail(email);
 
     if (existingUser) {
       // User exists → create session and auto-login
-      const { accessToken, refreshToken } = generateTokens(existingUser);
-      await db.createSession(existingUser.id, refreshToken);
+      const { accessToken, refreshToken, expiresAt } = generateTokens({
+        userId: existingUser.id,
+        email: existingUser.email,
+        username: existingUser.username,
+        subscriptionTier: existingUser.subscription_tier,
+      });
+
+      // Get request metadata
+      const userAgent = request.headers.get('user-agent') || undefined;
+      const ip = request.headers.get('x-forwarded-for') ||
+                 request.headers.get('x-real-ip') || undefined;
+
+      createSession({
+        user_id: existingUser.id,
+        token: accessToken,
+        refresh_token: refreshToken,
+        expires_at: expiresAt,
+        user_agent: userAgent,
+        ip_address: ip,
+      });
 
       const response = NextResponse.json({
         success: true,
         message: 'Welcome back! Logging you in...',
       });
 
-      setAuthCookies(response, accessToken, refreshToken);
+      // Set auth cookies
+      response.cookies.set('auth-token', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60, // 15 minutes
+        path: '/',
+      });
+
+      response.cookies.set('refresh-token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        path: '/',
+      });
+
       return response;
     }
 
     // Step 2: Generate unique username from email
-    const baseUsername = email.split('@')[0];
-    const username = await findAvailableUsername(baseUsername);
+    const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const username = findAvailableUsername(baseUsername);
 
     // Step 3: Generate secure random password
-    const password = crypto.randomBytes(32).toString('hex');
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const password = randomBytes(32).toString('hex');
+    const passwordHash = await hashPassword(password);
 
-    // Step 4: Create user account
-    const user = await db.createUser({
-      email,
-      username,
-      password: hashedPassword,
-      displayName: name || username,
-      role: 'alpha',
+    // Step 4: Create user account (with UNIQUE constraint error handling)
+    let user;
+    try {
+      user = createUser({
+        email,
+        username,
+        password_hash: passwordHash,
+      });
+    } catch (dbError: any) {
+      // Handle race condition: username taken between check and insert
+      if (dbError.message?.includes('UNIQUE constraint failed')) {
+        // Try once more with incremented username
+        const retryUsername = `${baseUsername}${Date.now()}`;
+        user = createUser({
+          email,
+          username: retryUsername,
+          password_hash: passwordHash,
+        });
+      } else {
+        throw dbError;
+      }
+    }
+
+    // Step 5: Generate tokens
+    const { accessToken, refreshToken, expiresAt } = generateTokens({
+      userId: user.id,
+      email: user.email,
+      username: user.username,
+      subscriptionTier: user.subscription_tier,
     });
 
-    // Step 5: Create session
-    const { accessToken, refreshToken } = generateTokens(user);
-    await db.createSession(user.id, refreshToken);
+    // Step 6: Create session
+    const userAgent = request.headers.get('user-agent') || undefined;
+    const ip = request.headers.get('x-forwarded-for') ||
+               request.headers.get('x-real-ip') || undefined;
 
-    // Step 6: Add to waitlist for analytics
-    await db.addToWaitlist(email, name);
+    createSession({
+      user_id: user.id,
+      token: accessToken,
+      refresh_token: refreshToken,
+      expires_at: expiresAt,
+      user_agent: userAgent,
+      ip_address: ip,
+    });
 
     // Step 7: Set auth cookies and return success
     const response = NextResponse.json({
       success: true,
       message: 'Account created successfully!',
+    }, { status: 201 });
+
+    response.cookies.set('auth-token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60,
+      path: '/',
     });
 
-    setAuthCookies(response, accessToken, refreshToken);
+    response.cookies.set('refresh-token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
+
     return response;
 
   } catch (error) {
@@ -150,76 +239,47 @@ export async function POST(request: Request) {
 }
 ```
 
-#### Helper Functions
+#### Helper Function (add to top of route file)
 
 **Username Deduplication**:
 ```typescript
-async function findAvailableUsername(base: string): Promise<string> {
+function findAvailableUsername(base: string): string {
   // Sanitize base: alphanumeric + underscores only
   const sanitized = base.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  if (!sanitized) return 'user'; // Fallback for invalid email prefixes
 
   let username = sanitized;
   let suffix = 1;
 
-  while (await db.getUserByUsername(username)) {
+  // Check database for collisions
+  while (getUserByUsername(username)) {
     username = `${sanitized}${suffix}`;
     suffix++;
+    // Safety: prevent infinite loop
+    if (suffix > 1000) {
+      username = `${sanitized}${Date.now()}`;
+      break;
+    }
   }
 
   return username;
 }
 ```
 
-**Token Generation** (reuse from `/api/v2/auth/register/route.ts`):
-```typescript
-function generateTokens(user) {
-  const accessToken = jwt.sign(
-    { userId: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET!,
-    { expiresIn: '15m' }
-  );
-
-  const refreshToken = jwt.sign(
-    { userId: user.id },
-    process.env.JWT_REFRESH_SECRET!,
-    { expiresIn: '7d' }
-  );
-
-  return { accessToken, refreshToken };
-}
-```
-
-**Cookie Setting** (reuse from register route):
-```typescript
-function setAuthCookies(response, accessToken, refreshToken) {
-  response.cookies.set('auth-token', accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 15 * 60, // 15 minutes
-    path: '/',
-  });
-
-  response.cookies.set('refresh-token', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-    path: '/',
-  });
-}
-```
+**Note**: Token generation and session creation use existing exported functions from `/lib/auth/jwt.ts` and `/lib/auth/db.ts`. No additional helpers needed - the imports at the top of the file provide everything required.
 
 ---
 
 ## Files Modified
 
 ### Primary Changes
-- **`/app/api/alpha/waitlist/route.ts`** - Complete rewrite with account creation + session logic
+- **`/app/api/alpha/waitlist/route.ts`** - Complete rewrite with account creation + session logic, add `findAvailableUsername()` helper function
 
-### Referenced Files (patterns to reuse)
-- **`/app/api/v2/auth/register/route.ts`** (lines 98-148) - Token generation & cookie setting
+### Referenced Files (NO changes needed, using existing exports)
 - **`/lib/auth/db.ts`** - Database operations (`createUser`, `createSession`, `getUserByEmail`, `getUserByUsername`)
+- **`/lib/auth/jwt.ts`** - Token generation (`generateTokens`)
+- **`/lib/auth/bcrypt.ts`** - Password hashing (`hashPassword`)
+- **`/app/api/v2/auth/register/route.ts`** - Reference implementation for auth patterns (lines 70-150)
 
 ---
 
@@ -265,11 +325,22 @@ function setAuthCookies(response, accessToken, refreshToken) {
 4. Call `/api/v2/auth/me` again
 5. **Expected**: Returns 401 Unauthorized
 
+#### Test 6: Middleware Auth Check (**IMPORTANT: Test in Production Mode**)
+1. **Set `NODE_ENV=production`** before testing (middleware bypasses auth checks in development)
+2. Navigate to `/ide` without auth cookies
+3. **Expected**: Redirected to `/login`
+4. Complete alpha signup flow
+5. **Expected**: `/ide` access works without redirect
+
+**Why**: `/middleware.ts` line 13 skips auth validation in development mode, so testing in dev won't catch the actual bug.
+
 ### Edge Cases
 
 - **Invalid email format**: Frontend validation should catch, but API should return 400
-- **Empty name field**: Use username as displayName fallback
-- **Username with special characters**: Sanitize to alphanumeric + underscores
+- **Empty name field**: Ignored (no displayName field in schema)
+- **Username with special characters**: Sanitized to alphanumeric + underscores
+- **Very long email prefix**: Truncate to reasonable length before using as username base
+- **Race condition on username**: Handled with try-catch and timestamp fallback
 
 ### Rollback Plan
 
