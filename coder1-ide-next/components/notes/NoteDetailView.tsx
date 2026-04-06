@@ -19,7 +19,9 @@ export default function NoteDetailView({ notePath, onClose, onNavigate }: NoteDe
   const [note, setNote] = useState<VaultNote | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
+  const [mode, setMode] = useState<'edit' | 'preview'>(
+    notePath.startsWith('Sessions/') ? 'preview' : 'edit'
+  );
   const [backlinksOpen, setBacklinksOpen] = useState(true);
   const [diskContent, setDiskContent] = useState<string | null>(null);
   const [summarizeStatus, setSummarizeStatus] = useState<'idle' | 'summarizing' | 'done'>('idle');
@@ -58,6 +60,7 @@ export default function NoteDetailView({ notePath, onClose, onNavigate }: NoteDe
 
   useEffect(() => {
     if (notePath) {
+      setMode(notePath.startsWith('Sessions/') ? 'preview' : 'edit');
       fetchNote(notePath);
       void fetchLinkedFiles();
     }
@@ -221,14 +224,29 @@ export default function NoteDetailView({ notePath, onClose, onNavigate }: NoteDe
           />
         )}
 
-        {!loading && !notFound && note && mode === 'preview' && (
-          <div className="h-full overflow-y-auto">
-            <NoteViewer
-              content={note.content}
-              onWikilinkClick={handleWikilinkClick}
-            />
-          </div>
-        )}
+        {!loading && !notFound && note && mode === 'preview' && (() => {
+          const isEmptySession =
+            notePath.startsWith('Sessions/') &&
+            note.content.replace(/^#\s*Session Log\s*/i, '').trim().length === 0;
+          return (
+            <div className="h-full overflow-y-auto">
+              {isEmptySession ? (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-6">
+                  <p className="text-sm font-semibold text-[#e2e8f0]">No activity recorded</p>
+                  <p className="text-xs text-[#6b7280]">
+                    This session ended before any files were opened or commands were run.
+                    Future sessions will log file opens and terminal commands here automatically.
+                  </p>
+                </div>
+              ) : (
+                <NoteViewer
+                  content={note.content}
+                  onWikilinkClick={handleWikilinkClick}
+                />
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Backlinks Section */}

@@ -248,15 +248,22 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <GoalsPanel />
         )}
         {activeTab === 'notes' && vaultEnabled && (
-          activeNotePath
-            ? <NoteDetailView
-                notePath={activeNotePath}
-                onNavigate={openNote}
-                onClose={() => useVaultStore.setState({ activeNotePath: null })}
-              />
-            : showGraph
-              ? <KnowledgeGraph onNodeClick={openNote} activeNotePath={activeNotePath} />
-              : <NotesPanel onNoteSelect={openNote} activeNotePath={activeNotePath ?? undefined} />
+          activeNotePath ? (
+            <div className="flex h-full">
+              <div className="w-44 flex-shrink-0 border-r border-border-default overflow-hidden">
+                <NotesPanel onNoteSelect={openNote} activeNotePath={activeNotePath} compact />
+              </div>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <NoteDetailView
+                  notePath={activeNotePath}
+                  onNavigate={openNote}
+                  onClose={() => useVaultStore.setState({ activeNotePath: null })}
+                />
+              </div>
+            </div>
+          ) : showGraph
+            ? <KnowledgeGraph onNodeClick={openNote} activeNotePath={activeNotePath} />
+            : <NotesPanel onNoteSelect={openNote} activeNotePath={activeNotePath ?? undefined} />
         )}
       </div>
       
