@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Star, Trash2, Play, Clock, Loader2, Film, Hash, Download } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, Star, Trash2, Play, Clock, Loader2, Film, Hash, Download, Circle, Square } from 'lucide-react';
+import { eventCollector } from '@/lib/flight-recorder/event-collector';
 
 interface RecordingSession {
   id: string;
@@ -53,6 +54,8 @@ export default function RecordingsDashboard({ onOpenReplay }: RecordingsDashboar
   const [searchQuery, setSearchQuery] = useState('');
   const [starredOnly, setStarredOnly] = useState(false);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const recordingSessionIdRef = useRef<string | null>(null);
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -73,6 +76,31 @@ export default function RecordingsDashboard({ onOpenReplay }: RecordingsDashboar
   }, [starredOnly]);
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
+
+  // Cleanup: stop recording if component unmounts while recording
+  useEffect(() => {
+    return () => {
+      if (recordingSessionIdRef.current) {
+        eventCollector.endSession();
+        recordingSessionIdRef.current = null;
+      }
+    };
+  }, []);
+
+  const startRecording = () => {
+    const id = crypto.randomUUID();
+    recordingSessionIdRef.current = id;
+    eventCollector.startSession(id);
+    setIsRecording(true);
+  };
+
+  const stopRecording = () => {
+    eventCollector.endSession();
+    recordingSessionIdRef.current = null;
+    setIsRecording(false);
+    // Refresh list after a short delay to let the server ingest the final batch
+    setTimeout(() => fetchSessions(), 1500);
+  };
 
   const handleStar = async (sessionId: string, starred: boolean) => {
     await fetch(`/api/flight-recorder/sessions/${sessionId}`, {
@@ -106,6 +134,35 @@ export default function RecordingsDashboard({ onOpenReplay }: RecordingsDashboar
 
   return (
     <div className="space-y-4">
+      {/* Recording control */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-gray-900/50 border border-gray-800 rounded-lg">
+        {isRecording ? (
+          <>
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
+            <span className="text-sm text-white flex-1">Recording in progress...</span>
+            <button
+              onClick={stopRecording}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 border border-red-500/40 text-red-400 text-xs font-medium rounded hover:bg-red-600/30 transition-colors"
+            >
+              <Square size={12} fill="currentColor" />
+              Stop
+            </button>
+          </>
+        ) : (
+          <>
+            <Film size={16} className="text-gray-500 flex-shrink-0" />
+            <span className="text-sm text-gray-400 flex-1">Start a new recording to capture this session</span>
+            <button
+              onClick={startRecording}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-medium rounded hover:bg-cyan-500/20 transition-colors"
+            >
+              <Circle size={12} fill="currentColor" />
+              Record
+            </button>
+          </>
+        )}
+      </div>
+
       {/* Search and filters */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">

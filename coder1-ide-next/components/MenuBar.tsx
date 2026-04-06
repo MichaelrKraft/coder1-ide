@@ -230,7 +230,7 @@ const MenuBar = React.memo(function MenuBar({
     { icon: FileText, label: 'AI PRD', href: '/smart-prd-generator-standalone.html', target: '_blank' },
     { icon: BookOpen, label: 'Documentation', href: '/documentation' },
     { icon: GitBranch, label: 'Git History', href: '/git-log' },
-    { icon: Zap, label: 'FlowTrace', href: '/timeline?tab=flowtrace' },
+    { icon: Zap, label: 'FlowTrace', href: '/memory?tab=flowtrace' },
     { icon: SettingsIcon, label: 'Settings', href: '#', onClick: () => onShowSettings?.() },
   ];
 

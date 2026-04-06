@@ -143,7 +143,7 @@ export function CommitContextPanel({
             {context.session_id && (
               <div className="mt-6 pt-4 border-t border-gray-800">
                 <button
-                  onClick={() => router.push(`/timeline?sessionId=${context.session_id}`)}
+                  onClick={() => router.push(`/memory?sessionId=${context.session_id}`)}
                   className="text-xs text-[#00D9FF] hover:underline"
                 >
                   View Full Session &rarr;

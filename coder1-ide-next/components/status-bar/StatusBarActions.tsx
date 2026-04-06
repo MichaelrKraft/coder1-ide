@@ -339,7 +339,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
     
     console.log('📊 [TIMELINE] Button clicked - Navigating to timeline');
     console.log('📊 [TIMELINE] SessionId:', sessionId);
-    console.log('📊 [TIMELINE] Target URL:', `/timeline?sessionId=${sessionId}`);
+    console.log('📊 [TIMELINE] Target URL:', `/memory?sessionId=${sessionId}`);
     
     if (!sessionId) {
       console.error('❌ [TIMELINE] No sessionId available');
@@ -358,14 +358,14 @@ const StatusBarActions = React.memo(function StatusBarActions({
       
       // Primary method: Direct window navigation
       console.log('📊 [TIMELINE] Attempting window.location.href navigation');
-      window.location.href = `/timeline?sessionId=${sessionId}`;
+      window.location.href = `/memory?sessionId=${sessionId}`;
       
       // Fallback: Use Next.js router if window.location doesn't work
       setTimeout(() => {
         console.log('📊 [TIMELINE] Checking if navigation succeeded...');
         if (window.location.pathname === '/ide') {
           console.warn('⚠️ [TIMELINE] window.location navigation may have failed, trying router.push fallback');
-          router.push(`/timeline?sessionId=${sessionId}`);
+          router.push(`/memory?sessionId=${sessionId}`);
         }
       }, 1000);
       

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that require authentication (cookie check)
-const PROTECTED_ROUTES = ['/ide', '/timeline', '/consultation', '/hooks', '/documentation'];
+const PROTECTED_ROUTES = ['/ide', '/timeline', '/memory', '/consultation', '/hooks', '/documentation'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -63,5 +63,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/component-capture', '/ide', '/ide/:path*', '/timeline', '/timeline/:path*', '/consultation', '/hooks', '/documentation', '/admin', '/admin/:path*'],
+  matcher: ['/api/component-capture', '/ide', '/ide/:path*', '/timeline', '/timeline/:path*', '/memory', '/memory/:path*', '/consultation', '/hooks', '/documentation', '/admin', '/admin/:path*'],
 };
