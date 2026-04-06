@@ -14,6 +14,7 @@ export interface FeatureFlags {
   timeCapsules: boolean;
   teamFeatures: boolean;
   multiAIPlatformsEnabled: boolean;
+  agentHub: boolean;
 }
 
 // Get feature flags from environment or use defaults
@@ -31,6 +32,7 @@ export const getFeatureFlags = (): FeatureFlags => {
     timeCapsules: process.env.NEXT_PUBLIC_TIME_CAPSULES === 'true' || false,
     teamFeatures: process.env.NEXT_PUBLIC_ENABLE_TEAM_FEATURES === 'true',
     multiAIPlatformsEnabled: process.env.NEXT_PUBLIC_ENABLE_MULTI_AI_DETECTION === 'true',
+    agentHub: process.env.NEXT_PUBLIC_ENABLE_AGENT_HUB === 'true',
   };
 };
 
