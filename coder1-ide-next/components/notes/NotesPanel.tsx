@@ -12,6 +12,23 @@ import CodebaseGraph from '@/components/codebase/CodebaseGraph';
 export interface NotesPanelProps {
   onNoteSelect: (path: string) => void;
   activeNotePath?: string;
+  compact?: boolean;
+}
+
+/** Convert a session note path/title to a human-readable date string */
+function getSessionDisplayTitle(note: { title?: string; path: string }): string {
+  // Match 13-digit timestamp in path like "Sessions/session-1775507585845_a73..."
+  const match = note.path.match(/[\/]?session[-_](\d{13})/i);
+  if (match) {
+    const d = new Date(parseInt(match[1]));
+    return `Session – ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  return note.title || note.path;
+}
+
+function getNoteTitle(note: { title?: string; path: string }): string {
+  if (note.path.startsWith('Sessions/')) return getSessionDisplayTitle(note);
+  return note.title || note.path;
 }
 
 function formatRelativeDate(timestamp: number): string {
@@ -78,7 +95,7 @@ function FolderNodeItem({ node, selectedPath, onSelect, depth }: FolderNodeItemP
   );
 }
 
-export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelProps) {
+export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: NotesPanelProps) {
   // Tab state for Notes vs CodeNexus
   const [activeTab, setActiveTab] = useState<'notes' | 'codenexus'>('notes');
 
@@ -136,7 +153,11 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
     fetch(url)
       .then((res) => { if (!res.ok) throw new Error('unavailable'); return res.json(); })
       .then((data: VaultNoteStub[]) => {
-        setNotes([...data].sort((a, b) => b.updatedAt - a.updatedAt));
+        // Hide session notes from "All Notes" — they're accessible via the Sessions folder
+        const filtered = folder === null
+          ? data.filter(n => !n.path.startsWith('Sessions/'))
+          : data;
+        setNotes([...filtered].sort((a, b) => b.updatedAt - a.updatedAt));
         setLoadingNotes(false);
       })
       .catch(() => { setLoadingNotes(false); });
@@ -225,6 +246,62 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
 
   if (unavailable && activeTab === 'notes') {
     // Only show unavailable for Notes tab - CodeNexus doesn't need vault
+  }
+
+  // Compact mode: slim note list only (no tabs, no folder tree) for use as sidebar alongside NoteDetailView
+  if (compact) {
+    return (
+      <div className="flex flex-col h-full bg-[#0d0d0d]">
+        <div className="flex items-center justify-between px-2 py-2 border-b border-[#2a2a2a] flex-shrink-0">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Notes</span>
+          <button
+            ref={newButtonRef}
+            className="p-1 rounded text-[#6366f1] hover:bg-[#6366f1]/20 transition-colors disabled:opacity-50"
+            onClick={() => setShowTemplatePicker(true)}
+            disabled={creatingNote}
+            title="New Note"
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+          {showTemplatePicker && (
+            <TemplatePickerModal
+              anchorRef={newButtonRef as React.RefObject<HTMLButtonElement>}
+              onSelect={(template) => { setShowTemplatePicker(false); handleNewNote(template); }}
+              onDismiss={() => setShowTemplatePicker(false)}
+            />
+          )}
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {loadingNotes && <div className="px-2 py-2 text-[10px] text-[#4b5563]">Loading...</div>}
+          {!loadingNotes && notes.length === 0 && (
+            <div className="px-2 py-4 text-center">
+              <p className="text-[10px] text-[#4b5563]">No notes yet.</p>
+              <p className="text-[10px] text-[#4b5563] mt-1">Click + to create one.</p>
+            </div>
+          )}
+          {!loadingNotes && notes.map((note) => (
+            <div
+              key={note.path}
+              className={`border-b border-[#1a1a1a] transition-colors ${
+                activeNotePath === note.path ? 'bg-[#1e1b4b]' : 'hover:bg-[#1a1a1a]'
+              }`}
+            >
+              <button
+                className="w-full text-left px-2 py-2"
+                onClick={() => onNoteSelect(note.path)}
+              >
+                <span className="text-[10px] font-medium text-[#e2e8f0] block truncate">
+                  {getNoteTitle(note)}
+                </span>
+                <span className="text-[9px] text-[#4b5563] block mt-0.5">
+                  {formatRelativeDate(note.updatedAt)}
+                </span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -425,7 +502,14 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
                 return (
                   <>
                     {displayedNotes.length === 0 && (
-                      <div className="px-3 py-3 text-xs text-[#4b5563] italic">No notes here.</div>
+                      <div className="px-3 py-6 text-center">
+                        <p className="text-xs text-[#4b5563]">
+                          {selectedFolder === '__orphans__' ? 'No orphaned notes.' : 'No notes yet.'}
+                        </p>
+                        {selectedFolder === null && !searchQuery && (
+                          <p className="text-[10px] text-[#4b5563] mt-1">Click <span className="text-[#6366f1]">New</span> to create your first note.</p>
+                        )}
+                      </div>
                     )}
                     {displayedNotes.map((note) => (
                       <div
@@ -440,7 +524,7 @@ export default function NotesPanel({ onNoteSelect, activeNotePath }: NotesPanelP
                         >
                           <div className="flex items-start justify-between gap-1">
                             <span className="text-xs font-semibold text-[#e2e8f0] truncate leading-4">
-                              {note.title}
+                              {getNoteTitle(note)}
                             </span>
                             <span className="text-[10px] text-[#4b5563] flex-shrink-0 mt-0.5">
                               {formatRelativeDate(note.updatedAt)}
