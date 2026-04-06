@@ -162,7 +162,7 @@ export default function AgentHubDashboard() {
     {
       value: stats.tasksInProgress,
       label: 'Tasks In Progress',
-      subtitle: `${stats.tasksOpen} open, ${stats.tasksInReview} in review`,
+      subtitle: `${stats.tasksOpen ?? 0} open, ${stats.tasksInReview ?? 0} in review`,
       icon: Clock,
     },
     {
