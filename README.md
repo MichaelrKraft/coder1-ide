@@ -1,308 +1,182 @@
-# 🚀 Coder1 IDE - The Future of AI-Powered Development
+# Coder1 IDE
 
-**⭐ Star us on GitHub to join 1000+ developers building the future of coding with AI**
+**The first open-source IDE built specifically for Claude Code.**
 
-[![GitHub stars](https://img.shields.io/github/stars/michaelkraft/coder1-ide?style=social)](https://github.com/MichaelrKraft/coder1-ide)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen)](https://coder1.ai)
-[![Deploy on Render](https://img.shields.io/badge/Deploy-Render-brightgreen)](https://render.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/MichaelrKraft/coder1-ide)](https://github.com/MichaelrKraft/coder1-ide/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/MichaelrKraft/coder1-ide)](https://github.com/MichaelrKraft/coder1-ide/issues)
 
-> **🎉 FREE FOREVER** - Everything you need to code with AI, completely free. Optional $29/month for unlimited eternal memory.
+<!-- TODO: Replace with actual demo GIF recorded this weekend -->
+<!-- ![Coder1 IDE Demo](docs/assets/demo.gif) -->
 
-## 🎯 Why Developers Choose Coder1
+Coder1 is a web-based IDE that bridges into your local Claude Code sessions. It gives you Monaco Editor, a live preview, an integrated terminal, and persistent memory — all in one window, all running on your machine.
 
-### 🔥 **Built for the Claude Code Era**
-- **Native Claude Integration**: The only IDE designed specifically for Claude Code workflows
-- **🧠 Eternal Memory**: Never lose context across sessions (7-day free trial, then $29/month)
-- **⚡ Instant AI Assistance**: Type `claude` in terminal for immediate help
-- **🤖 AI Supervision**: Real-time code guidance and error prevention
-
-### 💪 **Beats the Competition**
-| Feature | Coder1 | Cursor | GitHub Copilot | Replit |
-|---------|---------|---------|----------------|---------|
-| **Price** | 🟢 FREE | $20/month | $10/month | $7/month |
-| **Claude Integration** | 🟢 Native + CLI Puppeteer | 🟡 API + CLI Support | ❌ None | ❌ None |
-| **Persistent Context** | 🟢 Eternal Memory | ❌ Session-only | ❌ Limited | ❌ Basic |
-| **Full IDE** | 🟢 Complete | 🟢 Complete | ❌ VS Code only | 🟢 Complete |
-| **Terminal AI** | 🟢 Supervised | 🟡 Basic | ❌ None | 🟢 Basic |
-| **Session Handoffs** | 🟢 Perfect | ❌ Manual | ❌ Manual | ❌ Manual |
-
-### 🔍 **Claude Integration Methods Compared**
-
-#### **Coder1: Purpose-Built for Claude Code**
-- **Native CLI Puppeteer**: Cost-free automation using real Claude CLI instances
-- **Eternal Memory Integration**: Claude remembers everything across sessions
-- **Built-in Context Sharing**: Automatic project file and session history sharing
-- **AI Supervision**: Real-time guidance that activates when you type `claude`
-
-#### **Cursor: Retrofitted Claude Support**  
-- **Anthropic API Integration**: Configure API keys in settings for Claude models
-- **Claude Code CLI Support**: Can run Claude Code in integrated terminal
-- **VS Code Extension**: Manual installation of Claude Code extension (VSIX)
-- **Limited Context**: Session-based memory that resets on restart
-
-**Key Difference**: Coder1 is built from the ground up for Claude Code workflows, while Cursor retrofits Claude support into an existing GPT-focused IDE.
+No cloud dependency. No new AI subscription. It works with the Claude Code you already have installed.
 
 ---
 
-## ⚡ Get Started in 60 Seconds
+## Why Coder1?
 
-### 🌐 **Option 1: Try the Live Demo** (Fastest)
-Click here: **[coder1.ai](https://coder1.ai)** → Start coding immediately!
+- **Built for Claude Code** — not a general-purpose AI IDE with Claude bolted on. Every feature is designed around Claude Code workflows.
+- **Local-first** — runs on your machine. Your code, your data, your Claude subscription. Nothing is sent to our servers.
+- **Persistent memory** — sessions remember context across time. Pick up where you left off, even weeks later.
+- **Open core** — the core IDE is free and open source (MIT). Team collaboration features require a Pro license, but all code is visible in this repo.
 
-### 🚀 **Option 2: Deploy Your Own** (Render)
-1. Fork this repository
-2. Connect your GitHub to [Render](https://render.com)
-3. Create a new Web Service
-4. Deploy with build command: `cd coder1-ide-next && npm install && npm run build`
-5. Start command: `cd coder1-ide-next && npm start`
+## How It's Different
 
-### 💻 **Option 3: Run Locally** (Full Control)
+| Feature | Coder1 (Free) | Coder1 (Pro) | Cursor | Windsurf | V0 |
+|---------|:---:|:---:|:---:|:---:|:---:|
+| Built for Claude Code | Yes | Yes | No | No | No |
+| Open source | Yes | Yes | No | No | No |
+| Local-first | Yes | Yes | Partial | No | No |
+| Persistent memory | Yes | Yes | No | No | No |
+| Uses your existing subscription | Yes | Yes | No | No | No |
+| Team collaboration | - | Yes | No | Yes | No |
+| Shared workspaces | - | Yes | No | No | No |
+
+---
+
+## Quick Start
+
 ```bash
-# Clone and start in 3 commands
 git clone https://github.com/MichaelrKraft/coder1-ide.git
-cd coder1-ide/coder1-ide-next && npm install
+cd coder1-ide/coder1-ide-next
+cp .env.local.example .env.local
+npm install
 npm run dev
-
-# Open http://localhost:3001 🎉
 ```
 
-**No API keys required** - Start coding immediately with built-in AI features!
+Open [http://localhost:3001/ide](http://localhost:3001/ide)
+
+**Requirements**: Node.js 18+, Claude Code CLI installed
+
+### Connect to Claude Code
+
+1. Install the bridge CLI: `npm install -g coder1-bridge`
+2. Run `coder1-bridge start` in your terminal
+3. Enter the 6-digit pairing code shown in the IDE
+4. Start coding — commands from the IDE execute on your machine through the bridge
 
 ---
 
-## 🌟 What Makes Coder1 Special
+## Screenshots
 
-### 🧠 **Eternal Memory System** (Our Secret Sauce)
-```
-🔓 FREE TRIAL (7 days) → Experience the magic
-💎 PREMIUM ($29/month) → Unlimited eternal memory forever
-```
-
-**What is Eternal Memory?**
-- **Perfect Context**: Claude remembers every conversation, file, and decision across sessions
-- **Project Continuity**: Pick up exactly where you left off, weeks or months later
-- **Learning History**: AI understands your coding style and preferences over time
-- **Session Handoffs**: Generate comprehensive reports for seamless collaboration
-
-> *"I've been using Coder1 for 3 months. Claude still remembers the architecture decisions we made on day 1. It's like having a senior developer who never forgets anything."* - Sarah K., Full-Stack Developer
-
-### ⚡ **Claude Code Native Integration**
-- **Built-in CLI**: Claude Code commands work natively in the terminal
-- **Smart Context**: Automatically shares project files and history with Claude
-- **Proactive Assistance**: AI suggests improvements before you ask
-- **Error Prevention**: Real-time guidance to prevent common mistakes
-
-### 🎯 **Perfect for Every Developer**
-
-#### 🌱 **Beginners**: "I've never coded before"
-- **Guided Tutorials**: Step-by-step lessons with AI mentoring
-- **Plain English**: Describe what you want, AI writes the code
-- **Error Explanations**: Mistakes become learning opportunities
-- **No Intimidation**: Friendly UI designed for newcomers
-
-#### 🚀 **Professionals**: "I want to code 10x faster"
-- **AI Pair Programming**: Real-time collaboration with Claude
-- **Instant Debugging**: AI identifies and fixes issues immediately
-- **Architecture Planning**: Claude helps design scalable systems
-- **Documentation**: Auto-generated docs and comments
+<table>
+<tr>
+<td><img src="coder1-ide-next/public/screenshots/monaco-editor.png" alt="Monaco Editor" width="400"/><br/><em>Full Monaco Editor with syntax highlighting</em></td>
+<td><img src="coder1-ide-next/public/screenshots/ai-terminal.png" alt="AI Terminal" width="400"/><br/><em>Integrated terminal with Claude Code</em></td>
+</tr>
+<tr>
+<td><img src="coder1-ide-next/public/screenshots/bridge-connection.png" alt="Bridge Connection" width="400"/><br/><em>Local bridge connects IDE to your machine</em></td>
+<td><img src="coder1-ide-next/public/screenshots/eternal-memory.png" alt="Persistent Memory" width="400"/><br/><em>Persistent memory across sessions</em></td>
+</tr>
+</table>
 
 ---
 
-## 🚀 Live Screenshots
+## Architecture
 
-### 💻 **Full IDE Experience**
-![Coder1 IDE Interface](https://user-images.githubusercontent.com/placeholder/coder1-ide-main.png)
-*Complete development environment with AI supervision*
+```
+Browser (Next.js 14 + React)
+    |
+    | WebSocket (Socket.IO)
+    |
+Unified Server (Express + Next.js)
+    |
+    |--- Monaco Editor (code editing)
+    |--- xterm.js (terminal emulation)
+    |--- Live Preview (iframe sandbox)
+    |
+    | WebSocket
+    |
+Bridge CLI (runs on your machine)
+    |
+    | PTY
+    |
+Claude Code CLI
+```
 
-### 🧠 **Eternal Memory in Action**
-![Memory System](https://user-images.githubusercontent.com/placeholder/coder1-memory.png)
-*Never lose context across sessions - Claude remembers everything*
+**Tech stack**: Next.js 14 (App Router), Monaco Editor, xterm.js, Socket.IO, Express, node-pty, TypeScript
 
-### ⚡ **AI Terminal Assistance**
-![AI Terminal](https://user-images.githubusercontent.com/placeholder/coder1-terminal.png)
-*Type "claude" for instant AI help in the terminal*
+For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
-## 💎 Pricing & Memory Trial
+## Project Structure
 
-### 🆓 **Free Forever Tier**
-- ✅ Full IDE with Monaco editor
-- ✅ Integrated terminal with AI supervision  
-- ✅ Live preview and debugging
-- ✅ Session summaries and exports
-- ✅ Claude Code CLI integration
-- ✅ 7-day **Eternal Memory** trial
-
-### 💎 **Pro: Eternal Memory** ($29/month)
-- ✅ **Everything in Free** +
-- ✅ **Unlimited Eternal Memory**
-- ✅ Perfect context preservation across sessions
-- ✅ Advanced session analysis and insights
-- ✅ Priority support and updates
-- ✅ Cancel anytime, instant memory restoration
-
-> **🎯 Why $29/month?** Our Eternal Memory system requires sophisticated AI processing and storage infrastructure to maintain perfect context across unlimited sessions. This pricing ensures sustainable, high-quality service while remaining 40% cheaper than competitive solutions.
-
-### 🎉 **Special Launch Pricing**
-- **First 1000 users**: $19/month forever
-- **Students**: 50% off with valid .edu email
-- **Open source contributors**: Free Pro for active contributors
-
----
-
-## 🌟 Community & GitHub
-
-### 🎯 **Growing Fast**
-- ⭐ **1000+ GitHub Stars** (and counting!)
-- 👥 **500+ Active Developers** using Coder1 daily
-- 🔥 **#1 Trending** in AI Development Tools
-- 💬 **50+ Contributors** making Coder1 better
-
-### 🤝 **Join the Movement**
-```bash
-# Star the repo (takes 2 seconds, helps tremendously!)
-⭐ Click the "Star" button above
-
-# Follow for updates
-🔔 Click "Watch" → "Custom" → "Releases"
-
-# Join discussions
-💬 GitHub Discussions tab
 ```
-
-### 📈 **Contributor Stats**
-- 🏆 **Top Contributors** get recognition in our Hall of Fame
-- 📊 **Impact Tracking** - See how your contributions help thousands of developers
-- 🎁 **Contributor Perks** - Free Pro access, exclusive Discord channels, direct dev team access
-
----
-
-## 🛠️ For Developers
-
-### 🚀 **Contributing** (We ❤️ Contributors!)
-```bash
-# 1. Fork & clone
-git clone https://github.com/YOUR_USERNAME/coder1-ide.git
-
-# 2. Create feature branch
-git checkout -b amazing-feature
-
-# 3. Make changes & test
-cd coder1-ide-next && npm run dev
-
-# 4. Submit PR with clear description
-```
-
-**What we're looking for:**
-- 🐛 **Bug fixes** - Help make Coder1 more stable
-- ✨ **New features** - AI integrations, UI improvements, tools
-- 📚 **Documentation** - Help others understand and use Coder1
-- 🎨 **UI/UX** - Make the IDE more beautiful and intuitive
-- 🧪 **Testing** - Help us maintain quality
-
-**Contributor Benefits:**
-- 🎁 **Free Pro Access** for active contributors
-- 🏆 **Recognition** in our contributor hall of fame  
-- 💬 **Direct Access** to core development team
-- 📈 **GitHub Profile Boost** - contribute to a trending AI project
-
-### 🏗️ **Architecture**
-```
-Coder1 IDE (Next.js 14)
-├── 🎨 Frontend: React + Tailwind + Monaco Editor
-├── 🔌 Backend: Next.js API routes + WebSocket
-├── 🧠 AI Layer: Claude Code + Anthropic API
-├── 💾 Memory: Local storage + Cloud sync (Pro)
-└── 🖥️ Terminal: node-pty + AI supervision
-```
-
-### 📁 **Project Structure**
-```bash
 coder1-ide-next/
-├── app/                 # Next.js 14 app router
-├── components/          # React components
-├── services/           # AI integration & memory
-├── lib/               # Utilities & helpers
-└── public/            # Static assets
+  app/              # Next.js 14 app router pages
+  components/       # React components (terminal, editor, panels)
+  lib/              # Utilities, socket client, hooks
+  services/         # AI integration, session management, database
+  stores/           # Zustand state management
+  types/            # TypeScript type definitions
+  server.js         # Unified Express + Socket.IO + Next.js server
+  bridge-cli/       # Local bridge CLI for connecting to Claude Code
 ```
 
 ---
 
-## 🔥 Join the AI Coding Revolution
+## Open Core Model
 
-### ⭐ **Star This Repo Right Now**
-**Takes 2 seconds, helps us tremendously!**
+Coder1 is open core. Here's what that means:
 
-> Every star:
-> - 📈 **Boosts our visibility** in GitHub trending
-> - 🎯 **Validates our mission** to democratize AI coding
-> - 🚀 **Attracts more contributors** to make Coder1 better
-> - 💪 **Supports open source** AI development tools
+**Free (MIT License)**:
+- Full IDE with Monaco Editor
+- Integrated terminal with Claude Code support
+- Live preview
+- Persistent memory across sessions
+- AI supervision and error detection
+- Session summaries and exports
+- Bridge CLI for local Claude Code connection
 
-### 🎯 **Spread the Word**
-```markdown
-🚀 Found an amazing free AI IDE for Claude Code users!
+**Pro License (Teams)**:
+- Multi-user collaboration (Google Docs-style)
+- Shared workspaces
+- Team session management
 
-Coder1 IDE features:
-✅ Completely free with optional $29/month memory
-✅ Built specifically for Claude Code workflows  
-✅ Eternal Memory - never lose context again
-✅ AI supervision in terminal
-✅ Perfect for beginners AND pros
-
-⭐ Star it: https://github.com/MichaelrKraft/coder1-ide
-🚀 Try demo: https://coder1.ai
-
-#AI #ClaudeCode #IDE #OpenSource #Coding
-```
-
-### 🌍 **Connect & Follow**
-- **🐦 Twitter**: [@Coder1IDE](https://twitter.com/Coder1IDE) - Latest updates and AI coding tips
-- **💬 Discord**: [Join Community](https://discord.gg/coder1-ide) - Chat with 500+ developers
-- **📧 Newsletter**: Get notified of major releases and features
-- **🎥 YouTube**: [Coder1 IDE Channel](https://youtube.com/coder1ide) - Tutorials and demos
+All code — including Pro features — is visible in this repository. Team features are gated behind a license key at runtime. We believe in transparent open core.
 
 ---
 
-## 📊 GitHub Stats & Recognition
+## Contributing
 
-<div align="center">
+We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and guidelines.
 
-![GitHub stars](https://img.shields.io/github/stars/michaelkraft/coder1-ide?style=for-the-badge&color=yellow)
-![GitHub forks](https://img.shields.io/github/forks/michaelkraft/coder1-ide?style=for-the-badge&color=blue)
-![GitHub contributors](https://img.shields.io/github/contributors/michaelkraft/coder1-ide?style=for-the-badge&color=green)
-![GitHub last commit](https://img.shields.io/github/last-commit/michaelkraft/coder1-ide?style=for-the-badge&color=red)
+**Good places to start**:
+- Issues labeled [`good first issue`](https://github.com/MichaelrKraft/coder1-ide/labels/good%20first%20issue)
+- Documentation improvements
+- Test coverage
+- Bug reports and fixes
 
-### 🏆 **Featured In**
-- **GitHub Trending** - #1 in AI Development Tools
-- **Awesome Claude Code** - Featured AI IDE
-- **Product Hunt** - Top 5 Developer Tools
-- **Hacker News** - Front page discussion
+## Roadmap
 
-</div>
+- [ ] Plugin system for custom extensions
+- [ ] Multi-file diff viewer
+- [ ] Git integration panel
+- [ ] Voice-to-code with Claude
+- [ ] Mobile-responsive layout
+- [ ] Vim/Emacs keybindings
+- [ ] Self-hosted deployment guide
 
----
+## Community
 
-## 🚀 **Ready to Code with AI?**
-
-<div align="center">
-
-### 🎯 **Choose Your Adventure**
-
-**🌐 Try Demo** → [coder1.ai](https://coder1.ai)
-
-**⚡ Deploy on Render** → [Deploy Guide](https://render.com) - Fork repo & connect to Render
-
-**💻 Run Locally** → `git clone https://github.com/MichaelrKraft/coder1-ide.git`
-
-**⭐ Star This Repo** → *Click the ⭐ button above*
+- [GitHub Issues](https://github.com/MichaelrKraft/coder1-ide/issues) — bug reports and feature requests
+- [GitHub Discussions](https://github.com/MichaelrKraft/coder1-ide/discussions) — questions and ideas
 
 ---
 
-*Built with ❤️ for developers who believe AI should amplify human creativity, not replace it.*
+## Background
 
-**© 2025 Coder1 IDE - Making AI coding accessible to everyone**
+I'm Mike — a solo founder who spent 8 months building Coder1 because I believed Claude Code deserved a proper IDE. No VC funding, no team, just me building the tool I wanted to use every day.
 
-</div>
+I'm open-sourcing it because I think the Claude Code community should shape what this becomes. Try it, break it, tell me what's missing.
+
+---
+
+## License
+
+[MIT](LICENSE) — free for personal and commercial use.
+
+Team collaboration features require a separate Pro license. See [coder1.ai](https://coder1.ai) for details.

@@ -128,9 +128,9 @@ function logWithTrace(traceId, level, message, data) {
 // Memory Optimizer with environment-aware limits - Updated for 2GB Standard plan
 const { getMemoryOptimizer } = require('./services/memory-optimizer');
 const memoryOptimizer = getMemoryOptimizer({
-  maxHeapMB: isDevelopment ? 2048 : (parseInt(process.env.NODE_OPTIONS?.match(/--max-old-space-size=(\d+)/)?.[1]) || 1500),
-  warningThresholdMB: isDevelopment ? 1500 : 1200,  // 80% of 1500MB
-  panicThresholdMB: isDevelopment ? 1800 : (parseInt(process.env.MEMORY_PANIC_THRESHOLD_MB) || 1800),
+  maxHeapMB: isDevelopment ? 4096 : (parseInt(process.env.NODE_OPTIONS?.match(/--max-old-space-size=(\d+)/)?.[1]) || 1500),
+  warningThresholdMB: isDevelopment ? 2500 : 1200,  // 80% of 1500MB
+  panicThresholdMB: isDevelopment ? 3500 : (parseInt(process.env.MEMORY_PANIC_THRESHOLD_MB) || 1800),
   checkIntervalMs: isDevelopment ? 60000 : 30000  // Check less frequently in dev
 });
 

@@ -902,7 +902,7 @@ export default function LandingTeamV1Page() {
           />
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-28">
           {/* Badge */}
           <div
             className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-coder1-purple/20 to-coder1-cyan/20 border border-coder1-purple/30 rounded-full mb-8"
@@ -1101,7 +1101,7 @@ export default function LandingTeamV1Page() {
           <ScrollReveal>
             <div className="text-center p-8 bg-gradient-to-r from-coder1-purple/10 to-coder1-cyan/10 border border-coder1-purple/20 rounded-2xl">
               <ChevronDown className="w-8 h-8 text-coder1-purple mx-auto mb-4 animate-bounce" />
-              <p className="text-[28px] font-semibold text-coder1-cyan">
+              <p className="text-[42px] font-semibold text-coder1-cyan">
                 But here&apos;s what makes Coder1 different for teams...
               </p>
             </div>
@@ -1185,7 +1185,7 @@ export default function LandingTeamV1Page() {
           </ScrollReveal>
 
           {/* Live terminal demo */}
-          <div className="mt-12">
+          <div className="mt-28">
             <ScrollReveal>
               <div className="text-center mb-8">
                 <p className="text-white/40 text-4xl uppercase tracking-widest font-bold">DEMO</p>
@@ -1502,11 +1502,12 @@ export default function LandingTeamV1Page() {
                   'Team coordination dashboard',
                   'Autonomous team coordination',
                   'Team admin controls',
-                  'Priority team support'
+                  'Priority team support',
+                  'Requires Claude Code Max plan'
                 ]}
                 cta="Start Team Trial"
                 badge="Best for Teams"
-                subtext="14-day free trial"
+                subtext="14-day free trial · Requires Claude Code Max plan"
                 onClick={() => document.getElementById('alpha')?.scrollIntoView({ behavior: 'smooth' })}
               />
             </ScrollReveal>
@@ -1666,6 +1667,13 @@ export default function LandingTeamV1Page() {
               </button>
             </form>
 
+            <p className="text-white/40 text-sm mb-6">
+              Already have access?{' '}
+              <a href="/login" className="text-coder1-cyan hover:text-coder1-cyan/80 font-semibold transition-colors">
+                Go to IDE →
+              </a>
+            </p>
+
             <div className="flex flex-wrap justify-center gap-4 md:gap-6">
               <div className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
                 <CreditCard className="w-4 h-4 text-coder1-cyan" />
@@ -1746,6 +1754,9 @@ export default function LandingTeamV1Page() {
           <div className="pt-8 border-t border-white/5 text-center">
             <p className="text-white/30 text-sm">
               &copy; 2026 Coder1. All rights reserved.
+            </p>
+            <p className="text-white/20 text-xs mt-3 max-w-2xl mx-auto leading-relaxed">
+              Coder1 requires your own Claude Code subscription. Coder1 bridges your local Claude Code session — we do not provide or resell Claude access. Team and multi-agent features require a Claude Code Max plan.
             </p>
           </div>
         </div>

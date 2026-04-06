@@ -1,7 +1,7 @@
 {
-  "name": "autonomous-vibe-coding-agent",
+  "name": "coder1-ide",
   "version": "1.0.0",
-  "description": "An autonomous vibe coding agent that transforms natural language into code using AI",
+  "description": "The first open-source IDE built specifically for Claude Code users",
   "main": "coder1-ide-next/server.js",
   "scripts": {
     "postinstall": "cd coder1-ide-next && npm install",
@@ -35,14 +35,18 @@
     "agent:install": "cd agents && npm install"
   },
   "keywords": [
-    "ai",
-    "coding",
-    "autonomous",
-    "agent",
-    "express",
-    "nodejs"
+    "ide",
+    "claude-code",
+    "ai-coding",
+    "developer-tools",
+    "open-source",
+    "nextjs",
+    "monaco-editor",
+    "claude",
+    "anthropic",
+    "vibe-coding"
   ],
-  "author": "Your Name",
+  "author": "Michael Kraft",
   "license": "MIT",
   "dependencies": {
     "@21st-dev/cli": "^0.0.29",
