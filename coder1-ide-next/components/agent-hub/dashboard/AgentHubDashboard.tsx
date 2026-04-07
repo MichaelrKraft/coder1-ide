@@ -40,6 +40,14 @@ interface StuckAgent {
   minutesIdle: number;
 }
 
+interface HumanInputRun {
+  id: string;
+  humanInputRequest: string | null;
+  startedAt: string;
+  agentName: string | null;
+  taskTitle: string | null;
+}
+
 interface RecentTask {
   id: string;
   title: string;
@@ -110,6 +118,7 @@ export default function AgentHubDashboard() {
   const [recentRuns, setRecentRuns] = useState<RecentRun[]>([]);
   const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
   const [stuckAgents, setStuckAgents] = useState<StuckAgent[]>([]);
+  const [humanInputRuns, setHumanInputRuns] = useState<HumanInputRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -125,6 +134,15 @@ export default function AgentHubDashboard() {
         setRecentRuns(data.recentRuns || []);
         setRecentTasks(data.recentTasks || []);
         setStuckAgents(data.stuckAgents || []);
+        setHumanInputRuns(
+          (data.humanInputRuns ?? []).map((r: { id: string; human_input_request: string | null; started_at: string; agent_name: string | null; task_title: string | null }) => ({
+            id: r.id,
+            humanInputRequest: r.human_input_request,
+            startedAt: r.started_at,
+            agentName: r.agent_name,
+            taskTitle: r.task_title,
+          }))
+        );
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Failed to load dashboard');
       } finally {
@@ -181,6 +199,36 @@ export default function AgentHubDashboard() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Needs Your Input */}
+      {humanInputRuns.length > 0 && (
+        <div className="bg-bg-secondary border border-amber-500/30 rounded-lg p-4">
+          <h3 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <AlertTriangle size={12} />
+            Needs Your Input ({humanInputRuns.length})
+          </h3>
+          <ul className="space-y-3">
+            {humanInputRuns.map((run) => (
+              <li key={run.id} className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-text-secondary">
+                    {run.agentName ?? 'Unknown'}{run.taskTitle ? ` · ${run.taskTitle}` : ''}
+                  </p>
+                  <p className="text-xs text-text-muted mt-0.5 truncate">
+                    {run.humanInputRequest ?? 'Agent is waiting for input'}
+                  </p>
+                </div>
+                <a
+                  href={`/ide/agent-hub/runs/${run.id}`}
+                  className="shrink-0 text-xs text-amber-400 hover:text-amber-300 underline underline-offset-2"
+                >
+                  Respond
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Stuck Agents Alert */}
       {stuckAgents.length > 0 && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3">
