@@ -234,3 +234,65 @@ export function getRunLogChunks(runId: string): RunLogChunk[] {
     createdAt: row.created_at,
   }));
 }
+
+export interface RunThought {
+  id: string;
+  runId: string;
+  sequence: number;
+  eventType: 'tool_call' | 'tool_result' | 'thinking' | 'milestone';
+  label: string;
+  tool: string | null;
+  detail: string | null;
+  createdAt: string;
+}
+
+interface RunThoughtRow {
+  id: string;
+  run_id: string;
+  sequence: number;
+  event_type: string;
+  label: string;
+  tool: string | null;
+  detail: string | null;
+  created_at: string;
+}
+
+export function appendRunThought(
+  runId: string,
+  eventType: RunThought['eventType'],
+  label: string,
+  tool?: string,
+  detail?: string,
+): void {
+  const db = getAgentHubDatabase();
+  const id = uuidv4();
+  const now = new Date().toISOString();
+
+  const countRow = db
+    .prepare('SELECT COUNT(*) as cnt FROM agent_hub_run_thoughts WHERE run_id = ?')
+    .get(runId) as { cnt: number };
+
+  db.prepare(
+    `INSERT INTO agent_hub_run_thoughts (id, run_id, sequence, event_type, label, tool, detail, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, runId, countRow.cnt, eventType, label, tool ?? null, detail ?? null, now);
+}
+
+export function getRunThoughts(runId: string): RunThought[] {
+  const db = getAgentHubDatabase();
+  const rows = db
+    .prepare(
+      'SELECT * FROM agent_hub_run_thoughts WHERE run_id = ? ORDER BY sequence ASC'
+    )
+    .all(runId) as RunThoughtRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    runId: row.run_id,
+    sequence: row.sequence,
+    eventType: row.event_type as RunThought['eventType'],
+    label: row.label,
+    tool: row.tool,
+    detail: row.detail,
+    createdAt: row.created_at,
+  }));
+}
