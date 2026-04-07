@@ -157,6 +157,24 @@ function initializeSchema(database: Database.Database): void {
   `);
 
   database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_run_thoughts (
+      id TEXT PRIMARY KEY,
+      run_id TEXT NOT NULL,
+      sequence INTEGER NOT NULL,
+      event_type TEXT NOT NULL,
+      label TEXT NOT NULL,
+      tool TEXT,
+      detail TEXT,
+      created_at TEXT NOT NULL
+    )
+  `);
+
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_run_thoughts_run_id
+    ON agent_hub_run_thoughts(run_id)
+  `);
+
+  database.exec(`
     CREATE TABLE IF NOT EXISTS agent_hub_comments (
       id TEXT PRIMARY KEY,
       task_id TEXT NOT NULL,
