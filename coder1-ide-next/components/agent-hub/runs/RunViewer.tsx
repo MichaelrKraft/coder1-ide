@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import type { Run, RunLogChunk } from '@/lib/agent-hub/runs';
+import type { Run, RunLogChunk, RunThought } from '@/lib/agent-hub/runs';
 import { RunStatusChip } from './RunStatusChip';
 import WorktreeMergePanel from './WorktreeMergePanel';
 import { getSocket } from '@/lib/socket';
@@ -16,6 +16,7 @@ const DiffEditor = dynamic(
 interface RunDetail {
   run: Run;
   logChunks: RunLogChunk[];
+  thoughts: RunThought[];
 }
 
 interface Props {
