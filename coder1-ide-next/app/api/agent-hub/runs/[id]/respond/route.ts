@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 import { getRun, updateRun } from '@/lib/agent-hub/runs';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const userId = getAuthenticatedUserId(request);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   if (!id) {
     return NextResponse.json({ error: 'id is required' }, { status: 400 });
@@ -22,8 +28,7 @@ export async function POST(
     return NextResponse.json({ error: 'response is required' }, { status: 400 });
   }
 
-  // Use 'default' userId — matches the relaxed check in getRun
-  const run = getRun(id, 'default');
+  const run = getRun(id, userId);
   if (!run) {
     return NextResponse.json({ error: 'Run not found' }, { status: 404 });
   }
