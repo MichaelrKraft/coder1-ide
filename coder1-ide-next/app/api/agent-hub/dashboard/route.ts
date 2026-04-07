@@ -87,6 +87,24 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       })
       .filter((r) => r.minutesIdle * 60000 >= STUCK_THRESHOLD_MS);
 
+    // Runs waiting for human input
+    const humanInputRuns = db.prepare(`
+      SELECT r.id, r.human_input_request, r.started_at,
+             a.name as agent_name, t.title as task_title
+      FROM agent_hub_runs r
+      LEFT JOIN agent_hub_agents a ON r.agent_id = a.id
+      LEFT JOIN agent_hub_tasks t ON r.task_id = t.id
+      WHERE r.status = 'needs_human_input'
+      ORDER BY r.started_at DESC
+      LIMIT 10
+    `).all() as Array<{
+      id: string;
+      human_input_request: string | null;
+      started_at: string;
+      agent_name: string | null;
+      task_title: string | null;
+    }>;
+
     // Recent tasks - last 10
     const recentTasks = db.prepare(`
       SELECT t.id, t.title, t.status, t.priority, t.created_at,
@@ -112,6 +130,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       recentRuns,
       recentTasks,
       stuckAgents,
+      humanInputRuns,
     });
   } catch (err: unknown) {
     console.error('[dashboard] error:', err instanceof Error ? err.message : err);
