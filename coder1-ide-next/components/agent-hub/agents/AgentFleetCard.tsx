@@ -57,7 +57,9 @@ export function AgentFleetCard({ agent, selected, onSelect }: Props): React.Reac
       .then((data: AgentStats) => {
         if (!cancelled) setStats(data);
       })
-      .catch(() => {}); // Silent — stats are non-critical
+      .catch((err: unknown) => {
+        console.warn(`[agent-hub] failed to load stats for agent ${agent.id}:`, err);
+      });
     return () => {
       cancelled = true;
     };
@@ -67,10 +69,12 @@ export function AgentFleetCard({ agent, selected, onSelect }: Props): React.Reac
   const isStuck =
     agent.status === 'running' &&
     agent.lastRunAt != null &&
-    Date.now() - new Date(agent.lastRunAt).getTime() > 10 * 60 * 1000;
+    Date.now() - new Date(agent.lastRunAt).getTime() > 30 * 60 * 1000;
 
   return (
     <button
+      type="button"
+      aria-pressed={selected}
       onClick={() => onSelect(agent.id)}
       className={`
         w-full text-left rounded-lg border bg-bg-secondary p-3 transition-all
@@ -85,7 +89,7 @@ export function AgentFleetCard({ agent, selected, onSelect }: Props): React.Reac
           {/* Initials avatar */}
           <div className="w-7 h-7 rounded-full bg-coder1-cyan/20 border border-coder1-cyan/30 flex items-center justify-center shrink-0">
             <span className="text-xs font-semibold text-coder1-cyan">
-              {agent.name.slice(0, 2).toUpperCase()}
+              {(agent.name + '??').slice(0, 2).toUpperCase()}
             </span>
           </div>
           <div className="min-w-0">

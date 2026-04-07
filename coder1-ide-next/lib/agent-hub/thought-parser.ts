@@ -2,7 +2,7 @@
 // TypeScript type wrapper — server.js uses the .js file directly (CommonJS)
 
 export interface ThoughtEvent {
-  eventType: 'tool_call' | 'tool_result' | 'thinking' | 'milestone';
+  eventType: 'tool_call' | 'tool_result' | 'thinking';
   label: string;
   tool?: string;
   detail?: string;

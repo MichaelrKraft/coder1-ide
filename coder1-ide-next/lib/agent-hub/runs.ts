@@ -239,7 +239,7 @@ export interface RunThought {
   id: string;
   runId: string;
   sequence: number;
-  eventType: 'tool_call' | 'tool_result' | 'thinking' | 'milestone';
+  eventType: 'tool_call' | 'tool_result' | 'thinking';
   label: string;
   tool: string | null;
   detail: string | null;

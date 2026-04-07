@@ -1,7 +1,8 @@
 // lib/agent-hub/thought-parser.js
 'use strict';
 
-const ANSI_STRIP = /\x1b\[[0-9;]*[mGKHF]/g;
+// Strips common ANSI/VT100 escape sequences including CSI, OSC, and character set sequences
+const ANSI_STRIP = /(\x9B|\x1B\[)[0-9;]*[ -/]*[@-~]|\x1B[()][0-9A-Za-z]|\x1B\][^\x07]*(\x07|\x1B\\)/g;
 
 // Claude Code tool call: ⏺ ToolName(args) or ● ToolName(args)
 const TOOL_CALL_RE = /^[⏺●◆]\s+(\w+)\(([^)]*(?:\([^)]*\)[^)]*)*)\)/;
