@@ -30,6 +30,10 @@ const STATUS_CONFIG: Record<Run['status'], { label: string; classes: string }> =
     label: 'Cancelled',
     classes: 'bg-gray-500/20 text-gray-400 border-gray-500/40',
   },
+  needs_human_input: {
+    label: 'Needs Your Input',
+    classes: 'bg-amber-500/20 text-amber-400 border-amber-500/40 animate-pulse',
+  },
 };
 
 export function RunStatusChip({ status }: Props): React.ReactElement {
