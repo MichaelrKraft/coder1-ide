@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Users, Clock, DollarSign, CheckCircle, AlertTriangle, Calendar } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -86,6 +87,8 @@ function getRunDescription(run: RecentRun): string {
       return `${agent} awaiting approval for ${task}`;
     case 'cancelled':
       return `${agent} cancelled ${task}`;
+    case 'needs_human_input':
+      return 'agent needs your input';
     default:
       return `${agent} started ${task}`;
   }
@@ -217,12 +220,12 @@ export default function AgentHubDashboard() {
                     {run.humanInputRequest ?? 'Agent is waiting for input'}
                   </p>
                 </div>
-                <a
+                <Link
                   href={`/ide/agent-hub/runs/${run.id}`}
                   className="shrink-0 text-xs text-amber-400 hover:text-amber-300 underline underline-offset-2"
                 >
                   Respond
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
