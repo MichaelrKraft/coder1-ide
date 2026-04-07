@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import type { Run, RunLogChunk, RunThought } from '@/lib/agent-hub/runs';
 import { RunStatusChip } from './RunStatusChip';
 import WorktreeMergePanel from './WorktreeMergePanel';
+import { ThoughtStream } from './ThoughtStream';
 import { getSocket } from '@/lib/socket';
 
 // Dynamic imports — SSR unsafe
@@ -141,6 +142,7 @@ export function RunViewer({ runId }: Props): React.ReactElement {
         socketInstance.off('run:stderr');
         socketInstance.off('run:diff');
         socketInstance.off('run:complete');
+        socketInstance.off('run:thought');
       }
     };
   }, [runId, fetchDetail]);
@@ -178,6 +180,13 @@ export function RunViewer({ runId }: Props): React.ReactElement {
       {run?.worktreePath && (
         <WorktreeMergePanel runId={runId} />
       )}
+
+      {/* Neural stream — thought event timeline */}
+      <ThoughtStream
+        runId={runId}
+        initialThoughts={detail?.thoughts ?? []}
+        isLive={run?.status === 'running'}
+      />
 
       {/* Two-pane body */}
       <div className="flex flex-1 min-h-0">
