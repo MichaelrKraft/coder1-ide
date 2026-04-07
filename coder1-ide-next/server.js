@@ -1025,6 +1025,33 @@ if (EnhancedTmuxService) {
   tmuxService = null;
 }
 
+// Session note helpers — write command history to vault Sessions folder
+const _vaultNotesBase = (() => {
+  const envPath = process.env.NEXT_PUBLIC_VAULT_PATH || process.env.VAULT_PATH;
+  if (envPath) return envPath.replace(/^~/, os.homedir());
+  return path.join(os.homedir(), '.coder1', 'knowledge');
+})();
+
+function createSessionNote(sessionId) {
+  try {
+    const sessionsDir = path.join(_vaultNotesBase, 'Sessions');
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    const shortId = sessionId.replace(/[^a-z0-9]/gi, '').slice(-8) || 'xxxxxxxx';
+    const notePath = path.join(sessionsDir, `session-${Date.now()}_${shortId}.md`);
+    const dateStr = new Date().toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    fs.writeFileSync(notePath, `# Session Log\n\nStarted: ${dateStr}\n\n`, 'utf8');
+    return notePath;
+  } catch (e) {
+    console.warn('[SessionNote] Could not create note:', e.message);
+    return null;
+  }
+}
+
+function appendToSessionNote(notePath, line) {
+  if (!notePath) return;
+  try { fs.appendFileSync(notePath, line, 'utf8'); } catch { /* non-fatal */ }
+}
+
 // Session management
 class TerminalSession {
   constructor(id, userId = 'default', cols = 80, rows = 30) {
@@ -1032,6 +1059,7 @@ class TerminalSession {
     this.userId = userId;
     this.created = new Date();
     this.lastActivity = new Date();
+    this.notePath = null; // Set after construction by getOrCreateSession
     // Store initial dimensions for reliable retrieval
     this.cols = cols;
     this.rows = rows;
@@ -1157,6 +1185,10 @@ function getOrCreateSession(sessionId, userId = 'default', cols = 80, rows = 30)
   if (!terminalSessions.has(sessionId)) {
     const session = new TerminalSession(sessionId, userId, cols, rows);
     terminalSessions.set(sessionId, session);
+    // Create session note for activity logging (vault must be enabled)
+    if (process.env.NEXT_PUBLIC_VAULT_ENABLED === 'true') {
+      session.notePath = createSessionNote(sessionId);
+    }
     
     // Set up PTY exit handler only (data handler will be set up in socket connection)
     session.pty.onExit(({ exitCode, signal }) => {
@@ -2361,10 +2393,40 @@ app.prepare().then(() => {
           console.warn('[agent-hub] agent:output received with no userId on socket, ignoring');
           return;
         }
+
+        // Broadcast raw output to run room
         io.to(`run:${runId}`).emit(type === 'stderr' ? 'run:stderr' : 'run:stdout', {
           chunk,
           timestamp: new Date().toISOString(),
         });
+
+        // Parse thought event from stdout only (stderr is noise/errors)
+        if (type !== 'stderr') {
+          try {
+            const { parseThoughtFromChunk } = require('./lib/agent-hub/thought-parser.js');
+            const thought = parseThoughtFromChunk(chunk);
+            if (thought) {
+              io.to(`run:${runId}`).emit('run:thought', {
+                ...thought,
+                runId,
+                timestamp: new Date().toISOString(),
+              });
+              // Persist thought in background
+              setImmediate(() => {
+                try {
+                  const { appendRunThought } = require('./lib/agent-hub/runs');
+                  appendRunThought(runId, thought.eventType, thought.label, thought.tool, thought.detail);
+                } catch (e) {
+                  console.warn('[agent-hub] thought storage error:', e.message);
+                }
+              });
+            }
+          } catch (e) {
+            console.warn('[agent-hub] thought parsing error:', e.message);
+          }
+        }
+
+        // Persist raw log chunk (existing behavior — unchanged)
         setImmediate(() => {
           try {
             const { appendRunLogChunk } = require('./lib/agent-hub/runs');
@@ -4340,6 +4402,12 @@ app.prepare().then(() => {
           if (terminalTokenIntegration && command.length > 0) {
             terminalTokenIntegration.onCommandInput(sessionId, command);
           }
+
+          // Log command to session note (skip blank, pure-ctrl, and very long pastes)
+          if (session && session.notePath && command.length > 0 && command.length < 500) {
+            const t = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            appendToSessionNote(session.notePath, `- ${t} \`$ ${command}\`\n`);
+          }
           
           // 🔇 DISABLED (Feb 1, 2025): Server-side contextual memory triggering
           // This was causing typing lag after 3+ questions due to API spam
@@ -4926,6 +4994,19 @@ app.prepare().then(() => {
     });
     
     // Handle terminal resize
+    // Log file opens and other IDE events to the active session note
+    socket.on('session:log', ({ sessionId: logSessionId, type, value }) => {
+      const sid = logSessionId || currentSessionId;
+      const sess = terminalSessions.get(sid);
+      if (sess?.notePath && value) {
+        const t = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const line = type === 'file'
+          ? `- ${t} Opened \`${value}\`\n`
+          : `- ${t} ${value}\n`;
+        appendToSessionNote(sess.notePath, line);
+      }
+    });
+
     socket.on('terminal:resize', ({ id, cols, rows }) => {
       const sessionId = id || currentSessionId;
 
