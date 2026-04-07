@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { readFileSync } from 'fs';
+import { readFileSync, mkdirSync } from 'fs';
 import { randomBytes } from 'crypto';
 import path from 'path';
 
@@ -14,7 +14,9 @@ export function getAuthDatabase(): Database.Database {
       ? '/data'
       : path.join(process.cwd(), 'data');
     const dbPath = path.join(dataDir, 'auth.db');
-    
+
+    mkdirSync(dataDir, { recursive: true });
+
     db = new Database(dbPath, {
       verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
     });
