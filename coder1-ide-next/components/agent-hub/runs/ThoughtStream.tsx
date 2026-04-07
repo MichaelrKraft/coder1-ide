@@ -5,6 +5,12 @@ import { Wrench, CheckCircle2, Brain, ChevronDown, ChevronUp } from 'lucide-reac
 import type { RunThought } from '@/lib/agent-hub/runs';
 import { getSocket } from '@/lib/socket';
 
+const VALID_EVENT_TYPES = new Set(['tool_call', 'tool_result', 'thinking'] as const);
+
+function isValidEventType(v: string): v is LiveThought['eventType'] {
+  return VALID_EVENT_TYPES.has(v as LiveThought['eventType']);
+}
+
 interface LiveThought {
   id: string;
   eventType: 'tool_call' | 'tool_result' | 'thinking';
@@ -52,38 +58,42 @@ export function ThoughtStream({ runId, initialThoughts, isLive }: Props): React.
   useEffect(() => {
     if (!isLive) return;
 
-    let socketInstance: Awaited<ReturnType<typeof getSocket>> | null = null;
+    let mounted = true;
+    let cleanupFn: (() => void) | null = null;
 
     const setup = async () => {
-      socketInstance = await getSocket();
-      socketInstance.on(
-        'run:thought',
-        (event: {
-          runId: string;
-          eventType: string;
-          label: string;
-          tool?: string;
-          timestamp: string;
-        }) => {
-          if (event.runId !== runId) return;
-          setThoughts((prev) => [
-            ...prev,
-            {
-              id: `live-${Date.now()}-${Math.random()}`,
-              eventType: event.eventType as LiveThought['eventType'],
-              label: event.label,
-              tool: event.tool,
-              timestamp: event.timestamp,
-            },
-          ]);
-        }
-      );
+      const socket = await getSocket();
+      if (!mounted) return; // component unmounted before socket resolved
+
+      const handler = (event: {
+        runId: string;
+        eventType: string;
+        label: string;
+        tool?: string;
+        timestamp: string;
+      }) => {
+        if (event.runId !== runId) return;
+        setThoughts((prev) => [
+          ...prev,
+          {
+            id: `live-${Date.now()}-${Math.random()}`,
+            eventType: isValidEventType(event.eventType) ? event.eventType : 'thinking',
+            label: event.label,
+            tool: event.tool,
+            timestamp: event.timestamp,
+          },
+        ]);
+      };
+
+      socket.on('run:thought', handler);
+      cleanupFn = () => socket.off('run:thought', handler);
     };
 
     void setup();
 
     return () => {
-      socketInstance?.off('run:thought');
+      mounted = false;
+      cleanupFn?.();
     };
   }, [runId, isLive]);
 
