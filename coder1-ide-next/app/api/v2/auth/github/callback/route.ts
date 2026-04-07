@@ -112,6 +112,10 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
+    console.error('[GitHub OAuth] Callback error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      raw: JSON.stringify(error),
+    });
     return NextResponse.redirect(
       new URL('/login?error=oauth_failed', baseUrl)
     );
