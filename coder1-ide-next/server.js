@@ -76,6 +76,17 @@ const os = require('os');
 const fs = require('fs');
 const express = require('express');
 
+// Agent-hub modules — hoisted to avoid per-event module cache lookups in the hot agent:output path
+let parseThoughtFromChunk;
+let appendRunThought;
+let appendRunLogChunk;
+try {
+  ({ parseThoughtFromChunk } = require('./lib/agent-hub/thought-parser.js'));
+  ({ appendRunThought, appendRunLogChunk } = require('./lib/agent-hub/runs'));
+} catch (e) {
+  console.warn('[agent-hub] module preload failed:', e.message);
+}
+
 // Environment detection
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -2403,8 +2414,7 @@ app.prepare().then(() => {
         // Parse thought event from stdout only (stderr is noise/errors)
         if (type !== 'stderr') {
           try {
-            const { parseThoughtFromChunk } = require('./lib/agent-hub/thought-parser.js');
-            const thought = parseThoughtFromChunk(chunk);
+            const thought = parseThoughtFromChunk && parseThoughtFromChunk(chunk);
             if (thought) {
               io.to(`run:${runId}`).emit('run:thought', {
                 ...thought,
@@ -2414,8 +2424,7 @@ app.prepare().then(() => {
               // Persist thought in background
               setImmediate(() => {
                 try {
-                  const { appendRunThought } = require('./lib/agent-hub/runs');
-                  appendRunThought(runId, thought.eventType, thought.label, thought.tool, thought.detail);
+                  if (appendRunThought) appendRunThought(runId, thought.eventType, thought.label, thought.tool, thought.detail);
                 } catch (e) {
                   console.warn('[agent-hub] thought storage error:', e.message);
                 }
@@ -2454,10 +2463,9 @@ app.prepare().then(() => {
         // Persist raw log chunk (existing behavior — unchanged)
         setImmediate(() => {
           try {
-            const { appendRunLogChunk } = require('./lib/agent-hub/runs');
             const token = process.env.AGENT_HUB_INTERNAL_TOKEN;
             const safeChunk = token ? chunk.replace(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '[REDACTED]') : chunk;
-            appendRunLogChunk(runId, safeChunk, type || 'stdout');
+            if (appendRunLogChunk) appendRunLogChunk(runId, safeChunk, type || 'stdout');
           } catch (e) {
             console.warn('[agent-hub] chunk storage error:', e.message);
           }
