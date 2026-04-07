@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, List, GitBranch } from 'lucide-react';
+import { Plus, List, GitBranch, LayoutGrid } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import AgentStatusChip from './AgentStatusChip';
 import AgentForm from './AgentForm';
+import { AgentFleetCard } from './AgentFleetCard';
 
 const AgentHierarchy = dynamic(() => import('./AgentHierarchy'), { ssr: false });
 import type { Agent } from '@/lib/agent-hub/agents';
@@ -31,7 +32,7 @@ export default function AgentList({ onAgentSelect, selectedAgentId, refreshTrigg
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'hierarchy'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'hierarchy' | 'fleet'>('list');
 
   async function loadAgents() {
     try {
@@ -86,6 +87,15 @@ export default function AgentList({ onAgentSelect, selectedAgentId, refreshTrigg
               title="Hierarchy view"
             >
               <GitBranch size={12} />
+            </button>
+            <button
+              onClick={() => setViewMode('fleet')}
+              className={`p-1 rounded transition-colors ${
+                viewMode === 'fleet' ? 'bg-bg-secondary text-coder1-cyan' : 'text-text-muted hover:text-text-secondary'
+              }`}
+              title="Fleet view"
+            >
+              <LayoutGrid size={12} />
             </button>
           </div>
         </div>
@@ -146,6 +156,17 @@ export default function AgentList({ onAgentSelect, selectedAgentId, refreshTrigg
               </li>
             ))}
           </ul>
+        ) : viewMode === 'fleet' ? (
+          <div className="p-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {agents.map((agent) => (
+              <AgentFleetCard
+                key={agent.id}
+                agent={agent}
+                selected={selectedAgentId === agent.id}
+                onSelect={onAgentSelect}
+              />
+            ))}
+          </div>
         ) : (
           <AgentHierarchy
             agents={agents}
