@@ -56,7 +56,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     `).all(userId);
 
     // Stuck agents: running agents with no log activity for 10+ minutes
-    const STUCK_THRESHOLD_MS = 10 * 60 * 1000;
+    const STUCK_THRESHOLD_MINS = 10;
     const runningAgentRuns = db.prepare(`
       SELECT a.id as agent_id, a.name as agent_name, r.id as run_id, r.started_at,
         (SELECT MAX(created_at) FROM agent_hub_run_log_chunks WHERE run_id = r.id) as last_activity
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           minutesIdle: Math.floor(idleMs / 60000),
         };
       })
-      .filter((r) => r.minutesIdle * 60000 >= STUCK_THRESHOLD_MS);
+      .filter((r) => r.minutesIdle >= STUCK_THRESHOLD_MINS);
 
     // Runs waiting for human input
     const humanInputRuns = db.prepare(`
