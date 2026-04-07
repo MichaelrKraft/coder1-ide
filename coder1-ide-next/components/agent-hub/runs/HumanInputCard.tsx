@@ -64,9 +64,11 @@ export function HumanInputCard({ runId, request, agentName, taskTitle, onRespond
               onChange={(e) => setResponse(e.target.value)}
               placeholder="Type your response here..."
               rows={3}
+              aria-label="Your response"
+              aria-describedby={error ? 'human-input-error' : undefined}
               className="w-full px-3 py-2 text-sm bg-bg-tertiary border border-border-default rounded-md text-text-secondary placeholder-text-muted resize-none focus:outline-none focus:border-amber-500/60"
             />
-            {error && <p className="text-xs text-red-400">{error}</p>}
+            {error && <p id="human-input-error" className="text-xs text-red-400">{error}</p>}
             <button
               type="submit"
               disabled={submitting || !response.trim()}
