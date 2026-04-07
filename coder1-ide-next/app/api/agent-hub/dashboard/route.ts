@@ -94,10 +94,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       FROM agent_hub_runs r
       LEFT JOIN agent_hub_agents a ON r.agent_id = a.id
       LEFT JOIN agent_hub_tasks t ON r.task_id = t.id
-      WHERE r.status = 'needs_human_input'
+      WHERE r.user_id = ? AND r.status = 'needs_human_input'
       ORDER BY r.started_at DESC
       LIMIT 10
-    `).all() as Array<{
+    `).all(userId) as Array<{
       id: string;
       human_input_request: string | null;
       started_at: string;
