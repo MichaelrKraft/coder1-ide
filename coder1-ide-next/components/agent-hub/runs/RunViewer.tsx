@@ -6,6 +6,7 @@ import type { Run, RunLogChunk, RunThought } from '@/lib/agent-hub/runs';
 import { RunStatusChip } from './RunStatusChip';
 import WorktreeMergePanel from './WorktreeMergePanel';
 import { ThoughtStream } from './ThoughtStream';
+import { HumanInputCard } from './HumanInputCard';
 import { getSocket } from '@/lib/socket';
 
 // Dynamic imports — SSR unsafe
@@ -131,6 +132,10 @@ export function RunViewer({ runId }: Props): React.ReactElement {
       socketInstance.on('run:complete', () => {
         void fetchDetail();
       });
+
+      socketInstance.on('run:human_input_required', () => {
+        void fetchDetail(); // Refresh run data to show updated status
+      });
     };
 
     void setup();
@@ -142,6 +147,7 @@ export function RunViewer({ runId }: Props): React.ReactElement {
         socketInstance.off('run:stderr');
         socketInstance.off('run:diff');
         socketInstance.off('run:complete');
+        socketInstance.off('run:human_input_required');
         socketInstance.off('run:thought');
       }
     };
@@ -179,6 +185,15 @@ export function RunViewer({ runId }: Props): React.ReactElement {
       {/* Worktree merge panel */}
       {run?.worktreePath && (
         <WorktreeMergePanel runId={runId} />
+      )}
+
+      {/* Human input request — shown when agent is blocked */}
+      {run?.status === 'needs_human_input' && run.humanInputRequest && (
+        <HumanInputCard
+          runId={runId}
+          request={run.humanInputRequest}
+          onResponded={() => void fetchDetail()}
+        />
       )}
 
       {/* Neural stream — thought event timeline */}
