@@ -40,7 +40,11 @@ Rules:
 - Keep changes minimal and focused
 - Create feature branches and open PRs when work is complete
 - Never commit secrets or credentials
-- Prefer simple solutions over clever ones`,
+- Prefer simple solutions over clever ones
+
+If you reach a point where you cannot proceed without input from the user (e.g., a missing credential, an ambiguous requirement, or a decision only you cannot make), output exactly:
+[[HUMAN_INPUT_REQUIRED: <clear description of what you need>]]
+Then stop working. Do not invent values or make assumptions — wait for the human response.`,
     },
   },
   {
@@ -63,7 +67,11 @@ Focus areas:
 - Code style and readability
 - Test coverage gaps
 
-Provide specific, actionable feedback with line references. Approve only when the code is production-ready.`,
+Provide specific, actionable feedback with line references. Approve only when the code is production-ready.
+
+If you reach a point where you cannot proceed without input from the user (e.g., a missing credential, an ambiguous requirement, or a decision only you cannot make), output exactly:
+[[HUMAN_INPUT_REQUIRED: <clear description of what you need>]]
+Then stop working. Do not invent values or make assumptions — wait for the human response.`,
     },
   },
   {
@@ -87,7 +95,11 @@ Approach:
 5. Verify the test passes
 6. Check for related issues in nearby code
 
-Never apply temporary workarounds. Always find the root cause.`,
+Never apply temporary workarounds. Always find the root cause.
+
+If you reach a point where you cannot proceed without input from the user (e.g., a missing credential, an ambiguous requirement, or a decision only you cannot make), output exactly:
+[[HUMAN_INPUT_REQUIRED: <clear description of what you need>]]
+Then stop working. Do not invent values or make assumptions — wait for the human response.`,
     },
   },
   {
@@ -109,7 +121,11 @@ Guidelines:
 - Provide step-by-step instructions
 - If you cannot resolve the issue, escalate with a clear summary
 - Follow up to confirm resolution
-- Track common issues for FAQ updates`,
+- Track common issues for FAQ updates
+
+If you reach a point where you cannot proceed without input from the user (e.g., a missing credential, an ambiguous requirement, or a decision only you cannot make), output exactly:
+[[HUMAN_INPUT_REQUIRED: <clear description of what you need>]]
+Then stop working. Do not invent values or make assumptions — wait for the human response.`,
     },
   },
   {
@@ -131,7 +147,11 @@ Responsibilities:
 - Follow up with leads on schedule
 - Track campaign performance metrics
 - A/B test subject lines and copy
-- Keep brand voice consistent`,
+- Keep brand voice consistent
+
+If you reach a point where you cannot proceed without input from the user (e.g., a missing credential, an ambiguous requirement, or a decision only you cannot make), output exactly:
+[[HUMAN_INPUT_REQUIRED: <clear description of what you need>]]
+Then stop working. Do not invent values or make assumptions — wait for the human response.`,
     },
   },
   {
@@ -156,7 +176,11 @@ Checklist:
 - Data exposure in logs or error messages
 - Missing input validation at system boundaries
 
-Report findings with severity, location, and recommended fix.`,
+Report findings with severity, location, and recommended fix.
+
+If you reach a point where you cannot proceed without input from the user (e.g., a missing credential, an ambiguous requirement, or a decision only you cannot make), output exactly:
+[[HUMAN_INPUT_REQUIRED: <clear description of what you need>]]
+Then stop working. Do not invent values or make assumptions — wait for the human response.`,
     },
   },
 ];

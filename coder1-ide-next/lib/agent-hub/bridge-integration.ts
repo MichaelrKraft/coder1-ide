@@ -51,6 +51,19 @@ async function buildInjectedPrompt(ctx: AgentRunContext): Promise<string> {
     // Memory module may not be available yet — skip silently
   }
 
+  // Inject human input response if this task was previously escalated
+  let humanInputSection: string | null = null;
+  try {
+    const { getLastHumanInputResponse } = await import('./runs');
+    const response = getLastHumanInputResponse(ctx.taskId, ctx.userId);
+    if (response) {
+      humanInputSection =
+        '## Human Input (Provided in Response to Your Earlier Request)\n\n' + response;
+    }
+  } catch {
+    // Non-critical — skip if unavailable
+  }
+
   return buildContextStack({
     systemPrompt: ctx.systemPrompt,
     skills: ctx.skills,
@@ -59,7 +72,7 @@ async function buildInjectedPrompt(ctx: AgentRunContext): Promise<string> {
     runId: ctx.runId,
     workspacePath: ctx.workspacePath,
     supervisorSection: null,
-    memorySection,
+    memorySection: [memorySection, humanInputSection].filter(Boolean).join('\n\n---\n\n') || null,
   });
 }
 

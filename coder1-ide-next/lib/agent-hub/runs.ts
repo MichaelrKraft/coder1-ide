@@ -304,3 +304,20 @@ export function getRunThoughts(runId: string): RunThought[] {
     createdAt: row.created_at,
   }));
 }
+
+/**
+ * Returns the human input response from the most recent run for a task
+ * that had needs_human_input status (stored in humanInputResponse).
+ * Used to inject context into the next run when a task was previously escalated.
+ */
+export function getLastHumanInputResponse(taskId: string, userId: string): string | null {
+  const db = getAgentHubDatabase();
+  const row = db
+    .prepare(
+      `SELECT human_input_response FROM agent_hub_runs
+       WHERE task_id = ? AND user_id = ? AND human_input_response IS NOT NULL
+       ORDER BY started_at DESC LIMIT 1`
+    )
+    .get(taskId, userId) as { human_input_response: string | null } | undefined;
+  return row?.human_input_response ?? null;
+}
