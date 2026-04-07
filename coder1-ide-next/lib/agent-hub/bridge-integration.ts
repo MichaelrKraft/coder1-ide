@@ -7,7 +7,7 @@
  */
 
 import { createWorktreeForRun } from './git-tracker';
-import { updateRun } from './runs';
+import { updateRun, getLastHumanInputResponse } from './runs';
 import { listSubordinates } from './agents';
 
 export interface AgentRunContext {
@@ -54,11 +54,9 @@ async function buildInjectedPrompt(ctx: AgentRunContext): Promise<string> {
   // Inject human input response if this task was previously escalated
   let humanInputSection: string | null = null;
   try {
-    const { getLastHumanInputResponse } = await import('./runs');
     const response = getLastHumanInputResponse(ctx.taskId, ctx.userId);
     if (response) {
-      humanInputSection =
-        '## Human Input (Provided in Response to Your Earlier Request)\n\n' + response;
+      humanInputSection = '## Human Input (Provided in Response to Your Earlier Request)\n\n' + response;
     }
   } catch {
     // Non-critical — skip if unavailable
