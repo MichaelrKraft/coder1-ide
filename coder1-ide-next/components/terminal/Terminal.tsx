@@ -4237,7 +4237,9 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         if (fitAddonRef.current && xtermRef.current) {
           fitAddonRef.current.fit();
           const { cols, rows } = xtermRef.current;
-          socket.emit('terminal:resize', { id: sessionId, cols, rows });
+          // Use sessionIdForVoiceRef (set synchronously by terminalCreatedHandler) to avoid
+          // stale closure bug where sessionId is null for fresh sessions
+          socket.emit('terminal:resize', { id: sessionIdForVoiceRef.current || sessionId, cols, rows });
         }
         
         // Process any buffered input after connection
