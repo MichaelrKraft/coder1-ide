@@ -53,9 +53,10 @@ export function AgentFleetCard({ agent, selected, onSelect }: Props): React.Reac
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/agent-hub/agents/${agent.id}/stats`)
-      .then((r) => r.json())
-      .then((data: AgentStats) => {
-        if (!cancelled) setStats(data);
+      .then(async (r) => {
+        if (!r.ok) return;
+        const data = await r.json() as AgentStats;
+        if (!cancelled && data.successRate) setStats(data);
       })
       .catch((err: unknown) => {
         console.warn(`[agent-hub] failed to load stats for agent ${agent.id}:`, err);
