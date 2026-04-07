@@ -2426,6 +2426,31 @@ app.prepare().then(() => {
           }
         }
 
+        // Detect human escalation marker — agent signals it needs human input to continue
+        const humanInputMatch = chunk.match(/\[\[HUMAN_INPUT_REQUIRED:\s*([^\]]+)\]\]/);
+        if (humanInputMatch) {
+          const request = humanInputMatch[1].trim().slice(0, 500);
+          setImmediate(() => {
+            try {
+              const { updateRun } = require('./lib/agent-hub/runs');
+              updateRun(runId, userId, {
+                status: 'needs_human_input',
+                humanInputRequest: request,
+              });
+              io.to(`run:${runId}`).emit('run:human_input_required', { runId, request });
+              // Non-blocking notification
+              const port = process.env.PORT || 3001;
+              const internalToken = process.env.AGENT_HUB_INTERNAL_TOKEN || '';
+              fetch(`http://localhost:${port}/api/agent-hub/runs/${runId}/notify`, {
+                method: 'POST',
+                headers: { 'X-Internal-Token': internalToken },
+              }).catch(() => {});
+            } catch (e) {
+              console.warn('[agent-hub] human escalation handler error:', e.message);
+            }
+          });
+        }
+
         // Persist raw log chunk (existing behavior — unchanged)
         setImmediate(() => {
           try {
