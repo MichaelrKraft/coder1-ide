@@ -7,7 +7,7 @@ export interface Run {
   taskId: string;
   userId: string;
   sessionId: string | null;
-  status: 'running' | 'awaiting_approval' | 'approved' | 'rejected' | 'failed' | 'cancelled';
+  status: 'running' | 'awaiting_approval' | 'approved' | 'rejected' | 'failed' | 'cancelled' | 'needs_human_input';
   model: string;
   inputTokens: number;
   outputTokens: number;
@@ -18,6 +18,8 @@ export interface Run {
   approvalStatus: string | null;
   approvedBy: string | null;
   errorSummary: string | null;
+  humanInputRequest: string | null;
+  humanInputResponse: string | null;
   startedAt: string;
   completedAt: string | null;
   worktreePath: string | null;
@@ -43,6 +45,8 @@ interface RunRow {
   approval_status: string | null;
   approved_by: string | null;
   error_summary: string | null;
+  human_input_request: string | null;
+  human_input_response: string | null;
   started_at: string;
   completed_at: string | null;
   worktree_path: string | null;
@@ -66,6 +70,8 @@ function rowToRun(row: RunRow): Run {
     approvalStatus: row.approval_status,
     approvedBy: row.approved_by,
     errorSummary: row.error_summary,
+    humanInputRequest: row.human_input_request,
+    humanInputResponse: row.human_input_response,
     startedAt: row.started_at,
     completedAt: row.completed_at,
     worktreePath: row.worktree_path,
@@ -120,6 +126,8 @@ export function updateRun(id: string, userId: string, input: UpdateRunInput): Ru
     errorSummary: 'error_summary',
     completedAt: 'completed_at',
     worktreePath: 'worktree_path',
+    humanInputRequest: 'human_input_request',
+    humanInputResponse: 'human_input_response',
   };
 
   const setClauses: string[] = [];

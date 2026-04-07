@@ -53,6 +53,8 @@ function migrateSchema(database: Database.Database): void {
   addColumnIfMissing('agent_hub_goals', 'turn', "TEXT DEFAULT 'user'");
   addColumnIfMissing('agent_hub_memory', 'scope', "TEXT NOT NULL DEFAULT 'agent'");
   addColumnIfMissing('agent_hub_memory', 'project_id', 'TEXT');
+  addColumnIfMissing('agent_hub_runs', 'human_input_request', 'TEXT');
+  addColumnIfMissing('agent_hub_runs', 'human_input_response', 'TEXT');
 }
 
 function initializeSchema(database: Database.Database): void {
