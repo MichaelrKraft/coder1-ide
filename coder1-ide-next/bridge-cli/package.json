@@ -28,15 +28,14 @@
   "author": "Coder1 Team",
   "license": "MIT",
   "dependencies": {
-    "socket.io-client": "^4.8.1",
-    "p-queue": "5.0.0",
-    "winston": "^3.11.0",
     "commander": "^11.1.0",
     "node-fetch": "^2.7.0",
     "node-pty": "^1.0.0",
+    "p-queue": "5.0.0",
+    "socket.io-client": "^4.8.1",
+    "winston": "^3.11.0",
     "ws": "^8.18.0"
   },
-  "optionalDependencies": {},
   "engines": {
     "node": ">=18.0.0"
   },
@@ -67,5 +66,8 @@
       "node20-win-x64"
     ],
     "outputPath": "dist"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0"
   }
 }
