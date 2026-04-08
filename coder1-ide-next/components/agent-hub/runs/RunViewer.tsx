@@ -8,6 +8,7 @@ import WorktreeMergePanel from './WorktreeMergePanel';
 import { ThoughtStream } from './ThoughtStream';
 import { HumanInputCard } from './HumanInputCard';
 import { getSocket } from '@/lib/socket';
+import { Wrench } from 'lucide-react';
 
 // Dynamic imports — SSR unsafe
 const DiffEditor = dynamic(
@@ -177,10 +178,28 @@ export function RunViewer({ runId }: Props): React.ReactElement {
             {run.exitCode !== null && (
               <span>Exit: <span className={run.exitCode === 0 ? 'text-green-400' : 'text-red-400'}>{run.exitCode}</span></span>
             )}
+            {run.status === 'failed' && run.errorSummary && (
+              <button
+                onClick={() => {
+                  window.location.href = `/ide/agent-hub/agents?id=${run.agentId}&debug=${run.id}`;
+                }}
+                className="flex items-center gap-1 px-2 py-0.5 text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded hover:bg-amber-500/20 transition-colors"
+              >
+                <Wrench className="w-3 h-3" />
+                Debug & Improve Skill
+              </button>
+            )}
           </>
         )}
         {!run && <span className="text-text-muted">Loading run...</span>}
       </div>
+
+      {/* Error summary banner */}
+      {run?.status === 'failed' && run.errorSummary && (
+        <div className="px-4 py-2 bg-red-500/10 border-b border-red-500/20 text-xs text-red-400">
+          <span className="font-semibold">Error:</span> {run.errorSummary}
+        </div>
+      )}
 
       {/* Worktree merge panel */}
       {run?.worktreePath && (

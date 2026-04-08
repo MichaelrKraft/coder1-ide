@@ -268,6 +268,57 @@ function SuccessRateCard({
   );
 }
 
+/* ── Teaching Session List ─────────────────────────── */
+
+function TeachingSessionList({ agentId }: { agentId: string }) {
+  const [sessions, setSessions] = useState<Array<{
+    id: string;
+    status: string;
+    title: string | null;
+    skillName: string | null;
+    skillVersion: number;
+    messageCount: number;
+    createdAt: string;
+  }>>([]);
+
+  useEffect(() => {
+    fetch(`/api/agent-hub/agents/${agentId}/teaching-sessions`)
+      .then(r => r.json())
+      .then(data => setSessions(data.sessions || []))
+      .catch(() => {});
+  }, [agentId]);
+
+  if (sessions.length === 0) return null;
+
+  return (
+    <div>
+      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+        Teaching Sessions
+      </p>
+      <div className="space-y-1">
+        {sessions.slice(0, 5).map(s => (
+          <div key={s.id} className="flex items-center justify-between text-[10px]">
+            <div className="flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                s.status === 'converted' ? 'bg-green-400' :
+                s.status === 'active' ? 'bg-amber-400' :
+                s.status === 'completed' ? 'bg-blue-400' :
+                'bg-text-muted'
+              }`} />
+              <span className="text-text-primary">
+                {s.skillName ? `${s.skillName} v${s.skillVersion}` : s.title || 'Untitled session'}
+              </span>
+            </div>
+            <span className="text-text-muted">
+              {s.messageCount} msgs
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Main component ────────────────────────────────── */
 
 export default function AgentDetail({
@@ -283,6 +334,7 @@ export default function AgentDetail({
   const [archiving, setArchiving] = useState(false);
   const [pausing, setPausing] = useState(false);
   const [availableMcpServers, setAvailableMcpServers] = useState<string[]>([]);
+  const [skillMaturity, setSkillMaturity] = useState<Record<string, { taught: boolean; maturity?: { level: string; version: number; totalRuns: number; successRate: number } }>>({});
 
   async function loadAgent() {
     setLoading(true);
@@ -326,6 +378,14 @@ export default function AgentDetail({
     void loadMcpServers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
+
+  useEffect(() => {
+    if (!agent?.id) return;
+    fetch(`/api/agent-hub/agents/${agent.id}/skills/maturity`)
+      .then(r => r.json())
+      .then(data => setSkillMaturity(data.maturity || {}))
+      .catch(() => {});
+  }, [agent?.id]);
 
   async function handleArchive() {
     if (!confirmArchive) {
@@ -779,19 +839,38 @@ export default function AgentDetail({
                 </p>
                 {agent.skills.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
-                    {agent.skills.map(skill => (
-                      <span
-                        key={skill}
-                        className="px-2 py-0.5 text-[10px] rounded-full bg-bg-tertiary text-text-muted border border-border-default"
-                      >
-                        {skill}
-                      </span>
-                    ))}
+                    {agent.skills.map(skill => {
+                      const info = skillMaturity[skill];
+                      const maturityColors: Record<string, string> = {
+                        draft: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+                        tested: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+                        reliable: 'bg-green-500/10 text-green-400 border-green-500/30',
+                      };
+                      return (
+                        <span
+                          key={skill}
+                          className={`px-2 py-0.5 text-[10px] rounded-full border ${
+                            info?.taught
+                              ? maturityColors[info.maturity?.level ?? 'draft'] ?? 'bg-bg-tertiary text-text-muted border-border-default'
+                              : 'bg-bg-tertiary text-text-muted border-border-default'
+                          }`}
+                          title={info?.taught ? `Taught skill v${info.maturity?.version ?? 1} — ${info.maturity?.level ?? 'draft'} (${info.maturity?.totalRuns ?? 0} runs, ${Math.round((info.maturity?.successRate ?? 0) * 100)}% success)` : ''}
+                        >
+                          {skill}
+                          {info?.taught && (
+                            <span className="ml-1 opacity-70">v{info.maturity?.version ?? 1}</span>
+                          )}
+                        </span>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-xs text-text-muted">None configured</p>
                 )}
               </div>
+
+              {/* Teaching Sessions */}
+              <TeachingSessionList agentId={agent.id} />
 
               {/* Edit button */}
               <button
