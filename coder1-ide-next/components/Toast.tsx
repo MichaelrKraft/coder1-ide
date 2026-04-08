@@ -10,6 +10,8 @@ interface ToastProps {
   type?: ToastType;
   duration?: number;
   dismissible?: boolean;
+  link?: string;
+  linkLabel?: string;
   onClose: () => void;
 }
 
@@ -50,6 +52,8 @@ export default function Toast({
   type = 'info',
   duration,
   dismissible = true,
+  link,
+  linkLabel,
   onClose,
 }: ToastProps) {
   const [isVisible, setIsVisible] = useState(true);
@@ -89,8 +93,19 @@ export default function Toast({
       {/* Icon */}
       <span className="text-lg flex-shrink-0">{styles.icon}</span>
 
-      {/* Message */}
-      <span className="text-sm text-text-primary flex-1">{message}</span>
+      {/* Message + optional action link */}
+      <span className="text-sm text-text-primary flex-1">
+        {message}
+        {link && (
+          <a
+            href={link}
+            className="ml-2 underline text-coder1-cyan hover:text-white transition-colors whitespace-nowrap"
+            onClick={onClose}
+          >
+            {linkLabel ?? 'Go'}
+          </a>
+        )}
+      </span>
 
       {/* Dismiss button */}
       {dismissible && (
@@ -125,6 +140,8 @@ interface ToastItem {
   message: string;
   type: ToastType;
   duration?: number;
+  link?: string;
+  linkLabel?: string;
 }
 
 interface ToastContainerProps {
@@ -147,6 +164,8 @@ export function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
             message={toast.message}
             type={toast.type}
             duration={toast.duration}
+            link={toast.link}
+            linkLabel={toast.linkLabel}
             onClose={() => onRemove(toast.id)}
           />
         </div>

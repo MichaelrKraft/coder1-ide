@@ -9,10 +9,12 @@ interface Toast {
   message: string;
   type: ToastType;
   duration?: number;
+  link?: string;
+  linkLabel?: string;
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType, duration?: number) => void;
+  showToast: (message: string, type?: ToastType, duration?: number, link?: string, linkLabel?: string) => void;
   showError: (message: string, duration?: number) => void;
   showSuccess: (message: string, duration?: number) => void;
   showWarning: (message: string, duration?: number) => void;
@@ -52,9 +54,9 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
 
   // Add new toast
   const showToast = useCallback(
-    (message: string, type: ToastType = 'info', duration?: number) => {
+    (message: string, type: ToastType = 'info', duration?: number, link?: string, linkLabel?: string) => {
       const id = generateToastId();
-      const newToast: Toast = { id, message, type, duration };
+      const newToast: Toast = { id, message, type, duration, link, linkLabel };
 
       setToasts((prev) => {
         // Limit number of toasts
@@ -107,6 +109,19 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
     });
 
     return unsubscribe;
+  }, [showToast]);
+
+  // Listen for window CustomEvent 'showToast' dispatched by hooks/components
+  useEffect(() => {
+    const handleWindowToast = (e: Event) => {
+      const detail = (e as CustomEvent).detail ?? {};
+      const { message, type, duration, link, linkLabel } = detail;
+      if (message) {
+        showToast(message, type ?? 'info', duration, link, linkLabel);
+      }
+    };
+    window.addEventListener('showToast', handleWindowToast);
+    return () => window.removeEventListener('showToast', handleWindowToast);
   }, [showToast]);
 
   const contextValue: ToastContextType = {
