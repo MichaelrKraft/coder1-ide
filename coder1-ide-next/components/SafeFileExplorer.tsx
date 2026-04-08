@@ -53,6 +53,16 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
     return () => window.removeEventListener('coder1:openFolder', handler);
   }, []);
 
+  // Listen for 'coder1:setExplorerRoot' event from ProjectPicker
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { path } = (e as CustomEvent).detail;
+      if (path) setCurrentRoot(path);
+    };
+    window.addEventListener('coder1:setExplorerRoot', handler);
+    return () => window.removeEventListener('coder1:setExplorerRoot', handler);
+  }, []);
+
   // Add a folder to recent list
   const addToRecentFolders = useCallback((folderPath: string) => {
     if (!folderPath) return;

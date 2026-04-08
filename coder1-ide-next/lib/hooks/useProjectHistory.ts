@@ -60,6 +60,9 @@ export function useProjectHistory(): ProjectHistory {
     }
 
     useTerminalStore.getState().setWorkingDirectory(path);
+
+    // Update file explorer root to match the new project
+    window.dispatchEvent(new CustomEvent('coder1:setExplorerRoot', { detail: { path } }));
   };
 
   return {
