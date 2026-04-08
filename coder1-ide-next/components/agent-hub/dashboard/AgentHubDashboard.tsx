@@ -245,9 +245,21 @@ export default function AgentHubDashboard() {
             {stuckAgents.map((sa) => (
               <div key={sa.runId} className="flex items-center justify-between text-xs">
                 <span className="text-text-secondary font-medium">{sa.agentName}</span>
-                <span className="text-text-muted">
-                  No activity for {sa.minutesIdle}m (run {sa.runId.slice(0, 8)})
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-text-muted">
+                    No activity for {sa.minutesIdle}m (run {sa.runId.slice(0, 8)})
+                  </span>
+                  <button
+                    onClick={() => {
+                      fetch(`/api/agent-hub/runs/${sa.runId}/stop`, { method: 'POST' })
+                        .then(() => setStuckAgents(prev => prev.filter(s => s.runId !== sa.runId)))
+                        .catch(() => {});
+                    }}
+                    className="px-2 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             ))}
           </div>
