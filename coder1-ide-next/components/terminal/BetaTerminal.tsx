@@ -28,6 +28,7 @@ import { universalAIWrapper } from '@/services/ai-platform/universal-ai-wrapper-
 import { cliDetector, CLIInfo } from '@/services/ai-platform/cli-detector-client';
 import { useSessionMemory } from '@/hooks/useSessionMemory';
 import SimpleDragDropOverlay from './SimpleDragDropOverlay';
+import { useTerminalStore } from '@/stores/useTerminalStore';
 import { useSpectatorStore } from '@/stores/useSpectatorStore';
 import { useTeamStore } from '@/stores/useTeamStore';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -931,6 +932,18 @@ function BetaTerminal({
           }
         }
 
+        // Detect CWD from shell prompt patterns
+        if (data.length > 1) {
+          const cwdMatch = data.match(/(?:^|\r|\n)[^$%❯➜\r\n]*(?:[$%❯➜])[^$%❯➜\r\n]*?((?:~|\/)[^\s\r\n$%❯➜]+)/);
+          if (cwdMatch && cwdMatch[1]) {
+            const extractedPath = cwdMatch[1];
+            const currentCwd = useTerminalStore.getState().workingDirectory;
+            if (extractedPath !== currentCwd) {
+              useTerminalStore.getState().setWorkingDirectory(extractedPath);
+            }
+          }
+        }
+
         // Capture terminal output (lightweight callback, always fire)
         if (onTerminalData) {
           onTerminalData(data);
@@ -957,6 +970,11 @@ function BetaTerminal({
           const { cols, rows } = xtermRef.current;
           socket.emit('terminal:resize', { id: sessionId, cols, rows });
         }
+
+        // Request initial CWD so the store is populated on connect
+        setTimeout(() => {
+          socket.emit('terminal:input', { id: sessionId, data: 'pwd\r' });
+        }, 500);
       }
     });
 
