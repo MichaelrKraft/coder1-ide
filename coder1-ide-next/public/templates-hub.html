@@ -1973,6 +1973,153 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+        /* Power Pack Promo Banner */
+        .power-pack-promo {
+            max-width: 1400px;
+            margin: 0 auto 32px;
+            padding: 0 20px;
+        }
+
+        .power-pack-promo-inner {
+            position: relative;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.06) 0%, rgba(0, 217, 255, 0.02) 100%);
+            border: 1px solid rgba(0, 217, 255, 0.35);
+            border-radius: 16px;
+            padding: 28px 36px;
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 217, 255, 0.08), inset 0 0 60px rgba(0, 217, 255, 0.03);
+        }
+
+        .power-pack-promo-inner::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            left: -60px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(0, 217, 255, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .promo-icon {
+            font-size: 40px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 0 12px rgba(0, 217, 255, 0.6));
+        }
+
+        .promo-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .promo-eyebrow {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #00D9FF;
+            margin-bottom: 6px;
+            opacity: 0.8;
+        }
+
+        .promo-headline {
+            font-size: 22px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .promo-headline span {
+            color: #00D9FF;
+        }
+
+        .promo-sub {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.5;
+        }
+
+        .promo-stats {
+            display: flex;
+            gap: 24px;
+            flex-shrink: 0;
+        }
+
+        .promo-stat {
+            text-align: center;
+        }
+
+        .promo-stat-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: #00D9FF;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .promo-stat-label {
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+        }
+
+        .promo-divider {
+            width: 1px;
+            height: 48px;
+            background: rgba(0, 217, 255, 0.15);
+            flex-shrink: 0;
+        }
+
+        .promo-cta {
+            background: #00D9FF;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .promo-cta:hover {
+            background: #33e2ff;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .promo-dismiss {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.25);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .promo-dismiss:hover {
+            color: rgba(255,255,255,0.6);
+        }
+
+        @media (max-width: 768px) {
+            .promo-stats { display: none; }
+            .promo-divider { display: none; }
+            .power-pack-promo-inner { flex-wrap: wrap; padding: 20px; gap: 16px; }
+        }
     </style>
 </head>
 <body>
@@ -2131,6 +2278,36 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Power Pack Promo Banner -->
+    <div class="power-pack-promo" id="powerPackPromo">
+        <div class="power-pack-promo-inner">
+            <button class="promo-dismiss" onclick="dismissPromo()" title="Dismiss">✕</button>
+            <div class="promo-icon">⚡</div>
+            <div class="promo-text">
+                <div class="promo-eyebrow">Featured · Coder1 Power Pack</div>
+                <div class="promo-headline">Save <span>90% of your context window</span> — sessions that last all day</div>
+                <div class="promo-sub">Install context-mode, smart hooks, git-mcp, and Claude guardrails in 30 seconds. The same setup Mike uses every day.</div>
+            </div>
+            <div class="promo-stats">
+                <div class="promo-stat">
+                    <div class="promo-stat-value">6×</div>
+                    <div class="promo-stat-label">Longer sessions</div>
+                </div>
+                <div class="promo-divider"></div>
+                <div class="promo-stat">
+                    <div class="promo-stat-value">90%</div>
+                    <div class="promo-stat-label">Less context blowout</div>
+                </div>
+                <div class="promo-divider"></div>
+                <div class="promo-stat">
+                    <div class="promo-stat-value">30s</div>
+                    <div class="promo-stat-label">To install</div>
+                </div>
+            </div>
+            <button class="promo-cta" onclick="scrollToPowerPack()">Install Power Pack</button>
         </div>
     </div>
 
@@ -4440,6 +4617,27 @@ export const Button: React.FC<ButtonProps> = ({
         }
         
         console.log('Template button functions initialized');
+
+        // Power Pack promo banner
+        const PROMO_KEY = 'coder1-power-pack-promo-dismissed';
+        function dismissPromo() {
+            document.getElementById('powerPackPromo').style.display = 'none';
+            localStorage.setItem(PROMO_KEY, 'true');
+        }
+        function scrollToPowerPack() {
+            dismissPromo();
+            // Switch to Power Packs filter and scroll to first card
+            const pill = document.querySelector('[data-category="power-packs"]');
+            if (pill) pill.click();
+            setTimeout(() => {
+                const card = document.querySelector('.template-card');
+                if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 200);
+        }
+        if (localStorage.getItem(PROMO_KEY)) {
+            const promo = document.getElementById('powerPackPromo');
+            if (promo) promo.style.display = 'none';
+        }
     </script>
     <script>
         // Initialize unified design system for template cards
