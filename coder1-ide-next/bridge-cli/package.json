@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node src/index.js start --dev",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "postinstall": "find node_modules/node-pty/prebuilds -name spawn-helper -exec chmod +x {} \\; 2>/dev/null || true && node -e \"try { require('node-pty'); console.log('✅ node-pty compiled successfully - interactive mode enabled'); } catch(e) { console.warn('⚠️  node-pty failed to compile - interactive mode disabled'); console.warn('   To fix: Install build tools (Xcode on macOS, build-essential on Linux)'); }\"",
     "release": "rm -f *.tgz && npm pack && mv coder1-bridge-*.tgz ../public/bridge-cli.tar.gz && echo '✅ Artifact updated in ../public/bridge-cli.tar.gz'",
     "build": "pkg . --out-path dist",
