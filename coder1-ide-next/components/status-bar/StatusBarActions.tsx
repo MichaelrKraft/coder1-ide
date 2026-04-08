@@ -10,6 +10,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Clock, FileText, BookOpen, Loader2, Brain, Link, Sparkles } from '@/lib/icons';
+import { getFeatureFlags } from '@/lib/feature-flags';
 import StatusBarModals from './StatusBarModals';
 import CheckpointNameModal from '@/components/modals/CheckpointNameModal';
 import { useIDEStore } from '@/stores/useIDEStore';
@@ -48,6 +49,9 @@ const StatusBarActions = React.memo(function StatusBarActions({
   
   // PHASE 3: Context activation for AI features
   const { activateContext, isContextActive } = useContextActivation();
+
+  // Feature flags
+  const { memoryContextEnabled } = getFeatureFlags();
   
   // Get current session ID
   const [sessionId, setSessionId] = React.useState<string>('');
@@ -599,7 +603,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
           </button>
         </div>
 
-        {/* TimeLine Button */}
+        {/* TimeLine / Memory Button */}
         <div data-tour="timeline-button" className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: glows.purple.intense}}>
           <button
             onClick={handleTimeline}
@@ -607,14 +611,19 @@ const StatusBarActions = React.memo(function StatusBarActions({
             className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full"
             onMouseEnter={(e) => applyHoverEffect(e, isLoadingState('timeline'))}
             onMouseLeave={removeHoverEffect}
-            title="TimeLine - View chronological history of your development session and changes"
+            title={memoryContextEnabled
+              ? "Memory - View your session memory, notes, and development history"
+              : "TimeLine - View chronological history of your development session and changes"
+            }
           >
             {isLoadingState('timeline') ? (
               <Loader2 className="w-4 h-4 animate-spin" />
+            ) : memoryContextEnabled ? (
+              <Brain className="w-4 h-4" />
             ) : (
               <Clock className="w-4 h-4" />
             )}
-            <span>TimeLine</span>
+            <span>{memoryContextEnabled ? 'Memory' : 'TimeLine'}</span>
           </button>
         </div>
 

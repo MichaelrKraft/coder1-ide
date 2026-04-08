@@ -19,7 +19,7 @@ export const NOTE_TEMPLATES: NoteTemplate[] = [
   {
     id: 'daily-note',
     label: 'Daily Note',
-    icon: '📅',
+    icon: '',
     buildFilename: (ctx) => ctx.date,
     buildContent: (ctx) =>
       `# ${ctx.date}\n\n## Today's Goals\n- \n\n## Notes\n\n## End of Day\n`,
@@ -27,7 +27,7 @@ export const NOTE_TEMPLATES: NoteTemplate[] = [
   {
     id: 'adr',
     label: 'Architecture Decision Record',
-    icon: '🏗️',
+    icon: '',
     buildFilename: (ctx) => `ADR-${ctx.date}`,
     buildContent: (ctx) =>
       `# ADR: \n\n**Date**: ${ctx.date}\n**Status**: Proposed\n\n## Context\n\n## Decision\n\n## Consequences\n`,
@@ -35,7 +35,7 @@ export const NOTE_TEMPLATES: NoteTemplate[] = [
   {
     id: 'bug-post-mortem',
     label: 'Bug Post-Mortem',
-    icon: '🐛',
+    icon: '',
     buildFilename: (ctx) => `Bug-Post-Mortem-${ctx.date}`,
     buildContent: (ctx) =>
       `# Bug Post-Mortem\n\n**Date**: ${ctx.date}\n**File**: ${ctx.activeFile || 'unknown'}\n\n## Summary\n\n## Root Cause\n\n## Fix\n\n## Prevention\n`,
@@ -43,7 +43,7 @@ export const NOTE_TEMPLATES: NoteTemplate[] = [
   {
     id: 'feature-brief',
     label: 'Feature Brief',
-    icon: '✨',
+    icon: '',
     buildFilename: (ctx) => `Feature-Brief-${ctx.date}`,
     buildContent: (ctx) =>
       `# Feature Brief: \n\n**Date**: ${ctx.date}\n\n## Problem\n\n## Proposed Solution\n\n## Acceptance Criteria\n- [ ] \n`,
@@ -51,7 +51,7 @@ export const NOTE_TEMPLATES: NoteTemplate[] = [
   {
     id: 'meeting-notes',
     label: 'Meeting Notes',
-    icon: '🤝',
+    icon: '',
     buildFilename: (ctx) => `Meeting-${ctx.date}`,
     buildContent: (ctx) =>
       `# Meeting: \n\n**Date**: ${ctx.date}\n**Attendees**: \n\n## Agenda\n\n## Notes\n\n## Action Items\n- [ ] \n`,
@@ -104,7 +104,6 @@ export default function TemplatePickerModal({
           className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-[#2a2a4e] cursor-pointer text-sm text-[#e2e8f0] transition-colors"
           onClick={() => onSelect(template)}
         >
-          <span>{template.icon}</span>
           <span>{template.label}</span>
         </button>
       ))}

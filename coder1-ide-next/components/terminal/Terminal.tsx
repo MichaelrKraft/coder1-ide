@@ -26,8 +26,6 @@ import ErrorDoctor from './ErrorDoctor';
 import { soundAlertService, SoundPreset } from '@/lib/sound-alert-service';
 import { consoleCaptureService, CapturedConsoleError } from '@/lib/console-capture-service';
 import { logger } from '@/lib/logger';
-import { useEnhancedSupervision } from '@/contexts/EnhancedSupervisionContext';
-import SupervisionConfigModal from '@/components/supervision/SupervisionConfigModal';
 import { features } from '@/lib/feature-flags';
 import { useUIStore } from '@/stores/useUIStore';
 import { useIDEStore } from '@/stores/useIDEStore';
@@ -205,18 +203,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     terminalExit: null,
   });
   
-  // Use enhanced supervision context
-  const { 
-    isSupervisionActive, 
-    toggleSupervision, 
-    enableSupervision,
-    activeConfiguration,
-    isConfigModalOpen,
-    setConfigModalOpen,
-    saveConfiguration,
-    configurations,
-    templates
-  } = useEnhancedSupervision();
   const [terminalMode, setTerminalMode] = useState<'normal' | 'vim' | 'emacs'>('normal');
   
   // ✅ READ MODEL FROM ZUSTAND STORE - This ensures real-time updates when model is changed
@@ -2948,10 +2934,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
               setClaudeActive(true);
               setConversationMode(true);
               
-              // Activate supervision
-              if (!isSupervisionActive) {
-                enableSupervision();
-              }
             }
             
             // Don&apos;t write to terminal UI directly - let the backend handle it
@@ -4869,11 +4851,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         
         // Check if "claude" has been typed (use ref instead of state)
         if (lineBufferRef.current.toLowerCase().includes('claude')) {
-          // Activate supervision when claude is typed
-          if (!isSupervisionActive) {
-            enableSupervision();
-            // REMOVED: // REMOVED: console.log('👁️ Supervision auto-activated: claude detected');
-          }
           if (onClaudeTyped) {
             onClaudeTyped();
           }
@@ -5606,7 +5583,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       project: 'Next.js 14 + TypeScript + Tailwind IDE',
       directory: 'coder1-ide-next',
       agents_active: agentsRunning,
-      supervision_active: isSupervisionActive,
       terminal_mode: terminalMode,
       voice_input: voiceListening
     };
@@ -5694,19 +5670,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
             </button>
           )}
 
-          {/* AI Team button - Injects agent team prompt into Claude Code session */}
-          <button
-            onClick={handleAgentTeamLaunch}
-            className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-coder1-cyan/20"
-            title="Launch Agent Team — ask Claude Code to plan something first, then click to execute with parallel teammates. Requires CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1."
-          >
-            {(agentsRunning || (activeTeam && activeTeam.status !== 'completed' && activeTeam.status !== 'error')) && (
-              <span className="w-2 h-2 rounded-full bg-coder1-cyan animate-pulse" />
-            )}
-            <Users className="w-4 h-4" />
-            <span>AI Team</span>
-          </button>
-
           {/* Agents button — navigates to autonomous agent management page */}
           <button
             onClick={() => { window.location.href = '/ide/agent-hub'; }}
@@ -5715,29 +5678,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           >
             <Bot className="w-4 h-4" />
             <span>Agents</span>
-          </button>
-
-          {/* Enhanced Supervision button */}
-          <button
-            data-tour="supervision-button"
-            onClick={() => {
-              if (isSupervisionActive) {
-                // If supervision is active, disable it
-                toggleSupervision();
-                xtermRef.current?.writeln('\r\n👁️ AI Supervision Disabled');
-                xtermRef.current?.writeln('Manual oversight mode restored.');
-              } else {
-                // If not active, open configuration modal
-                setConfigModalOpen(true);
-                xtermRef.current?.writeln('\r\n🧠 Opening AI Supervision Configuration...');
-                xtermRef.current?.writeln('Program your custom supervision bot for this project.');
-              }
-            }}
-            className="terminal-control-btn flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md"
-            title="AI monitors and guides your work"
-          >
-            <Eye className="w-4 h-4" />
-            <span>Supervision</span>
           </button>
 
 
@@ -5863,14 +5803,6 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
 
       {/* Error Doctor removed to fix terminal overlap issue */}
 
-      {/* Supervision Configuration Modal */}
-      <SupervisionConfigModal 
-        isOpen={isConfigModalOpen}
-        onClose={() => setConfigModalOpen(false)}
-        onSave={saveConfiguration}
-        currentConfig={activeConfiguration}
-        templates={templates}
-      />
       
       {/* Claude Copy Button - appears when files are dropped */}
       {showClaudeCopyButton && (
