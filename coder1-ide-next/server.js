@@ -1987,6 +1987,12 @@ app.prepare().then(() => {
         }
       });
 
+      // First-time bridge pairing — nudge user toward the Power Pack
+      socket.on('bridge:first-connect', () => {
+        io.to(`user:${socket.userId}`).emit('power-pack:first-connect');
+        console.log(`[Bridge] First-time connect for user ${socket.userId} — Power Pack nudge sent`);
+      });
+
       // Clear MCP cache on disconnect
       socket.on('disconnect', () => {
         if (global._bridgeMcpServers) global._bridgeMcpServers.delete(socket.userId);

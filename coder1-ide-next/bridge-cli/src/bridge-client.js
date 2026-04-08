@@ -16,7 +16,7 @@ const logger = require('./logger');
 const ClaudeExecutor = require('./claude-executor');
 const FileHandler = require('./file-handler');
 const LivingFilesHandler = require('./living-files-handler');
-const { saveCredentials, loadCredentials, clearCredentials } = require('./credentials-manager');
+const { saveCredentials, loadCredentials, clearCredentials, hasCredentials } = require('./credentials-manager');
 const GitWatcher = require('./git-watcher');
 
 /**
@@ -324,8 +324,11 @@ class BridgeClient extends EventEmitter {
       this.token = pairingResponse.token;
       this.bridgeId = pairingResponse.bridgeId;
       this.userId = pairingResponse.userId;
-      
+
       this.log(`Pairing successful. User ID: ${this.userId}`);
+
+      // Detect first-time pairing before credentials are saved
+      this.isFirstConnect = !hasCredentials();
 
       // Save credentials for auto-reconnect
       saveCredentials({
@@ -464,6 +467,12 @@ class BridgeClient extends EventEmitter {
         this.log('Connection accepted by server');
         this.bridgeId = data.bridgeId;
         this.emit('accepted', data);
+
+        // Inform server if this is the first time this machine has connected
+        if (this.isFirstConnect) {
+          this.socket.emit('bridge:first-connect');
+          this.log('First-time connect — notified server for Power Pack nudge');
+        }
 
         // Send MCP server names to server for Agent Hub discovery
         try {
