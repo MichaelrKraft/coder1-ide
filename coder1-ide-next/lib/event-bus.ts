@@ -79,6 +79,12 @@ export interface EventMap {
   // Agent events
   'agent:close': { agentId: string };
 
+  // Teaching session events
+  'agent:teaching:started': { agentId: string; sessionId: string };
+  'agent:teaching:completed': { agentId: string; sessionId: string };
+  'agent:teaching:converted': { agentId: string; sessionId: string; skillName: string };
+  'agent:teaching:improved': { agentId: string; skillName: string; version: number };
+
   // Mission Control events
   'openMissionControl': void;
   'openParaThinkerDashboard': { initialQuery?: string };
