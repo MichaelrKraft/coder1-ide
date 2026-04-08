@@ -470,17 +470,6 @@ function TimelineContent() {
             Checkpoints
           </button>
           <button
-            onClick={() => router.push('/memory?tab=flowtrace')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'flowtrace'
-                ? 'border-[#00D9FF] text-[#00D9FF]'
-                : 'border-transparent text-gray-400 hover:text-white'
-            }`}
-          >
-            <Zap className="w-4 h-4" />
-            FlowTrace
-          </button>
-          <button
             onClick={() => router.push('/memory?tab=recordings')}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'recordings'

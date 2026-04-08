@@ -121,6 +121,7 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
   const [semanticResults, setSemanticResults] = useState<Array<{path: string; title: string; excerpt?: string; matchReason: string}> | null>(null);
   const [semanticLoading, setSemanticLoading] = useState(false);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
+  const [deletingEmpties, setDeletingEmpties] = useState(false);
   const { mentionState, handleInputChange: handleMentionChange, handleMentionSelect, closeMention } = useVaultMention();
 
   useEffect(() => {
@@ -217,6 +218,22 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
     } catch { /* silently fail */ }
     setDeletingPath(null);
   }, []);
+
+  const isEmptySessionNote = (note: VaultNoteStub) =>
+    note.path.startsWith('Sessions/') && !note.excerpt?.trim() && !(note.frontmatter?.summary as string | undefined);
+
+  const handleDeleteEmptySessions = useCallback(async () => {
+    const emptySessions = notes.filter(isEmptySessionNote);
+    if (emptySessions.length === 0) return;
+    setDeletingEmpties(true);
+    await Promise.all(
+      emptySessions.map(n =>
+        fetch(`/api/vault?path=${encodeURIComponent(n.path)}`, { method: 'DELETE' }).catch(() => {})
+      )
+    );
+    setNotes(prev => prev.filter(n => !isEmptySessionNote(n)));
+    setDeletingEmpties(false);
+  }, [notes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNewNote = useCallback(async (template: NoteTemplate) => {
     setCreatingNote(true);
@@ -317,16 +334,6 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
           }`}
         >
           Notes
-        </button>
-        <button
-          onClick={() => setActiveTab('codenexus')}
-          className={`px-4 py-2 text-xs font-medium transition-colors ${
-            activeTab === 'codenexus'
-              ? 'text-[#8b5cf6] border-b-2 border-[#8b5cf6]'
-              : 'text-[#6b7280] hover:text-[#9ca3af]'
-          }`}
-        >
-          CodeNexus
         </button>
       </div>
 
@@ -488,6 +495,24 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
             ) : null
           )}
 
+          {/* Delete empty sessions banner */}
+          {selectedFolder === 'Sessions' && !searchQuery && (() => {
+            const emptyCount = notes.filter(isEmptySessionNote).length;
+            if (emptyCount === 0) return null;
+            return (
+              <div className="px-3 py-2 border-b border-[#2a2a2a] flex items-center justify-between bg-[#1a1a1a]">
+                <span className="text-[10px] text-[#6b7280]">{emptyCount} empty session{emptyCount !== 1 ? 's' : ''} hidden</span>
+                <button
+                  onClick={handleDeleteEmptySessions}
+                  disabled={deletingEmpties}
+                  className="text-[10px] text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
+                >
+                  {deletingEmpties ? 'Deleting...' : 'Delete all empty'}
+                </button>
+              </div>
+            );
+          })()}
+
           {/* Standard keyword results */}
           {(searchMode !== 'semantic' || searchQuery.length <= 2) && (
             <>
@@ -498,7 +523,9 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
                 // Change 3d: filter to orphans when that folder is selected
                 const displayedNotes = selectedFolder === '__orphans__'
                   ? notes.filter(n => orphanPaths.has(n.path))
-                  : notes;
+                  : selectedFolder === 'Sessions'
+                    ? notes.filter(n => !isEmptySessionNote(n))
+                    : notes;
                 return (
                   <>
                     {displayedNotes.length === 0 && (

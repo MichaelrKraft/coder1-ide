@@ -1224,7 +1224,9 @@ export default function AlphaLandingPage() {
 
           {/* Description */}
           <p className="text-lg text-white/50 max-w-2xl mx-auto mb-3 leading-relaxed">
-            Claude Code was built for one developer. Coder1 is the visual workspace your whole team uses to run it — persistent memory, shared sessions, zero new subscriptions.
+            Claude Code was built for one developer. Coder1 is the{' '}
+            <span className="text-coder1-cyan font-medium">free, open-source</span>{' '}
+            workspace that makes it accessible to everyone — with a paid Teams layer for organizations that want to collaborate.
           </p>
 
 
@@ -1250,7 +1252,7 @@ export default function AlphaLandingPage() {
               <div className="text-3xl md:text-4xl font-bold text-coder1-cyan mb-1">
                 0
               </div>
-              <p className="text-white/40 text-sm">New Subscriptions</p>
+              <p className="text-white/40 text-sm">Extra AI Fees</p>
             </div>
             <div className="text-center">
               <div className="text-3xl md:text-4xl font-bold text-coder1-purple mb-1">
@@ -1294,7 +1296,7 @@ export default function AlphaLandingPage() {
                 Why We Built Coder1<br />For Claude Code
               </h2>
               <p className="text-lg text-white/50 max-w-2xl mx-auto">
-                Claude Code is powerful. But it&apos;s a solo terminal tool. Coder1 is the workspace layer — visual interface, persistent memory, and team collaboration — that Anthropic doesn&apos;t build.
+                Claude Code is powerful. But it&apos;s a solo terminal tool. Coder1 is the workspace layer — visual interface, persistent memory, and team collaboration — that removes the learning curve.
               </p>
             </div>
           </ScrollReveal>
@@ -1338,7 +1340,7 @@ export default function AlphaLandingPage() {
 
           {/* Summary text */}
           <p className="text-center text-lg text-white/60 mt-12">
-            Anthropic builds the engine. Coder1 builds the car.
+            Anthropic built the engine. Coder1 reimagined the car.
           </p>
         </div>
       </section>
@@ -1395,7 +1397,7 @@ export default function AlphaLandingPage() {
                 Meet <span className="text-shimmer">Agent Orchestration</span>
               </h2>
               <p className="text-lg text-white/50 max-w-2xl mx-auto">
-                Anthropic builds the model. We built everything around it.
+                Anthropic built the model. We built everything around it.
               </p>
             </div>
           </ScrollReveal>
@@ -1415,7 +1417,7 @@ export default function AlphaLandingPage() {
               {
                 icon: Infinity,
                 title: '8,000+ MCP Integrations',
-                desc: 'Unlike ClawdBot, the Orchestrator has direct access to 8,000 of Zapier\'s MCPs and can work autonomously around the clock.'
+                desc: 'The Orchestrator connects to 8,000+ integrations via Zapier MCP — GitHub, Slack, Notion, Linear, and more — all without leaving the IDE.'
               },
               {
                 icon: TrendingUp,
@@ -1462,12 +1464,12 @@ export default function AlphaLandingPage() {
             <div className="mt-12 p-8 bg-gradient-to-br from-coder1-cyan/5 to-coder1-purple/5 border-2 border-coder1-cyan/20 rounded-2xl">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center gap-3 mb-4">
-                  <span className="text-2xl font-bold text-coder1-cyan">Agents</span>
+                  <span className="text-2xl font-bold text-coder1-cyan">Coder1 Agents</span>
                   <span className="text-white/30 text-xl">vs</span>
-                  <span className="text-2xl font-bold text-white/50">OpenClaw</span>
+                  <span className="text-2xl font-bold text-white/50">Claude Code CLI alone</span>
                 </div>
                 <p className="text-white/40 text-sm max-w-xl mx-auto">
-                  Inspired by the ClawdBot movement. When OpenClaw hit 100K stars in 3 days, the message was clear.
+                  Claude Code is powerful. But running agents from a terminal, with no visibility, no team sharing, and no GUI? That&apos;s where Coder1 comes in.
                 </p>
               </div>
               <div className="overflow-x-auto">
@@ -1476,9 +1478,9 @@ export default function AlphaLandingPage() {
                     <tr>
                       <th className="text-left py-4 px-4 text-white/40 font-medium border-b border-white/10">Feature</th>
                       <th className="text-center py-4 px-6 font-bold text-lg bg-coder1-cyan/10 border border-coder1-cyan/30 rounded-t-lg">
-                        <span className="text-coder1-cyan">Agents</span>
+                        <span className="text-coder1-cyan">Coder1 Agents</span>
                       </th>
-                      <th className="text-center py-4 px-6 text-white/50 font-medium border-b border-white/10">OpenClaw</th>
+                      <th className="text-center py-4 px-6 text-white/50 font-medium border-b border-white/10">Claude Code CLI</th>
                     </tr>
                   </thead>
                   <tbody className="text-white/70">
@@ -1738,7 +1740,7 @@ export default function AlphaLandingPage() {
               { icon: Book, name: 'Live Team Collaboration', desc: 'Shared sessions, shared memory, real-time' },
               { icon: FileText, name: 'Session Summaries', desc: 'Seamless handoffs' },
               { icon: Palette, name: 'Component Studio', desc: 'Visual component building' },
-              { icon: Slash, name: '/Commands', desc: 'Everything at slash-command speed' }
+              { icon: Slash, name: '1-Click Skills', desc: "Skills, MCP's, Hooks library built in." }
             ].map((feature, idx) => (
               <ScrollReveal key={idx} delay={idx * 50}>
                 <div
@@ -1945,7 +1947,7 @@ export default function AlphaLandingPage() {
             </div>
           </ScrollReveal>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-6">
               <PricingCard
                 tier="Free Forever"
                 price="$0"
@@ -2000,6 +2002,25 @@ export default function AlphaLandingPage() {
                 cta="Contact Sales"
                 subtext="3 users minimum."
                 onClick={() => window.location.href = 'mailto:alpha@coder1.ai?subject=Coder1 Team Plan Inquiry'}
+              />
+
+              <PricingCard
+                tier="Enterprise"
+                price="Custom"
+                period="contact us"
+                features={[
+                  'Everything in Team',
+                  'Bring your own Anthropic key',
+                  'Unlimited seats',
+                  'On-prem / private cloud option',
+                  'Custom MCP integrations',
+                  'Compliance & audit reports',
+                  'Dedicated SLA & support',
+                  'Custom onboarding'
+                ]}
+                cta="Talk to Us"
+                subtext="For teams of 20+."
+                onClick={() => window.location.href = 'mailto:alpha@coder1.ai?subject=Coder1 Enterprise Inquiry'}
               />
           </div>
         </div>
