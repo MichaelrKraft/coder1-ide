@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
-import { getTeachingSession, listTeachingSessions } from '@/lib/agent-hub/teaching';
+import { getTeachingSession, getTeachingSessionBySkillName } from '@/lib/agent-hub/teaching';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,10 +36,7 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
     }
 
     // Find the original converted session for this skill (to get the original skill content)
-    const allSessions = listTeachingSessions(agentId, userId);
-    const originalSession = allSessions.find(
-      (s) => s.skillName === skillName && s.status === 'converted'
-    ) ?? null;
+    const originalSession = getTeachingSessionBySkillName(skillName, agentId, userId);
 
     return NextResponse.json({
       skillName,

@@ -188,3 +188,58 @@ export function snapshotChat(id: string, userId: string): number {
   });
   return txn();
 }
+
+export interface SkillMaturity {
+  level: 'draft' | 'tested' | 'reliable';
+  version: number;
+  totalRuns: number;
+  successfulRuns: number;
+  successRate: number;
+}
+
+export function getSkillMaturity(skillName: string, agentId: string, userId: string): SkillMaturity {
+  const db = getAgentHubDatabase();
+
+  const sessionRow = db.prepare(
+    `SELECT skill_version FROM agent_hub_teaching_sessions
+     WHERE skill_name = ? AND agent_id = ? AND user_id = ? AND status = 'converted'
+     ORDER BY skill_version DESC LIMIT 1`
+  ).get(skillName, agentId, userId) as { skill_version: number } | undefined;
+
+  const version = sessionRow?.skill_version ?? 1;
+
+  const runStats = db.prepare(
+    `SELECT
+       COUNT(*) as total,
+       SUM(CASE WHEN exit_code = 0 THEN 1 ELSE 0 END) as successful
+     FROM agent_hub_runs
+     WHERE agent_id = ? AND user_id = ? AND completed_at IS NOT NULL`
+  ).get(agentId, userId) as { total: number; successful: number } | undefined;
+
+  const totalRuns = runStats?.total ?? 0;
+  const successfulRuns = runStats?.successful ?? 0;
+  const successRate = totalRuns > 0 ? successfulRuns / totalRuns : 0;
+
+  let level: SkillMaturity['level'] = 'draft';
+  if (totalRuns >= 10 && successRate >= 0.9) {
+    level = 'reliable';
+  } else if (totalRuns >= 3 && successRate >= 0.7) {
+    level = 'tested';
+  }
+
+  return { level, version, totalRuns, successfulRuns, successRate };
+}
+
+export function getTeachingSessionBySkillName(
+  skillName: string,
+  agentId: string,
+  userId: string
+): TeachingSession | null {
+  const db = getAgentHubDatabase();
+  const row = db.prepare(
+    `SELECT * FROM agent_hub_teaching_sessions
+     WHERE skill_name = ? AND agent_id = ? AND user_id = ? AND status = 'converted'
+     ORDER BY skill_version DESC LIMIT 1`
+  ).get(skillName, agentId, userId) as TeachingSessionRow | undefined;
+  return row ? rowToTeachingSession(row) : null;
+}
