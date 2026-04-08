@@ -28,6 +28,7 @@ import { universalAIWrapper } from '@/services/ai-platform/universal-ai-wrapper-
 import { cliDetector, CLIInfo } from '@/services/ai-platform/cli-detector-client';
 import { useSessionMemory } from '@/hooks/useSessionMemory';
 import SimpleDragDropOverlay from './SimpleDragDropOverlay';
+import { stripAnsiCodes } from '@/lib/terminal-cleaner';
 import { useTerminalStore } from '@/stores/useTerminalStore';
 import { useSpectatorStore } from '@/stores/useSpectatorStore';
 import { useTeamStore } from '@/stores/useTeamStore';
@@ -154,6 +155,7 @@ function BetaTerminal({
   const [showMemoryDropdown, setShowMemoryDropdown] = useState(false);
   const memoryDropdownRef = useRef<HTMLDivElement>(null);
   const platformDropdownRef = useRef<HTMLDivElement>(null);
+  const rawOutputRef = useRef<string>(''); // rolling 3KB of recent raw terminal output
   const [claudeActive, setClaudeActive] = useState(false);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [currentCommand, setCurrentCommand] = useState('');
@@ -162,6 +164,12 @@ function BetaTerminal({
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [totalTokens, setTotalTokens] = useState(0);
   const [usageCost, setUsageCost] = useState('$0.0000');
+
+  // Context window tracking (200K tokens = Claude Code standard limit)
+  const CONTEXT_WINDOW_MAX = 200_000;
+  const contextPercent = Math.min(100, (sessionTokens / CONTEXT_WINDOW_MAX) * 100);
+  const [yellowDismissed, setYellowDismissed] = useState(false);
+  const [redDismissed, setRedDismissed] = useState(false);
   const [mcpStatus, setMcpStatus] = useState<{ healthy: number; total: number; status: string }>({
     healthy: 0,
     total: 0,
@@ -906,6 +914,9 @@ function BetaTerminal({
       if (id === sessionId && term) {
         term.write(data);
 
+        // Buffer recent output for session handoff (keep last 3KB)
+        rawOutputRef.current = (rawOutputRef.current + data).slice(-3000);
+
         // Only run expensive checks on multi-char output (not single keystroke echo)
         if (data.length > 1) {
           // Auto-scroll
@@ -932,11 +943,14 @@ function BetaTerminal({
           }
         }
 
-        // Detect CWD from shell prompt patterns
+        // Detect CWD from shell prompt patterns or plain pwd output
         if (data.length > 1) {
-          const cwdMatch = data.match(/(?:^|\r|\n)[^$%❯➜\r\n]*(?:[$%❯➜])[^$%❯➜\r\n]*?((?:~|\/)[^\s\r\n$%❯➜]+)/);
-          if (cwdMatch && cwdMatch[1]) {
-            const extractedPath = cwdMatch[1];
+          // Match path inside a shell prompt (bash/zsh/oh-my-zsh)
+          const promptMatch = data.match(/(?:^|\r|\n)[^$%❯➜\r\n]*(?:[$%❯➜])[^$%❯➜\r\n]*?((?:~|\/)[^\s\r\n$%❯➜]+)/);
+          // Match plain pwd output: a line that is just an absolute path
+          const pwdMatch = !promptMatch && data.match(/(?:^|\r|\n)(\/[^\s\r\n:*?"<>|]+)(?:\r|\n|$)/);
+          const extractedPath = (promptMatch && promptMatch[1]) || (pwdMatch && pwdMatch[1]) || null;
+          if (extractedPath) {
             const currentCwd = useTerminalStore.getState().workingDirectory;
             if (extractedPath !== currentCwd) {
               useTerminalStore.getState().setWorkingDirectory(extractedPath);
@@ -1561,6 +1575,22 @@ function BetaTerminal({
     }
   };
   
+  const handleOpenNewSession = useCallback(() => {
+    const cleanOutput = stripAnsiCodes(rawOutputRef.current).slice(-2000);
+    const handoff = {
+      context: cleanOutput,
+      contextPercent: Math.round(contextPercent),
+      sessionTokens,
+      timestamp: Date.now(),
+    };
+    try {
+      localStorage.setItem('coder1_session_handoff', JSON.stringify(handoff));
+    } catch {
+      // localStorage unavailable (private browsing / storage full) — open tab anyway
+    }
+    window.open('/ide-beta', '_blank');
+  }, [contextPercent, sessionTokens]);
+
   const handleTextInsert = (text: string) => {
     // Insert text directly into terminal
     if (socketRef.current && sessionId) {
@@ -1947,10 +1977,74 @@ function BetaTerminal({
         )}
       </div>
 
+      {/* Context Window Bar */}
+      {sessionTokens > 0 && (
+        <div className="w-full h-1.5 bg-gray-700" title={`Context: ${Math.round(contextPercent)}% of 200K tokens used`}>
+          <div
+            className={`h-full transition-all duration-500 ${
+              contextPercent >= 75 ? 'bg-red-500' :
+              contextPercent >= 50 ? 'bg-yellow-400' :
+              'bg-green-500'
+            }`}
+            style={{ width: `${contextPercent}%` }}
+          />
+        </div>
+      )}
+
+      {/* Context Warning — Yellow (50–74%) */}
+      {contextPercent >= 50 && contextPercent < 75 && !yellowDismissed && (
+        <div className="px-4 py-3 flex items-center justify-between bg-yellow-900/90 border-t border-yellow-700 text-yellow-100 text-sm font-medium">
+          <div className="flex items-center gap-3">
+            <span>🟡</span>
+            <span>Context {Math.round(contextPercent)}% full — consider starting a fresh session to maintain quality.</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-4">
+            <button
+              onClick={handleOpenNewSession}
+              className="px-3 py-1 rounded text-xs font-semibold bg-yellow-500 hover:bg-yellow-400 text-gray-900"
+            >
+              Open New Session
+            </button>
+            <button
+              onClick={() => setYellowDismissed(true)}
+              aria-label="Dismiss context warning"
+              className="opacity-60 hover:opacity-100 px-2 py-1 text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Context Warning — Red (75%+) */}
+      {contextPercent >= 75 && !redDismissed && (
+        <div className="px-4 py-3 flex items-center justify-between bg-red-900/90 border-t border-red-700 text-red-100 text-sm font-medium">
+          <div className="flex items-center gap-3">
+            <span>🔴</span>
+            <span>Context {Math.round(contextPercent)}% full — responses are degrading. Start a new session now.</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-4">
+            <button
+              onClick={handleOpenNewSession}
+              className="px-3 py-1 rounded text-xs font-semibold bg-red-500 hover:bg-red-400 text-white"
+            >
+              Open New Session
+            </button>
+            <button
+              onClick={() => setRedDismissed(true)}
+              aria-label="Dismiss context warning"
+              className="opacity-60 hover:opacity-100 px-2 py-1 text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Status Bar */}
       <div className="px-3 py-1 bg-gray-800 border-t border-gray-700 flex items-center justify-between text-xs text-gray-400">
         <div className="flex items-center gap-4">
-          <span>Session: {sessionTokens} tokens</span>
+          <span>Session: {sessionTokens.toLocaleString()} tokens{sessionTokens > 0 ? ` (${Math.round(contextPercent)}%)` : ''}</span>
           <span>Total: {totalTokens} tokens</span>
           <span>Cost: {usageCost}</span>
         </div>
