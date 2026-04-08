@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { getAgentHubDatabase } from './db';
 
@@ -242,4 +244,118 @@ export function getTeachingSessionBySkillName(
      ORDER BY skill_version DESC LIMIT 1`
   ).get(skillName, agentId, userId) as TeachingSessionRow | undefined;
   return row ? rowToTeachingSession(row) : null;
+}
+
+// ============================================================================
+// Skill File Versioning
+// ============================================================================
+
+export interface SkillVersionEntry {
+  version: number;
+  createdAt: string;
+  sessionId: string | null;
+  note: string;
+}
+
+export interface SkillVersionManifest {
+  current: number;
+  versions: SkillVersionEntry[];
+}
+
+function getSkillDir(skillName: string): string {
+  const home = process.env.HOME || '/tmp';
+  return path.join(home, '.claude', 'skills', skillName);
+}
+
+export function saveSkillWithVersion(
+  skillName: string,
+  content: string,
+  sessionId: string | null,
+  note: string
+): { version: number; skillPath: string } {
+  const skillDir = getSkillDir(skillName);
+  const versionsDir = path.join(skillDir, 'versions');
+  const manifestPath = path.join(versionsDir, 'versions.json');
+  const skillPath = path.join(skillDir, 'SKILL.md');
+
+  // Ensure directories exist
+  fs.mkdirSync(versionsDir, { recursive: true });
+
+  // Read or create manifest
+  let manifest: SkillVersionManifest = { current: 0, versions: [] };
+  try {
+    if (fs.existsSync(manifestPath)) {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    }
+  } catch { /* start fresh */ }
+
+  const newVersion = manifest.current + 1;
+  const now = new Date().toISOString();
+
+  // Write the new version file
+  fs.writeFileSync(path.join(versionsDir, `v${newVersion}.md`), content, 'utf-8');
+
+  // Write as the active SKILL.md
+  fs.writeFileSync(skillPath, content, 'utf-8');
+
+  // Update manifest
+  manifest.current = newVersion;
+  manifest.versions.push({
+    version: newVersion,
+    createdAt: now,
+    sessionId,
+    note,
+  });
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+
+  return { version: newVersion, skillPath };
+}
+
+export function rollbackSkillVersion(skillName: string, targetVersion: number): boolean {
+  const skillDir = getSkillDir(skillName);
+  const versionsDir = path.join(skillDir, 'versions');
+  const manifestPath = path.join(versionsDir, 'versions.json');
+  const skillPath = path.join(skillDir, 'SKILL.md');
+  const targetFile = path.join(versionsDir, `v${targetVersion}.md`);
+
+  if (!fs.existsSync(targetFile) || !fs.existsSync(manifestPath)) {
+    return false;
+  }
+
+  try {
+    const content = fs.readFileSync(targetFile, 'utf-8');
+    fs.writeFileSync(skillPath, content, 'utf-8');
+
+    const manifest: SkillVersionManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    manifest.current = targetVersion;
+    manifest.versions.push({
+      version: targetVersion,
+      createdAt: new Date().toISOString(),
+      sessionId: null,
+      note: `Rolled back to v${targetVersion}`,
+    });
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getSkillVersions(skillName: string): SkillVersionManifest | null {
+  const manifestPath = path.join(getSkillDir(skillName), 'versions', 'versions.json');
+  try {
+    if (!fs.existsSync(manifestPath)) return null;
+    return JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+export function readSkillVersion(skillName: string, version: number): string | null {
+  const versionFile = path.join(getSkillDir(skillName), 'versions', `v${version}.md`);
+  try {
+    return fs.existsSync(versionFile) ? fs.readFileSync(versionFile, 'utf-8') : null;
+  } catch {
+    return null;
+  }
 }
