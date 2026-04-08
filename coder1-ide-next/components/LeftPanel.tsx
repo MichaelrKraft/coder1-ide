@@ -124,20 +124,6 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
           <FolderTree className="w-3 h-3" />
           <span>Explorer</span>
         </button>
-        {vaultEnabled && (
-          <button
-            className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'notes'
-                ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
-                : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
-            }`}
-            onClick={() => setActiveTab('notes')}
-            title="Notes - Knowledge base and graph"
-          >
-            <BookOpen className="w-3 h-3" />
-            <span>Notes</span>
-          </button>
-        )}
         <button
           className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
             activeTab === 'search'
@@ -167,35 +153,6 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
             </span>
           )}
         </button>
-        {agentHubEnabled && (
-          <button
-            className={`flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
-              activeTab === 'goals'
-                ? 'text-coder1-cyan border-b-2 border-coder1-cyan bg-bg-tertiary'
-                : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary'
-            }`}
-            onClick={() => setActiveTab('goals')}
-            title="Goals — Track objectives and progress"
-          >
-            <Target className="w-3 h-3" />
-            <span>Goals</span>
-            {goalsYourTurn > 0 && (
-              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] rounded-full font-bold leading-none">
-                {goalsYourTurn}
-              </span>
-            )}
-          </button>
-        )}
-        {agentHubEnabled && (
-          <button
-            className="flex-shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 whitespace-nowrap text-text-muted hover:text-text-secondary hover:bg-bg-tertiary"
-            onClick={() => router.push('/ide/agent-hub/agents')}
-            title="Agent Hub — Manage autonomous agents and tasks"
-          >
-            <Cpu className="w-3 h-3" />
-            <span>Agents</span>
-          </button>
-        )}
       </div>
       
       {/* Notes graph/list toggle sub-header */}
@@ -246,24 +203,6 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
         )}
         {activeTab === 'goals' && agentHubEnabled && (
           <GoalsPanel />
-        )}
-        {activeTab === 'notes' && vaultEnabled && (
-          activeNotePath ? (
-            <div className="flex h-full">
-              <div className="w-44 flex-shrink-0 border-r border-border-default overflow-hidden">
-                <NotesPanel onNoteSelect={openNote} activeNotePath={activeNotePath} compact />
-              </div>
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <NoteDetailView
-                  notePath={activeNotePath}
-                  onNavigate={openNote}
-                  onClose={() => useVaultStore.setState({ activeNotePath: null })}
-                />
-              </div>
-            </div>
-          ) : showGraph
-            ? <KnowledgeGraph onNodeClick={openNote} activeNotePath={activeNotePath} />
-            : <NotesPanel onNoteSelect={openNote} activeNotePath={activeNotePath ?? undefined} />
         )}
       </div>
       

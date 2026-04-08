@@ -21,7 +21,6 @@ import { useBridgeSessionData, formatTokenCount } from '@/lib/useBridgeSessionDa
 import { features } from '@/lib/feature-flags';
 import { useBridgeConnectionState } from '@/lib/useBridgeConnectionState';
 import { logger } from '@/lib/logger';
-import NotificationCenter from '@/components/johnny5/NotificationCenter';
 import RecordingIndicator from '@/components/flight-recorder/RecordingIndicator';
 import type { IDEFile } from '@/types';
 
@@ -44,7 +43,6 @@ export default function StatusBarCore({
 }: StatusBarCoreProps) {
   // Get state from stores
   const { connections } = useIDEStore();
-  const { supervision } = useSessionStore();
   const { discoverPanel, addToast } = useUIStore();
   const { hasIssues: pollingHasIssues, issuesSummary: pollingIssuesSummary } = usePollingHealthStore();
 
@@ -72,7 +70,6 @@ export default function StatusBarCore({
   
 
   const actuallyConnected = isConnected || connections.terminal;
-  const supervisionActive = supervision.isActive;
   const { activeTeam } = useSessionStore();
 
   // Fetch git information using simple API
@@ -208,13 +205,6 @@ export default function StatusBarCore({
             </div>
           )}
 
-          {/* Supervision Indicator */}
-          {supervisionActive && (
-            <div className="flex items-center gap-1 text-coder1-cyan animate-pulse">
-              <Eye className="w-4 h-4" />
-              <span className="font-medium">Supervision Active</span>
-            </div>
-          )}
         </div>
 
         {/* Center section - Action buttons */}
@@ -231,9 +221,6 @@ export default function StatusBarCore({
 
         {/* Right section - Status info */}
         <div className="flex items-center gap-4 text-sm text-text-muted flex-1 justify-end">
-
-          {/* Johnny5 Notification Center */}
-          <NotificationCenter />
 
           {/* Service Health Indicator */}
           {pollingHasIssues && (
