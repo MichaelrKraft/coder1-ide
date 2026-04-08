@@ -259,6 +259,18 @@ export default function MonacoEditor({
     void applyFileLinkDecorations(file);
   }, [file, applyFileLinkDecorations]);
 
+  // Log file opens to the active session note (lazy socket import — no SSR issues)
+  useEffect(() => {
+    if (!file) return;
+    const sessionId = typeof window !== 'undefined'
+      ? localStorage.getItem('ide-terminalSessionId')
+      : null;
+    if (!sessionId) return;
+    import('@/lib/socket').then(({ getSocket }) => getSocket()).then(sock => {
+      sock.emit('session:log', { sessionId, type: 'file', value: file });
+    }).catch(() => { /* non-fatal */ });
+  }, [file]);
+
   // Cleanup function to dispose editor when component unmounts
   useEffect(() => {
     return () => {

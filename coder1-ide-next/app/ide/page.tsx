@@ -2190,8 +2190,7 @@ function IDEPageContent() {
               onClose={() => setShowQuickDocs(false)}
             />
 
-            {/* Alpha Feedback Button - Fixed position in lower-right */}
-            <AlphaFeedbackButton />
+
           </div>
         </TerminalCommandProvider>
       </EnhancedSupervisionProvider>
