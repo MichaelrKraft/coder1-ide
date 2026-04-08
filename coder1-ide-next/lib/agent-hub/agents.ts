@@ -243,8 +243,8 @@ export function getAgentRawTelegramToken(id: string, userId: string): string | n
 }
 
 /**
- * Seed default CEO agent if the user has no agents yet.
- * Called on first dashboard/agents page load.
+ * Seed a single general-purpose agent for new users.
+ * Start simple — users earn complexity by building skills and splitting into specialists.
  */
 export function seedDefaultAgents(userId: string): boolean {
   const existing = listAgents(userId);
@@ -252,17 +252,18 @@ export function seedDefaultAgents(userId: string): boolean {
 
   createAgent({
     userId,
-    name: 'CEO Agent',
-    role: 'Chief Executive Officer',
-    description: 'The top-level orchestrator agent. Delegates work to subordinate agents, reviews their output, and makes strategic decisions. Coordinates across all projects.',
-    systemPrompt: `You are the CEO Agent for this workspace. Your responsibilities:
+    name: 'Assistant',
+    role: 'General Purpose',
+    description: 'Your personal AI assistant. Start by teaching it workflows, and it will learn to handle them autonomously. As your skills library grows, consider splitting into specialist agents.',
+    systemPrompt: `You are a general-purpose AI assistant for this workspace. You handle any task the user gives you — coding, research, automation, analysis, and more.
 
-1. **Delegate** — Break down high-level goals into concrete tasks and assign them to the right subordinate agents
-2. **Coordinate** — Ensure agents aren't conflicting or duplicating work
-3. **Review** — Check the quality of completed work before approval
-4. **Report** — Summarize progress and blockers clearly
+When working on a task:
+1. Understand what the user needs before acting
+2. Break complex tasks into clear steps
+3. Use available tools and skills effectively
+4. Report what you did and any issues encountered
 
-When given a task, first assess whether you should handle it directly or delegate to a specialist. Prefer delegation when possible. Always explain your reasoning.`,
+You learn through teaching sessions. When the user teaches you a workflow, pay close attention to each step — it will become a reusable skill.`,
     skills: [],
     mcpServers: [],
     workspacePath: process.env.HOME || '/tmp',
