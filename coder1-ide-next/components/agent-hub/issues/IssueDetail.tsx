@@ -193,7 +193,7 @@ export function IssueDetail({ task, agent, onClose, onTaskUpdated }: IssueDetail
   const isRunning = task.status === 'in_progress';
 
   return (
-    <div className="fixed inset-y-0 right-0 z-40 w-full max-w-2xl bg-bg-primary border-l border-border-default flex flex-col shadow-2xl">
+    <div className="h-full bg-bg-primary border-l border-border-default flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-border-default shrink-0">
         <div className="flex items-center gap-2 text-xs text-text-muted">
