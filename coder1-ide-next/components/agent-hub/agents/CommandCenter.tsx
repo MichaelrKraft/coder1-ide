@@ -4,6 +4,16 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, Send, Loader2, WifiOff, Paperclip, X, Image } from 'lucide-react';
 import { getSocket } from '@/lib/socket';
 
+function stripAnsi(str: string): string {
+  return str
+    .replace(/\x1b\[[0-9;]*[A-Za-z]/g, '')  // CSI sequences
+    .replace(/\x1b\][^\x07\x1b]*(\x07|\x1b\\)/g, '') // OSC sequences
+    .replace(/\x1b[^[\]]/g, '')               // other ESC sequences
+    .replace(/\x07/g, '')                     // Bell
+    .replace(/\r/g, '\n')                     // CR → newline
+    .replace(/\n{3,}/g, '\n\n');              // collapse blank lines
+}
+
 interface Attachment {
   name: string;
   type: string;
@@ -41,7 +51,7 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
   useEffect(() => {
     fetch(`/api/agent-hub/agents/${agentId}/chat`)
       .then(r => r.json())
-      .then(data => setMessages(data.messages || []))
+      .then(data => setMessages((data.messages || []).map((m: ChatMessage) => ({ ...m, content: stripAnsi(m.content) }))))
       .catch(() => {});
   }, [agentId]);
 
@@ -62,7 +72,7 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
     const onChatOutput = (data: { agentId: string; chunk: string }) => {
       if (data.agentId !== agentId || !mounted) return;
       setStreaming(true);
-      setStreamBuffer(prev => prev + data.chunk);
+      setStreamBuffer(prev => prev + stripAnsi(data.chunk));
 
       clearTimeout(streamTimeout);
       streamTimeout = setTimeout(() => {

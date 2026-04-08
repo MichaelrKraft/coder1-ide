@@ -80,9 +80,10 @@ const express = require('express');
 let parseThoughtFromChunk;
 let appendRunThought;
 let appendRunLogChunk;
+let getRunById;
 try {
   ({ parseThoughtFromChunk } = require('./lib/agent-hub/thought-parser.js'));
-  ({ appendRunThought, appendRunLogChunk } = require('./lib/agent-hub/runs'));
+  ({ appendRunThought, appendRunLogChunk, getRunById } = require('./lib/agent-hub/runs'));
 } catch (e) {
   console.warn('[agent-hub] module preload failed:', e.message);
 }
@@ -2381,15 +2382,15 @@ app.prepare().then(() => {
 
       // Bridge confirms agent process started
       socket.on('agent:started', ({ runId, sessionId }) => {
-        const userId = socket.userId;
-        if (!userId) {
+        if (!socket.userId) {
           console.warn('[agent-hub] agent:started received with no userId on socket, ignoring');
           return;
         }
         setImmediate(() => {
           try {
             const { updateRun } = require('./lib/agent-hub/runs');
-            updateRun(runId, userId, { sessionId });
+            const run = getRunById ? getRunById(runId) : null;
+            if (run) updateRun(runId, run.userId, { sessionId });
             io.to(`run:${runId}`).emit('run:status', { status: 'running', sessionId });
           } catch (e) {
             console.warn('[agent-hub] agent:started handler error:', e.message);
@@ -2460,12 +2461,21 @@ app.prepare().then(() => {
           });
         }
 
-        // Persist raw log chunk (existing behavior — unchanged)
+        // Persist log chunk with ANSI codes stripped
         setImmediate(() => {
           try {
             const token = process.env.AGENT_HUB_INTERNAL_TOKEN;
-            const safeChunk = token ? chunk.replace(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '[REDACTED]') : chunk;
-            if (appendRunLogChunk) appendRunLogChunk(runId, safeChunk, type || 'stdout');
+            const tokenStripped = token ? chunk.replace(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '[REDACTED]') : chunk;
+            // Strip ANSI/VT100 escape sequences and control characters
+            const cleanChunk = tokenStripped
+              .replace(/\x1b\[[0-9;]*[A-Za-z]/g, '')      // CSI sequences (color, cursor, clear)
+              .replace(/\x1b\][^\x07\x1b]*(\x07|\x1b\\)/g, '') // OSC sequences (terminal title)
+              .replace(/\x1b[^[\]]/g, '')                   // Other ESC sequences
+              .replace(/\x07/g, '')                          // Bell
+              .replace(/\r/g, '\n')                          // CR → newline
+              .replace(/\n{3,}/g, '\n\n');                   // Collapse excessive blank lines
+            const safeChunk = cleanChunk.trim() ? cleanChunk : '';
+            if (appendRunLogChunk && safeChunk) appendRunLogChunk(runId, safeChunk, type || 'stdout');
           } catch (e) {
             console.warn('[agent-hub] chunk storage error:', e.message);
           }
@@ -2481,9 +2491,9 @@ app.prepare().then(() => {
         }
         setImmediate(() => {
           try {
-            const { updateRun, getRun } = require('./lib/agent-hub/runs');
+            const { updateRun } = require('./lib/agent-hub/runs');
             const { updateTask } = require('./lib/agent-hub/tasks');
-            const run = getRun(runId, userId);
+            const run = getRunById ? getRunById(runId) : null;
             if (run) {
               updateRun(runId, run.userId, {
                 status: exitCode === 0 ? 'awaiting_approval' : 'failed',
@@ -2552,9 +2562,9 @@ app.prepare().then(() => {
         }
         setImmediate(() => {
           try {
-            const { updateRun, getRun } = require('./lib/agent-hub/runs');
+            const { updateRun } = require('./lib/agent-hub/runs');
             const { updateTask } = require('./lib/agent-hub/tasks');
-            const run = getRun(runId, userId);
+            const run = getRunById ? getRunById(runId) : null;
             if (run) {
               updateRun(runId, run.userId, {
                 status: 'failed',
@@ -3931,7 +3941,9 @@ app.prepare().then(() => {
             // 🎯 CRITICAL FIX (Oct 28, 2025): Buffer ALL terminal output for history restoration
             // Keep ANSI codes for proper rendering, only filter problematic focus codes
             // IMPORTANT: Check for ANSI escape sequences \x1b[I and \x1b[O, not just [I and [O
-            const hasFocusCodes = data.includes('\x1b[I') || data.includes('\x1b[O');
+            const hasFocusCodes = data.includes('\x1b[I') || data.includes('\x1b[O')
+              || /\x1b\[<[\d;]+[Mm]/.test(data)       // SGR mouse tracking sequences
+              || /\x1b\[M[\x20-\x7f]{3}/.test(data);  // X11 basic mouse sequences
             if (!hasFocusCodes) {
               // Buffer for terminal history (keeps ANSI codes for colors/formatting)
               if (!terminalHistoryBuffers.has(sessionId)) {
@@ -3955,7 +3967,9 @@ app.prepare().then(() => {
             // CRITICAL: Only filter focus codes ([I], [O]), keep other ANSI codes for Claude conversations
             // Claude Code output needs ANSI codes for proper rendering and history restoration
             // IMPORTANT: Check for ANSI escape sequences \x1b[I and \x1b[O, not just [I and [O
-            const hasFocusCodesOnly = data.includes('\x1b[I') || data.includes('\x1b[O');
+            const hasFocusCodesOnly = data.includes('\x1b[I') || data.includes('\x1b[O')
+              || /\x1b\[<[\d;]+[Mm]/.test(data)       // SGR mouse tracking sequences
+              || /\x1b\[M[\x20-\x7f]{3}/.test(data);  // X11 basic mouse sequences
             if (!hasFocusCodesOnly) {
               bufferTerminalData(sessionId, 'terminal_output', data);
             } else {
