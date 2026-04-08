@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAgentHubDatabase } from '@/lib/agent-hub/db';
 import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
+import { getTeachingSession } from '@/lib/agent-hub/teaching';
 import { v4 as uuidv4 } from 'uuid';
 
 export const dynamic = 'force-dynamic';
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { role, content } = body;
+  const { role, content, teaching_session_id } = body;
   if (typeof role !== 'string' || typeof content !== 'string') {
     return NextResponse.json({ error: 'role and content are required strings' }, { status: 400 });
   }
@@ -58,15 +59,26 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
     return NextResponse.json({ error: 'role must be "user" or "assistant"' }, { status: 400 });
   }
 
+  // Validate teaching_session_id ownership if provided
+  if (teaching_session_id != null) {
+    if (typeof teaching_session_id !== 'string') {
+      return NextResponse.json({ error: 'teaching_session_id must be a string' }, { status: 400 });
+    }
+    const session = getTeachingSession(teaching_session_id, userId);
+    if (!session || session.agentId !== agentId) {
+      return NextResponse.json({ error: 'Invalid teaching_session_id' }, { status: 400 });
+    }
+  }
+
   try {
     const db = getAgentHubDatabase();
     const id = uuidv4();
     const now = new Date().toISOString();
 
     db.prepare(
-      `INSERT INTO agent_hub_chat_messages (id, agent_id, user_id, role, content, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    ).run(id, agentId, userId, role, content, now);
+      `INSERT INTO agent_hub_chat_messages (id, agent_id, user_id, role, content, teaching_session_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, agentId, userId, role, content, teaching_session_id ?? null, now);
 
     return NextResponse.json({ id, success: true });
   } catch (error) {

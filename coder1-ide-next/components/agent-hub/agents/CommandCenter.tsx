@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, Loader2, WifiOff, Paperclip, X, Image } from 'lucide-react';
+import { MessageCircle, Send, Loader2, WifiOff, Paperclip, X, Image, GraduationCap, BookOpen, Sparkles, Pause, Play, CheckCircle } from 'lucide-react';
 import { getSocket } from '@/lib/socket';
 
 function stripAnsi(str: string): string {
@@ -43,9 +43,22 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
   const [streamBuffer, setStreamBuffer] = useState('');
   const [error, setError] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [teachingMode, setTeachingMode] = useState(false);
+  const [teachingSessionId, setTeachingSessionId] = useState<string | null>(null);
+  const [teachingComplete, setTeachingComplete] = useState(false);
+  const [teachingElapsed, setTeachingElapsed] = useState(0);
+  const [teachingPaused, setTeachingPaused] = useState(false);
+  const [converting, setConverting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketRef = useRef<Awaited<ReturnType<typeof getSocket>> | null>(null);
+
+  // Teaching session elapsed time tracker
+  useEffect(() => {
+    if (!teachingMode || teachingPaused || teachingComplete) return;
+    const interval = setInterval(() => setTeachingElapsed(e => e + 1), 1000);
+    return () => clearInterval(interval);
+  }, [teachingMode, teachingPaused, teachingComplete]);
 
   // Load chat history on mount
   useEffect(() => {
@@ -88,7 +101,7 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
             fetch(`/api/agent-hub/agents/${agentId}/chat`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ role: 'assistant', content: buf.trim() }),
+              body: JSON.stringify({ role: 'assistant', content: buf.trim(), teaching_session_id: teachingSessionId }),
             }).catch(() => {});
           }
           return '';
@@ -146,6 +159,66 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
     };
   }, [agentId, workspacePath, systemPrompt]);
 
+  const startTeaching = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/agent-hub/agents/${agentId}/teaching-sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTeachingMode(true);
+        setTeachingSessionId(data.session?.id ?? data.id);
+        setTeachingElapsed(0);
+        setTeachingComplete(false);
+        setTeachingPaused(false);
+      }
+    } catch { /* ignore */ }
+  }, [agentId]);
+
+  const pauseTeaching = useCallback(async () => {
+    if (!teachingSessionId) return;
+    await fetch(`/api/agent-hub/agents/${agentId}/teaching-sessions/${teachingSessionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: teachingPaused ? 'active' : 'paused' }),
+    }).catch(() => {});
+    setTeachingPaused(!teachingPaused);
+  }, [agentId, teachingSessionId, teachingPaused]);
+
+  const markTeachingDone = useCallback(async () => {
+    if (!teachingSessionId) return;
+    await fetch(`/api/agent-hub/agents/${agentId}/teaching-sessions/${teachingSessionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'completed' }),
+    }).catch(() => {});
+    setTeachingComplete(true);
+  }, [agentId, teachingSessionId]);
+
+  const convertToSkill = useCallback(async () => {
+    if (!teachingSessionId) return;
+    setConverting(true);
+    try {
+      const res = await fetch(`/api/agent-hub/agents/${agentId}/teaching-sessions/${teachingSessionId}/convert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (res.ok && data.chatSnapshot) {
+        const skillPrompt = `Review the teaching session below. I walked you through a workflow step by step and you completed it successfully. Now use the skill-creator skill to create a reusable skill from this interaction.\n\nKey context:\n- Extract the workflow ESSENCE, not a transcript\n- The skill should work for the NEXT time this workflow is needed\n- Generalize specific file paths into placeholders where appropriate\n- Never include literal API keys or credentials -- use env var references\n\nTeaching session transcript:\n${JSON.stringify(data.chatSnapshot, null, 2)}`;
+        if (socketRef.current && connected) {
+          socketRef.current.emit('agent:chat:input', { agentId, message: skillPrompt });
+        }
+        setTeachingMode(false);
+        setTeachingComplete(false);
+        setTeachingSessionId(null);
+      }
+    } catch { /* ignore */ } finally {
+      setConverting(false);
+    }
+  }, [agentId, teachingSessionId, connected]);
+
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -193,12 +266,12 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
     fetch(`/api/agent-hub/agents/${agentId}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: 'user', content: fullMessage }),
+      body: JSON.stringify({ role: 'user', content: fullMessage, teaching_session_id: teachingSessionId }),
     }).catch(() => {});
 
     setInput('');
     setAttachments([]);
-  }, [input, attachments, connected, agentId]);
+  }, [input, attachments, connected, agentId, teachingSessionId]);
 
   const hasMessages = messages.length > 0 || streaming;
   const inputBar = (
@@ -241,7 +314,7 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder={connected ? 'Type a message...' : 'Connecting...'}
+            placeholder={connected ? (teachingMode ? `Teach ${agentName} a step...` : 'Type a message...') : 'Connecting...'}
             disabled={!connected}
             className="flex-1 bg-bg-tertiary border border-border-default rounded px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-coder1-cyan/50 disabled:opacity-50"
           />
@@ -268,7 +341,7 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
             {connected ? (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                Connected
+                {teachingMode ? 'Teaching Mode' : 'Connected'}
               </>
             ) : (
               <>
@@ -278,7 +351,56 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
             )}
           </span>
         </div>
+        {connected && !teachingMode && (
+          <button
+            onClick={startTeaching}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] text-amber-400 hover:bg-amber-400/10 rounded transition-colors"
+          >
+            <GraduationCap className="w-3 h-3" />
+            Teach
+          </button>
+        )}
       </div>
+
+      {/* Teaching session banner */}
+      {teachingMode && (
+        <div className="px-3 py-1.5 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-3 h-3 text-amber-400" />
+            <span className="text-[10px] text-amber-400">Teaching session active</span>
+            <span className="text-[10px] text-amber-400/60">
+              {Math.floor(teachingElapsed / 60)}:{String(teachingElapsed % 60).padStart(2, '0')}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button onClick={pauseTeaching} className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-amber-400 hover:bg-amber-400/10 rounded transition-colors">
+              {teachingPaused ? <Play className="w-2.5 h-2.5" /> : <Pause className="w-2.5 h-2.5" />}
+              {teachingPaused ? 'Resume' : 'Pause'}
+            </button>
+            {!teachingComplete && (
+              <button onClick={markTeachingDone} className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-green-400 hover:bg-green-400/10 rounded transition-colors">
+                <CheckCircle className="w-2.5 h-2.5" />
+                Done
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Convert to skill bar */}
+      {teachingComplete && (
+        <div className="px-3 py-2 bg-green-500/10 border-b border-green-500/20 flex items-center justify-between shrink-0">
+          <span className="text-[10px] text-green-400">Teaching complete — ready to convert</span>
+          <button
+            onClick={convertToSkill}
+            disabled={converting}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded transition-colors disabled:opacity-50"
+          >
+            {converting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            Convert to Skill
+          </button>
+        </div>
+      )}
 
       {!hasMessages ? (
         /* Empty state: input centered vertically */

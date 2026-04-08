@@ -55,6 +55,11 @@ function migrateSchema(database: Database.Database): void {
   addColumnIfMissing('agent_hub_memory', 'project_id', 'TEXT');
   addColumnIfMissing('agent_hub_runs', 'human_input_request', 'TEXT');
   addColumnIfMissing('agent_hub_runs', 'human_input_response', 'TEXT');
+  addColumnIfMissing('agent_hub_chat_messages', 'teaching_session_id', 'TEXT');
+  try {
+    database.exec(`CREATE INDEX IF NOT EXISTS idx_chat_messages_teaching_session_id ON agent_hub_chat_messages(teaching_session_id)`);
+    database.exec(`CREATE INDEX IF NOT EXISTS idx_teaching_sessions_agent_user ON agent_hub_teaching_sessions(agent_id, user_id)`);
+  } catch { /* indexes may already exist */ }
 }
 
 function initializeSchema(database: Database.Database): void {
@@ -236,4 +241,25 @@ function initializeSchema(database: Database.Database): void {
     // FTS5 may not be available in all SQLite builds
     console.warn('[agent-hub] FTS5 not available — memory search will use fallback');
   }
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_teaching_sessions (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      title TEXT,
+      skill_name TEXT,
+      skill_version INTEGER NOT NULL DEFAULT 1,
+      chat_snapshot TEXT NOT NULL DEFAULT '[]',
+      generated_skill_md TEXT,
+      message_count INTEGER NOT NULL DEFAULT 0,
+      started_at TEXT NOT NULL,
+      paused_at TEXT,
+      completed_at TEXT,
+      converted_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
 }
