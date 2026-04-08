@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { Plus, ChevronDown, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import type { Task } from '@/lib/agent-hub/tasks';
 import type { Agent } from '@/lib/agent-hub/agents';
-import { IssueDetail } from './IssueDetail';
 import { IssueForm } from './IssueForm';
+import type { Agent } from '@/lib/agent-hub/agents';
 
 const STATUS_ORDER: Task['status'][] = [
   'in_progress',
@@ -48,12 +48,17 @@ function getDateGroup(dateStr: string | null): string {
 
 const FIXED_DATE_GROUPS = ['Today', 'Yesterday', 'This Week', 'Last Week'];
 
-export default function IssueList() {
+interface IssueListProps {
+  selectedTaskId: string | null;
+  onSelectTask: (task: Task | null, agent: Agent | null) => void;
+  refreshKey?: number;
+}
+
+export default function IssueList({ selectedTaskId, onSelectTask, refreshKey = 0 }: IssueListProps) {
   const [tab, setTab] = useState<'active' | 'history'>('active');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formDefaultStatus, setFormDefaultStatus] = useState<string | undefined>();
 
@@ -70,7 +75,7 @@ export default function IssueList() {
 
   useEffect(() => {
     fetchData().catch(() => {});
-  }, [fetchData]);
+  }, [fetchData, refreshKey]);
 
   const agentMap = new Map(agents.map((a) => [a.id, a]));
 
@@ -126,11 +131,6 @@ export default function IssueList() {
 
   const handleTaskUpdated = () => {
     fetchData().catch(() => {});
-    // Refresh the selected task if still open
-    if (selectedTask) {
-      const updated = tasks.find((t) => t.id === selectedTask.id);
-      if (updated) setSelectedTask(updated);
-    }
   };
 
   return (
@@ -214,9 +214,9 @@ export default function IssueList() {
                   return (
                     <button
                       key={task.id}
-                      onClick={() => setSelectedTask(task)}
+                      onClick={() => onSelectTask(task, agentMap.get(task.agentId) ?? null)}
                       className={`w-full flex items-center gap-3 px-4 py-2.5 text-left border-b border-border-default hover:bg-bg-tertiary transition-colors ${
-                        selectedTask?.id === task.id ? 'bg-bg-tertiary' : ''
+                        selectedTaskId === task.id ? 'bg-bg-tertiary' : ''
                       }`}
                     >
                       {/* Status dot */}
@@ -304,9 +304,9 @@ export default function IssueList() {
                       return (
                         <button
                           key={task.id}
-                          onClick={() => setSelectedTask(task)}
+                          onClick={() => onSelectTask(task, agentMap.get(task.agentId) ?? null)}
                           className={`w-full flex items-center gap-3 px-4 py-2.5 text-left border-b border-border-default hover:bg-bg-tertiary transition-colors ${
-                            selectedTask?.id === task.id ? 'bg-bg-tertiary' : ''
+                            selectedTaskId === task.id ? 'bg-bg-tertiary' : ''
                           }`}
                         >
                           {/* Status icon */}
@@ -344,16 +344,6 @@ export default function IssueList() {
           </>
         )}
       </div>
-
-      {/* Issue detail slide-over */}
-      {selectedTask && (
-        <IssueDetail
-          task={selectedTask}
-          agent={agentMap.get(selectedTask.agentId) ?? null}
-          onClose={() => setSelectedTask(null)}
-          onTaskUpdated={handleTaskUpdated}
-        />
-      )}
 
       {/* New issue modal */}
       {showForm && (

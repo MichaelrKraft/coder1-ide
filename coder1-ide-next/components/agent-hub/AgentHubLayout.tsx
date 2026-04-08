@@ -18,7 +18,7 @@ function AgentHubLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="h-full flex flex-col" style={{ '--border-default': 'rgba(0, 217, 255, 0.3)' } as React.CSSProperties}>
+    <div className="h-screen flex flex-col" style={{ '--border-default': 'rgba(0, 217, 255, 0.3)' } as React.CSSProperties}>
       {/* Header bar with centered logo */}
       <header className="flex items-center justify-center px-4 py-2 shrink-0 border-b border-border-default bg-bg-secondary">
         <Image src="/coder1-logo.png" alt="Coder1" height={32} width={120} className="object-contain" />
@@ -69,7 +69,7 @@ function AgentHubLayoutInner({ children }: { children: React.ReactNode }) {
         </Link>
       </nav>
 
-      <div className="flex-1 min-h-0 overflow-auto">{children}</div>
+      <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
       </div>{/* end body */}
     </div>
   );
