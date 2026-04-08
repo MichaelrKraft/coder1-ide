@@ -16,12 +16,14 @@ export function usePowerPackNudge() {
     const alreadyShown = localStorage.getItem(STORAGE_KEY);
     if (alreadyShown) return;
 
+    let isMounted = true;
     let cleanup: (() => void) | null = null;
 
     const setup = async () => {
       const { getSocket } = await import('@/lib/socket');
       const socket = await getSocket();
-      if (!socket) return;
+      // Component may have unmounted while we awaited the socket
+      if (!socket || !isMounted) return;
 
       const handleFirstConnect = () => {
         localStorage.setItem(STORAGE_KEY, 'true');
@@ -45,6 +47,7 @@ export function usePowerPackNudge() {
     });
 
     return () => {
+      isMounted = false;
       cleanup?.();
     };
   }, []);
