@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRun } from '@/lib/agent-hub/runs';
+import { getRun, updateRun } from '@/lib/agent-hub/runs';
 import { stopAgentRun } from '@/lib/agent-hub/bridge-integration';
 import { getAgent } from '@/lib/agent-hub/agents';
 import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
@@ -27,10 +27,9 @@ export async function POST(request: NextRequest, { params }: Params): Promise<Ne
   const sent = await stopAgentRun(runId, userId, workspacePath);
 
   if (!sent) {
-    return NextResponse.json(
-      { error: 'No bridge connected — stop signal could not be delivered' },
-      { status: 503 }
-    );
+    // No bridge connected — force-cancel the run directly in the DB so it doesn't stay stuck
+    updateRun(runId, userId, { status: 'failed', error: 'Cancelled: no bridge connected' });
+    return NextResponse.json({ success: true, message: 'Run force-cancelled (no bridge)' });
   }
 
   return NextResponse.json({ success: true, message: 'Stop signal sent' });

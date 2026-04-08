@@ -112,8 +112,11 @@ function buildSupervisorSection(ctx: AgentRunContext): string | null {
 export async function startAgentRun(
   ctx: AgentRunContext
 ): Promise<{ success: true; sessionId: string } | { success: false; error: string }> {
+  console.log(`[AgentHub] Starting run ${ctx.runId} for agent ${ctx.agentId}, userId=${ctx.userId}, workspace=${ctx.workspacePath}`);
+
   const manager = getBridgeManager();
   if (!manager) {
+    console.error('[AgentHub] Bridge manager not available');
     return {
       success: false,
       error: 'Bridge manager not available. The server may still be starting up.',
@@ -128,13 +131,19 @@ export async function startAgentRun(
     };
   }
 
-  // Create isolated worktree for this run
+  // Create isolated worktree for this run.
+  // If the workspace isn't a git repo, fall back to using it directly.
   let worktreePath: string;
   try {
     worktreePath = await createWorktreeForRun(ctx.workspacePath, ctx.runId);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return { success: false, error: `Failed to create worktree: ${msg}` };
+    if (msg.includes('not a git repository')) {
+      console.warn(`[bridge-integration] Workspace is not a git repo — running in place: ${ctx.workspacePath}`);
+      worktreePath = ctx.workspacePath;
+    } else {
+      return { success: false, error: `Failed to create worktree: ${msg}` };
+    }
   }
 
   // Persist worktree path on the run record
@@ -150,6 +159,7 @@ export async function startAgentRun(
     ? injectedPrompt + '\n\n' + supervisorSection
     : injectedPrompt;
 
+  console.log(`[AgentHub] Emitting agent:start to bridge socket ${bridge.socket.id}, runId=${ctx.runId}, workspacePath=${worktreePath}`);
   bridge.socket.emit('agent:start', {
     runId: ctx.runId,
     workspacePath: worktreePath,

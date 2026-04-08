@@ -109,6 +109,16 @@ export function getRun(id: string, userId: string): Run | null {
   return rowToRun(row);
 }
 
+// userId-agnostic lookup — use in server.js bridge event handlers where the
+// socket is already authenticated and userId may differ from run.userId
+export function getRunById(id: string): Run | null {
+  const db = getAgentHubDatabase();
+  const row = db
+    .prepare('SELECT * FROM agent_hub_runs WHERE id = ?')
+    .get(id) as RunRow | undefined;
+  return row ? rowToRun(row) : null;
+}
+
 export function updateRun(id: string, userId: string, input: UpdateRunInput): Run | null {
   const db = getAgentHubDatabase();
 
