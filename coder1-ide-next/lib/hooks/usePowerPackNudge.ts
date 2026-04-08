@@ -27,9 +27,11 @@ export function usePowerPackNudge() {
         localStorage.setItem(STORAGE_KEY, 'true');
         window.dispatchEvent(new CustomEvent('showToast', {
           detail: {
-            message: 'Set up your Claude Code environment with the Coder1 Power Pack — open Templates Hub to install.',
+            message: 'Welcome to Coder1! Set up your Claude Code environment in the Templates Hub.',
             type: 'info',
             duration: 10000,
+            link: '/templates-hub.html#power-pack',
+            linkLabel: 'Go to Templates Hub',
           },
         }));
       };
