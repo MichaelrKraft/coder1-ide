@@ -1588,7 +1588,7 @@ function BetaTerminal({
     } catch {
       // localStorage unavailable (private browsing / storage full) — open tab anyway
     }
-    window.open('/ide-beta', '_blank');
+    window.open('/ide', '_blank');
   }, [contextPercent, sessionTokens]);
 
   const handleTextInsert = (text: string) => {

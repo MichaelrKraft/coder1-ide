@@ -87,6 +87,15 @@ export default App;
   const [openFiles, setOpenFiles] = useState<IDEFile[]>([]);
   const [terminalHistory, setTerminalHistory] = useState<string>('');
   const [terminalCommands, setTerminalCommands] = useState<string[]>([]);
+
+  // Session handoff from a previous context-saturated session
+  interface SessionHandoff {
+    context: string;
+    contextPercent: number;
+    sessionTokens: number;
+    timestamp: number;
+  }
+  const [sessionHandoff, setSessionHandoff] = useState<SessionHandoff | null>(null);
   
   // Terminal session tracking for command bridge
   const [terminalSessionId, setTerminalSessionId] = useState<string | null>(null);
@@ -126,7 +135,24 @@ export default App;
       if (cleanup) cleanup();
     };
   }, []);
-  
+
+  // Detect session handoff from a previous context-saturated session
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('coder1_session_handoff');
+      if (raw) {
+        const parsed = JSON.parse(raw) as SessionHandoff;
+        // Discard stale handoffs (older than 5 minutes)
+        if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+          setSessionHandoff(parsed);
+        }
+        localStorage.removeItem('coder1_session_handoff');
+      }
+    } catch {
+      // Ignore parse errors or unavailable localStorage
+    }
+  }, []);
+
   // Handler for when tour starts
   const handleTourStart = React.useCallback(() => {
     setShowTour(true);
@@ -790,7 +816,44 @@ export default App;
               </div>
             }
           >
-            <BetaTerminal 
+            {sessionHandoff && (
+              <div className="bg-blue-900 border-b border-blue-700 text-blue-100 p-3 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold mb-1">
+                      Continuing from previous session — context was {sessionHandoff.contextPercent}% full
+                    </p>
+                    <p className="text-xs text-blue-300 mb-2">
+                      Copy this prompt and paste it into Claude to pick up where you left off:
+                    </p>
+                    <textarea
+                      readOnly
+                      className="w-full bg-blue-950 text-blue-100 text-xs p-2 rounded font-mono resize-none border border-blue-800 max-h-28 overflow-y-auto"
+                      rows={3}
+                      value={`Continuing a Claude Code session (previous context was ${sessionHandoff.contextPercent}% full). Here's recent terminal context:\n\n${sessionHandoff.context}\n\nPlease acknowledge and ask what I'd like to continue working on.`}
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          `Continuing a Claude Code session (previous context was ${sessionHandoff.contextPercent}% full). Here's recent terminal context:\n\n${sessionHandoff.context}\n\nPlease acknowledge and ask what I'd like to continue working on.`
+                        );
+                      }}
+                      className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xs font-semibold"
+                    >
+                      Copy Prompt
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setSessionHandoff(null)}
+                    aria-label="Dismiss session handoff"
+                    className="opacity-60 hover:opacity-100 text-lg leading-none shrink-0"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+            <BetaTerminal
               onAgentsSpawn={() => setAgentsActive(true)}
               onClaudeTyped={() => setShowHero(false)}
               onTerminalData={(data) => {
@@ -830,6 +893,7 @@ export default App;
   );
 
   return (
+    <SessionProvider>
     <EnhancedSupervisionProvider>
       <TerminalCommandProvider 
         sessionId={terminalSessionId} 
@@ -971,5 +1035,6 @@ export default App;
         </div>
       </TerminalCommandProvider>
     </EnhancedSupervisionProvider>
+    </SessionProvider>
   );
 }

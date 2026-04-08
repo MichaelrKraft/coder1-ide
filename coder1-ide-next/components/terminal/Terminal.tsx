@@ -15,6 +15,7 @@ if (typeof window !== 'undefined') {
   require('@xterm/xterm/css/xterm.css');
 }
 import './Terminal.css'; // Re-enabled - critical for xterm viewport fixes
+import { stripAnsiCodes } from '@/lib/terminal-cleaner';
 import { Zap, StopCircle, Brain, Eye, Code2, Mic, MicOff, Speaker, ChevronDown, Plus, Users } from '@/lib/icons';
 import { Edit3, GitBranch, X, Stethoscope, Loader2, Bot } from 'lucide-react';
 import SandboxPanel from '@/components/sandbox/SandboxPanel';
@@ -140,6 +141,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
   const pasteHandlerRef = useRef<((e: ClipboardEvent) => Promise<void>) | null>(null); // Store paste handler for cleanup
   const isSelectingRef = useRef(false); // Track text selection state
   const scrollIntervalRef = useRef<number | null>(null); // Track auto-scroll animation frame
+  const rawOutputRef = useRef<string>(''); // rolling 3KB of recent raw terminal output
   const mouseYRef = useRef<number>(0); // Track current mouse Y position globally
   const selectionChangeDisposableRef = useRef<any>(null); // Store xterm onSelectionChange disposable
   const selectionHandlersRef = useRef<{
@@ -292,6 +294,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
   }, [claudeActive, conversationMode]);
   const [sessionTokens, setSessionTokens] = useState(0);
+
+  // Context window tracking (200K tokens = Claude Code standard limit)
+  const CONTEXT_WINDOW_MAX = 200_000;
+  const contextPercent = Math.min(100, (sessionTokens / CONTEXT_WINDOW_MAX) * 100);
+  const [yellowDismissed, setYellowDismissed] = useState(false);
+  const [redDismissed, setRedDismissed] = useState(false);
+
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [totalTokens, setTotalTokens] = useState(0);
   const [usageCost, setUsageCost] = useState('$0.0000');
@@ -3966,7 +3975,13 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           if (tokenUpdate) {
             const store = useIDEStore.getState();
             store.updateTokenUsage(tokenUpdate);
+            // Wire sessionTokens for context window indicator
+            if (tokenUpdate.total > 0) {
+              setSessionTokens(prev => Math.max(prev, tokenUpdate.total));
+            }
           }
+          // Buffer recent output for session handoff (keep last 3KB)
+          rawOutputRef.current = (rawOutputRef.current + data).slice(-3000);
         }
         
         // Simplified flush: Always flush quickly for responsiveness
@@ -5577,6 +5592,22 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
     }
   };
 
+  const handleOpenNewSession = useCallback(() => {
+    const cleanOutput = stripAnsiCodes(rawOutputRef.current).slice(-2000);
+    const handoff = {
+      context: cleanOutput,
+      contextPercent: Math.round(contextPercent),
+      sessionTokens,
+      timestamp: Date.now(),
+    };
+    try {
+      localStorage.setItem('coder1_session_handoff', JSON.stringify(handoff));
+    } catch {
+      // localStorage unavailable — open tab anyway
+    }
+    window.open('/ide', '_blank');
+  }, [contextPercent, sessionTokens]);
+
   // Get current context for Claude
   const getCurrentContext = () => {
     const context = {
@@ -5915,6 +5946,70 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
         </div>
       )}
 
+      {/* Context Window Bar */}
+      {sessionTokens > 0 && (
+        <div className="w-full h-1.5 bg-gray-700" title={`Context: ${Math.round(contextPercent)}% of 200K tokens used`}>
+          <div
+            className={`h-full transition-all duration-500 ${
+              contextPercent >= 75 ? 'bg-red-500' :
+              contextPercent >= 50 ? 'bg-yellow-400' :
+              'bg-green-500'
+            }`}
+            style={{ width: `${contextPercent}%` }}
+          />
+        </div>
+      )}
+
+      {/* Context Warning — Yellow (50–74%) */}
+      {contextPercent >= 50 && contextPercent < 75 && !yellowDismissed && (
+        <div className="px-4 py-3 flex items-center justify-between bg-yellow-900/90 border-t border-yellow-700 text-yellow-100 text-sm font-medium">
+          <div className="flex items-center gap-3">
+            <span>🟡</span>
+            <span>Context {Math.round(contextPercent)}% full — consider starting a fresh session to maintain quality.</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-4">
+            <button
+              onClick={handleOpenNewSession}
+              className="px-3 py-1 rounded text-xs font-semibold bg-yellow-500 hover:bg-yellow-400 text-gray-900"
+            >
+              Open New Session
+            </button>
+            <button
+              onClick={() => setYellowDismissed(true)}
+              aria-label="Dismiss context warning"
+              className="opacity-60 hover:opacity-100 px-2 py-1 text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Context Warning — Red (75%+) */}
+      {contextPercent >= 75 && !redDismissed && (
+        <div className="px-4 py-3 flex items-center justify-between bg-red-900/90 border-t border-red-700 text-red-100 text-sm font-medium">
+          <div className="flex items-center gap-3">
+            <span>🔴</span>
+            <span>Context {Math.round(contextPercent)}% full — responses are degrading. Start a new session now.</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-4">
+            <button
+              onClick={handleOpenNewSession}
+              className="px-3 py-1 rounded text-xs font-semibold bg-red-500 hover:bg-red-400 text-white"
+            >
+              Open New Session
+            </button>
+            <button
+              onClick={() => setRedDismissed(true)}
+              aria-label="Dismiss context warning"
+              className="opacity-60 hover:opacity-100 px-2 py-1 text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Terminal Footer Section - Contains metrics and status */}
       {/* Token stats and enhanced statusline removed — token parser
           can't reliably extract data from Claude CLI's ANSI TUI output */}
@@ -5956,7 +6051,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
           {terminalSettings.statusLine.showTokens && (
             <div className="flex items-center gap-1">
               <span className="text-coder1-cyan">💬</span>
-              <span>{sessionTokens} tokens</span>
+              <span>{sessionTokens.toLocaleString()} tokens{sessionTokens > 0 ? ` (${Math.round(contextPercent)}%)` : ''}</span>
             </div>
           )}
         </div>
