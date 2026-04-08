@@ -10,6 +10,7 @@ import { useVaultStore } from '@/stores/useVaultStore';
 import DevLogButton from './notes/DevLogButton';
 import SessionNoteIndicator from './notes/SessionNoteIndicator';
 import { useFileEditsStore } from '@/stores/useFileEditsStore';
+import ProjectPicker from '@/components/ProjectPicker';
 
 const NotesPanel = dynamic(() => import('@/components/notes/NotesPanel'), { ssr: false });
 const NoteDetailView = dynamic(() => import('@/components/notes/NoteDetailView'), { ssr: false });
@@ -110,6 +111,9 @@ export default function LeftPanel({ onFileSelect, activeFile, refreshTrigger, on
         }
       `}</style>
       
+      {/* Project Picker */}
+      <ProjectPicker />
+
       {/* Tab Buttons */}
       <div className="flex border-b border-border-default relative z-10 overflow-x-auto scrollbar-none">
         <button
