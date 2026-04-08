@@ -1973,152 +1973,184 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        /* Power Pack Promo Banner */
-        .power-pack-promo {
-            max-width: 1400px;
-            margin: 0 auto 32px;
-            padding: 0 20px;
-        }
-
-        .power-pack-promo-inner {
-            position: relative;
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.06) 0%, rgba(0, 217, 255, 0.02) 100%);
-            border: 1px solid rgba(0, 217, 255, 0.35);
-            border-radius: 16px;
-            padding: 28px 36px;
+        /* Power Pack Modal Overlay */
+        .pp-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            z-index: 2000;
             display: flex;
             align-items: center;
-            gap: 32px;
-            overflow: hidden;
-            box-shadow: 0 0 40px rgba(0, 217, 255, 0.08), inset 0 0 60px rgba(0, 217, 255, 0.03);
+            justify-content: center;
+            padding: 20px;
         }
 
-        .power-pack-promo-inner::before {
-            content: '';
+        .pp-modal {
+            position: relative;
+            background: #0d0d1a;
+            border: 1px solid rgba(0, 217, 255, 0.4);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 0 80px rgba(0, 217, 255, 0.15), 0 40px 80px rgba(0,0,0,0.6);
+            overflow: hidden;
+            animation: pp-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes pp-pop {
+            from { opacity: 0; transform: scale(0.88); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        .pp-glow-top {
             position: absolute;
-            top: -60px;
-            left: -60px;
-            width: 200px;
+            top: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
             height: 200px;
-            background: radial-gradient(circle, rgba(0, 217, 255, 0.12) 0%, transparent 70%);
+            background: radial-gradient(ellipse, rgba(0, 217, 255, 0.18) 0%, transparent 70%);
             pointer-events: none;
         }
 
-        .promo-icon {
-            font-size: 40px;
-            flex-shrink: 0;
-            filter: drop-shadow(0 0 12px rgba(0, 217, 255, 0.6));
-        }
-
-        .promo-text {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .promo-eyebrow {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: #00D9FF;
-            margin-bottom: 6px;
-            opacity: 0.8;
-        }
-
-        .promo-headline {
-            font-size: 22px;
-            font-weight: 800;
-            color: #ffffff;
-            margin-bottom: 8px;
-            line-height: 1.2;
-        }
-
-        .promo-headline span {
-            color: #00D9FF;
-        }
-
-        .promo-sub {
-            font-size: 13px;
+        .pp-close {
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
             color: rgba(255,255,255,0.5);
-            line-height: 1.5;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+            transition: all 0.2s;
+            z-index: 1;
         }
 
-        .promo-stats {
-            display: flex;
-            gap: 24px;
-            flex-shrink: 0;
+        .pp-close:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
         }
 
-        .promo-stat {
+        .pp-body {
+            padding: 36px 36px 32px;
             text-align: center;
         }
 
-        .promo-stat-value {
-            font-size: 20px;
+        .pp-free-badge {
+            display: inline-block;
+            background: rgba(0, 217, 255, 0.12);
+            border: 1px solid rgba(0, 217, 255, 0.4);
+            color: #00D9FF;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            padding: 4px 14px;
+            border-radius: 100px;
+            margin-bottom: 20px;
+        }
+
+        .pp-icon {
+            font-size: 48px;
+            margin-bottom: 14px;
+            filter: drop-shadow(0 0 16px rgba(0, 217, 255, 0.7));
+            display: block;
+        }
+
+        .pp-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.2;
+            margin-bottom: 10px;
+        }
+
+        .pp-title span {
+            color: #00D9FF;
+        }
+
+        .pp-desc {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .pp-stats {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 28px;
+            border: 1px solid rgba(0, 217, 255, 0.15);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .pp-stat {
+            flex: 1;
+            padding: 14px 10px;
+            border-right: 1px solid rgba(0, 217, 255, 0.15);
+        }
+
+        .pp-stat:last-child {
+            border-right: none;
+        }
+
+        .pp-stat-val {
+            font-size: 22px;
             font-weight: 800;
             color: #00D9FF;
             line-height: 1;
             margin-bottom: 4px;
         }
 
-        .promo-stat-label {
+        .pp-stat-lbl {
             font-size: 10px;
-            color: rgba(255,255,255,0.4);
+            color: rgba(255,255,255,0.35);
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            white-space: nowrap;
         }
 
-        .promo-divider {
-            width: 1px;
-            height: 48px;
-            background: rgba(0, 217, 255, 0.15);
-            flex-shrink: 0;
-        }
-
-        .promo-cta {
+        .pp-install-btn {
+            width: 100%;
             background: #00D9FF;
             color: #000;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 700;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 800;
             cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
-            transition: all 0.2s;
             font-family: inherit;
+            transition: all 0.2s;
+            margin-bottom: 10px;
         }
 
-        .promo-cta:hover {
+        .pp-install-btn:hover {
             background: #33e2ff;
-            box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+            box-shadow: 0 0 28px rgba(0, 217, 255, 0.45);
             transform: translateY(-1px);
         }
 
-        .promo-dismiss {
-            position: absolute;
-            top: 12px;
-            right: 14px;
+        .pp-skip {
             background: none;
             border: none;
-            color: rgba(255,255,255,0.25);
-            font-size: 16px;
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
             cursor: pointer;
-            padding: 4px;
-            line-height: 1;
+            font-family: inherit;
             transition: color 0.2s;
+            display: block;
+            width: 100%;
+            padding: 6px;
         }
 
-        .promo-dismiss:hover {
+        .pp-skip:hover {
             color: rgba(255,255,255,0.6);
-        }
-
-        @media (max-width: 768px) {
-            .promo-stats { display: none; }
-            .promo-divider { display: none; }
-            .power-pack-promo-inner { flex-wrap: wrap; padding: 20px; gap: 16px; }
         }
     </style>
 </head>
@@ -2281,33 +2313,33 @@
         </div>
     </div>
 
-    <!-- Power Pack Promo Banner -->
-    <div class="power-pack-promo" id="powerPackPromo">
-        <div class="power-pack-promo-inner">
-            <button class="promo-dismiss" onclick="dismissPromo()" title="Dismiss">✕</button>
-            <div class="promo-icon">⚡</div>
-            <div class="promo-text">
-                <div class="promo-eyebrow">Featured · Coder1 Power Pack</div>
-                <div class="promo-headline">Save <span>90% of your context window</span> — sessions that last all day</div>
-                <div class="promo-sub">Install context-mode, smart hooks, git-mcp, and Claude guardrails in 30 seconds. The same setup Mike uses every day.</div>
+    <!-- Power Pack Modal Overlay -->
+    <div class="pp-backdrop" id="powerPackPromo">
+        <div class="pp-modal">
+            <div class="pp-glow-top"></div>
+            <button class="pp-close" onclick="dismissPromo()">✕ close</button>
+            <div class="pp-body">
+                <div class="pp-free-badge">100% Free · No credit card</div>
+                <span class="pp-icon">⚡</span>
+                <div class="pp-title">Save <span>90% of your<br>context window</span></div>
+                <div class="pp-desc">The Coder1 Power Pack installs the same Claude Code setup Mike uses every day — context-mode, smart hooks, git-mcp, and guardrails — in 30 seconds. Completely free.</div>
+                <div class="pp-stats">
+                    <div class="pp-stat">
+                        <div class="pp-stat-val">6×</div>
+                        <div class="pp-stat-lbl">Longer sessions</div>
+                    </div>
+                    <div class="pp-stat">
+                        <div class="pp-stat-val">90%</div>
+                        <div class="pp-stat-lbl">Less context blowout</div>
+                    </div>
+                    <div class="pp-stat">
+                        <div class="pp-stat-val">30s</div>
+                        <div class="pp-stat-lbl">To install</div>
+                    </div>
+                </div>
+                <button class="pp-install-btn" onclick="scrollToPowerPack()">Install Power Pack — It's Free</button>
+                <button class="pp-skip" onclick="dismissPromo()">No thanks, I'll figure it out myself</button>
             </div>
-            <div class="promo-stats">
-                <div class="promo-stat">
-                    <div class="promo-stat-value">6×</div>
-                    <div class="promo-stat-label">Longer sessions</div>
-                </div>
-                <div class="promo-divider"></div>
-                <div class="promo-stat">
-                    <div class="promo-stat-value">90%</div>
-                    <div class="promo-stat-label">Less context blowout</div>
-                </div>
-                <div class="promo-divider"></div>
-                <div class="promo-stat">
-                    <div class="promo-stat-value">30s</div>
-                    <div class="promo-stat-label">To install</div>
-                </div>
-            </div>
-            <button class="promo-cta" onclick="scrollToPowerPack()">Install Power Pack</button>
         </div>
     </div>
 
@@ -4618,22 +4650,26 @@ export const Button: React.FC<ButtonProps> = ({
         
         console.log('Template button functions initialized');
 
-        // Power Pack promo banner
+        // Power Pack modal
         const PROMO_KEY = 'coder1-power-pack-promo-dismissed';
         function dismissPromo() {
-            document.getElementById('powerPackPromo').style.display = 'none';
+            const el = document.getElementById('powerPackPromo');
+            if (el) { el.style.opacity = '0'; el.style.transition = 'opacity 0.2s'; setTimeout(() => el.style.display = 'none', 200); }
             localStorage.setItem(PROMO_KEY, 'true');
         }
         function scrollToPowerPack() {
             dismissPromo();
-            // Switch to Power Packs filter and scroll to first card
             const pill = document.querySelector('[data-category="power-packs"]');
             if (pill) pill.click();
             setTimeout(() => {
                 const card = document.querySelector('.template-card');
                 if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 200);
+            }, 300);
         }
+        // Close on backdrop click (not modal click)
+        document.getElementById('powerPackPromo').addEventListener('click', function(e) {
+            if (e.target === this) dismissPromo();
+        });
         if (localStorage.getItem(PROMO_KEY)) {
             const promo = document.getElementById('powerPackPromo');
             if (promo) promo.style.display = 'none';
