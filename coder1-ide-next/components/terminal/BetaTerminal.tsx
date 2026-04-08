@@ -1204,7 +1204,9 @@ function BetaTerminal({
       cleanedData = cleanedData.replace(/.*ctrl\+t to show todos.*$/gm, '');
       cleanedData = cleanedData.replace(/^\s*⎿\s*Next:.*$/gm, '');
       cleanedData = cleanedData.replace(/^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+.*?\(esc to interrupt.*?\).*$/gm, '');
-      
+      cleanedData = cleanedData.replace(/\x1b\[<[\d;]+[Mm]/g, '');  // SGR mouse sequences
+      cleanedData = cleanedData.replace(/\x1b\[M[\x20-\x7f]{3}/g, ''); // X11 mouse sequences
+
       // Write the cleaned terminal data
       xtermRef.current.write(cleanedData);
       
@@ -1279,7 +1281,9 @@ function BetaTerminal({
         cleanedData = cleanedData.replace(/.*ctrl\+t to show todos.*$/gm, '');
         cleanedData = cleanedData.replace(/^\s*⎿\s*Next:.*$/gm, '');
         cleanedData = cleanedData.replace(/^[✶✳✢·✻✽✦☆★▪▫◆◇○●]\s+.*?\(esc to interrupt.*?\).*$/gm, '');
-        
+        cleanedData = cleanedData.replace(/\x1b\[<[\d;]+[Mm]/g, '');  // SGR mouse sequences
+        cleanedData = cleanedData.replace(/\x1b\[M[\x20-\x7f]{3}/g, ''); // X11 mouse sequences
+
         xtermRef.current.write(cleanedData);
         
         // Add separator
