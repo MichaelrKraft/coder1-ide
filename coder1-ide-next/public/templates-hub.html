@@ -2040,7 +2040,12 @@
             <div class="category-pills">
                 <div class="category-pill active" data-category="all">
                     All Templates
-                    <span class="category-count">44</span>
+                    <span class="category-count">45</span>
+                </div>
+                <div class="category-pill" data-category="power-packs">
+                    <i class="fas fa-bolt" style="margin-right: 6px; opacity: 0.8;"></i>
+                    Power Packs
+                    <span class="category-count">1</span>
                 </div>
                 <div class="category-pill" data-category="ai-agents">
                     AI Agents
@@ -2199,6 +2204,25 @@
         
         // Template data - fetched from API
         let templates = [
+            {
+                id: 'power-pack',
+                name: 'Coder1 Power Pack',
+                category: 'POWER PACKS',
+                categorySlug: 'power-packs',
+                description: 'The complete Claude Code configuration used by the Coder1 team. Installs context-mode, loop prevention, smart hooks, git-mcp, and coding rules in one click.',
+                command: 'coder1-bridge setup --power-pack',
+                featured: true,
+                stats: { downloads: 0, rating: 5.0, comments: 0 },
+                tags: ['context-mode', 'hooks', 'mcp', 'rules', 'recommended'],
+                features: [
+                    'context-mode MCP — 99% reduction in context blowout, 6× longer sessions',
+                    'Coder1 CLAUDE.md — loop prevention, build safety, smart defaults',
+                    'Smart hooks — session tracking and runaway build prevention',
+                    'git-mcp — native git operations for Claude without shell spawning',
+                    'Coding rules — TypeScript, git workflow, security, and testing standards',
+                    'Non-destructive — skips items already installed, appends to existing files',
+                ],
+            },
             {
                 id: 'frontend-agent',
                 name: 'Frontend Developer',
