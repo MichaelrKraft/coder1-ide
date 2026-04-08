@@ -628,47 +628,52 @@ program
       return;
     }
 
-    const { installPowerPack } = require('./power-pack-installer');
-    const fs = require('fs');
-    const path = require('path');
+    try {
+      const { installPowerPack } = require('./power-pack-installer');
+      const fs = require('fs');
+      const path = require('path');
 
-    const packDir = path.resolve(__dirname, '../../public/power-pack');
-    const manifest = JSON.parse(fs.readFileSync(path.join(packDir, 'manifest.json'), 'utf-8'));
+      const packDir = path.resolve(__dirname, '../../public/power-pack');
+      const manifest = JSON.parse(fs.readFileSync(path.join(packDir, 'manifest.json'), 'utf-8'));
 
-    const assets = {
-      claudeMd: fs.readFileSync(path.join(packDir, manifest.claudeMd), 'utf-8'),
-      hooks: JSON.parse(fs.readFileSync(path.join(packDir, manifest.hooks), 'utf-8')),
-      rules: Object.fromEntries(
-        manifest.rules.map((rulePath) => [
-          path.basename(rulePath),
-          fs.readFileSync(path.join(packDir, rulePath), 'utf-8'),
-        ])
-      ),
-    };
+      if (options.dryRun) {
+        console.log('Dry run — would install:');
+        console.log('  MCPs:', manifest.mcpServers.map((m) => m.id).join(', '));
+        console.log('  CLAUDE.md section: # Coder1 Power Pack');
+        console.log('  Hooks: PreToolUse, PostToolUse');
+        console.log('  Rules:', manifest.rules.map((r) => path.basename(r)).join(', '));
+        return;
+      }
 
-    if (options.dryRun) {
-      console.log('Dry run — would install:');
-      console.log('  MCPs:', manifest.mcpServers.map((m) => m.id).join(', '));
-      console.log('  CLAUDE.md section: # Coder1 Power Pack');
-      console.log('  Hooks: PreToolUse, PostToolUse');
-      console.log('  Rules:', manifest.rules.map((r) => path.basename(r)).join(', '));
-      return;
-    }
+      const assets = {
+        claudeMd: fs.readFileSync(path.join(packDir, manifest.claudeMd), 'utf-8'),
+        hooks: JSON.parse(fs.readFileSync(path.join(packDir, manifest.hooks), 'utf-8')),
+        rules: Object.fromEntries(
+          manifest.rules.map((rulePath) => [
+            path.basename(rulePath),
+            fs.readFileSync(path.join(packDir, rulePath), 'utf-8'),
+          ])
+        ),
+      };
 
-    console.log('Installing Coder1 Power Pack...\n');
-    const result = installPowerPack(manifest, assets);
+      console.log('Installing Coder1 Power Pack...\n');
+      const result = installPowerPack(manifest, assets);
 
-    if (result.installed.length > 0) {
-      console.log('Installed:', result.installed.join(', '));
-    }
-    if (result.skipped.length > 0) {
-      console.log('Skipped (already present):', result.skipped.map((s) => s.id).join(', '));
-    }
-    if (result.errors.length > 0) {
-      console.error('Errors:', result.errors.map((e) => e.id).join(', '));
+      if (result.installed.length > 0) {
+        console.log('Installed:', result.installed.join(', '));
+      }
+      if (result.skipped.length > 0) {
+        console.log('Skipped (already present):', result.skipped.map((s) => s.id).join(', '));
+      }
+      if (result.errors.length > 0) {
+        console.error('Errors:', result.errors.map((e) => e.id).join(', '));
+        process.exit(1);
+      }
+      console.log('\nDone. Restart Claude Code for changes to take effect.');
+    } catch (e) {
+      console.error('Setup failed:', e.message);
       process.exit(1);
     }
-    console.log('\nDone. Restart Claude Code for changes to take effect.');
   });
 
 // Parse arguments
