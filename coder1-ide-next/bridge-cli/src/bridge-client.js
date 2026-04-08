@@ -471,6 +471,7 @@ class BridgeClient extends EventEmitter {
         // Inform server if this is the first time this machine has connected
         if (this.isFirstConnect) {
           this.socket.emit('bridge:first-connect');
+          this.isFirstConnect = false; // prevent spurious re-emits on reconnect
           this.log('First-time connect — notified server for Power Pack nudge');
         }
 

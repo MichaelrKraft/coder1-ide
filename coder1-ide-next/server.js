@@ -2714,6 +2714,12 @@ app.prepare().then(() => {
     console.log('  Remote IP:', socket.handshake.address);
     console.log('  User-Agent:', socket.handshake.headers['user-agent']);
     console.log('  PTY Compatible:', ptyCompatible);
+
+    // Join user-scoped room so bridge can target this browser socket via
+    // io.to(`user:${userId}`). userId is set by websocket-auth middleware.
+    if (socket.userId) {
+      socket.join(`user:${socket.userId}`);
+    }
     
     // Test echo to verify bidirectional communication
     socket.emit('test:echo', { time: Date.now() });
