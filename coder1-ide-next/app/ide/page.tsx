@@ -66,6 +66,7 @@ import { TerminalCommandProvider } from "@/contexts/TerminalCommandContext";
 import { useAutoCheckpoint } from "@/lib/hooks/useAutoCheckpoint";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useTeamActivityToasts } from "@/lib/hooks/useTeamActivityToasts";
+import { usePowerPackNudge } from "@/lib/hooks/usePowerPackNudge";
 import { useTeamStore } from "@/stores/useTeamStore";
 import { useVaultStore } from "@/stores/useVaultStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -170,6 +171,9 @@ function IDEPageContent() {
 
   // Team activity push notifications
   useTeamActivityToasts();
+
+  // First-run Power Pack nudge — shows once after first bridge pairing
+  usePowerPackNudge();
 
   // Tour state
   const [showTour, setShowTour] = useState(false);
