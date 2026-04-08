@@ -22,7 +22,7 @@ beforeEach(() => {
   fs.mkdirSync.mockImplementation(() => {});
   fs.writeFileSync.mockImplementation(() => {});
   fs.appendFileSync.mockImplementation(() => {});
-  fs.readFileSync.mockImplementation(() => { throw new Error('not found'); });
+  fs.readFileSync.mockImplementation(() => { const e = new Error('not found'); e.code = 'ENOENT'; throw e; });
   execSync.mockImplementation((cmd) => {
     if (cmd === 'npm root -g') return Buffer.from('/usr/local/lib/node_modules\n');
     return Buffer.from('');
@@ -125,5 +125,23 @@ describe('installRulesFile', () => {
     const result = installRulesFile('typescript.md', '# TypeScript Rules');
     expect(result.status).toBe('skipped');
     expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+});
+
+describe('installPowerPack', () => {
+  test('returns installed/skipped/errors arrays', () => {
+    const manifest = {
+      mcpServers: [{ id: 'test-mcp', package: 'test-mcp', entryPoint: 'dist/index.js' }],
+    };
+    const assets = {
+      claudeMd: '# Coder1 Power Pack\ntest',
+      hooks: { PreToolUse: [{ matcher: 'Bash', type: 'command', command: 'node test.js' }] },
+      rules: { 'typescript.md': '# TypeScript' },
+    };
+    const result = installPowerPack(manifest, assets);
+    expect(result).toHaveProperty('installed');
+    expect(result).toHaveProperty('skipped');
+    expect(result).toHaveProperty('errors');
+    expect(Array.isArray(result.installed)).toBe(true);
   });
 });

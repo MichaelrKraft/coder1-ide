@@ -13,8 +13,9 @@ const RULES_DIR = path.join(CLAUDE_DIR, 'rules');
 function readJsonSafe(filePath, defaultValue) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  } catch {
-    return defaultValue;
+  } catch (e) {
+    if (e.code === 'ENOENT') return defaultValue;
+    throw new Error(`${filePath} contains invalid JSON: ${e.message}`);
   }
 }
 
@@ -24,77 +25,94 @@ function writeJson(filePath, data) {
 }
 
 function installMcpServer(id, packageName, entryPoint) {
-  const config = readJsonSafe(MCP_JSON_PATH, { mcpServers: {} });
-  config.mcpServers = config.mcpServers || {};
+  try {
+    if (!/^[@a-z0-9][a-z0-9@/._-]*$/i.test(packageName)) {
+      return { id, status: 'error', reason: `Invalid package name: ${packageName}` };
+    }
 
-  if (config.mcpServers[id]) {
-    return { id, status: 'skipped', reason: 'already in ~/.mcp.json' };
+    const config = readJsonSafe(MCP_JSON_PATH, { mcpServers: {} });
+    config.mcpServers = config.mcpServers || {};
+
+    if (config.mcpServers[id]) {
+      return { id, status: 'skipped', reason: 'already in ~/.mcp.json' };
+    }
+
+    execSync(`npm install -g ${packageName}`, { stdio: 'inherit' });
+    const npmRoot = execSync('npm root -g').toString().trim();
+    const cliPath = path.join(npmRoot, packageName, entryPoint);
+    config.mcpServers[id] = { command: 'node', args: [cliPath] };
+    writeJson(MCP_JSON_PATH, config);
+    return { id, status: 'installed' };
+  } catch (e) {
+    return { id, status: 'error', reason: e.message };
   }
-
-  execSync(`npm install -g ${packageName}`, { stdio: 'inherit' });
-
-  const npmRoot = execSync('npm root -g').toString().trim();
-  const cliPath = path.join(npmRoot, packageName, entryPoint);
-
-  config.mcpServers[id] = { command: 'node', args: [cliPath] };
-  writeJson(MCP_JSON_PATH, config);
-
-  return { id, status: 'installed' };
 }
 
 function installClaudeMd(templateContent) {
-  const marker = '# Coder1 Power Pack';
+  try {
+    const marker = '# Coder1 Power Pack';
 
-  if (fs.existsSync(CLAUDE_MD_PATH)) {
-    const existing = fs.readFileSync(CLAUDE_MD_PATH, 'utf-8');
-    if (existing.includes(marker)) {
-      return { id: 'claude-md', status: 'skipped', reason: 'section already present' };
+    if (fs.existsSync(CLAUDE_MD_PATH)) {
+      const existing = fs.readFileSync(CLAUDE_MD_PATH, 'utf-8');
+      if (existing.includes(marker)) {
+        return { id: 'claude-md', status: 'skipped', reason: 'section already present' };
+      }
+      fs.appendFileSync(CLAUDE_MD_PATH, '\n\n' + templateContent);
+    } else {
+      fs.mkdirSync(CLAUDE_DIR, { recursive: true });
+      fs.writeFileSync(CLAUDE_MD_PATH, templateContent, 'utf-8');
     }
-    fs.appendFileSync(CLAUDE_MD_PATH, '\n\n' + templateContent);
-  } else {
-    fs.mkdirSync(CLAUDE_DIR, { recursive: true });
-    fs.writeFileSync(CLAUDE_MD_PATH, templateContent, 'utf-8');
-  }
 
-  return { id: 'claude-md', status: 'installed' };
+    return { id: 'claude-md', status: 'installed' };
+  } catch (e) {
+    return { id: 'claude-md', status: 'error', reason: e.message };
+  }
 }
 
 function installHooks(hooksConfig) {
-  const settings = readJsonSafe(SETTINGS_JSON_PATH, {});
-  settings.hooks = settings.hooks || {};
+  try {
+    const settings = readJsonSafe(SETTINGS_JSON_PATH, {});
+    settings.hooks = settings.hooks || {};
 
-  let anyMerged = false;
-  for (const [hookType, newEntries] of Object.entries(hooksConfig)) {
-    settings.hooks[hookType] = settings.hooks[hookType] || [];
-    for (const entry of newEntries) {
-      const alreadyExists = settings.hooks[hookType].some(
-        (existing) => JSON.stringify(existing) === JSON.stringify(entry)
-      );
-      if (!alreadyExists) {
-        settings.hooks[hookType].push(entry);
-        anyMerged = true;
+    let anyMerged = false;
+    for (const [hookType, newEntries] of Object.entries(hooksConfig)) {
+      settings.hooks[hookType] = settings.hooks[hookType] || [];
+      for (const entry of newEntries) {
+        const alreadyExists = settings.hooks[hookType].some(
+          (existing) => JSON.stringify(existing) === JSON.stringify(entry)
+        );
+        if (!alreadyExists) {
+          settings.hooks[hookType].push(entry);
+          anyMerged = true;
+        }
       }
     }
-  }
 
-  writeJson(SETTINGS_JSON_PATH, settings);
-  return {
-    id: 'hooks',
-    status: anyMerged ? 'installed' : 'skipped',
-    reason: anyMerged ? undefined : 'all hooks already present',
-  };
+    writeJson(SETTINGS_JSON_PATH, settings);
+    return {
+      id: 'hooks',
+      status: anyMerged ? 'installed' : 'skipped',
+      reason: anyMerged ? undefined : 'all hooks already present',
+    };
+  } catch (e) {
+    return { id: 'hooks', status: 'error', reason: e.message };
+  }
 }
 
 function installRulesFile(filename, content) {
-  const filePath = path.join(RULES_DIR, filename);
+  try {
+    const filePath = path.join(RULES_DIR, filename);
 
-  if (fs.existsSync(filePath)) {
-    return { id: `rules/${filename}`, status: 'skipped', reason: 'file already exists' };
+    if (fs.existsSync(filePath)) {
+      return { id: `rules/${filename}`, status: 'skipped', reason: 'file already exists' };
+    }
+
+    fs.mkdirSync(RULES_DIR, { recursive: true });
+    fs.writeFileSync(filePath, content, 'utf-8');
+    return { id: `rules/${filename}`, status: 'installed' };
+  } catch (e) {
+    return { id: `rules/${filename}`, status: 'error', reason: e.message };
   }
-
-  fs.mkdirSync(RULES_DIR, { recursive: true });
-  fs.writeFileSync(filePath, content, 'utf-8');
-  return { id: `rules/${filename}`, status: 'installed' };
 }
 
 function installPowerPack(manifest, assets) {
