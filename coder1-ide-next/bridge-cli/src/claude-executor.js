@@ -447,7 +447,24 @@ class ClaudeExecutor extends EventEmitter {
         this.error(classified.userAction);
 
         if (classified.recoverable) {
-          // Attempt graceful fallback to non-interactive mode
+          // For interactive commands (bare 'claude', 'claude chat'), falling back to
+          // executeNonInteractive causes Claude CLI to detect no-TTY stdin and output
+          // a confusing "--print" error. Instead return a clear actionable message.
+          if (this.needsInteractiveMode(command)) {
+            resolve({
+              exitCode: 1,
+              signal: null,
+              stdout: '',
+              stderr: `\r\n\u26a0\ufe0f  Interactive Claude failed: ${classified.message}\r\n\r\n${classified.userAction}\r\n`,
+              duration: Date.now() - startTime,
+              interactive: false,
+              fallback: true,
+              fallbackReason: classified.code
+            });
+            return;
+          }
+
+          // Attempt graceful fallback to non-interactive mode (for non-interactive commands)
           this.warn('');
           this.warn('Attempting fallback to non-interactive mode...');
           this.warn('Note: Interactive features (welcome screen, real-time input) will be limited.');

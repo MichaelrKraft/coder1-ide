@@ -20,7 +20,7 @@ interface ScheduledRow {
   next_run_at: string;
 }
 
-const MISSED_THRESHOLD_MS = 2 * 60 * 60 * 1000; // 2 hours
+const MISSED_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   // Auth: require internal token
