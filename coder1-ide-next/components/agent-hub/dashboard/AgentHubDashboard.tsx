@@ -234,10 +234,10 @@ export default function AgentHubDashboard() {
 
       {/* Stuck Agents Alert */}
       {stuckAgents.length > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3">
+        <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg px-4 py-3">
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-            <p className="text-sm font-medium text-amber-400">
+            <AlertTriangle className="w-4 h-4 text-cyan-400 shrink-0" />
+            <p className="text-sm font-medium text-cyan-400">
               {stuckAgents.length} agent{stuckAgents.length > 1 ? 's' : ''} may be stuck
             </p>
           </div>
