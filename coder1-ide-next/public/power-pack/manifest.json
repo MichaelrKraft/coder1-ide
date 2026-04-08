@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "mcpServers": [
+    {
+      "id": "context-mode",
+      "package": "context-mode",
+      "entryPoint": "build/cli.js"
+    },
+    {
+      "id": "git-mcp",
+      "package": "git-mcp",
+      "entryPoint": "dist/index.js"
+    }
+  ],
+  "claudeMd": "claude-md-template.md",
+  "hooks": "hooks-config.json",
+  "rules": [
+    "rules/typescript.md",
+    "rules/git-workflow.md",
+    "rules/security.md",
+    "rules/testing.md"
+  ]
+}
