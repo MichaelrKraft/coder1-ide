@@ -1136,9 +1136,9 @@ export default function AlphaLandingPage() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden text-white p-2"
             >
-              <div className="w-6 h-0.5 bg-white mb-1.5" />
-              <div className="w-6 h-0.5 bg-white mb-1.5" />
-              <div className="w-6 h-0.5 bg-white" />
+              <span className="block w-6 h-0.5 bg-white mb-1.5" />
+              <span className="block w-6 h-0.5 bg-white mb-1.5" />
+              <span className="block w-6 h-0.5 bg-white" />
             </button>
           </div>
         </div>
@@ -1688,10 +1688,10 @@ export default function AlphaLandingPage() {
 
           <div className="grid md:grid-cols-4 gap-6">
             {[
-              { icon: ClipboardList, title: 'Full Audit Trail', desc: 'Every file touched, every command run, every decision made — logged, timestamped, and searchable. No more guessing what happened.' },
-              { icon: ShieldAlert, title: 'Prompt Injection Detection', desc: 'Malicious inputs can hijack AI agents. Coder1 monitors every instruction in real time and blocks attacks before they execute.' },
-              { icon: Lock, title: 'Permission Boundaries', desc: 'Define exactly what your agents can and can\'t touch. Sensitive files, env vars, production branches — locked behind rules you control.' },
-              { icon: PlayCircle, title: 'Session Replay', desc: 'Rewind any agent session frame by frame. See the exact reasoning behind every code change, so you\'re never left wondering.' }
+              { icon: Coffee, title: 'Morning Briefings', desc: 'Set goals before you sleep. Agents work through the night and drop a full written brief by morning — every PR, file changed, and decision documented.' },
+              { icon: Eye, title: 'Live Team Feed', desc: 'A real-time stream of every agent action across your team. Who ran what, when, and why — all searchable and auditable in one place.' },
+              { icon: Zap, title: 'Instant Handoffs', desc: 'Hand a task from one agent to another mid-session. Context transfers automatically — no re-explaining, no lost work, no starting over.' },
+              { icon: History, title: 'One-Click Rollback', desc: 'Every agent action is reversible. Undo a bad decision, revert a file change, or roll back an entire session with a single click.' }
             ].map((item, idx) => (
               <ScrollReveal key={idx} delay={idx * 100}>
                 <div

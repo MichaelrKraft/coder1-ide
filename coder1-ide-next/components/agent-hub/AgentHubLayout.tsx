@@ -21,7 +21,7 @@ function AgentHubLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="h-screen flex flex-col" style={{ '--border-default': 'rgba(0, 217, 255, 0.3)' } as React.CSSProperties}>
       {/* Header bar with centered logo */}
       <header className="flex items-center justify-center px-4 py-2 shrink-0 border-b border-border-default bg-bg-secondary">
-        <Image src="/coder1-logo.png" alt="Coder1" height={32} width={120} className="object-contain" />
+        <Image src="/coder1-logo.png" alt="Coder1" height={42} width={156} className="object-contain" />
       </header>
 
       {/* Body: sidebar + content */}
