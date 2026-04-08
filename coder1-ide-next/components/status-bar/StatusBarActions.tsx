@@ -510,62 +510,7 @@ const StatusBarActions = React.memo(function StatusBarActions({
     }
   };
 
-  // ParaThinker handler - Only for Beta IDE
-  const handleParaThinker = async () => {
-    try {
-      // Check if we have a problem context (from terminal errors or current code)
-      const problemContext = localStorage.getItem('lastTerminalError') || 
-                            localStorage.getItem('currentProblem') || 
-                            'Help me solve the current coding problem';
-
-      // Start parallel reasoning
-      const response = await fetch('/api/beta/parallel-reasoning/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          problem: problemContext,
-          metadata: {
-            triggeredBy: 'manual',
-            activeFile,
-            terminalHistory: terminalHistory?.slice(-1000) // Last 1000 chars
-          }
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Store session ID for tracking
-        localStorage.setItem('activeParaThinkSession', data.sessionId);
-        
-        // Open dashboard in preview panel
-        window.dispatchEvent(new CustomEvent('openParaThinkerDashboard', {
-          detail: { sessionId: data.sessionId }
-        }));
-        
-        addToast({
-          message: `🧠 ParaThinker started with ${data.strategies.length} strategies`,
-          type: 'success'
-        });
-      } else {
-        throw new Error('Failed to start ParaThinker');
-      }
-    } catch (error) {
-      addToast({
-        message: '⚠️ Failed to start ParaThinker',
-        type: 'error'
-      });
-    }
-  };
-
   const isLoadingState = (state: string) => loading === state;
-  
-  // Check if we're in Beta environment (hydration-safe)
-  const [isBetaEnvironment, setIsBetaEnvironment] = React.useState(false);
-  
-  React.useEffect(() => {
-    setIsBetaEnvironment(window.location.pathname.includes('ide-beta'));
-  }, []);
 
   return (
     <>
@@ -664,35 +609,6 @@ const StatusBarActions = React.memo(function StatusBarActions({
         </div>
 
 
-        {/* ParaThinker Button - Beta Only */}
-        {isBetaEnvironment && (
-          <div className="p-[1px] rounded-md" style={{background: 'linear-gradient(135deg, #9333ea, #ec4899)'}}>
-            <button
-              onClick={handleParaThinker}
-              disabled={isLoadingState('parathink')}
-              className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary rounded transition-all duration-200 disabled:opacity-50 bg-bg-secondary w-full relative"
-              onMouseEnter={(e) => {
-                if (!isLoadingState('parathink')) {
-                  e.currentTarget.style.boxShadow = glows.purple.medium;
-                  e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #a855f7, #f472b6)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #9333ea, #ec4899)';
-              }}
-              title="ParaThinker - Advanced parallel AI reasoning system for complex problem solving (Beta feature)"
-            >
-              {isLoadingState('parathink') ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Brain className="w-4 h-4" />
-              )}
-              <span>ParaThinker</span>
-              <span className="text-[9px] absolute -top-1 -right-1 bg-purple-600 text-white px-1 rounded">β</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Session Summary Modal */}

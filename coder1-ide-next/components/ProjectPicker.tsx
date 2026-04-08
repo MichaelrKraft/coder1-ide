@@ -9,11 +9,16 @@ function getFolderName(path: string): string {
 
 export default function ProjectPicker() {
   const { recentProjects, currentProject, switchProject } = useProjectHistory();
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showBrowse, setShowBrowse] = useState(false);
   const [browseValue, setBrowseValue] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const browseInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -56,7 +61,10 @@ export default function ProjectPicker() {
   };
 
   const isEmpty = !currentProject && recentProjects.length === 0;
-  const triggerLabel = currentProject ? getFolderName(currentProject) : 'No project loaded';
+  // Use mounted flag to prevent SSR/client hydration mismatch (workingDirectory differs server vs client)
+  const triggerLabel = mounted
+    ? (currentProject ? getFolderName(currentProject) : 'No project loaded')
+    : '';
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%' }}>
