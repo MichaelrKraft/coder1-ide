@@ -2,23 +2,15 @@
   "PreToolUse": [
     {
       "matcher": "Bash",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "node ${HOME}/.claude/hooks/coder1-pretool.js"
-        }
-      ]
+      "type": "command",
+      "command": "node ${HOME}/.claude/hooks/coder1-pretool.js"
     }
   ],
   "PostToolUse": [
     {
-      "matcher": "",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "node ${HOME}/.claude/hooks/coder1-posttool.js"
-        }
-      ]
+      "matcher": "*",
+      "type": "command",
+      "command": "node ${HOME}/.claude/hooks/coder1-posttool.js"
     }
   ]
 }
