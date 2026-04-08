@@ -20,7 +20,9 @@ const getProjectRoot = (customPath?: string) => {
         const resolvedPath = path.resolve(customPath);
         
         // CRITICAL SECURITY: Only allow paths within the user workspace
-        if (!resolvedPath.startsWith(workspaceRoot)) {
+        // In development, allow any local path (bridge runs on user's own machine)
+        const isDevelopment = process.env.NODE_ENV === 'development';
+        if (!isDevelopment && !resolvedPath.startsWith(workspaceRoot)) {
             throw new Error('Access denied: Path must be within user workspace');
         }
         
