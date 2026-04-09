@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Deckpress — Investor Deck</title>
+  <meta name="description" content="Interactive investor pitch deck by Deckpress.">
+
+  <!-- Google Fonts: Instrument Serif (display) + Inter (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <!-- Deckpress visual system -->
+  <link rel="stylesheet" href="/deck/css/style.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       1. LOADER
+       Shown until the two-phase frame preloader completes.
+       app.js controls the bar width and toggles #loader.hidden.
+       ============================================================ -->
+  <div id="loader">
+    <div class="loader-brand">DECKPRESS</div>
+    <div id="loader-bar"><div id="loader-bar-fill"></div></div>
+    <div id="loader-percent">0%</div>
+  </div>
+
+  <!-- ============================================================
+       2. FIXED HEADER
+       mix-blend-mode: difference keeps the logo readable over any
+       background color the scroll timeline passes through.
+       ============================================================ -->
+  <header class="site-header">
+    <nav>
+      <span class="logo">CODER1</span>
+      <div class="nav-links">
+        <a href="#problem">Problem</a>
+        <a href="#solution">Solution</a>
+        <a href="#traction">Traction</a>
+        <a href="#ask">The Ask</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ============================================================
+       3. HERO (standalone 100vh)
+       Contains the word-split heading, tagline, optional founder
+       cutout video, and the "Scroll to explore" indicator.
+       The hero fades out and the canvas reveals via circle-wipe as
+       the investor scrolls into the main scroll container.
+       ============================================================ -->
+  <section class="hero-standalone">
+    <span class="section-label">DECKPRESS · INVESTOR DECK</span>
+
+    <!-- Hero heading is populated by app.js from CONFIG.hero.heading
+         (each word wrapped in .word > .word-inner for stagger reveal). -->
+    <h1 class="hero-heading" id="hero-heading"></h1>
+
+    <!-- Tagline populated by app.js from CONFIG.tagline -->
+    <p class="hero-tagline" id="hero-tagline"></p>
+
+    <!-- Founder cutout video (optional — CONFIG.hero.founderCutout.enabled)
+         WebM with alpha channel for Chrome/Firefox/Edge, static image
+         fallback for Safari. Play/pause button overlays the video. -->
+    <div id="founder-cutout" class="founder-cutout hidden">
+      <video
+        id="founder-video"
+        preload="metadata"
+        playsinline
+        muted
+      >
+        <source id="founder-video-source" src="" type="video/webm">
+      </video>
+      <img id="founder-fallback" class="hidden" alt="Founder portrait">
+      <button id="founder-play-toggle" class="founder-play-toggle" type="button" aria-label="Play founder video">
+        &#9654;
+      </button>
+    </div>
+
+    <div class="scroll-indicator">
+      <span>Scroll to explore</span>
+      <div class="arrow">&darr;</div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       4. CANVAS
+       Fixed full-viewport canvas renders the product demo frames
+       bound to scroll progress. Starts invisible via clip-path:
+       circle(0% at 50% 50%) and reveals as the hero scrolls away.
+       ============================================================ -->
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <!-- ============================================================
+       5. DARK OVERLAY
+       Fixed full-viewport div. app.js fades its opacity up/down
+       based on scroll progress so .section-stats sections read
+       against a dark backdrop while surrounding sections don't.
+       ============================================================ -->
+  <div id="dark-overlay"></div>
+
+  <!-- ============================================================
+       6. MARQUEE
+       Oversized horizontal text slides across the full scroll
+       range via GSAP xPercent. Populated by app.js from
+       CONFIG.marquee.text.
+       ============================================================ -->
+  <div class="marquee-wrap" data-scroll-speed="-25">
+    <div class="marquee-text" id="marquee-text"></div>
+  </div>
+
+  <!-- ============================================================
+       7. SCROLL CONTAINER
+       Sections are injected by app.js from CONFIG.sections and
+       positioned absolutely at their enter/leave midpoint. Height
+       is set dynamically based on section count (default 1000vh).
+       ============================================================ -->
+  <div id="scroll-container"></div>
+
+  <!-- ============================================================
+       Chat widget root — populated by chat.js (floating FAB +
+       expandable panel in the bottom-right corner).
+       ============================================================ -->
+  <div id="chat-root"></div>
+
+  <!-- ============================================================
+       Feedback box root — populated by feedback.js. Hidden until
+       the investor reaches the bottom of the scroll container.
+       ============================================================ -->
+  <div id="feedback-root"></div>
+
+  <!-- ============================================================
+       CDN libraries (loaded before app.js)
+       ============================================================ -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1/dist/lenis.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>
+
+  <!-- Deck config — generated at build time by scripts/build-deck-config.ts -->
+  <script src="/deck/js/config.js"></script>
+
+  <!-- Deckpress application layer
+       app.js     — Lenis, canvas, preloader, section animations, hero reveal
+       chat.js    — Floating chat FAB + Telegram-backed polling
+       analytics.js — Open event + per-section time tracking
+       feedback.js  — End-of-deck feedback form
+       roi.js       — Optional pinned ROI calculator section -->
+  <script src="/deck/js/app.js"></script>
+  <script src="/deck/js/chat.js"></script>
+  <script src="/deck/js/analytics.js"></script>
+  <script src="/deck/js/feedback.js"></script>
+  <script src="/deck/js/roi.js"></script>
+</body>
+</html>
