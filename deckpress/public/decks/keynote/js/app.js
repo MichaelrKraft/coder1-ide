@@ -126,6 +126,30 @@
     const slideNumber = padSlideNumber(index + 1);
 
     if (slide.kind === 'hero') {
+      const cutoutEnabled =
+        CONFIG.hero && CONFIG.hero.founderCutout && CONFIG.hero.founderCutout.enabled;
+      const cutoutHTML = cutoutEnabled
+        ? `
+          <div id="founder-cutout" class="founder-cutout hidden">
+            <video
+              id="founder-video"
+              preload="metadata"
+              playsinline
+              muted
+            >
+              <source id="founder-video-source" src="" type="video/webm">
+            </video>
+            <img id="founder-fallback" class="hidden" alt="Founder portrait">
+            <button
+              id="founder-play-toggle"
+              class="founder-play-toggle"
+              type="button"
+              aria-label="Play founder video"
+            >&#9654;</button>
+          </div>
+        `
+        : '';
+
       return `
         <div class="slide-hero-inner">
           <div class="hero-brand">Deckpress &middot; Investor Deck</div>
@@ -135,6 +159,7 @@
             ${escapeHtml(CONFIG.founder.name)} &middot; ${escapeHtml(CONFIG.founder.title)}
           </div>
         </div>
+        ${cutoutHTML}
       `;
     }
 
@@ -382,15 +407,18 @@
   // Key bindings
   // -----------------------------------------------------------------
   function handleKeyDown(event) {
-    // Ignore keys when focus is inside an input / textarea (e.g. chat)
+    // Ignore keys when focus is inside an input / textarea (chat, feedback)
+    // OR when focus is on a button (so Space on a focused play button
+    // doesn't advance the slide in addition to clicking the button).
     const target = event.target;
     if (
       target instanceof HTMLElement &&
       (target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
+        target.tagName === 'BUTTON' ||
         target.isContentEditable)
     ) {
-      if (event.key === 'Escape') target.blur(); // still allow escape to unfocus
+      if (event.key === 'Escape' && target.tagName !== 'BUTTON') target.blur();
       return;
     }
 
@@ -432,6 +460,110 @@
   }
 
   // -----------------------------------------------------------------
+  // Founder cutout video (hero slide only)
+  //
+  // WebM with VP9 alpha channel for Chrome/Firefox/Edge, static image
+  // fallback for Safari. Graceful 404 fallback: if the video file
+  // doesn't exist yet, tries the fallback image; if that also doesn't
+  // exist, hides the cutout container entirely so the hero slide
+  // doesn't show a broken play button.
+  //
+  // The cutout lives inside the hero slide element, so it naturally
+  // animates away with the rest of the slide when the investor
+  // advances — no extra fade-out logic needed.
+  // -----------------------------------------------------------------
+  function initFounderCutout() {
+    if (!CONFIG.hero || !CONFIG.hero.founderCutout || !CONFIG.hero.founderCutout.enabled) {
+      return;
+    }
+    const cutoutConfig = CONFIG.hero.founderCutout;
+
+    const container = document.getElementById('founder-cutout');
+    const video = document.getElementById('founder-video');
+    const videoSource = document.getElementById('founder-video-source');
+    const fallbackImg = document.getElementById('founder-fallback');
+    const toggleBtn = document.getElementById('founder-play-toggle');
+
+    if (!container || !video || !videoSource || !fallbackImg || !toggleBtn) {
+      return;
+    }
+
+    const PLAY_ICON = '\u25B6';        // ▶
+    const PAUSE_ICON = '\u275A\u275A'; // ❚❚
+    const canPlayWebm = video.canPlayType('video/webm; codecs="vp9"');
+
+    function hideCutout() {
+      container.classList.add('hidden');
+    }
+
+    function showStaticFallback() {
+      video.style.display = 'none';
+      fallbackImg.src = cutoutConfig.fallbackImage;
+      fallbackImg.classList.remove('hidden');
+      toggleBtn.style.display = 'none';
+      container.classList.remove('hidden');
+    }
+
+    function handleMediaError() {
+      // Video file isn't available. Try the static image fallback first.
+      fetch(cutoutConfig.fallbackImage, { method: 'HEAD' })
+        .then((res) => (res.ok ? showStaticFallback() : hideCutout()))
+        .catch(() => hideCutout());
+    }
+
+    if (canPlayWebm) {
+      videoSource.src = cutoutConfig.videoPath;
+      video.load();
+      container.classList.remove('hidden');
+
+      video.addEventListener('error', handleMediaError);
+      videoSource.addEventListener('error', handleMediaError);
+
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (video.paused || video.ended) {
+          video.muted = false;
+          video.play().catch(() => {
+            toggleBtn.textContent = PLAY_ICON;
+          });
+          toggleBtn.textContent = PAUSE_ICON;
+          toggleBtn.setAttribute('aria-label', 'Pause founder video');
+        } else {
+          video.pause();
+          toggleBtn.textContent = PLAY_ICON;
+          toggleBtn.setAttribute('aria-label', 'Play founder video');
+        }
+      });
+
+      video.addEventListener('ended', () => {
+        toggleBtn.textContent = PLAY_ICON;
+        toggleBtn.setAttribute('aria-label', 'Play founder video');
+      });
+
+      if (cutoutConfig.playByDefault) {
+        video.muted = false;
+        video.play().catch(() => {});
+        toggleBtn.textContent = PAUSE_ICON;
+      }
+    } else {
+      // Safari path — check if fallback image exists before showing
+      handleMediaError();
+    }
+
+    // Pause the video automatically when the investor navigates away
+    // from the hero slide so audio doesn't leak into later slides.
+    document.addEventListener('deckpress:slide-change', (event) => {
+      const detail = event.detail;
+      if (!detail) return;
+      if (detail.currentIndex !== 0 && video && !video.paused) {
+        video.pause();
+        toggleBtn.textContent = PLAY_ICON;
+        toggleBtn.setAttribute('aria-label', 'Play founder video');
+      }
+    });
+  }
+
+  // -----------------------------------------------------------------
   // Init
   // -----------------------------------------------------------------
   function init() {
@@ -439,6 +571,7 @@
     renderDots();
     renderThumbnailGrid();
     applyActiveState();
+    initFounderCutout();
 
     navPrev.addEventListener('click', prev);
     navNext.addEventListener('click', next);
