@@ -34,3 +34,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Override global ~/.gitignore "Public/" rule (macOS ~/Public convention).
+# The deck cinematic frontend lives under public/deck/ and MUST be tracked.
+!/public
+!/public/**
+
+# Skip binary product assets that are regenerated from source videos/images.
+# (frames are rebuilt via scripts/extract-frames.sh, founder video is produced
+# externally in CapCut — neither belongs in git.)
+/public/deck/frames/*.webp
+/public/deck/media/*.webm
+/public/deck/media/*.mp4
+/public/deck/media/*.mov
+/public/deck/media/*.jpg
+/public/deck/media/*.jpeg
+/public/deck/media/*.png
