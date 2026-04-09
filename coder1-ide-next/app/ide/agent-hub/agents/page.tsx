@@ -9,7 +9,7 @@ export default function AgentsPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   return (
-    <div className="flex h-full bg-bg-primary">
+    <div data-tour="agent-hub-agents-list" className="flex h-full bg-bg-primary">
       {/* Left: Agent List — narrow when agent selected, full when not */}
       <div className={`${selectedAgentId ? 'w-[220px] min-w-[220px]' : 'w-full'} border-r border-border-default flex flex-col shrink-0`}>
         <AgentList

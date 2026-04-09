@@ -39,7 +39,7 @@ export default function TasksPage() {
   }, [selectedTask]);
 
   return (
-    <div className="h-screen flex">
+    <div data-tour="agent-hub-tasks" className="h-screen flex">
       {/* Left column: task list + live activity */}
       <div className={`flex flex-col border-r border-border-default ${selectedTask ? 'w-[420px] shrink-0' : 'flex-1'}`}>
         {/* View toggle */}
