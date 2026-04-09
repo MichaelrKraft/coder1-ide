@@ -222,9 +222,14 @@
   window.__deckLenis = lenis;
 
   // -----------------------------------------------------------------
-  // Kick off
+  // Kick off — deferred to a microtask so the rest of this script
+  // file (specifically the `window.__initDeckScene` assignment below)
+  // finishes executing before preloadFrames runs. Without this defer,
+  // the FRAME_COUNT === 0 dev path synchronously calls initScene()
+  // which tries to invoke window.__initDeckScene — but that global
+  // is assigned AFTER the IIFE closes, so the scene never populates.
   // -----------------------------------------------------------------
-  preloadFrames();
+  queueMicrotask(preloadFrames);
 })();
 
 /**
@@ -308,6 +313,33 @@ window.__initDeckScene = function initDeckScene() {
         videoSource.src = cutoutConfig.videoPath;
         video.load();
         container.classList.remove('hidden');
+
+        // If the video file can't be loaded (e.g. founder hasn't dropped
+        // the file in public/deck/media yet), fall back to the static
+        // image if one exists, otherwise hide the cutout entirely so
+        // there's no empty box with a broken play button in the hero.
+        const handleVideoError = () => {
+          // Try the static image fallback first
+          fetch(cutoutConfig.fallbackImage, { method: 'HEAD' })
+            .then((res) => {
+              if (res.ok) {
+                video.style.display = 'none';
+                fallbackImg.src = cutoutConfig.fallbackImage;
+                fallbackImg.classList.remove('hidden');
+                toggleBtn.style.display = 'none';
+              } else {
+                // No fallback either — hide the whole cutout container
+                container.classList.add('hidden');
+              }
+            })
+            .catch(() => {
+              container.classList.add('hidden');
+            });
+        };
+        video.addEventListener('error', handleVideoError);
+        // The <source> element is where the real network error bubbles
+        // from in some browsers, so listen on that too.
+        videoSource.addEventListener('error', handleVideoError);
 
         const PLAY_ICON = '\u25B6';   // ▶
         const PAUSE_ICON = '\u275A\u275A'; // ❚❚
