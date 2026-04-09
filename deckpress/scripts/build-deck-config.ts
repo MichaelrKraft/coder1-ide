@@ -22,10 +22,8 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..');
 
 const framesDir = path.join(projectRoot, 'public', 'deck', 'frames');
-const outDir = path.join(projectRoot, 'public', 'deck', 'js');
-const outPath = path.join(outDir, 'config.js');
 
-// Count frames if directory exists
+// Count frames if directory exists (cinematic template only)
 if (existsSync(framesDir)) {
   const frameFiles = readdirSync(framesDir).filter((f) => f.endsWith('.webp'));
   config.productDemoFrames = frameFiles.length;
@@ -33,15 +31,24 @@ if (existsSync(framesDir)) {
   config.productDemoFrames = 0;
 }
 
-// Ensure output directory exists
-if (!existsSync(outDir)) {
-  mkdirSync(outDir, { recursive: true });
-}
+// Each template gets its own copy of config.js so templates are
+// fully self-contained (easier to swap / delete / productize later).
+// Add more template directories here as they're created.
+const templateDirs = [
+  path.join(projectRoot, 'public', 'deck', 'js'),              // v1 Cinematic
+  path.join(projectRoot, 'public', 'decks', 'keynote', 'js'),  // v2 Keynote
+];
 
 const output = serializeConfigToJs(config);
-writeFileSync(outPath, output, 'utf-8');
 
-console.log(
-  `✓ Wrote ${path.relative(projectRoot, outPath)} ` +
-    `(${config.sections.length} sections, ${config.productDemoFrames} frames)`
-);
+for (const outDir of templateDirs) {
+  if (!existsSync(outDir)) {
+    mkdirSync(outDir, { recursive: true });
+  }
+  const outPath = path.join(outDir, 'config.js');
+  writeFileSync(outPath, output, 'utf-8');
+  console.log(
+    `✓ Wrote ${path.relative(projectRoot, outPath)} ` +
+      `(${config.sections.length} sections, ${config.productDemoFrames} frames)`
+  );
+}

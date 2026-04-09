@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Deckpress Keynote — Investor Deck</title>
+  <meta name="description" content="Interactive investor pitch deck — Keynote template by Deckpress.">
+
+  <!-- Google Fonts: Inter for all UI, Instrument Serif for numbers only -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="/decks/keynote/css/style.css">
+</head>
+<body>
+
+  <!-- =================================================================
+       SLIDE DECK
+       All slides are absolutely positioned, full-viewport. The active
+       slide is shown; previous slides are transformed left, upcoming
+       slides are transformed right. JS (app.js) manages state.
+       Slides are injected by app.js from window.DECK_CONFIG.sections.
+       ================================================================= -->
+  <div id="deck" class="deck">
+    <div id="slides-container" class="slides-container">
+      <!-- Populated by app.js -->
+    </div>
+
+    <!-- Progress bar: dots + current slide label -->
+    <footer class="progress-bar">
+      <div class="progress-info">
+        <span id="progress-number" class="progress-number">01</span>
+        <span id="progress-label" class="progress-label"></span>
+      </div>
+      <div id="progress-dots" class="progress-dots">
+        <!-- Populated by app.js -->
+      </div>
+      <div class="progress-nav">
+        <button
+          id="nav-prev"
+          class="nav-btn"
+          type="button"
+          aria-label="Previous slide"
+        >&larr;</button>
+        <span id="progress-counter" class="progress-counter">1&nbsp;/&nbsp;8</span>
+        <button
+          id="nav-next"
+          class="nav-btn"
+          type="button"
+          aria-label="Next slide"
+        >&rarr;</button>
+      </div>
+    </footer>
+
+    <!-- Help hint (shown briefly on load) -->
+    <div id="help-hint" class="help-hint">
+      <span class="key">&larr;</span>
+      <span class="key">&rarr;</span>
+      navigate &nbsp;&middot;&nbsp;
+      <span class="key">Space</span>
+      next &nbsp;&middot;&nbsp;
+      <span class="key">Esc</span>
+      overview &nbsp;&middot;&nbsp;
+      <span class="key">F</span>
+      fullscreen
+    </div>
+  </div>
+
+  <!-- =================================================================
+       THUMBNAIL GRID OVERVIEW
+       Triggered by Esc key. 4x2 grid of slide previews.
+       Click a thumbnail to jump to that slide.
+       ================================================================= -->
+  <div id="grid-overlay" class="grid-overlay" aria-hidden="true">
+    <div class="grid-inner">
+      <h2 class="grid-title">All slides</h2>
+      <div id="thumbnail-grid" class="thumbnail-grid">
+        <!-- Populated by app.js -->
+      </div>
+      <p class="grid-hint">Click any slide to jump there &nbsp;&middot;&nbsp; Press <span class="key">Esc</span> to close</p>
+    </div>
+  </div>
+
+  <!-- Chat widget root (shared code, injects a FAB) -->
+  <div id="chat-root"></div>
+
+  <!-- Feedback root (only shown on the final slide) -->
+  <div id="feedback-root"></div>
+
+  <!-- =================================================================
+       SCRIPTS
+       config.js is generated at build time by scripts/build-deck-config.ts.
+       All other JS files are template-local.
+       ================================================================= -->
+  <script src="/decks/keynote/js/config.js"></script>
+  <script src="/decks/keynote/js/app.js"></script>
+  <script src="/decks/keynote/js/chat.js"></script>
+  <script src="/decks/keynote/js/analytics.js"></script>
+  <script src="/decks/keynote/js/feedback.js"></script>
+</body>
+</html>
