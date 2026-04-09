@@ -331,7 +331,7 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
   );
 
   return (
-    <div className="h-full bg-bg-secondary flex flex-col">
+    <div data-tour="agent-hub-command-center" className="h-full bg-bg-secondary flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border-default shrink-0">
         <div className="flex items-center gap-2">
@@ -353,6 +353,7 @@ export default function CommandCenter({ agentId, agentName, workspacePath, syste
         </div>
         {connected && !teachingMode && (
           <button
+            data-tour="agent-hub-teach-button"
             onClick={startTeaching}
             className="flex items-center gap-1 px-2 py-1 text-[10px] text-amber-400 hover:bg-amber-400/10 rounded transition-colors"
           >
