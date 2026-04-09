@@ -190,7 +190,39 @@ Telegram webhook registration: one-time setup, documented in README.
 - Multiple decks per deployment (one deployment = one deck)
 - Email notifications (Telegram only for MVP)
 - Video background removal tooling — founder handles this externally, drops `.webm` file into `/public`
-- AI-assisted deck generation (future: Claude generates the Marp .md from a brief)
+---
+
+## AI-Assisted Deck Generation
+
+A `/generate` route (or CLI command) where the founder provides a brief and Claude generates the full Marp `.md` file, pre-populated with the 13-section framework.
+
+### How it works
+1. Founder fills out a short form (or runs `npx generate-deck`): company name, one-line pitch, problem description, key metrics, team bios, funding ask
+2. POST `/api/generate` → calls Claude API with a structured prompt that includes the Billion $ Pitch Deck Checklist framework as system context
+3. Claude returns a complete `deck.md` with all 13 sections filled in, speaker notes, and suggested `deck.config.ts` values
+4. Founder reviews and edits in any text editor (or directly in Coder1 IDE with live Marp preview)
+5. Deploy — the generated content is live in minutes
+
+### Prompt design
+The system prompt embeds the 13-section framework with the "test" names (Hook Test, Pain Test, Clarity Test, etc.) so Claude knows what each section needs to accomplish. The user prompt is the founder's brief. Output is valid Marp markdown with `marp: true` frontmatter.
+
+### Where it lives
+- `app/api/generate/route.ts` — API route, requires `ANTHROPIC_API_KEY` env var
+- `app/generate/page.tsx` — simple form UI (founder-only, same auth as dashboard)
+- `scripts/generate-deck.ts` — optional CLI wrapper for terminal-first users
+
+### Model
+Claude Sonnet 4.6 (`claude-sonnet-4-6`) — fast enough for interactive use, capable enough for structured long-form output.
+
+---
+
+## What's Out of Scope (MVP)
+
+- Multi-founder / team accounts
+- Custom domains per deck (Vercel handles `*.vercel.app`)
+- Multiple decks per deployment (one deployment = one deck)
+- Email notifications (Telegram only for MVP)
+- Video background removal tooling — founder handles this externally, drops `.webm` file into `/public`
 
 ---
 
