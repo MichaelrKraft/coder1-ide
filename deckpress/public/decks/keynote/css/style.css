@@ -179,6 +179,55 @@ body {
 }
 
 /* =================================================================
+   FOUNDER CUTOUT — hero slide only, bottom-right corner
+   ================================================================= */
+
+.slide-hero .founder-cutout {
+  position: absolute;
+  bottom: 3rem;
+  right: 3rem;
+  width: 280px;
+  height: 380px;
+  pointer-events: auto;
+  z-index: 5;
+}
+
+.slide-hero .founder-cutout.hidden { display: none; }
+
+.slide-hero .founder-cutout video,
+.slide-hero .founder-cutout img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.slide-hero .founder-cutout img.hidden { display: none; }
+
+.founder-play-toggle {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(10, 10, 18, 0.85);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  font-size: 1rem;
+  backdrop-filter: blur(8px);
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.founder-play-toggle:hover {
+  background: rgba(10, 10, 18, 0.95);
+}
+
+/* =================================================================
    STATS SLIDES — Market, Traction
    Giant centered numbers with counters.
    ================================================================= */
@@ -829,6 +878,8 @@ body {
   }
 
   .help-hint { display: none; }
+
+  .slide-hero .founder-cutout { display: none; }
 
   .progress-info {
     min-width: 120px;
