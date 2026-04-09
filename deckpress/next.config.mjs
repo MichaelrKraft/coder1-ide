@@ -3,8 +3,14 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        // v1 Cinematic template
         source: '/deck',
         destination: '/deck/index.html',
+      },
+      {
+        // v2 Keynote template
+        source: '/decks/keynote',
+        destination: '/decks/keynote/index.html',
       },
     ];
   },

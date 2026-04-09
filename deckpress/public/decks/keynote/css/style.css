@@ -1,0 +1,848 @@
+/**
+ * Deckpress — Keynote template styles
+ *
+ * Full-viewport slide deck. Dark background, sans-serif, bold
+ * typography, slide-in/out transitions. Opposite delivery from
+ * the cinematic scroll template:
+ *
+ *   - No scroll (document is fixed at 100vh)
+ *   - No canvas / frames / video
+ *   - One concept per slide
+ *   - Keyboard-driven navigation
+ *   - Thumbnail grid overview
+ */
+
+:root {
+  --bg-dark: #0a0a12;
+  --bg-slide: #0f0f1e;
+  --bg-darker: #06060e;
+  --text-primary: #f5f3f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-violet: #7c3aed;
+  --accent-violet-bright: #a78bfa;
+  --accent-cyan: #06b6d4;
+  --border-subtle: #1e2035;
+  --border-muted: #2d2d4a;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-display: 'Instrument Serif', serif;
+  --slide-padding-x: 8vw;
+  --slide-padding-y: 6vh;
+  --progress-height: 80px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden; /* Slides never scroll */
+}
+
+body {
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  user-select: none; /* Keynote slides shouldn't have text-selection UX */
+}
+
+/* =================================================================
+   DECK + SLIDES CONTAINER
+   ================================================================= */
+
+.deck {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-dark);
+}
+
+.slides-container {
+  position: absolute;
+  inset: 0;
+  bottom: var(--progress-height);
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  padding: var(--slide-padding-y) var(--slide-padding-x);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.slide.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.slide.prev {
+  opacity: 0;
+  transform: translateX(-100%);
+}
+
+/* =================================================================
+   SLIDE CONTENT — SHARED COMPONENTS
+   ================================================================= */
+
+.slide-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+.slide-number {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--accent-violet-bright);
+  font-feature-settings: 'tnum';
+  letter-spacing: 0.05em;
+}
+
+.slide-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.slide-heading {
+  font-size: clamp(3rem, 6vw, 6rem);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  max-width: 24ch;
+  margin-bottom: 2rem;
+}
+
+.slide-body {
+  font-size: clamp(1.1rem, 1.4vw, 1.5rem);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 55ch;
+  font-weight: 400;
+}
+
+/* =================================================================
+   HERO SLIDE — Cover
+   ================================================================= */
+
+.slide-hero {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.slide-hero .hero-brand {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent-violet-bright);
+  margin-bottom: 3rem;
+}
+
+.slide-hero .hero-company {
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 10vw, 11rem);
+  line-height: 1;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.03em;
+}
+
+.slide-hero .hero-tagline {
+  font-size: clamp(1.1rem, 1.5vw, 1.5rem);
+  color: var(--text-secondary);
+  max-width: 48ch;
+  line-height: 1.4;
+}
+
+.slide-hero .hero-founder {
+  margin-top: 5rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* =================================================================
+   STATS SLIDES — Market, Traction
+   Giant centered numbers with counters.
+   ================================================================= */
+
+.slide-stats {
+  align-items: center;
+  text-align: center;
+}
+
+.slide-stats .slide-header {
+  margin-bottom: 5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 4rem 5rem;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stat-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  line-height: 1;
+}
+
+.stat-number {
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 9vw, 10rem);
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  font-feature-settings: 'tnum';
+  line-height: 0.9;
+}
+
+.stat-suffix {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 4rem);
+  color: var(--accent-cyan);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  max-width: 20ch;
+}
+
+/* =================================================================
+   ASK SLIDE — Final CTA
+   ================================================================= */
+
+.slide-ask .slide-heading {
+  max-width: 20ch;
+  margin-bottom: 3rem;
+}
+
+.slide-ask .cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2.5rem;
+  padding: 1.25rem 2.5rem;
+  background: var(--accent-violet);
+  color: var(--text-primary);
+  text-decoration: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background 0.2s ease;
+}
+
+.slide-ask .cta-button:hover {
+  background: var(--accent-violet-bright);
+}
+
+.slide-ask .cta-button::after {
+  content: '→';
+  font-size: 1.2rem;
+}
+
+/* =================================================================
+   PROGRESS BAR — always visible at bottom
+   ================================================================= */
+
+.progress-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--progress-height);
+  background: var(--bg-darker);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--slide-padding-x);
+  gap: 3rem;
+  z-index: 100;
+}
+
+.progress-info {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  min-width: 280px;
+  flex-shrink: 0;
+}
+
+.progress-number {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--accent-violet-bright);
+  font-feature-settings: 'tnum';
+}
+
+.progress-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.progress-dots {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-muted);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+.progress-dot:hover {
+  background: var(--text-muted);
+}
+
+.progress-dot.visited {
+  background: var(--text-muted);
+}
+
+.progress-dot.active {
+  background: var(--accent-violet-bright);
+  width: 24px;
+  border-radius: 4px;
+}
+
+.progress-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+  min-width: 200px;
+  justify-content: flex-end;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border-muted);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.nav-btn:hover:not(:disabled) {
+  border-color: var(--accent-violet);
+  color: var(--accent-violet-bright);
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.progress-counter {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-feature-settings: 'tnum';
+  letter-spacing: 0.05em;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* =================================================================
+   HELP HINT — fades out after a few seconds
+   ================================================================= */
+
+.help-hint {
+  position: fixed;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 18, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  z-index: 200;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.help-hint.hidden {
+  opacity: 0;
+}
+
+.key {
+  display: inline-block;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-muted);
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin: 0 0.15rem;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* =================================================================
+   THUMBNAIL GRID OVERLAY
+   ================================================================= */
+
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 6, 14, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 300;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.grid-overlay.visible {
+  display: flex;
+  opacity: 1;
+}
+
+.grid-inner {
+  margin: auto;
+  padding: 6vh 6vw;
+  width: 100%;
+  max-width: 1600px;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.grid-title {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+
+.thumbnail {
+  aspect-ratio: 16 / 10;
+  background: var(--bg-slide);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.thumbnail:hover {
+  border-color: var(--accent-violet);
+  transform: translateY(-2px);
+  background: var(--bg-dark);
+}
+
+.thumbnail.active {
+  border-color: var(--accent-violet-bright);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
+}
+
+.thumbnail-number {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--accent-violet-bright);
+  font-feature-settings: 'tnum';
+}
+
+.thumbnail-heading {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.thumbnail-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.grid-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* =================================================================
+   CHAT FAB (reused from v1 — dark theme variant)
+   ================================================================= */
+
+#chat-root {
+  position: fixed;
+  bottom: calc(var(--progress-height) + 1.5rem);
+  right: 2rem;
+  z-index: 150;
+}
+
+.chat-fab {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent-violet);
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.chat-fab:hover {
+  transform: scale(1.05);
+}
+
+.chat-fab-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid var(--bg-dark);
+  animation: chat-pulse 2s ease-in-out infinite;
+}
+
+@keyframes chat-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+.chat-panel {
+  position: absolute;
+  bottom: 68px;
+  right: 0;
+  width: 360px;
+  height: 480px;
+  background: var(--bg-slide);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+}
+
+.chat-panel.open { display: flex; }
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.chat-founder-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chat-status {
+  font-size: 0.7rem;
+  color: #10b981;
+}
+
+.chat-close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 0.5rem;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-msg {
+  max-width: 80%;
+  padding: 0.5rem 0.85rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.chat-msg-investor {
+  align-self: flex-end;
+  background: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.chat-msg-founder {
+  align-self: flex-start;
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--accent-violet-bright);
+  border: 1px solid rgba(124, 58, 237, 0.4);
+}
+
+.chat-form {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.chat-form input {
+  flex: 1;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-muted);
+  border-radius: 20px;
+  padding: 0.5rem 0.85rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.chat-form input:focus {
+  border-color: var(--accent-violet);
+}
+
+.chat-form button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-violet);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+/* =================================================================
+   FEEDBACK PANEL (shown only on final slide)
+   ================================================================= */
+
+#feedback-root {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 520px;
+  background: var(--bg-slide);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 2.5rem;
+  z-index: 250;
+  display: none;
+}
+
+#feedback-root.visible { display: block; }
+
+.feedback-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.5rem;
+}
+
+.feedback-title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.feedback-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+#feedback-input {
+  width: 100%;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-muted);
+  color: var(--text-primary);
+  padding: 1rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+  margin-bottom: 1rem;
+  border-radius: 2px;
+}
+
+#feedback-input:focus {
+  outline: none;
+  border-color: var(--accent-violet);
+}
+
+#feedback-submit {
+  background: var(--accent-violet);
+  border: none;
+  color: white;
+  padding: 0.85rem 1.75rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+#feedback-submit:hover { background: var(--accent-violet-bright); }
+#feedback-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.feedback-thanks {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* =================================================================
+   RESPONSIVE — collapse sensibly on tablet / phone
+   ================================================================= */
+
+@media (max-width: 900px) {
+  :root {
+    --slide-padding-x: 6vw;
+    --slide-padding-y: 5vh;
+    --progress-height: 64px;
+  }
+
+  .slide-hero .hero-company { font-size: clamp(3rem, 12vw, 5rem); }
+  .slide-heading { font-size: clamp(2rem, 7vw, 3rem); }
+  .stat-number { font-size: clamp(3rem, 14vw, 5rem); }
+
+  .thumbnail-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .help-hint { display: none; }
+
+  .progress-info {
+    min-width: 120px;
+  }
+  .progress-info .progress-label { display: none; }
+  .progress-nav { min-width: 140px; }
+
+  #chat-root {
+    bottom: calc(var(--progress-height) + 0.75rem);
+    right: 1rem;
+  }
+  .chat-panel {
+    width: calc(100vw - 2rem);
+    max-width: 360px;
+    right: -0.5rem;
+  }
+}
