@@ -287,6 +287,92 @@ window.__initDeckScene = function initDeckScene() {
     delay: 0.3,
   });
 
+  // ----- 2b. Founder hero cutout video (optional, hero-only) -----
+  // WebM with VP9 alpha channel for Chrome/Firefox/Edge. Safari
+  // (which lacks VP9 alpha support) falls back to a static image.
+  // Fades out via ScrollTrigger as the hero scrolls away so the
+  // canvas can take over.
+  if (CONFIG.hero && CONFIG.hero.founderCutout && CONFIG.hero.founderCutout.enabled) {
+    const cutoutConfig = CONFIG.hero.founderCutout;
+    const container = document.getElementById('founder-cutout');
+    const video = document.getElementById('founder-video');
+    const videoSource = document.getElementById('founder-video-source');
+    const fallbackImg = document.getElementById('founder-fallback');
+    const toggleBtn = document.getElementById('founder-play-toggle');
+
+    if (container && video && videoSource && fallbackImg && toggleBtn) {
+      const canPlayWebm = video.canPlayType('video/webm; codecs="vp9"');
+
+      if (canPlayWebm) {
+        // Modern browser — load the WebM cutout
+        videoSource.src = cutoutConfig.videoPath;
+        video.load();
+        container.classList.remove('hidden');
+
+        const PLAY_ICON = '\u25B6';   // ▶
+        const PAUSE_ICON = '\u275A\u275A'; // ❚❚
+
+        toggleBtn.addEventListener('click', () => {
+          if (video.paused || video.ended) {
+            // Unmute when the user explicitly plays — autoplay policies
+            // require muted=true on load, but the founder recording has
+            // audio the investor should hear when they choose to.
+            video.muted = false;
+            video.play().catch(() => {
+              // Autoplay was blocked or video failed to load — leave
+              // the toggle in the play state so the user can retry.
+              toggleBtn.textContent = PLAY_ICON;
+            });
+            toggleBtn.textContent = PAUSE_ICON;
+            toggleBtn.setAttribute('aria-label', 'Pause founder video');
+          } else {
+            video.pause();
+            toggleBtn.textContent = PLAY_ICON;
+            toggleBtn.setAttribute('aria-label', 'Play founder video');
+          }
+        });
+
+        // Reset toggle when the video finishes on its own
+        video.addEventListener('ended', () => {
+          toggleBtn.textContent = PLAY_ICON;
+          toggleBtn.setAttribute('aria-label', 'Play founder video');
+        });
+
+        if (cutoutConfig.playByDefault) {
+          video.muted = false;
+          video.play().catch(() => {});
+          toggleBtn.textContent = PAUSE_ICON;
+          toggleBtn.setAttribute('aria-label', 'Pause founder video');
+        }
+      } else {
+        // Safari fallback — static image, hide video + toggle
+        video.style.display = 'none';
+        fallbackImg.src = cutoutConfig.fallbackImage;
+        fallbackImg.classList.remove('hidden');
+        toggleBtn.style.display = 'none';
+        container.classList.remove('hidden');
+      }
+
+      // Fade the cutout out as the hero scrolls away. Uses the same
+      // scroll window as the circle-wipe so the two transitions align.
+      ScrollTrigger.create({
+        trigger: scrollContainer,
+        start: 'top top',
+        end: 'top+=10% top',
+        scrub: true,
+        onUpdate: (self) => {
+          container.style.opacity = String(1 - self.progress);
+          // Pause the video automatically once it's no longer visible
+          // so audio doesn't leak into the rest of the deck.
+          if (self.progress >= 0.9 && video && !video.paused) {
+            video.pause();
+            if (toggleBtn) toggleBtn.textContent = '\u25B6';
+          }
+        },
+      });
+    }
+  }
+
   // ----- 3. Render scroll sections from CONFIG.sections -----
   scrollContainer.innerHTML = '';
   const renderedSections = [];
