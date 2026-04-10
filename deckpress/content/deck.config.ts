@@ -62,6 +62,14 @@ export interface HeroCutoutConfig {
   playByDefault: boolean;
 }
 
+/** Cue point for the narrated template — maps a video timestamp to a slide. */
+export interface CuePoint {
+  /** Seconds into the narration video where this slide should appear. */
+  time: number;
+  /** The section id (or 'hero') to switch to at this timestamp. */
+  slideId: string;
+}
+
 export interface DeckConfig {
   company: string;
   tagline: string;
@@ -104,6 +112,19 @@ export interface DeckConfig {
   };
   /** Count of frames in public/deck/frames/. Set by build-deck-config.ts. */
   productDemoFrames: number;
+
+  // --- Narrated template fields ---
+
+  /** Path to the continuous narration video (WebM with VP9 alpha). */
+  narrationVideoPath?: string;
+  /** MP4 fallback for Safari (no alpha channel, renders with solid bg). */
+  narrationVideoFallback?: string;
+  /**
+   * Cue points for the narrated template. Maps video timestamps to slide IDs.
+   * The app watches video.currentTime and auto-switches slides at each cue.
+   * Founder fills these in after recording the pitch video.
+   */
+  cuePoints?: CuePoint[];
 }
 
 export const config: DeckConfig = {
@@ -260,4 +281,23 @@ export const config: DeckConfig = {
   },
 
   productDemoFrames: 0,
+
+  // --- Narrated template ---
+  // Founder records a single continuous pitch video, then notes the timestamps
+  // where each slide should appear. The narrated template auto-advances slides
+  // as the video plays. Adjust timestamps after recording.
+
+  narrationVideoPath: '/deck/media/founder-cutout.webm',
+  narrationVideoFallback: '/deck/media/founder-narration.mp4',
+
+  cuePoints: [
+    { time: 0, slideId: 'hero' },
+    { time: 15, slideId: 'problem' },
+    { time: 45, slideId: 'solution' },
+    { time: 75, slideId: 'why-now' },
+    { time: 105, slideId: 'market' },
+    { time: 140, slideId: 'traction' },
+    { time: 180, slideId: 'gtm-team' },
+    { time: 220, slideId: 'ask' },
+  ],
 };

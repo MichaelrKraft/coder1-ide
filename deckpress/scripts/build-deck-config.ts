@@ -37,6 +37,7 @@ if (existsSync(framesDir)) {
 const templateDirs = [
   path.join(projectRoot, 'public', 'deck', 'js'),              // v1 Cinematic
   path.join(projectRoot, 'public', 'decks', 'keynote', 'js'),  // v2 Keynote
+  path.join(projectRoot, 'public', 'decks', 'narrated', 'js'), // v3 Narrated
 ];
 
 const output = serializeConfigToJs(config);
