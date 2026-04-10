@@ -132,6 +132,15 @@ export function generateSecureToken(): string {
 }
 
 /**
+ * Generate a long-lived API token for external integrations (e.g. Ambient AI).
+ * Uses the same JWT_SECRET as access tokens so it can be verified by verifyAccessToken().
+ * Expires in 1 year.
+ */
+export function generateApiToken(payload: TokenPayload): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '365d' });
+}
+
+/**
  * Extract token from Authorization header
  */
 export function extractTokenFromHeader(authHeader?: string): string | null {

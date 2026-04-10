@@ -15,6 +15,8 @@ import {
   Unplug,
   Plug,
   ChevronDown,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -577,6 +579,9 @@ export default function IntegrationsPanel() {
         </div>
       )}
 
+      {/* Ambient AI Integration */}
+      <AmbientIntegrationSection />
+
       {/* Footer info */}
       <div className="flex items-start gap-2 pt-2">
         <Info className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
@@ -585,6 +590,99 @@ export default function IntegrationsPanel() {
           stored server-side. You can disconnect at any time.
         </p>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Ambient AI Integration Section
+// ---------------------------------------------------------------------------
+
+function AmbientIntegrationSection() {
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGetToken = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/token');
+      if (!res.ok) throw new Error(`Failed to get token (${res.status})`);
+      const data = await res.json();
+      setToken(data.token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to get token');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!token) return;
+    await navigator.clipboard.writeText(token);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="border-t border-gray-700 pt-6">
+      <h4 className="text-sm font-semibold text-white mb-1">Ambient AI</h4>
+      <p className="text-xs text-gray-400 mb-4">
+        Sync your daily work summaries from{' '}
+        <a
+          href="https://github.com/MichaelrKraft/ambient-ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-400 hover:text-indigo-300 underline"
+        >
+          Ambient AI
+        </a>{' '}
+        directly into your Coder1 notes.
+      </p>
+
+      {error && (
+        <p className="text-xs text-red-400 mb-3">{error}</p>
+      )}
+
+      {token ? (
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <code className="flex-1 text-[11px] font-mono bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-gray-400 truncate select-all">
+              {token}
+            </code>
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors flex-shrink-0"
+              title="Copy token"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-500">
+            Add to Ambient config:{' '}
+            <code className="text-indigo-400">coder1_token = &quot;your-token&quot;</code>
+          </p>
+          <p className="text-[11px] text-gray-600">
+            This token is valid for 1 year. Generate a new one if it expires.
+          </p>
+        </div>
+      ) : (
+        <button
+          onClick={handleGetToken}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded transition-colors"
+        >
+          {loading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Key className="w-3.5 h-3.5" />
+          )}
+          {loading ? 'Generating…' : 'Get API Token'}
+        </button>
+      )}
     </div>
   );
 }
