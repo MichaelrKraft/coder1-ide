@@ -12,6 +12,11 @@ const nextConfig = {
         source: '/decks/keynote',
         destination: '/decks/keynote/index.html',
       },
+      {
+        // v3 Narrated template
+        source: '/decks/narrated',
+        destination: '/decks/narrated/index.html',
+      },
     ];
   },
   async redirects() {
