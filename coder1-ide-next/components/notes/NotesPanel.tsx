@@ -78,6 +78,18 @@ function FolderNodeItem({ node, selectedPath, onSelect, depth }: FolderNodeItemP
         </span>
         <Folder className="w-3 h-3 flex-shrink-0" />
         <span className="truncate flex-1 text-left">{node.name || 'Root'}</span>
+        {node.name === 'Sessions' && (
+          <span
+            title="Auto-saved snapshots of your Claude Code sessions. Each entry is one full session with its conversation history."
+            className="ml-0.5 text-[#4b5563] hover:text-[#6b7280] cursor-help flex-shrink-0"
+            onClick={e => e.stopPropagation()}
+          >
+            <svg className="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </span>
+        )}
         {node.noteCount > 0 && (
           <span className="text-[#4b5563] ml-1 flex-shrink-0">{node.noteCount}</span>
         )}
@@ -122,7 +134,20 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
   const [semanticLoading, setSemanticLoading] = useState(false);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [deletingEmpties, setDeletingEmpties] = useState(false);
+  const [confirmDeletePath, setConfirmDeletePath] = useState<string | null>(null);
+  const [confirmDeleteSessions, setConfirmDeleteSessions] = useState(false);
+  // Ambient install CTA — pre-fetched token so user can paste it during setup
+  const [ambientToken, setAmbientToken] = useState<string | null>(null);
+  const [ambientCopied, setAmbientCopied] = useState<'cmd' | 'token' | null>(null);
   const { mentionState, handleInputChange: handleMentionChange, handleMentionSelect, closeMention } = useVaultMention();
+
+  // Pre-fetch the Ambient API token so it's ready to copy from the empty state CTA
+  useEffect(() => {
+    fetch('/api/auth/token', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.token) setAmbientToken(data.token); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/vault?tree=true')
@@ -207,17 +232,20 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
     return () => clearTimeout(timer);
   }, [searchQuery, searchMode]);
 
-  const handleDeleteNote = useCallback(async (e: React.MouseEvent, path: string) => {
-    e.stopPropagation();
+  const handleDeleteNote = useCallback(async (path: string) => {
+    setConfirmDeletePath(null);
     setDeletingPath(path);
     try {
       const res = await fetch(`/api/vault?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
       if (res.ok) {
         setNotes((prev) => prev.filter((n) => n.path !== path));
+        if (activeNotePath === path) {
+          onNoteSelect('');
+        }
       }
     } catch { /* silently fail */ }
     setDeletingPath(null);
-  }, []);
+  }, [activeNotePath, onNoteSelect]);
 
   const isEmptySessionNote = (note: VaultNoteStub) =>
     note.path.startsWith('Sessions/') && !note.excerpt?.trim() && !(note.frontmatter?.summary as string | undefined);
@@ -347,8 +375,8 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
       {/* Notes tab content */}
       {activeTab === 'notes' && unavailable && (
         <div className="flex flex-col flex-1 items-center justify-center p-4">
-          <p className="text-xs text-[#6b7280] text-center">Knowledge base unavailable.</p>
-          <p className="text-[10px] text-[#4b5563] text-center mt-1">Check that NEXT_PUBLIC_VAULT_ENABLED=true and restart the dev server.</p>
+          <p className="text-xs text-[#6b7280] text-center">Knowledge base is offline.</p>
+          <p className="text-[10px] text-[#4b5563] text-center mt-1">Try reloading the page. If this persists, contact support.</p>
         </div>
       )}
 
@@ -410,23 +438,24 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
             />
           )}
         </div>
-        {searchQuery.length > 0 && (
-          <div className="flex gap-1 mt-1">
-            {(['keyword', 'semantic'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => { setSearchMode(mode); setSemanticResults(null); }}
-                className={`flex-1 text-[10px] py-0.5 rounded transition-colors ${
-                  searchMode === mode
-                    ? 'bg-indigo-600/30 text-indigo-300'
-                    : 'text-[#6b7280] hover:text-[#9ca3af]'
-                }`}
-              >
-                {mode === 'keyword' ? 'Keyword' : 'Semantic'}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex gap-1 mt-1">
+          {(['keyword', 'semantic'] as const).map(mode => (
+            <button
+              key={mode}
+              onClick={() => { setSearchMode(mode); setSemanticResults(null); }}
+              title={mode === 'semantic'
+                ? 'AI-powered search that understands meaning, not just keywords. Finds conceptually related notes even if they use different words.'
+                : 'Exact word match search across note titles and content.'}
+              className={`flex-1 text-[10px] py-0.5 rounded transition-colors ${
+                searchMode === mode
+                  ? 'bg-indigo-600/30 text-indigo-300'
+                  : 'text-[#6b7280] hover:text-[#9ca3af]'
+              }`}
+            >
+              {mode === 'keyword' ? 'Keyword' : 'Semantic ✦'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Two-pane area */}
@@ -503,7 +532,7 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
               <div className="px-3 py-2 border-b border-[#2a2a2a] flex items-center justify-between bg-[#1a1a1a]">
                 <span className="text-[10px] text-[#6b7280]">{emptyCount} empty session{emptyCount !== 1 ? 's' : ''} hidden</span>
                 <button
-                  onClick={handleDeleteEmptySessions}
+                  onClick={() => setConfirmDeleteSessions(true)}
                   disabled={deletingEmpties}
                   className="text-[10px] text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
                 >
@@ -529,12 +558,130 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
                 return (
                   <>
                     {displayedNotes.length === 0 && (
-                      <div className="px-3 py-6 text-center">
-                        <p className="text-xs text-[#4b5563]">
-                          {selectedFolder === '__orphans__' ? 'No orphaned notes.' : 'No notes yet.'}
-                        </p>
-                        {selectedFolder === null && !searchQuery && (
-                          <p className="text-[10px] text-[#4b5563] mt-1">Click <span className="text-[#6366f1]">New</span> to create your first note.</p>
+                      <div className="px-3 py-4">
+                        {selectedFolder === '__orphans__' ? (
+                          <p className="text-xs text-[#4b5563] text-center py-4">No orphaned notes.</p>
+                        ) : selectedFolder === 'Sessions' ? (
+                          <div className="text-center py-4">
+                            <p className="text-xs text-[#6b7280]">No sessions yet.</p>
+                            <p className="text-[10px] text-[#4b5563] mt-1">
+                              Sessions are saved automatically when you use Claude Code.
+                            </p>
+                          </div>
+                        ) : selectedFolder !== null ? (
+                          <div className="text-center py-4">
+                            <p className="text-xs text-[#6b7280]">No notes in this folder.</p>
+                            <button
+                              onClick={() => setSelectedFolder(null)}
+                              className="text-[10px] text-indigo-400 hover:text-indigo-300 mt-1 underline"
+                            >
+                              View all notes
+                            </button>
+                          </div>
+                        ) : !searchQuery ? (
+                          <div className="px-2 py-4 text-left">
+                            {/* Hero icon + headline */}
+                            <div className="flex items-center gap-2.5 mb-3">
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600/40 to-purple-600/40 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-900/30">
+                                <svg className="w-4.5 h-4.5 text-indigo-300" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-white leading-tight">Supercharge your memory</p>
+                                <p className="text-[10px] text-indigo-400 leading-tight">with Ambient AI</p>
+                              </div>
+                            </div>
+
+                            {/* Benefit bullets */}
+                            <div className="mb-3 space-y-1.5">
+                              {[
+                                { icon: '⚡', text: 'Auto-captures your screen activity' },
+                                { icon: '✦', text: 'AI summarizes your daily work.' },
+                                { icon: '↻', text: 'Daily summaries sync here automatically. Free.' },
+                              ].map(({ icon, text }) => (
+                                <div key={text} className="flex items-center gap-2">
+                                  <span className="text-xs text-indigo-400 w-4 text-center">{icon}</span>
+                                  <span className="text-xs text-[#9ca3af]">{text}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Divider */}
+                            <div className="border-t border-[#2d2d3d] my-3" />
+
+                            {/* Steps heading */}
+                            <p className="text-sm font-semibold text-white text-center mb-3">Two steps to get started</p>
+
+                            {/* Step 1: Open terminal */}
+                            <div className="flex items-start gap-2 mb-2">
+                              <span className="text-xs font-bold text-indigo-500 mt-0.5 w-3 flex-shrink-0">1</span>
+                              <div>
+                                <p className="text-xs text-[#9ca3af] font-medium">Open your Terminal app</p>
+                                <p className="text-[11px] text-[#4b5563] mt-0.5">
+                                  Mac: <kbd className="px-1 py-0.5 rounded bg-[#1a1a2e] border border-[#2d2d3d] text-[#9ca3af] font-mono text-[10px]">⌘ Space</kbd> → type <span className="text-[#9ca3af]">Terminal</span> → Enter
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Step 2: Run install command */}
+                            <div className="flex items-start gap-2 mb-1.5">
+                              <span className="text-xs font-bold text-indigo-500 mt-0.5 w-3 flex-shrink-0">2</span>
+                              <p className="text-xs text-[#9ca3af] font-medium">Copy this command, paste it in Terminal, press Enter</p>
+                            </div>
+                            <div className="ml-5 bg-[#080814] border border-indigo-900/50 rounded-lg px-3 py-2 flex items-center gap-2 hover:border-indigo-700/50 transition-colors">
+                              <code className="flex-1 text-[11px] font-mono text-[#c4b5fd] leading-relaxed">
+                                npm i -g coder1-ambient && ambient setup
+                              </code>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText('npm install -g coder1-ambient && ambient setup');
+                                  setAmbientCopied('cmd');
+                                  setTimeout(() => setAmbientCopied(null), 2000);
+                                }}
+                                className="flex-shrink-0 text-[11px] px-1.5 py-0.5 rounded bg-indigo-900/40 text-indigo-400 hover:bg-indigo-800/50 hover:text-indigo-300 transition-all"
+                                title="Copy install command"
+                              >
+                                {ambientCopied === 'cmd' ? '✓ Copied' : 'Copy'}
+                              </button>
+                            </div>
+
+                            {/* Step 3: Token */}
+                            {ambientToken && (
+                              <>
+                                <div className="flex items-start gap-2 mt-2.5 mb-1.5">
+                                  <span className="text-xs font-bold text-indigo-500 mt-0.5 w-3 flex-shrink-0">3</span>
+                                  <p className="text-xs text-[#9ca3af] font-medium">When setup asks for your token, copy &amp; paste this</p>
+                                </div>
+                                <div className="ml-5 bg-[#080814] border border-indigo-900/50 rounded-lg px-3 py-2 flex items-center gap-2 hover:border-indigo-700/50 transition-colors">
+                                  <code className="flex-1 text-[11px] font-mono text-indigo-300 truncate">
+                                    {ambientToken.slice(0, 24)}…
+                                  </code>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(ambientToken);
+                                      setAmbientCopied('token');
+                                      setTimeout(() => setAmbientCopied(null), 2000);
+                                    }}
+                                    className="flex-shrink-0 text-[11px] px-1.5 py-0.5 rounded bg-indigo-900/40 text-indigo-400 hover:bg-indigo-800/50 hover:text-indigo-300 transition-all"
+                                    title="Copy your Coder1 token"
+                                  >
+                                    {ambientCopied === 'token' ? '✓ Copied' : 'Copy'}
+                                  </button>
+                                </div>
+                              </>
+                            )}
+
+                            {/* Secondary CTA */}
+                            <button
+                              onClick={() => setShowTemplatePicker(true)}
+                              className="mt-4 w-full text-[10px] text-[#4b5563] hover:text-[#6b7280] text-center transition-colors"
+                            >
+                              Or create a note manually
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-[#4b5563]">No notes match your search.</p>
                         )}
                       </div>
                     )}
@@ -562,7 +709,7 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
                           </p>
                         </button>
                         <button
-                          onClick={(e) => handleDeleteNote(e, note.path)}
+                          onClick={(e) => { e.stopPropagation(); setConfirmDeletePath(note.path); }}
                           disabled={deletingPath === note.path}
                           title="Delete note"
                           className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 rounded text-[#4b5563] hover:text-red-400 hover:bg-red-400/10 transition-all disabled:opacity-30"
@@ -580,6 +727,80 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
       </div>
         </>
       )}
+
+      {/* Delete note confirmation modal */}
+      {confirmDeletePath && (() => {
+        const confirmNote = notes.find(n => n.path === confirmDeletePath);
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={() => setConfirmDeletePath(null)}
+          >
+            <div
+              className="bg-[#1a1a2e] border border-[#2d2d3d] rounded-lg p-5 max-w-xs w-full mx-4 shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <p className="text-sm text-[#e5e7eb] font-medium mb-1">Delete note?</p>
+              <p className="text-[11px] text-[#6b7280] mb-3 truncate">
+                {confirmNote?.title || confirmDeletePath}
+              </p>
+              <p className="text-[10px] text-[#4b5563] mb-4">This cannot be undone.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDeletePath(null)}
+                  className="flex-1 text-xs py-1.5 rounded border border-[#2d2d3d] text-[#9ca3af] hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteNote(confirmDeletePath)}
+                  disabled={deletingPath === confirmDeletePath}
+                  className="flex-1 text-xs py-1.5 rounded bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-900/40 transition-colors disabled:opacity-40"
+                >
+                  {deletingPath === confirmDeletePath ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Delete empty sessions confirmation modal */}
+      {confirmDeleteSessions && (() => {
+        const emptyCount = notes.filter(isEmptySessionNote).length;
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={() => setConfirmDeleteSessions(false)}
+          >
+            <div
+              className="bg-[#1a1a2e] border border-[#2d2d3d] rounded-lg p-5 max-w-xs w-full mx-4 shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <p className="text-sm text-[#e5e7eb] font-medium mb-1">Delete empty sessions?</p>
+              <p className="text-[11px] text-[#6b7280] mb-3">
+                {emptyCount} empty session{emptyCount !== 1 ? 's' : ''} will be permanently removed.
+              </p>
+              <p className="text-[10px] text-[#4b5563] mb-4">This cannot be undone.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDeleteSessions(false)}
+                  className="flex-1 text-xs py-1.5 rounded border border-[#2d2d3d] text-[#9ca3af] hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { setConfirmDeleteSessions(false); handleDeleteEmptySessions(); }}
+                  disabled={deletingEmpties}
+                  className="flex-1 text-xs py-1.5 rounded bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-900/40 transition-colors disabled:opacity-40"
+                >
+                  {deletingEmpties ? 'Deleting…' : 'Delete all'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

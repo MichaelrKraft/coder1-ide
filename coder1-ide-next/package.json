@@ -54,6 +54,7 @@
     "@langchain/core": "^1.1.24",
     "@livekit/components-react": "^2.9.20",
     "@livekit/components-styles": "^1.2.0",
+    "@marp-team/marp-core": "^4.3.0",
     "@monaco-editor/react": "^4.7.0",
     "@pinecone-database/pinecone": "^7.1.0",
     "@radix-ui/react-dialog": "^1.1.15",
