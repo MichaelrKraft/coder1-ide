@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronRight, ChevronDown, Folder, FileText, Plus, Search, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, Folder, FileText, Plus, Search, Trash2, Share2, Download } from 'lucide-react';
 import type { VaultFolderTree, VaultNoteStub } from '@/lib/vault-types';
 import { useVaultMention } from '@/hooks/useVaultMention';
 import MentionDropdown from '@/components/notes/MentionDropdown';
@@ -134,6 +134,7 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
   const [semanticLoading, setSemanticLoading] = useState(false);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [deletingEmpties, setDeletingEmpties] = useState(false);
+  const [shareToast, setShareToast] = useState<string | null>(null);
   const [confirmDeletePath, setConfirmDeletePath] = useState<string | null>(null);
   const [confirmDeleteSessions, setConfirmDeleteSessions] = useState(false);
   // Ambient install CTA — pre-fetched token so user can paste it during setup
@@ -263,6 +264,49 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
     setDeletingEmpties(false);
   }, [notes]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleShareDay = async () => {
+    try {
+      // Fetch the full note from vault API
+      const res = await fetch(`/api/vault?path=${encodeURIComponent(activeNotePath || '')}`);
+      if (!res.ok) throw new Error('Failed to fetch note');
+      const data = await res.json();
+      const note = data.note || data.notes?.[0];
+      if (!note) throw new Error('Note not found');
+
+      const { shareNote } = await import('@/lib/ambient-share-card');
+      await shareNote(note);
+
+      setShareToast('Card downloaded! Share it anywhere.');
+      setTimeout(() => setShareToast(null), 3000);
+    } catch (err) {
+      console.error('Share failed:', err);
+      setShareToast('Could not generate share card.');
+      setTimeout(() => setShareToast(null), 3000);
+    }
+  };
+
+  const handleExportMarkdown = async () => {
+    if (!activeNotePath) return;
+    try {
+      const res = await fetch(`/api/vault?path=${encodeURIComponent(activeNotePath)}`);
+      if (!res.ok) throw new Error('Failed to fetch note');
+      const data = await res.json();
+      const note = data.note || data.notes?.[0];
+      if (!note) throw new Error('Note not found');
+      const content = note.content || '';
+      const filename = activeNotePath.split('/').pop() || 'note.md';
+      const blob = new Blob([content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
+  };
+
   const handleNewNote = useCallback(async (template: NoteTemplate) => {
     setCreatingNote(true);
     const now = new Date();
@@ -385,16 +429,38 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
       {/* Top bar */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[#2a2a2a] flex-shrink-0">
         <span className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Notes</span>
-        <button
-          ref={newButtonRef}
-          className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-[#6366f1] hover:bg-[#4f46e5] text-white transition-colors disabled:opacity-50"
-          onClick={() => setShowTemplatePicker(true)}
-          disabled={creatingNote}
-          title="New Note"
-        >
-          <Plus className="w-3 h-3" />
-          <span>New</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          {activeNotePath && (
+            <>
+              <button
+                className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-[#0d1f12] hover:bg-[#1a3020] text-[#34d399] border border-[#1a3020] hover:border-[#065f46] transition-colors"
+                onClick={handleExportMarkdown}
+                title="Export to Obsidian (download .md)"
+              >
+                <Download className="w-3 h-3" />
+                <span>Export</span>
+              </button>
+              <button
+                className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-[#1a1a2e] hover:bg-[#2a1f4e] text-[#8b5cf6] border border-[#2a2a4e] hover:border-[#4c1d95] transition-colors"
+                onClick={handleShareDay}
+                title="Share your dev day"
+              >
+                <Share2 className="w-3 h-3" />
+                <span>Share</span>
+              </button>
+            </>
+          )}
+          <button
+            ref={newButtonRef}
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-[#6366f1] hover:bg-[#4f46e5] text-white transition-colors disabled:opacity-50"
+            onClick={() => setShowTemplatePicker(true)}
+            disabled={creatingNote}
+            title="New Note"
+          >
+            <Plus className="w-3 h-3" />
+            <span>New</span>
+          </button>
+        </div>
         {showTemplatePicker && (
           <TemplatePickerModal
             anchorRef={newButtonRef as React.RefObject<HTMLButtonElement>}
@@ -764,6 +830,13 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
           </div>
         );
       })()}
+
+      {/* Share toast */}
+      {shareToast && (
+        <div className="fixed bottom-4 right-4 z-50 px-4 py-2 rounded-lg bg-[#1a1a2e] border border-[#8b5cf6] text-xs text-[#8b5cf6] shadow-lg animate-fade-in">
+          {shareToast}
+        </div>
+      )}
 
       {/* Delete empty sessions confirmation modal */}
       {confirmDeleteSessions && (() => {
