@@ -18,6 +18,15 @@ export function SetupInstructionsModal({
   const [bridgeConnected, setBridgeConnected] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    if (isOpen) document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Generate pairing code on mount
   useEffect(() => {
     if (isOpen && !pairingCode) {
