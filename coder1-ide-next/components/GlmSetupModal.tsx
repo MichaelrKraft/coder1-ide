@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, ExternalLink } from '@/lib/icons';
 
 interface GlmSetupModalProps {
@@ -9,6 +9,14 @@ interface GlmSetupModalProps {
 }
 
 export function GlmSetupModal({ isOpen, onClose }: GlmSetupModalProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
