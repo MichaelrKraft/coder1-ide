@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Upload, File, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 
 interface FileUploadDialogProps {
@@ -107,10 +107,21 @@ export default function FileUploadDialog({ isOpen, onClose, onFilesUploaded }: F
     }
   };
 
+  const hasUploading = files.some(f => f.status === 'uploading');
+
   const handleClose = () => {
     setFiles([]);
     onClose();
   };
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !hasUploading) handleClose();
+    };
+    if (isOpen) document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, hasUploading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
@@ -138,11 +149,13 @@ export default function FileUploadDialog({ isOpen, onClose, onFilesUploaded }: F
   if (!isOpen) return null;
 
   const hasFiles = files.length > 0;
-  const hasUploading = files.some(f => f.status === 'uploading');
   const allCompleted = files.length > 0 && files.every(f => f.status === 'success' || f.status === 'error');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={(e) => { if (e.target === e.currentTarget && !hasUploading) handleClose(); }}
+    >
       <div className="bg-bg-secondary border border-border-default rounded-lg w-[600px] max-h-[700px] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border-default">
