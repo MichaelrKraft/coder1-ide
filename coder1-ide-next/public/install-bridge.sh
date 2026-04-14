@@ -173,16 +173,14 @@ if command -v coder1-bridge &> /dev/null; then
 
     # Check if node-pty compiled correctly
     echo -e "${BLUE}🔍 Verifying interactive mode support...${NC}"
-    if node -e "require('node-pty')" 2>/dev/null; then
+    NODE_PTY_PATH="$INSTALL_PREFIX/lib/node_modules/coder1-bridge/node_modules/node-pty"
+    if node -e "require('$NODE_PTY_PATH')" 2>/dev/null; then
         echo -e "${GREEN}✅ Interactive mode enabled (node-pty compiled)${NC}"
     else
         echo -e "${YELLOW}⚠️  Interactive mode disabled (node-pty failed to compile)${NC}"
         echo -e "${YELLOW}   You can still use non-interactive commands like: claude \"your prompt\"${NC}"
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            echo -e "${YELLOW}   To fix: Install Xcode Command Line Tools: xcode-select --install${NC}"
-        else
-            echo -e "${YELLOW}   To fix: Install build tools: sudo apt-get install build-essential${NC}"
-        fi
+        echo -e "${YELLOW}   To fix, run:${NC}"
+        echo -e "   ${GREEN}cd $INSTALL_PREFIX/lib/node_modules/coder1-bridge && npm rebuild node-pty${NC}"
     fi
     echo
     
