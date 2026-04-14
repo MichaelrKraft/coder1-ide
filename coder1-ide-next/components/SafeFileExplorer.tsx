@@ -109,7 +109,7 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
         // Reset expanded folders for new directory
         setExpandedFolders(new Set(['/']));
       } else {
-        throw new Error('Invalid response format');
+        throw new Error(data.error || 'Invalid response format');
       }
     } catch (err) {
       console.error('Failed to load file tree:', err);
@@ -231,17 +231,35 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
 
   // Error state
   if (error) {
+    const isNoFiles = error.includes('ENOENT') || error.includes('user-workspaces') || error.includes('no such file');
     return (
       <div className="h-full flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="text-red-400 text-sm mb-2">Failed to load files</div>
-          <div className="text-text-muted text-xs">{error}</div>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-2 px-3 py-1 text-xs bg-bg-tertiary hover:bg-bg-secondary rounded transition-colors"
-          >
-            Retry
-          </button>
+          {isNoFiles ? (
+            <>
+              <div className="text-text-secondary text-sm mb-2">No files to show</div>
+              <div className="text-text-muted text-xs mb-3">
+                Connect the Coder1 bridge to browse your local files
+              </div>
+              <a
+                href="/bridge-setup"
+                className="px-3 py-1 text-xs bg-coder1-cyan/20 text-coder1-cyan hover:bg-coder1-cyan/30 rounded transition-colors"
+              >
+                Connect Bridge
+              </a>
+            </>
+          ) : (
+            <>
+              <div className="text-red-400 text-sm mb-2">Failed to load files</div>
+              <div className="text-text-muted text-xs">{error}</div>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-2 px-3 py-1 text-xs bg-bg-tertiary hover:bg-bg-secondary rounded transition-colors"
+              >
+                Retry
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
