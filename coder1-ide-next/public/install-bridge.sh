@@ -162,9 +162,9 @@ fi
 echo -e "${BLUE}🔗 Installing to $INSTALL_PREFIX...${NC}"
 
 if [ "$INSTALL_MODE" = "global" ]; then
-    npm install -g "$TEMP_DIR/bridge-cli.tar.gz" --prefix=/usr/local --unsafe-perm --build-from-source
+    npm install -g "$TEMP_DIR/bridge-cli.tar.gz" --prefix=/usr/local --unsafe-perm --build-from-source --force
 else
-    npm install -g "$TEMP_DIR/bridge-cli.tar.gz" --prefix="$INSTALL_PREFIX" --unsafe-perm --build-from-source
+    npm install -g "$TEMP_DIR/bridge-cli.tar.gz" --prefix="$INSTALL_PREFIX" --unsafe-perm --build-from-source --force
 fi
 
 # Verify installation
