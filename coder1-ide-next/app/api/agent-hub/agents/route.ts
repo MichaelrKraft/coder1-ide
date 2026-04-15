@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
+import { access } from 'fs/promises';
 import { createAgent, listAgents, seedDefaultAgents, type CreateAgentInput } from '@/lib/agent-hub/agents';
 import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 
@@ -48,6 +49,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!path.isAbsolute(workspacePath)) {
     return NextResponse.json({ error: 'workspacePath must be an absolute path' }, { status: 400 });
   }
+
+  // Verify the workspace directory exists on the server's filesystem.
+  // For bridge-based setups this won't catch remote paths, but catches
+  // obvious typos and non-existent paths before they fail silently at run time.
+  try {
+    await access(workspacePath as string);
+  } catch {
+    return NextResponse.json(
+      { error: `workspacePath does not exist or is not accessible: ${workspacePath}` },
+      { status: 400 }
+    );
+  }
+
   if (!systemPrompt || typeof systemPrompt !== 'string') {
     return NextResponse.json({ error: 'systemPrompt is required' }, { status: 400 });
   }

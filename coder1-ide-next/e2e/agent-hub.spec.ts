@@ -175,6 +175,21 @@ test.describe('Agent Hub — Agents', () => {
     await expect(page.getByRole('heading', { name: 'New Agent', exact: true })).not.toBeVisible({ timeout: 5000 });
   });
 
+  test('agent creation rejects non-existent workspacePath', async ({ request }) => {
+    const res = await request.post('/api/agent-hub/agents', {
+      data: {
+        name: 'Test Agent',
+        role: 'tester',
+        workspacePath: '/this/path/does/not/exist/ever',
+        model: 'claude-sonnet-4-5',
+        systemPrompt: 'test',
+      },
+    });
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('does not exist');
+  });
+
   test('closes the form when X button is clicked', async ({ page }) => {
     await page.locator('button[title="New Agent"], button:has(svg.lucide-plus)').first().click();
     await expect(page.getByRole('heading', { name: 'New Agent', exact: true })).toBeVisible({ timeout: 5000 });
