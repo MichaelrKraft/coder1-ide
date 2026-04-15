@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, List, GitBranch, LayoutGrid } from 'lucide-react';
+import { Plus, List, GitBranch, LayoutGrid, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import AgentStatusChip from './AgentStatusChip';
 import AgentForm from './AgentForm';
@@ -50,6 +50,17 @@ export default function AgentList({ onAgentSelect, selectedAgentId, refreshTrigg
   useEffect(() => {
     void loadAgents();
   }, [refreshTrigger]);
+
+  async function handleDelete(agentId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm('Delete this agent? This cannot be undone.')) return;
+    try {
+      await fetch(`/api/agent-hub/agents/${agentId}`, { method: 'DELETE' });
+      setAgents(prev => prev.filter(a => a.id !== agentId));
+    } catch {
+      // Silent fail
+    }
+  }
 
   function handleSave(agent: Agent) {
     setAgents(prev => {
@@ -127,7 +138,7 @@ export default function AgentList({ onAgentSelect, selectedAgentId, refreshTrigg
         ) : viewMode === 'list' ? (
           <ul className="divide-y divide-border-default">
             {agents.map(agent => (
-              <li key={agent.id}>
+              <li key={agent.id} className="group relative">
                 <button
                   onClick={() => onAgentSelect(agent.id)}
                   className={`w-full text-left px-4 py-3 hover:bg-bg-secondary transition-colors ${
@@ -152,6 +163,13 @@ export default function AgentList({ onAgentSelect, selectedAgentId, refreshTrigg
                       {relativeTime(agent.lastRunAt)}
                     </span>
                   </div>
+                </button>
+                <button
+                  onClick={(e) => void handleDelete(agent.id, e)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-text-muted hover:text-red-400 hover:bg-red-400/10"
+                  title="Delete agent"
+                >
+                  <Trash2 size={12} />
                 </button>
               </li>
             ))}
