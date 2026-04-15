@@ -2,8 +2,9 @@ import { NextRequest } from 'next/server';
 import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 
 export function getAuthenticatedUserId(request: NextRequest): string | null {
-  // In development, always return 'default' to prevent userId splits
-  // between authenticated and unauthenticated states
+  // Dev bypass: local dev has no auth server, so all requests are userId='default'.
+  // This MUST NOT run in production — the condition below ensures that.
+  // If you see 'default' userId in prod logs, this bypass is leaking.
   if (process.env.NODE_ENV === 'development') {
     return 'default';
   }
