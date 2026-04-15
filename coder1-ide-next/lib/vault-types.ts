@@ -112,3 +112,34 @@ export interface FileLink {
   line: number;
   createdAt: number;
 }
+
+// Code Dependency Graph types
+
+export interface CodeGraphNode {
+  id: string;              // relative path from workspace root (e.g. "components/graph/KnowledgeGraph.tsx")
+  label: string;           // filename without extension ("KnowledgeGraph")
+  fullPath: string;        // absolute path — used to open file in Monaco
+  directory: string;       // top-level directory name ("components") — used for color grouping
+  ext: string;             // ".tsx" | ".ts" | ".js" | ".jsx"
+  importedByCount: number; // incoming edges — determines node size
+  importCount: number;     // outgoing edges — how many files this imports
+}
+
+export interface CodeGraphLink {
+  source: string;          // relative path of importer
+  target: string;          // relative path of imported file
+  type: 'static' | 'dynamic';
+}
+
+export interface CodeGraphData {
+  nodes: CodeGraphNode[];
+  links: CodeGraphLink[];
+  stats: {
+    totalFiles: number;
+    totalImports: number;
+    orphanFiles: number;
+    resolvedImports: number;
+    unresolvedImports: number;
+    truncated?: boolean;
+  };
+}

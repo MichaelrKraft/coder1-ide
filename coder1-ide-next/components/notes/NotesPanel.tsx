@@ -407,6 +407,16 @@ export default function NotesPanel({ onNoteSelect, activeNotePath, compact }: No
         >
           Notes
         </button>
+        <button
+          onClick={() => setActiveTab('codenexus')}
+          className={`px-4 py-2 text-xs font-medium transition-colors ${
+            activeTab === 'codenexus'
+              ? 'text-[#00d4ff] border-b-2 border-[#00d4ff]'
+              : 'text-[#6b7280] hover:text-[#9ca3af]'
+          }`}
+        >
+          Code Graph
+        </button>
       </div>
 
       {/* CodeNexus tab content */}
