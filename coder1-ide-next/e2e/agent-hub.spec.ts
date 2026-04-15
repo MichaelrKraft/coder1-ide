@@ -574,3 +574,25 @@ test('agent hub dashboard loads without userId errors in console', async ({ page
   await page.waitForLoadState('networkidle');
   expect(errors).toHaveLength(0);
 });
+
+test('bridge smoke: agent hub APIs accessible and dashboard loads', async ({ page, request }) => {
+  // Intercept run status polling to simulate bridge response
+  await page.route('/api/agent-hub/runs/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'running', output: '', cost: 0 }),
+    });
+  });
+
+  // Navigate to dashboard
+  await page.goto('/ide/agent-hub/dashboard');
+  await page.waitForLoadState('networkidle');
+
+  // Verify core APIs return 200 (no 500s)
+  const agentsCheck = await request.get('/api/agent-hub/agents');
+  expect(agentsCheck.status()).toBe(200);
+
+  const tasksCheck = await request.get('/api/agent-hub/tasks');
+  expect([200, 404]).toContain(tasksCheck.status());
+});
