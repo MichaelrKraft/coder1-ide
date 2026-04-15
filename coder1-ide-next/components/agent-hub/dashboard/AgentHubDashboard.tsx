@@ -58,6 +58,22 @@ interface RecentTask {
   agent_name: string | null;
 }
 
+interface AgentCost {
+  agentId: string;
+  agentName: string;
+  totalCents: number;
+}
+
+interface BridgeStatus {
+  connected: boolean;
+  bridge: {
+    id: string;
+    connectedAt: string;
+    platform: string;
+    version: string;
+  } | null;
+}
+
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
@@ -124,6 +140,8 @@ export default function AgentHubDashboard() {
   const [humanInputRuns, setHumanInputRuns] = useState<HumanInputRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [costByAgent, setCostByAgent] = useState<AgentCost[]>([]);
+  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus | null>(null);
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -146,6 +164,7 @@ export default function AgentHubDashboard() {
             taskTitle: r.task_title,
           }))
         );
+        setCostByAgent(data.costByAgent || []);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Failed to load dashboard');
       } finally {
@@ -153,6 +172,18 @@ export default function AgentHubDashboard() {
       }
     }
     fetchDashboard();
+  }, []);
+
+  useEffect(() => {
+    const fetchBridgeStatus = async () => {
+      try {
+        const res = await fetch('/api/agent-hub/bridge-status');
+        if (res.ok) setBridgeStatus(await res.json() as BridgeStatus);
+      } catch { /* silent */ }
+    };
+    void fetchBridgeStatus();
+    const interval = setInterval(() => void fetchBridgeStatus(), 15_000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
@@ -288,6 +319,27 @@ export default function AgentHubDashboard() {
         })}
       </div>
 
+      {/* Bridge Status — full-width row below stat cards */}
+      <div className="bg-bg-secondary border border-border-default rounded-lg p-4 flex items-center gap-4">
+        <span
+          className={`w-3 h-3 rounded-full shrink-0 ${
+            bridgeStatus?.connected ? 'bg-green-400' : 'bg-red-400 animate-pulse'
+          }`}
+        />
+        <div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+            Bridge Status
+          </span>
+          <span className="text-xs text-text-muted ml-3">
+            {bridgeStatus === null
+              ? 'Checking...'
+              : bridgeStatus.connected && bridgeStatus.bridge
+              ? `Connected · ${bridgeStatus.bridge.platform} v${bridgeStatus.bridge.version}`
+              : 'Not connected — run: coder1-bridge start'}
+          </span>
+        </div>
+      </div>
+
       {/* Two-column layout: Recent Activity + Recent Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
@@ -363,6 +415,37 @@ export default function AgentHubDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Cost by Agent */}
+      {costByAgent.length > 0 && (
+        <div className="bg-bg-secondary border border-border-default rounded-lg">
+          <div className="px-4 py-3 border-b border-border-default">
+            <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider">
+              Cost This Month by Agent
+            </h2>
+          </div>
+          <div className="p-4 space-y-3">
+            {costByAgent.map((agent) => {
+              const totalCents = stats?.monthSpendCents ?? 0;
+              const pct = totalCents > 0 ? Math.round((agent.totalCents / totalCents) * 100) : 0;
+              return (
+                <div key={agent.agentId} className="flex items-center gap-3">
+                  <span className="text-xs text-text-secondary truncate w-32">{agent.agentName}</span>
+                  <div className="flex-1 h-1.5 bg-bg-tertiary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-coder1-cyan/60 rounded-full"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-text-muted w-14 text-right">
+                    {formatCents(agent.totalCents)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Calendar */}
       <div className="bg-bg-secondary border border-border-default rounded-lg">
