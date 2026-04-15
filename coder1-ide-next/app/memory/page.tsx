@@ -418,7 +418,7 @@ function TimelineContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
           <button 
@@ -448,7 +448,7 @@ function TimelineContent() {
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:opacity-50 rounded transition-colors text-sm"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#242424] hover:bg-[#2a2a2a] disabled:bg-[#1a1a1a] disabled:opacity-50 rounded transition-colors text-sm text-white"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -457,7 +457,7 @@ function TimelineContent() {
         </div>
 
         {/* Tab Bar */}
-        <div className="flex border-b border-gray-700 mb-6">
+        <div className="flex border-b border-[#2a2a2a] mb-6">
           <button
             onClick={() => router.push('/memory?tab=timeline')}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
@@ -485,7 +485,7 @@ function TimelineContent() {
               onClick={() => { setActiveNotePath(null); router.push('/memory?tab=notes'); }}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'notes'
-                  ? 'border-purple-400 text-purple-400'
+                  ? 'border-[#8b5cf6] text-[#8b5cf6]'
                   : 'border-transparent text-gray-400 hover:text-white'
               }`}
             >
@@ -517,10 +517,10 @@ function TimelineContent() {
         )}
 
         {activeTab === 'notes' && vaultEnabled && (
-          <div style={{ height: 'calc(100vh - 180px)' }} className="flex overflow-hidden rounded-lg border border-gray-800">
+          <div style={{ height: 'calc(100vh - 180px)' }} className="flex overflow-hidden rounded-lg border border-[#1e1e1e]">
             {activeNotePath ? (
               <>
-                <div className="w-52 flex-shrink-0 border-r border-gray-800 overflow-hidden">
+                <div className="w-52 flex-shrink-0 border-r border-[#1e1e1e] overflow-hidden">
                   <NotesPanel onNoteSelect={setActiveNotePath} activeNotePath={activeNotePath} compact />
                 </div>
                 <div className="flex-1 min-w-0 overflow-hidden">
@@ -550,7 +550,7 @@ function TimelineContent() {
             <select
               value={selectedSession}
               onChange={(e) => handleSessionChange(e.target.value)}
-              className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+              className="bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-[#00D9FF] transition-colors"
             >
               <option value="all">All Sessions ({sessions.length})</option>
               <option value="current">🎯 Current Session</option>
@@ -567,7 +567,7 @@ function TimelineContent() {
             <select
               value={checkpointType}
               onChange={(e) => handleTypeChange(e.target.value as 'manual' | 'auto' | 'all')}
-              className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-purple-500 transition-colors"
+              className="bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-[#8b5cf6] transition-colors"
             >
               <option value="manual">📋 Manual Checkpoints</option>
               <option value="auto">⏰ Auto Checkpoints</option>
@@ -579,7 +579,7 @@ function TimelineContent() {
         {loading ? (
           <div className="text-center text-gray-400">Loading timeline...</div>
         ) : events.length === 0 ? (
-          <div className="bg-gray-800 rounded-lg p-8 text-center">
+          <div className="bg-[#1a1a1a] rounded-lg p-8 text-center">
             <Clock className="w-12 h-12 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400">No timeline events yet</p>
             <p className="text-sm text-gray-500 mt-2">Events will appear here as you work on your project</p>
@@ -587,7 +587,7 @@ function TimelineContent() {
         ) : (
           <>
             {/* Stats Bar with Select All and Bulk Delete */}
-            <div className="mb-4 p-3 bg-gray-800 border border-gray-700 rounded-lg flex items-center justify-between text-sm">
+            <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg flex items-center justify-between text-sm">
               <div className="flex items-center gap-4">
                 {/* Select All Checkbox */}
                 <label className="flex items-center gap-2 cursor-pointer hover:text-cyan-400 transition-colors">
@@ -595,7 +595,7 @@ function TimelineContent() {
                     type="checkbox"
                     checked={selectAllChecked}
                     onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-gray-800 cursor-pointer"
+                    className="w-4 h-4 rounded border-[#3a3a3a] bg-[#1a1a1a] text-[#00D9FF] focus:ring-[#00D9FF] cursor-pointer"
                   />
                   <span className="text-gray-400">
                     Select All ({events.length})
@@ -654,22 +654,22 @@ function TimelineContent() {
                         type="checkbox"
                         checked={selectedCheckpoints.has(event.id)}
                         onChange={() => toggleCheckpointSelection(event.id)}
-                        className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-gray-800 cursor-pointer"
+                        className="w-4 h-4 rounded border-[#3a3a3a] bg-[#1a1a1a] text-[#00D9FF] focus:ring-[#00D9FF] cursor-pointer"
                       />
                     </div>
                     
                     {/* Timeline line */}
                     {!isLast && (
-                      <div className="absolute left-10 top-8 bottom-0 w-0.5 bg-gray-700" />
+                      <div className="absolute left-10 top-8 bottom-0 w-0.5 bg-[#2a2a2a]" />
                     )}
                     
                     {/* Icon */}
-                    <div className="relative z-10 flex-shrink-0 w-8 h-8 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center">
+                    <div className="relative z-10 flex-shrink-0 w-8 h-8 rounded-full bg-[#1a1a1a] border-2 border-[#2a2a2a] flex items-center justify-center">
                       {getIcon(event.type)}
                     </div>
                     
                     {/* Content */}
-                    <div className="flex-1 bg-gray-800 rounded-lg p-4 border border-cyan-500/50 hover:border-cyan-500 shadow-glow-cyan transition-colors group">
+                    <div className="flex-1 bg-[#1a1a1a] rounded-lg p-4 border border-[#00D9FF]/30 hover:border-[#00D9FF]/70 transition-colors group">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           {editingCheckpoint === event.id ? (
@@ -685,7 +685,7 @@ function TimelineContent() {
                                     handleEditCancel();
                                   }
                                 }}
-                                className="flex-1 bg-gray-900 border border-cyan-500 text-white rounded px-2 py-1 text-sm focus:outline-none focus:border-cyan-400"
+                                className="flex-1 bg-[#0d0d0d] border border-[#00D9FF] text-white rounded px-2 py-1 text-sm focus:outline-none focus:border-[#00D9FF]/70"
                                 autoFocus
                               />
                               <button
@@ -696,7 +696,7 @@ function TimelineContent() {
                               </button>
                               <button
                                 onClick={handleEditCancel}
-                                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white transition-colors"
+                                className="px-2 py-1 bg-[#2a2a2a] hover:bg-[#333] rounded text-xs text-white transition-colors"
                               >
                                 Cancel
                               </button>
@@ -769,7 +769,7 @@ function TimelineContent() {
                           {event.details.metadata.tags.map((tag: string) => (
                             <span
                               key={tag}
-                              className="text-xs px-1.5 py-0.5 bg-gray-700 rounded"
+                              className="text-xs px-1.5 py-0.5 bg-[#2a2a2a] text-[#9ca3af] rounded"
                             >
                               {tag}
                             </span>

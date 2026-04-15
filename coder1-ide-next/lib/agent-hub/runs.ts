@@ -316,6 +316,88 @@ export function getRunThoughts(runId: string): RunThought[] {
 }
 
 /**
+ * Write a hive mind entry after a run completes.
+ * Summarizes what the agent did using Claude Haiku, then records it for teammates.
+ */
+export async function writeHiveMindEntry(runId: string, userId: string): Promise<void> {
+  try {
+    const db = getAgentHubDatabase();
+
+    const run = db.prepare(
+      `SELECT r.*, a.role as agent_role, a.name as agent_name, t.title as task_title
+       FROM agent_hub_runs r
+       LEFT JOIN agent_hub_agents a ON a.id = r.agent_id
+       LEFT JOIN agent_hub_tasks t ON t.id = r.task_id
+       WHERE r.id = ? AND r.user_id = ?`
+    ).get(runId, userId) as Record<string, unknown> | undefined;
+
+    if (!run) return;
+
+    const chunks = db.prepare(
+      `SELECT content FROM agent_hub_run_log_chunks WHERE run_id = ? AND log_type = 'stdout'
+       ORDER BY chunk_index ASC`
+    ).all(runId) as { content: string }[];
+
+    const stdout = chunks.map(c => c.content).join('').slice(0, 8000);
+    const outcome: 'success' | 'failed' | 'partial' =
+      run.exit_code === 0 ? 'success' : run.exit_code === null ? 'partial' : 'failed';
+
+    let summary = `Agent completed task: ${run.task_title ?? 'unknown'}. Exit code: ${run.exit_code ?? 'none'}.`;
+
+    try {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (apiKey) {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 200,
+            messages: [{
+              role: 'user',
+              content: `Summarize in 2-3 sentences what this agent just did, what files it touched, and the outcome.
+Task: ${run.task_title ?? 'unknown'}
+Role: ${run.agent_role ?? 'unknown'}
+Exit code: ${run.exit_code ?? 'none'}
+Output (truncated):
+${stdout.slice(0, 4000)}`,
+            }],
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json() as { content?: Array<{ text?: string }> };
+          const text = data.content?.[0]?.text ?? '';
+          if (text) summary = text;
+        }
+      }
+    } catch {
+      // Haiku unavailable — use fallback summary
+    }
+
+    db.prepare(
+      `INSERT INTO agent_hub_hive_mind
+         (id, user_id, agent_id, agent_role, action_type, task_title, summary, outcome, run_id)
+       VALUES (?, ?, ?, ?, 'task_complete', ?, ?, ?, ?)`
+    ).run(
+      uuidv4(),
+      userId,
+      run.agent_id as string,
+      (run.agent_role as string) ?? 'unknown',
+      (run.task_title as string) ?? 'unknown',
+      summary,
+      outcome,
+      runId,
+    );
+  } catch (err) {
+    console.warn('[agent-hub] writeHiveMindEntry failed (non-critical):', err instanceof Error ? err.message : err);
+  }
+}
+
+/**
  * Returns the human input response from the most recent run for a task
  * that had needs_human_input status (stored in humanInputResponse).
  * Used to inject context into the next run when a task was previously escalated.

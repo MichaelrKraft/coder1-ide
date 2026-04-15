@@ -307,6 +307,25 @@ export interface Johnny5ActivityEntry {
 // Morning Brief Types
 // ================================================================================
 
+export interface PhScoutGap {
+  type: 'A' | 'B' | 'C';
+  confidence: number;        // 1–3
+  topic: string;
+  signal: string;
+  topProduct?: string;
+  angle?: string;
+  commentInsight?: string;
+}
+
+export interface PhScoutBrief {
+  week: string;              // e.g. "2026-W15"
+  dateStr: string;           // e.g. "April 10, 2026"
+  productCount: number;
+  totalGaps: number;
+  topGaps: PhScoutGap[];
+  obsidianPath: string;
+}
+
 export interface Johnny5MorningBrief {
   id: string;
   date: Date;
@@ -321,6 +340,7 @@ export interface Johnny5MorningBrief {
   needsAttention: Johnny5BriefItem[];
   learnings?: Johnny5BriefItem[];         // Recent facts + patterns
   livingFileChanges?: Johnny5BriefItem[]; // Living file changes
+  phScout?: PhScoutBrief;                 // Weekly Product Hunt gap analysis
   summary: string;
   stats?: {
     tokensUsed: number;

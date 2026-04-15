@@ -89,8 +89,8 @@ export async function POST(request: NextRequest) {
         : {}),
     };
 
-    // 7. Get vault service
-    const vault = getVaultService();
+    // 7. Get vault service — scoped to this user's database
+    const vault = getVaultService(userId);
     if (!vault) {
       return NextResponse.json({ error: 'Knowledge base is unavailable' }, { status: 503 });
     }

@@ -22,6 +22,7 @@ export interface Agent {
   telegramBotToken: string | null;
   telegramChatId: string | null;
   mcpServers: string[];
+  lastSessionId: string | null;
 }
 
 export type CreateAgentInput = Omit<
@@ -55,6 +56,7 @@ interface AgentRow {
   telegram_bot_token: string | null;
   telegram_chat_id: string | null;
   mcp_servers: string;
+  last_session_id: string | null;
 }
 
 function rowToAgent(row: AgentRow): Agent {
@@ -81,6 +83,7 @@ function rowToAgent(row: AgentRow): Agent {
       : null,
     telegramChatId: row.telegram_chat_id,
     mcpServers: JSON.parse(row.mcp_servers || '[]') as string[],
+    lastSessionId: row.last_session_id ?? null,
   };
 }
 
@@ -240,6 +243,16 @@ export function getAgentRawTelegramToken(id: string, userId: string): string | n
   const row = db.prepare('SELECT telegram_bot_token FROM agent_hub_agents WHERE id = ? AND user_id = ?')
     .get(id, userId) as { telegram_bot_token: string | null } | undefined;
   return row?.telegram_bot_token ?? null;
+}
+
+/**
+ * Persist the last Claude session ID on the agent so subsequent runs can resume it.
+ */
+export function updateAgentSessionId(agentId: string, userId: string, sessionId: string): void {
+  const db = getAgentHubDatabase();
+  db.prepare(
+    `UPDATE agent_hub_agents SET last_session_id = ? WHERE id = ? AND user_id = ?`
+  ).run(sessionId, agentId, userId);
 }
 
 /**

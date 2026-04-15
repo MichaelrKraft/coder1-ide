@@ -25,7 +25,7 @@ export type CronSchedule =
 
 export interface CronPayload {
   message: string;
-  action?: 'morning_brief' | 'trend_check' | 'build_check' | 'tiktok_content' | 'content_factory' | 'memory_compress' | 'custom';
+  action?: 'morning_brief' | 'trend_check' | 'build_check' | 'tiktok_content' | 'content_factory' | 'memory_compress' | 'ph_scout' | 'full_flow_factory' | 'custom';
   hook?: string; // Pre-queued hook text (for tiktok_content action)
   deliver?: boolean;  // Send notification?
 }
@@ -745,6 +745,30 @@ export function getCronService(config?: CronServiceConfig): CronService {
             console.log('[CronService] Memory compression job completed');
           } catch (err) {
             console.error('[CronService] Memory compression job failed:', err);
+            throw err;
+          }
+        }
+
+        // Handle ph_scout action — scrape Product Hunt, run gap analysis, write top gap to handoff file
+        if (job.payload.action === 'ph_scout') {
+          try {
+            const { runPhScout } = await import('@/services/johnny5/ph-scout-service');
+            const result = await runPhScout();
+            console.log(`[CronService] PH Scout completed: topGap="${result.topGap}" written to ${result.handoffPath}`);
+          } catch (err) {
+            console.error('[CronService] PH Scout failed:', err);
+            throw err;
+          }
+        }
+
+        // Handle full_flow_factory action — read top PH gap, run /full-flow autonomously
+        if (job.payload.action === 'full_flow_factory') {
+          try {
+            const { runFullFlowFactory } = await import('@/services/johnny5/full-flow-factory-service');
+            const result = await runFullFlowFactory();
+            console.log(`[CronService] Full Flow Factory started: idea="${result.idea}" pid=${result.pid}`);
+          } catch (err) {
+            console.error('[CronService] Full Flow Factory failed:', err);
             throw err;
           }
         }

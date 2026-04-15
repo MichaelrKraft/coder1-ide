@@ -1,4 +1,13 @@
 /**
+ * @deprecated Replaced by the Morning Brief on Steroids system.
+ * Use the /morning-brief-steroids skill instead.
+ * Data pipeline: ~/.claude/skills/morning-brief-steroids/SKILL.md
+ * Web output: public/morning-briefs/{date}.html (served at localhost:3001)
+ * CLI output: /morning-brief command
+ * This file is kept for reference only and will be removed in a future cleanup.
+ */
+
+/**
  * Johnny5 Morning Brief Generator Service
  *
  * Generates daily briefings from REAL data collected overnight.
@@ -7,9 +16,11 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import type {
   Johnny5MorningBrief,
   Johnny5BriefItem,
+  PhScoutBrief,
 } from '@/types/johnny5';
 import { getTasks, getTaskStats } from './task-tracker';
 import { getSessionSummaries } from './session-tracker';
@@ -325,6 +336,19 @@ export async function generateMorningBrief(targetDate: Date, userId: string = 'd
   // Get usage stats for the day
   const usageStats = getUsageStats(1);
 
+  // PH Scout integration — read latest weekly gap analysis
+  let phScout: PhScoutBrief | undefined;
+  const phScoutPath = path.join(os.homedir(), 'ph-scout', 'data', 'latest.json');
+  try {
+    if (fs.existsSync(phScoutPath)) {
+      const raw = fs.readFileSync(phScoutPath, 'utf-8');
+      phScout = JSON.parse(raw) as PhScoutBrief;
+      console.log(`[MorningBriefGenerator] Loaded PH Scout data for ${phScout.week}`);
+    }
+  } catch (err) {
+    console.warn('[MorningBrief] Failed to load PH Scout data:', err);
+  }
+
   // Create brief
   const brief: Johnny5MorningBrief = {
     id: `brief-${dateKey}`,
@@ -341,6 +365,7 @@ export async function generateMorningBrief(targetDate: Date, userId: string = 'd
     needsAttention,
     learnings: [...factItems, ...patternItems],
     livingFileChanges: changeItems,
+    phScout,
     stats: {
       tokensUsed: usageStats.totalTokens,
       tasksCompleted: overnightTasks.filter(t => t.status === 'completed').length,

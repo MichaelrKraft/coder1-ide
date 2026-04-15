@@ -12,6 +12,11 @@ export interface MemoryEntry {
   createdAt: string;
   scope: MemoryScope;
   projectId: string | null;
+  importance: number;
+  memoryType: string;
+  salience: number;
+  expiresAt: string | null;
+  accessCount: number;
 }
 
 interface MemoryRow {
@@ -23,6 +28,11 @@ interface MemoryRow {
   created_at: string;
   scope: string;
   project_id: string | null;
+  importance: number | null;
+  memory_type: string | null;
+  salience: number | null;
+  expires_at: string | null;
+  access_count: number | null;
 }
 
 const MAX_MEMORIES_PER_AGENT = 100;
@@ -37,6 +47,11 @@ function rowToMemory(row: MemoryRow): MemoryEntry {
     createdAt: row.created_at,
     scope: (row.scope as MemoryScope) || 'agent',
     projectId: row.project_id ?? null,
+    importance: row.importance ?? 0.5,
+    memoryType: row.memory_type ?? 'context',
+    salience: row.salience ?? 1.0,
+    expiresAt: row.expires_at ?? null,
+    accessCount: row.access_count ?? 0,
   };
 }
 
@@ -58,16 +73,19 @@ export function storeMemory(
   runId: string | null,
   summary: string,
   scope: MemoryScope = 'agent',
-  projectId: string | null = null
+  projectId: string | null = null,
+  importance: number = 0.5,
+  memoryType: string = 'context'
 ): MemoryEntry {
   const db = getAgentHubDatabase();
   const id = uuidv4();
   const now = new Date().toISOString();
 
   db.prepare(
-    `INSERT INTO agent_hub_memory (id, agent_id, user_id, run_id, summary, created_at, scope, project_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, agentId, userId, runId, summary, now, scope, projectId);
+    `INSERT INTO agent_hub_memory
+       (id, agent_id, user_id, run_id, summary, created_at, scope, project_id, importance, memory_type, salience, access_count)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1.0, 0)`
+  ).run(id, agentId, userId, runId, summary, now, scope, projectId, importance, memoryType);
 
   // Sync to FTS5 if available
   if (hasFts(db)) {
@@ -114,12 +132,21 @@ export function recallMemory(
 ): MemoryEntry[] {
   const db = getAgentHubDatabase();
 
+  const incrementAccess = (ids: string[]) => {
+    for (const id of ids) {
+      try {
+        db.prepare(`UPDATE agent_hub_memory SET access_count = COALESCE(access_count, 0) + 1 WHERE id = ?`).run(id);
+      } catch { /* non-critical */ }
+    }
+  };
+
   if (!query.trim()) {
-    // No query -- return most recent
+    // No query -- return by importance * salience DESC
     const rows = db.prepare(
       `SELECT * FROM agent_hub_memory WHERE agent_id = ? AND user_id = ?
-       ORDER BY created_at DESC LIMIT ?`
+       ORDER BY (COALESCE(importance, 0.5) * COALESCE(salience, 1.0)) DESC, created_at DESC LIMIT ?`
     ).all(agentId, userId, limit) as MemoryRow[];
+    incrementAccess(rows.map(r => r.id));
     return rows.map(rowToMemory);
   }
 
@@ -128,8 +155,9 @@ export function recallMemory(
   if (!safeQuery || !hasFts(db)) {
     const rows = db.prepare(
       `SELECT * FROM agent_hub_memory WHERE agent_id = ? AND user_id = ?
-       ORDER BY created_at DESC LIMIT ?`
+       ORDER BY (COALESCE(importance, 0.5) * COALESCE(salience, 1.0)) DESC, created_at DESC LIMIT ?`
     ).all(agentId, userId, limit) as MemoryRow[];
+    incrementAccess(rows.map(r => r.id));
     return rows.map(rowToMemory);
   }
 
@@ -142,8 +170,9 @@ export function recallMemory(
     if (ftsResults.length === 0) {
       const rows = db.prepare(
         `SELECT * FROM agent_hub_memory WHERE agent_id = ? AND user_id = ?
-         ORDER BY created_at DESC LIMIT ?`
+         ORDER BY (COALESCE(importance, 0.5) * COALESCE(salience, 1.0)) DESC, created_at DESC LIMIT ?`
       ).all(agentId, userId, limit) as MemoryRow[];
+      incrementAccess(rows.map(r => r.id));
       return rows.map(rowToMemory);
     }
 
@@ -152,15 +181,17 @@ export function recallMemory(
     const rows = db.prepare(
       `SELECT * FROM agent_hub_memory
        WHERE id IN (${placeholders}) AND agent_id = ? AND user_id = ?
-       ORDER BY created_at DESC LIMIT ?`
+       ORDER BY (COALESCE(importance, 0.5) * COALESCE(salience, 1.0)) DESC, created_at DESC LIMIT ?`
     ).all(...ids, agentId, userId, limit) as MemoryRow[];
+    incrementAccess(rows.map(r => r.id));
     return rows.map(rowToMemory);
   } catch {
     // FTS5 query error -- fall back to recent
     const rows = db.prepare(
       `SELECT * FROM agent_hub_memory WHERE agent_id = ? AND user_id = ?
-       ORDER BY created_at DESC LIMIT ?`
+       ORDER BY (COALESCE(importance, 0.5) * COALESCE(salience, 1.0)) DESC, created_at DESC LIMIT ?`
     ).all(agentId, userId, limit) as MemoryRow[];
+    incrementAccess(rows.map(r => r.id));
     return rows.map(rowToMemory);
   }
 }
@@ -194,6 +225,47 @@ export function clearMemory(agentId: string, userId: string): void {
   db.prepare(
     `DELETE FROM agent_hub_memory WHERE agent_id = ? AND user_id = ?`
   ).run(agentId, userId);
+}
+
+/**
+ * Decay salience values for memories older than 1 day.
+ * Higher importance = slower decay. Hard-delete when salience < 0.05.
+ */
+export function decayMemories(userId: string): void {
+  const db = getAgentHubDatabase();
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  // Fetch entries older than 1 day
+  const rows = db.prepare(
+    `SELECT id, importance, salience FROM agent_hub_memory
+     WHERE user_id = ? AND created_at < ?`
+  ).all(userId, oneDayAgo) as { id: string; importance: number | null; salience: number | null }[];
+
+  for (const row of rows) {
+    const importance = row.importance ?? 0.5;
+    const salience = row.salience ?? 1.0;
+
+    let decayRate: number;
+    if (importance >= 0.8) {
+      decayRate = 0.01;
+    } else if (importance >= 0.5) {
+      decayRate = 0.02;
+    } else {
+      decayRate = 0.05;
+    }
+
+    const newSalience = salience * (1 - decayRate);
+
+    if (newSalience < 0.05) {
+      // Hard delete
+      db.prepare(`DELETE FROM agent_hub_memory WHERE id = ?`).run(row.id);
+      if (hasFts(db)) {
+        try { db.prepare(`DELETE FROM agent_hub_memory_fts WHERE id = ?`).run(row.id); } catch { /* non-critical */ }
+      }
+    } else {
+      db.prepare(`UPDATE agent_hub_memory SET salience = ? WHERE id = ?`).run(newSalience, row.id);
+    }
+  }
 }
 
 /**

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import AgentStatusChip from './AgentStatusChip';
 import type { Agent } from '@/lib/agent-hub/agents';
+import type { CronTask } from '@/lib/agent-hub/db';
 
 interface AgentStats {
   successRate: { total: number; succeeded: number };
@@ -46,6 +47,40 @@ const MODEL_SHORT: Record<string, string> = {
   'claude-sonnet-4-6': 'Sonnet',
   'claude-opus-4-6': 'Opus',
 };
+
+function CronTaskBadge({ agentId }: { agentId: string }): React.ReactElement | null {
+  const [activeCount, setActiveCount] = useState<number>(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/agent-hub/cron-tasks?agentId=${encodeURIComponent(agentId)}`)
+      .then(async (r) => {
+        if (!r.ok) return;
+        const data = await r.json() as { tasks: CronTask[] };
+        if (!cancelled) {
+          const count = data.tasks.filter(t => t.status === 'active').length;
+          setActiveCount(count);
+        }
+      })
+      .catch(() => { /* badge is non-critical */ });
+    return () => { cancelled = true; };
+  }, [agentId]);
+
+  if (activeCount === 0) return null;
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-coder1-cyan/10 text-coder1-cyan border border-coder1-cyan/20"
+      title={`${activeCount} scheduled cron task${activeCount !== 1 ? 's' : ''}`}
+    >
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M6 3v3l2 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+      {activeCount}
+    </span>
+  );
+}
 
 export function AgentFleetCard({ agent, selected, onSelect }: Props): React.ReactElement {
   const [stats, setStats] = useState<AgentStats | null>(null);
@@ -94,7 +129,10 @@ export function AgentFleetCard({ agent, selected, onSelect }: Props): React.Reac
             </span>
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-text-secondary truncate">{agent.name}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs font-semibold text-text-secondary truncate">{agent.name}</p>
+              <CronTaskBadge agentId={agent.id} />
+            </div>
             <p className="text-xs text-text-muted truncate">{agent.role}</p>
           </div>
         </div>

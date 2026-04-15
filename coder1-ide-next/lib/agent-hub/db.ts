@@ -27,6 +27,67 @@ export function getAgentHubDatabase(): Database.Database {
   return db;
 }
 
+export interface CronTask {
+  id: string;
+  userId: string;
+  agentId: string;
+  runId: string;
+  schedule: string;
+  prompt: string;
+  status: 'active' | 'cancelled' | 'expired';
+  createdAt: string;
+  expiresAt: string | null;
+}
+
+export function insertCronTask(task: Omit<CronTask, 'status' | 'createdAt'>): void {
+  const database = getAgentHubDatabase();
+  database.prepare(
+    `INSERT INTO agent_hub_cron_tasks (id, user_id, agent_id, run_id, schedule, prompt, expires_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).run(task.id, task.userId, task.agentId, task.runId, task.schedule, task.prompt, task.expiresAt ?? null);
+}
+
+export function listCronTasks(agentId: string, userId: string): CronTask[] {
+  const database = getAgentHubDatabase();
+  const rows = database.prepare(
+    `SELECT * FROM agent_hub_cron_tasks WHERE agent_id = ? AND user_id = ? ORDER BY created_at DESC`
+  ).all(agentId, userId) as Array<{
+    id: string; user_id: string; agent_id: string; run_id: string;
+    schedule: string; prompt: string; status: string;
+    created_at: string; expires_at: string | null;
+  }>;
+  return rows.map(r => ({
+    id: r.id,
+    userId: r.user_id,
+    agentId: r.agent_id,
+    runId: r.run_id,
+    schedule: r.schedule,
+    prompt: r.prompt,
+    status: r.status as CronTask['status'],
+    createdAt: r.created_at,
+    expiresAt: r.expires_at,
+  }));
+}
+
+export function cancelCronTask(taskId: string, userId: string): void {
+  const database = getAgentHubDatabase();
+  database.prepare(
+    `UPDATE agent_hub_cron_tasks SET status = 'cancelled' WHERE id = ? AND user_id = ?`
+  ).run(taskId, userId);
+}
+
+export function expireOldCronTasks(): void {
+  const database = getAgentHubDatabase();
+  // Mark tasks older than 3 days as expired if still active
+  database.prepare(
+    `UPDATE agent_hub_cron_tasks
+     SET status = 'expired'
+     WHERE status = 'active'
+       AND (expires_at IS NOT NULL AND expires_at < datetime('now')
+            OR created_at < datetime('now', '-3 days'))`
+  ).run();
+}
+
 function migrateSchema(database: Database.Database): void {
   const addColumnIfMissing = (table: string, column: string, definition: string) => {
     try {
@@ -56,10 +117,57 @@ function migrateSchema(database: Database.Database): void {
   addColumnIfMissing('agent_hub_runs', 'human_input_request', 'TEXT');
   addColumnIfMissing('agent_hub_runs', 'human_input_response', 'TEXT');
   addColumnIfMissing('agent_hub_chat_messages', 'teaching_session_id', 'TEXT');
+  addColumnIfMissing('agent_hub_agents', 'last_session_id', 'TEXT');
+  addColumnIfMissing('agent_hub_memory', 'importance', 'REAL DEFAULT 0.5');
+  addColumnIfMissing('agent_hub_memory', 'memory_type', "TEXT DEFAULT 'context'");
+  addColumnIfMissing('agent_hub_memory', 'salience', 'REAL DEFAULT 1.0');
+  addColumnIfMissing('agent_hub_memory', 'expires_at', 'DATETIME');
+  addColumnIfMissing('agent_hub_memory', 'access_count', 'INTEGER DEFAULT 0');
   try {
     database.exec(`CREATE INDEX IF NOT EXISTS idx_chat_messages_teaching_session_id ON agent_hub_chat_messages(teaching_session_id)`);
     database.exec(`CREATE INDEX IF NOT EXISTS idx_teaching_sessions_agent_user ON agent_hub_teaching_sessions(agent_id, user_id)`);
   } catch { /* indexes may already exist */ }
+}
+
+export interface HiveMindEntry {
+  id: string;
+  userId: string;
+  agentId: string;
+  agentRole: string;
+  actionType: string;
+  taskTitle: string;
+  summary: string;
+  outcome: 'success' | 'failed' | 'partial';
+  filesModified: string | null;
+  branch: string | null;
+  runId: string | null;
+  createdAt: string;
+}
+
+export function getRecentHiveMindEntries(userId: string, limit = 10): HiveMindEntry[] {
+  const db = getAgentHubDatabase();
+  const rows = db.prepare(
+    `SELECT * FROM agent_hub_hive_mind WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`
+  ).all(userId, limit) as Array<{
+    id: string; user_id: string; agent_id: string; agent_role: string;
+    action_type: string; task_title: string; summary: string; outcome: string;
+    files_modified: string | null; branch: string | null; run_id: string | null;
+    created_at: string;
+  }>;
+  return rows.map(r => ({
+    id: r.id,
+    userId: r.user_id,
+    agentId: r.agent_id,
+    agentRole: r.agent_role,
+    actionType: r.action_type,
+    taskTitle: r.task_title,
+    summary: r.summary,
+    outcome: r.outcome as HiveMindEntry['outcome'],
+    filesModified: r.files_modified,
+    branch: r.branch,
+    runId: r.run_id,
+    createdAt: r.created_at,
+  }));
 }
 
 function initializeSchema(database: Database.Database): void {
@@ -220,6 +328,27 @@ function initializeSchema(database: Database.Database): void {
   `);
 
   database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_hive_mind (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      agent_role TEXT NOT NULL,
+      action_type TEXT NOT NULL DEFAULT 'task_complete',
+      task_title TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      outcome TEXT NOT NULL CHECK(outcome IN ('success', 'failed', 'partial')),
+      files_modified TEXT,
+      branch TEXT,
+      run_id TEXT,
+      created_at DATETIME DEFAULT (datetime('now'))
+    )
+  `);
+
+  try {
+    database.exec(`CREATE INDEX IF NOT EXISTS idx_hive_mind_user ON agent_hub_hive_mind(user_id, created_at DESC)`);
+  } catch { /* index may already exist */ }
+
+  database.exec(`
     CREATE TABLE IF NOT EXISTS agent_hub_memory (
       id TEXT PRIMARY KEY,
       agent_id TEXT NOT NULL,
@@ -241,6 +370,24 @@ function initializeSchema(database: Database.Database): void {
     // FTS5 may not be available in all SQLite builds
     console.warn('[agent-hub] FTS5 not available — memory search will use fallback');
   }
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS agent_hub_cron_tasks (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      run_id TEXT NOT NULL,
+      schedule TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at DATETIME DEFAULT (datetime('now')),
+      expires_at DATETIME
+    )
+  `);
+
+  try {
+    database.exec(`CREATE INDEX IF NOT EXISTS idx_cron_tasks_agent ON agent_hub_cron_tasks(agent_id, status)`);
+  } catch { /* index may already exist */ }
 
   database.exec(`
     CREATE TABLE IF NOT EXISTS agent_hub_teaching_sessions (

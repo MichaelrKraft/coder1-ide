@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getVaultService } from '@/lib/vault-service';
 import { assertLocalOnly } from '@/lib/vault-security';
 import { featureFlags } from '@/config/feature-flags';
+import { extractUserId } from '@/lib/auth/extract-user-id';
 
 function guardVault() {
   assertLocalOnly();
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
     if (guard) return guard;
 
     const { searchParams } = new URL(req.url);
-    const vault = getVaultService();
+    const vault = getVaultService(extractUserId(req));
 
     if (searchParams.has('search')) {
       const q = searchParams.get('search')!.trim();
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
     if (!body.path) return NextResponse.json({ error: 'path is required' }, { status: 400 });
     if (!body.title) return NextResponse.json({ error: 'title is required' }, { status: 400 });
 
-    const vault = getVaultService();
+    const vault = getVaultService(extractUserId(req));
     const note = await vault.createNote(body);
     return NextResponse.json(note, { status: 201 });
   } catch (err) {
@@ -95,7 +96,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     if (body.content === undefined) return NextResponse.json({ error: 'content is required' }, { status: 400 });
 
-    const vault = getVaultService();
+    const vault = getVaultService(extractUserId(req));
     const note = await vault.updateNote(notePath, body);
     return NextResponse.json(note);
   } catch (err) {
@@ -114,7 +115,7 @@ export async function DELETE(req: NextRequest) {
     const notePath = searchParams.get('path');
     if (!notePath) return NextResponse.json({ error: 'path is required' }, { status: 400 });
 
-    const vault = getVaultService();
+    const vault = getVaultService(extractUserId(req));
     await vault.deleteNote(notePath);
     return NextResponse.json({ ok: true });
   } catch (err) {
