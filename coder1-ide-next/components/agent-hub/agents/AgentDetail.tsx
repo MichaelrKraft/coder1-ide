@@ -4,20 +4,13 @@ import { useEffect, useState } from 'react';
 import {
   X,
   Edit2,
-  Archive,
   ChevronRight,
   Bot,
-  ListPlus,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  DollarSign,
   Pause,
   Play,
   Brain,
   Search,
   Trash2,
-  Hash,
   AlertTriangle,
 } from 'lucide-react';
 import AgentStatusChip from './AgentStatusChip';
@@ -330,6 +323,7 @@ export default function AgentDetail({
   const [stats, setStats] = useState<AgentStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [accordionOpen, setAccordionOpen] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [pausing, setPausing] = useState(false);
@@ -486,462 +480,99 @@ export default function AgentDetail({
   /* ── Render ── */
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Breadcrumb header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border-default shrink-0">
-        <div className="flex items-center gap-1.5 text-xs text-text-muted">
-          <button onClick={onClose} className="hover:text-text-secondary">
-            Agents
-          </button>
-          <ChevronRight size={12} />
-          <span className="text-text-secondary">{agent.name}</span>
+    <div className="flex flex-col h-full bg-bg-primary text-text-primary overflow-hidden relative">
+      {/* ── Header ──────────────────────────────────── */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border-default shrink-0">
+        <div className="flex items-center gap-3">
+          <Bot className="w-5 h-5 text-coder1-cyan" />
+          <div>
+            <span className="text-sm font-semibold text-text-primary">{agent.name}</span>
+            <span className="ml-2 text-xs text-text-muted">{agent.role}</span>
+          </div>
+          <AgentStatusChip status={agent.status} />
         </div>
-        <button
-          onClick={onClose}
-          className="text-text-muted hover:text-text-secondary"
-        >
-          <X size={16} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowEditForm(true)}
+            className="p-1.5 rounded hover:bg-bg-secondary text-text-muted hover:text-text-primary"
+            title="Edit agent"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => void handlePauseResume()}
+            disabled={pausing || agent.status === 'archived'}
+            className="p-1.5 rounded hover:bg-bg-secondary text-text-muted hover:text-text-primary disabled:opacity-40"
+            title={agent.status === 'paused' ? 'Resume agent' : 'Pause agent'}
+          >
+            {agent.status === 'paused' ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={onClose}
+            title="Close"
+            className="p-1.5 rounded hover:bg-bg-secondary text-text-muted hover:text-text-primary"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* 50/50 split */}
-      <div className="flex-1 flex min-h-0">
-        {/* Left: Command Center */}
-        <div className="w-1/2 border-r border-border-default">
-          <CommandCenter
-            agentId={agent.id}
-            agentName={agent.name}
-            workspacePath={agent.workspacePath}
-            systemPrompt={agent.systemPrompt}
+      {/* ── Edit form overlay ───────────────────────── */}
+      {showEditForm && (
+        <div className="absolute inset-0 z-20 bg-bg-primary overflow-y-auto p-4">
+          <AgentForm
+            agentId={agentId}
+            onSave={handleSave}
+            onClose={() => setShowEditForm(false)}
           />
         </div>
-
-        {/* Right: Stats & Analytics (scrollable) */}
-        <div className="w-1/2 overflow-y-auto px-5 py-4 space-y-5">
-          {/* Stuck run warning */}
-          {stats?.stuckRun && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 flex items-center gap-3">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-              <div>
-                <p className="text-xs font-medium text-amber-400">Agent appears stuck</p>
-                <p className="text-[10px] text-text-muted">
-                  No activity for {stats.stuckRun.minutesIdle} minutes (run {stats.stuckRun.runId.slice(0, 8)})
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Agent identity + actions */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-lg bg-bg-tertiary border border-border-default flex items-center justify-center shrink-0">
-                <Bot size={20} className="text-text-muted" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-semibold text-text-secondary truncate">
-                    {agent.name}
-                  </h2>
-                  <AgentStatusChip status={agent.status} />
-                </div>
-                <p className="text-xs text-text-muted truncate">{agent.role}</p>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-1.5 shrink-0 ml-3">
-              <button
-                onClick={() => void handlePauseResume()}
-                disabled={pausing || agent.status === 'archived'}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-                  agent.status === 'paused'
-                    ? 'bg-green-500/10 text-green-400 border-green-500/30 hover:bg-green-500/20'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
-                } disabled:opacity-40`}
-              >
-                {agent.status === 'paused' ? <Play size={12} /> : <Pause size={12} />}
-                {agent.status === 'paused' ? 'Resume' : 'Pause'}
-              </button>
-              <button
-                onClick={() => setShowEditForm(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-bg-tertiary hover:bg-bg-secondary text-text-secondary text-xs font-medium border border-border-default transition-colors"
-              >
-                <Edit2 size={12} />
-                Edit
-              </button>
-              <button
-                onClick={() =>
-                  (window.location.href = '/ide/agent-hub/tasks')
-                }
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-bg-tertiary hover:bg-bg-secondary text-text-secondary text-xs font-medium border border-border-default transition-colors"
-              >
-                <ListPlus size={12} />
-                Assign Task
-              </button>
-              <button
-                onClick={() => void handleArchive()}
-                disabled={archiving || agent.status === 'archived'}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-                  confirmArchive
-                    ? 'bg-red-500/10 text-red-400 border-red-500/40 hover:bg-red-500/20'
-                    : 'bg-bg-tertiary hover:bg-bg-secondary text-text-muted border-border-default'
-                } disabled:opacity-40`}
-              >
-                <Archive size={12} />
-                {confirmArchive ? 'Confirm' : 'Archive'}
-              </button>
-              {confirmArchive && (
-                <button
-                  onClick={() => setConfirmArchive(false)}
-                  className="text-xs text-text-muted underline"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Stat summary row */}
-          <div className="grid grid-cols-4 gap-3">
-            <StatCard
-              icon={<CheckCircle2 size={14} className="text-green-400" />}
-              label="Total Runs"
-              value={String(stats?.successRate.total ?? 0)}
-            />
-            <StatCard
-              icon={<DollarSign size={14} className="text-amber-400" />}
-              label="Total Spent"
-              value={`$${((stats?.totalSpentCents ?? 0) / 100).toFixed(2)}`}
-            />
-            <StatCard
-              icon={<Hash size={14} className="text-purple-400" />}
-              label="Total Tokens"
-              value={formatTokens(
-                (stats?.tokenUsage?.input ?? 0) +
-                (stats?.tokenUsage?.output ?? 0) +
-                (stats?.tokenUsage?.cacheRead ?? 0)
-              )}
-            />
-            <StatCard
-              icon={<Clock size={14} className="text-blue-400" />}
-              label="Last Run"
-              value={
-                agent.lastRunAt ? relativeTime(agent.lastRunAt) : 'Never'
-              }
-            />
-          </div>
-
-          {/* Latest run */}
-          <section>
-            <div className="flex items-center justify-between mb-2">
-              <Label>Latest Run</Label>
-              {latestRun && (
-                <span className="text-[10px] text-text-muted hover:text-text-secondary cursor-pointer flex items-center gap-0.5">
-                  View details <ChevronRight size={10} />
-                </span>
-              )}
-            </div>
-            {latestRun ? (
-              <div className="bg-bg-secondary border border-border-default rounded-lg p-3">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${RUN_STATUS_COLORS[latestRun.status] ?? 'text-text-muted bg-bg-tertiary'}`}
-                    >
-                      {latestRun.status === 'approved' ||
-                      latestRun.status === 'completed'
-                        ? 'succeeded'
-                        : latestRun.status}
-                    </span>
-                    <span className="text-[10px] text-text-muted font-mono">
-                      {latestRun.id.slice(0, 8)}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-text-muted">
-                    {relativeTime(latestRun.started_at)}
-                  </span>
-                </div>
-                <p className="text-xs text-text-muted">
-                  {latestRun.error_summary
-                    ? latestRun.error_summary
-                    : 'No errors. Clean run.'}
-                </p>
-                {latestRun.cost_cents > 0 && (
-                  <p className="text-[10px] text-text-muted mt-1">
-                    Cost: ${(latestRun.cost_cents / 100).toFixed(2)}
-                  </p>
-                )}
-                {(latestRun.input_tokens || latestRun.output_tokens || latestRun.cache_read_tokens) && (
-                  <p className="text-[10px] text-text-muted mt-0.5">
-                    Input: {formatTokens(latestRun.input_tokens ?? 0)} | Output: {formatTokens(latestRun.output_tokens ?? 0)} | Cache: {formatTokens(latestRun.cache_read_tokens ?? 0)}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="bg-bg-secondary border border-border-default rounded-lg p-3">
-                <p className="text-xs text-text-muted">No runs yet.</p>
-              </div>
-            )}
-          </section>
-
-          {/* Charts grid */}
-          <section>
-            <Label>Analytics</Label>
-            <div className="grid grid-cols-2 gap-3 mt-1">
-              <MiniBarChart
-                data={
-                  runActivityData.length > 0
-                    ? runActivityData
-                    : [{ label: 'No data', value: 0, color: '#22c55e' }]
-                }
-                title="Run Activity"
-                subtitle="Last 14 days"
-              />
-              <SuccessRateCard
-                total={stats?.successRate.total ?? 0}
-                succeeded={stats?.successRate.succeeded ?? 0}
-              />
-              <MiniBarChart
-                data={
-                  priorityData.some((d) => d.value > 0)
-                    ? priorityData
-                    : [{ label: 'No tasks', value: 0, color: '#6b7280' }]
-                }
-                title="Tasks by Priority"
-                subtitle="high / medium / low"
-              />
-              <MiniBarChart
-                data={
-                  statusData.length > 0
-                    ? statusData
-                    : [{ label: 'No tasks', value: 0, color: '#6b7280' }]
-                }
-                title="Tasks by Status"
-                subtitle={statusKeys.join(' / ') || 'none'}
-              />
-            </div>
-          </section>
-
-          {/* Recent tasks */}
-          <section>
-            <div className="flex items-center justify-between mb-2">
-              <Label>Recent Tasks</Label>
-              <button
-                onClick={() =>
-                  (window.location.href = '/ide/agent-hub/tasks')
-                }
-                className="text-[10px] text-text-muted hover:text-text-secondary flex items-center gap-0.5"
-              >
-                See all <ChevronRight size={10} />
-              </button>
-            </div>
-            {(stats?.recentTasks ?? []).length > 0 ? (
-              <div className="bg-bg-secondary border border-border-default rounded-lg divide-y divide-border-default">
-                {stats!.recentTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between px-3 py-2"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${TASK_STATUS_COLORS[task.status] ?? 'bg-gray-500'}`}
-                      />
-                      <span className="text-xs text-text-secondary truncate">
-                        {task.title}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-text-muted shrink-0 ml-2">
-                      {task.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-bg-secondary border border-border-default rounded-lg p-3">
-                <p className="text-xs text-text-muted">No tasks yet.</p>
-              </div>
-            )}
-          </section>
-
-          {/* Agent metadata (collapsed section) */}
-          <section>
-            <Label>Configuration</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Model" value={agent.model} />
-              <Field
-                label="Max Concurrent Runs"
-                value={String(agent.maxConcurrentRuns)}
-              />
-              <Field
-                label="Monthly Budget"
-                value={
-                  agent.monthlyBudgetCents === 0
-                    ? 'No limit'
-                    : `$${(agent.monthlyBudgetCents / 100).toFixed(2)}`
-                }
-              />
-              <Field
-                label="Workspace"
-                value={agent.workspacePath}
-              />
-            </div>
-            {/* Telegram Status */}
-            <div className="flex items-center gap-2 text-xs mt-3">
-              <span className="text-text-muted">Telegram:</span>
-              {agent.telegramChatId ? (
-                <span className="text-green-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                  Connected (Chat: {agent.telegramChatId})
-                </span>
-              ) : (
-                <span className="text-text-muted">Not configured</span>
-              )}
-            </div>
-          </section>
-
-          {/* Tools */}
-          <section>
-            <Label>Tools</Label>
-            <div className="bg-bg-secondary border border-border-default rounded-lg p-3 space-y-3">
-              {/* MCP Servers */}
-              <div>
-                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">
-                  MCP Servers
-                </p>
-                {agent.mcpServers && agent.mcpServers.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {agent.mcpServers.map(server => {
-                      const isMissing = !availableMcpServers.includes(server);
-                      return (
-                        <span
-                          key={server}
-                          className={`px-2 py-0.5 text-[10px] rounded-full border ${
-                            isMissing
-                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                              : 'bg-coder1-cyan/10 text-coder1-cyan border-coder1-cyan/30'
-                          }`}
-                          title={isMissing ? 'Not found in ~/.mcp.json' : ''}
-                        >
-                          {server}{isMissing ? ' (missing)' : ''}
-                        </span>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xs text-text-muted">None configured</p>
-                )}
-              </div>
-
-              {/* Skills */}
-              <div>
-                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">
-                  Skills
-                </p>
-                {agent.skills.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {agent.skills.map(skill => {
-                      const info = skillMaturity[skill];
-                      const maturityColors: Record<string, string> = {
-                        draft: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-                        tested: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-                        reliable: 'bg-green-500/10 text-green-400 border-green-500/30',
-                      };
-                      return (
-                        <span
-                          key={skill}
-                          className={`px-2 py-0.5 text-[10px] rounded-full border ${
-                            info?.taught
-                              ? maturityColors[info.maturity?.level ?? 'draft'] ?? 'bg-bg-tertiary text-text-muted border-border-default'
-                              : 'bg-bg-tertiary text-text-muted border-border-default'
-                          }`}
-                          title={info?.taught ? `Taught skill v${info.maturity?.version ?? 1} — ${info.maturity?.level ?? 'draft'} (${info.maturity?.totalRuns ?? 0} runs, ${Math.round((info.maturity?.successRate ?? 0) * 100)}% success)` : ''}
-                        >
-                          {skill}
-                          {info?.taught && (
-                            <span className="ml-1 opacity-70">v{info.maturity?.version ?? 1}</span>
-                          )}
-                        </span>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xs text-text-muted">None configured</p>
-                )}
-              </div>
-
-              {/* Teaching Sessions */}
-              <TeachingSessionList agentId={agent.id} />
-
-              {/* Edit button */}
-              <button
-                onClick={() => setShowEditForm(true)}
-                className="text-[10px] text-coder1-cyan hover:text-coder1-cyan/80 transition-colors"
-              >
-                Edit tools &rarr;
-              </button>
-            </div>
-          </section>
-
-          {/* Agent Memory */}
-          <AgentMemorySection agentId={agent.id} />
-        </div>
-      </div>
-
-      {/* Edit form modal */}
-      {showEditForm && (
-        <AgentForm
-          agentId={agentId}
-          onSave={handleSave}
-          onClose={() => setShowEditForm(false)}
-        />
       )}
-    </div>
-  );
-}
 
-/* ── Shared sub-components ─────────────────────────── */
-
-function StatCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="bg-bg-secondary border border-border-default rounded-lg p-3 flex items-center gap-2.5">
-      <div className="w-7 h-7 rounded-md bg-bg-tertiary flex items-center justify-center shrink-0">
-        {icon}
+      {/* ── Command Center (chat) — takes all remaining height ── */}
+      <div className="flex-1 min-h-0">
+        <CommandCenter
+          agentId={agent.id}
+          agentName={agent.name}
+          workspacePath={agent.workspacePath}
+          systemPrompt={agent.systemPrompt}
+        />
       </div>
-      <div className="min-w-0">
-        <p className="text-[10px] text-text-muted">{label}</p>
-        <p className="text-sm font-semibold text-text-secondary truncate">
-          {value}
-        </p>
+
+      {/* ── Accordion: secondary info ───────────────── */}
+      <div className="shrink-0 border-t border-border-default">
+        <button
+          onClick={() => setAccordionOpen(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-2 text-xs text-text-muted hover:text-text-primary hover:bg-bg-secondary"
+        >
+          <span>Agent Info</span>
+          <ChevronRight className={`w-3 h-3 transition-transform ${accordionOpen ? 'rotate-90' : ''}`} />
+        </button>
+
+        {accordionOpen && (
+          <div className="px-4 pb-4 space-y-3 max-h-72 overflow-y-auto">
+            {/* Stuck run warning */}
+            {stats?.stuckRun && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <p className="text-[10px] text-amber-400">
+                  Agent appears stuck — no activity for {stats.stuckRun.minutesIdle} minutes
+                </p>
+              </div>
+            )}
+
+            {/* Quick stats */}
+            <div className="flex flex-wrap gap-4 text-xs text-text-muted">
+              <span>Model: <span className="text-text-primary">{agent.model}</span></span>
+              <span>Runs: <span className="text-text-primary">{stats?.successRate.total ?? 0}</span></span>
+              <span>Cost: <span className="text-text-primary">${((stats?.totalSpentCents ?? 0) / 100).toFixed(2)}</span></span>
+              <span>Last run: <span className="text-text-primary">{agent.lastRunAt ? relativeTime(agent.lastRunAt) : 'Never'}</span></span>
+            </div>
+
+            <AgentMemorySection agentId={agent.id} />
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
-      {children}
-    </p>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-0.5">
-        {label}
-      </p>
-      <p className="text-xs text-text-secondary truncate" title={value}>
-        {value}
-      </p>
-    </div>
-  );
-}
