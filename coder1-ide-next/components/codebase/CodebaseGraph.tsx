@@ -2,18 +2,20 @@
 
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, FolderOpen } from 'lucide-react';
+import { useIDEStore } from '@/stores/useIDEStore';
+import type { CodeGraphData } from '@/lib/vault-types';
+import type { ProjectEntry } from '@/app/api/vault/projects/route';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
 interface CodebaseNode {
   id: string;
   name: string;
-  path: string;
+  path: string;      // absolute path — for opening in Monaco
   val: number;
   color: string;
-  functions: number;
-  lines: number;
+  importCount: number;
   ext: string;
 }
 
@@ -49,54 +51,83 @@ const EXT_COLORS: Record<string, string> = {
 };
 
 export default function CodebaseGraph() {
+  const storeWorkspacePath = useIDEStore(state => state.project?.path ?? null);
+
+  // Allow manual project selection when no project is loaded in the IDE store
+  const [customPath, setCustomPath] = useState<string>('');
+  const [projects, setProjects] = useState<ProjectEntry[]>([]);
+  const [selectedProjectPath, setSelectedProjectPath] = useState<string>('');
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const workspacePath = customPath || storeWorkspacePath;
+
   const [graphData, setGraphData] = useState<CodebaseGraphData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [indexing, setIndexing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
   const [selectedNode, setSelectedNode] = useState<CodebaseNode | null>(null);
   const [hiddenExts, setHiddenExts] = useState<Set<string>>(new Set());
 
   const fetchGraph = useCallback(async () => {
+    if (!workspacePath) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/codebase/graph');
+      const res = await fetch(
+        `/api/vault/code-graph?root=${encodeURIComponent(workspacePath)}`
+      );
       if (!res.ok) {
-        setError(`Failed to load graph: ${res.status}`);
+        const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        setError(body.error ?? `Failed to load graph: ${res.status}`);
         return;
       }
-      const data: CodebaseGraphData = await res.json();
-      setGraphData(data);
-    } catch (err) {
+      const raw: CodeGraphData = await res.json();
+      // Map CodeGraphData → internal CodebaseGraphData
+      const nodes: CodebaseNode[] = raw.nodes.map(n => ({
+        id: n.id,
+        name: n.label + n.ext,
+        path: n.fullPath,
+        val: Math.max(1, n.importedByCount + 1),
+        color: EXT_COLORS[n.ext] ?? '#6b7280',
+        importCount: n.importCount,
+        ext: n.ext,
+      }));
+      const links: CodebaseLink[] = raw.links.map(l => ({
+        source: l.source,
+        target: l.target,
+        color: '#374151',
+      }));
+      setGraphData({ nodes, links });
+    } catch {
       setError('Failed to load graph');
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const handleIndex = useCallback(async () => {
-    setIndexing(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/codebase/index', { method: 'POST' });
-      if (!res.ok) {
-        setError(`Indexing failed: ${res.status}`);
-        return;
-      }
-      // Refetch graph after indexing
-      await fetchGraph();
-    } catch (err) {
-      setError('Failed to index codebase');
-    } finally {
-      setIndexing(false);
-    }
-  }, [fetchGraph]);
+  }, [workspacePath]);
 
   useEffect(() => {
     fetchGraph();
   }, [fetchGraph]);
+
+  // Fetch project list when no workspace is known
+  useEffect(() => {
+    if (workspacePath) return;
+    setLoadingProjects(true);
+    fetch('/api/vault/projects')
+      .then(r => r.json())
+      .then(data => {
+        setProjects(data.projects ?? []);
+        // Pre-select the first project
+        if (data.projects?.length > 0) {
+          setSelectedProjectPath(data.projects[0].path);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingProjects(false));
+  }, [workspacePath]);
 
   useEffect(() => {
     const obs = new ResizeObserver((entries) => {
@@ -132,14 +163,68 @@ export default function CodebaseGraph() {
       )
     : [];
 
-  if (loading || indexing) {
+  if (!workspacePath) {
+    return (
+      <div
+        ref={containerRef}
+        className="flex flex-col items-center justify-center h-full bg-[#0d0d0d] px-6 gap-4"
+      >
+        <FolderOpen className="w-8 h-8 text-[#4b5563]" />
+        <div className="text-center">
+          <p className="text-sm text-[#9ca3af] font-medium mb-1">Analyze a project</p>
+          <p className="text-[11px] text-[#4b5563]">Select a project to visualize its import dependencies</p>
+        </div>
+
+        {loadingProjects ? (
+          <div className="flex items-center gap-2 text-[11px] text-[#6b7280]">
+            <div className="w-3 h-3 border border-[#6b7280] border-t-transparent rounded-full animate-spin" />
+            Scanning for projects...
+          </div>
+        ) : projects.length > 0 ? (
+          <div className="w-full max-w-sm flex flex-col gap-2">
+            <select
+              value={selectedProjectPath}
+              onChange={(e) => setSelectedProjectPath(e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-[#1a1a2e] text-[#e2e8f0] border border-[#2a2a4e] rounded outline-none focus:border-[#00d4ff] transition-colors cursor-pointer"
+            >
+              {projects.map(p => (
+                <option key={p.path} value={p.path}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            {selectedProjectPath && (
+              <p className="text-[10px] text-[#4b5563] font-mono truncate px-1" title={selectedProjectPath}>
+                {selectedProjectPath}
+              </p>
+            )}
+            <button
+              onClick={() => { if (selectedProjectPath) setCustomPath(selectedProjectPath); }}
+              disabled={!selectedProjectPath}
+              className="px-4 py-2 text-xs bg-[#00d4ff]/10 text-[#00d4ff] border border-[#00d4ff]/30 rounded hover:bg-[#00d4ff]/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Build Graph
+            </button>
+          </div>
+        ) : (
+          <p className="text-[11px] text-[#4b5563]">No projects found in common directories.</p>
+        )}
+
+        <p className="text-[10px] text-[#4b5563] text-center">
+          Tip: open a project in the IDE and it auto-detects the path
+        </p>
+      </div>
+    );
+  }
+
+  if (loading) {
     return (
       <div
         ref={containerRef}
         className="flex flex-col items-center justify-center h-full bg-[#0d0d0d] text-gray-500 gap-3"
       >
         <div className="w-6 h-6 border-2 border-[#8b5cf6] border-t-transparent rounded-full animate-spin" />
-        <div className="text-sm">{indexing ? 'Indexing codebase...' : 'Loading graph...'}</div>
+        <div className="text-sm">Parsing imports...</div>
       </div>
     );
   }
@@ -170,13 +255,13 @@ export default function CodebaseGraph() {
         <div className="text-3xl">🕸️</div>
         <div className="text-sm text-center px-4">
           <p className="text-[#e2e8f0] font-medium mb-1">CodeNexus</p>
-          <p className="text-[#6b7280] text-xs">See how your files connect through imports</p>
+          <p className="text-[#6b7280] text-xs">No TypeScript/JavaScript files found in this workspace.</p>
         </div>
         <button
-          onClick={handleIndex}
-          className="mt-2 px-4 py-2 text-xs bg-[#8b5cf6] text-white rounded hover:bg-[#7c3aed] transition-colors"
+          onClick={fetchGraph}
+          className="mt-2 px-4 py-2 text-xs bg-[#1a1a2e] text-[#8b5cf6] rounded hover:bg-[#252547] border border-[#2a2a4e] transition-colors"
         >
-          Index Codebase
+          Retry
         </button>
       </div>
     );
@@ -232,6 +317,15 @@ export default function CodebaseGraph() {
         >
           <RefreshCw className="w-3 h-3" />
         </button>
+        {customPath && (
+          <button
+            onClick={() => { setCustomPath(''); setGraphData(null); }}
+            title="Change workspace folder"
+            className="px-1.5 py-0.5 text-[10px] text-[#4b5563] hover:text-[#9ca3af] hover:bg-[#1a1a2e] rounded transition-colors"
+          >
+            Change
+          </button>
+        )}
       </div>
 
       <ForceGraph2D
@@ -245,8 +339,20 @@ export default function CodebaseGraph() {
         linkColor="color"
         warmupTicks={50}
         cooldownTicks={100}
-        onNodeClick={(node: any) => {
-          setSelectedNode(node as CodebaseNode);
+        onNodeClick={(node: unknown) => {
+          const n = node as CodebaseNode;
+          setSelectedNode(n);
+          if (n.path) {
+            // If inside the IDE, dispatch event — the editor will handle it.
+            // If on a standalone page (e.g. /memory), navigate to the IDE with the file.
+            if (window.location.pathname.startsWith('/ide')) {
+              window.dispatchEvent(
+                new CustomEvent('coder1:openFile', { detail: { path: n.path } })
+              );
+            } else {
+              window.location.href = `/ide?openFile=${encodeURIComponent(n.path)}`;
+            }
+          }
         }}
       />
 
@@ -275,8 +381,7 @@ export default function CodebaseGraph() {
           </p>
           <p className="text-[10px] text-[#6b7280] break-all mb-2">{selectedNode.path}</p>
           <div className="flex gap-3 text-[10px] text-[#9ca3af]">
-            <span>{selectedNode.functions} fn</span>
-            <span>{selectedNode.lines} lines</span>
+            <span>imports {selectedNode.importCount}</span>
             <span>{selectedNode.val - 1} imported by</span>
           </div>
         </div>

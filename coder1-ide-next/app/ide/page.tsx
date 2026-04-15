@@ -1164,6 +1164,28 @@ function IDEPageContent() {
     }
   }, [files]);
 
+  // Open file from Code Graph node click (dispatched via window event)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { path } = (e as CustomEvent<{ path: string }>).detail;
+      if (path) handleOpenFileFromPath(path);
+    };
+    window.addEventListener('coder1:openFile', handler);
+    return () => window.removeEventListener('coder1:openFile', handler);
+  }, [handleOpenFileFromPath]);
+
+  // Open file passed via ?openFile= query param (navigated from Code Graph on /memory page)
+  useEffect(() => {
+    const filePath = searchParams.get('openFile');
+    if (filePath) {
+      handleOpenFileFromPath(filePath);
+      // Remove the param from URL without triggering a navigation
+      const url = new URL(window.location.href);
+      url.searchParams.delete('openFile');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams, handleOpenFileFromPath]);
+
   // Simple wrapper for file selection (handleOpenFileFromPath defined above)
   const handleFileSelect = (path: string) => {
     handleOpenFileFromPath(path);

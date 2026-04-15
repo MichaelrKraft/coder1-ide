@@ -29,6 +29,9 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
   const [showDirectoryInput, setShowDirectoryInput] = useState(false);
   const [directoryInput, setDirectoryInput] = useState('');
   const [recentFolders, setRecentFolders] = useState<string[]>([]);
+  const [projects, setProjects] = useState<{ name: string; path: string }[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const projectsFetchedRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Load saved directory and recent folders from localStorage on mount
@@ -62,6 +65,18 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
     window.addEventListener('coder1:setExplorerRoot', handler);
     return () => window.removeEventListener('coder1:setExplorerRoot', handler);
   }, []);
+
+  // Fetch discovered projects when directory panel opens (lazy, one-time)
+  useEffect(() => {
+    if (!showDirectoryInput || projectsFetchedRef.current) return;
+    projectsFetchedRef.current = true;
+    setLoadingProjects(true);
+    fetch('/api/vault/projects')
+      .then(r => r.json())
+      .then(data => setProjects(data.projects ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingProjects(false));
+  }, [showDirectoryInput]);
 
   // Add a folder to recent list
   const addToRecentFolders = useCallback((folderPath: string) => {
@@ -321,6 +336,27 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
         {/* Directory Input */}
         {showDirectoryInput && (
           <div className="space-y-1">
+            {/* Project dropdown */}
+            <div className="flex gap-2">
+              {loadingProjects ? (
+                <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-text-muted">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Scanning projects...
+                </div>
+              ) : projects.length > 0 ? (
+                <select
+                  defaultValue=""
+                  onChange={(e) => { if (e.target.value) handleDirectoryChange(e.target.value); }}
+                  className="flex-1 px-2 py-1 text-xs bg-bg-primary border border-border-default rounded focus:outline-none focus:ring-1 focus:ring-coder1-cyan text-text-secondary cursor-pointer"
+                >
+                  <option value="">Pick a project...</option>
+                  {projects.map(p => (
+                    <option key={p.path} value={p.path}>{p.name}</option>
+                  ))}
+                </select>
+              ) : null}
+            </div>
+            {/* Manual path input */}
             <div className="flex gap-2">
               <input
                 ref={inputRef}
@@ -328,9 +364,8 @@ export default function SafeFileExplorer({ onFileSelect, activeFile, refreshTrig
                 value={directoryInput}
                 onChange={(e) => setDirectoryInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleDirectoryInputSubmit()}
-                placeholder="Enter folder path (e.g. ~/projects/my-app)"
+                placeholder="Or type a path..."
                 className="flex-1 px-2 py-1 text-xs bg-bg-primary border border-border-default rounded focus:outline-none focus:ring-1 focus:ring-coder1-cyan"
-                autoFocus
               />
               <button
                 onClick={handleDirectoryInputSubmit}
