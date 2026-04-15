@@ -4,7 +4,6 @@ import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 
 interface BridgeInfo {
   id: string;
-  userId: string;
   connectedAt: string;
   platform: string;
   version: string;
@@ -13,7 +12,6 @@ interface BridgeInfo {
 interface BridgeManager {
   findAnyConnectedBridge(): {
     id: string;
-    userId: string;
     connectedAt: Date;
     platform: string;
     version: string;
@@ -27,24 +25,28 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const g = global as Record<string, unknown>;
-  const manager = (g['bridgeManager'] as BridgeManager) ?? null;
+  const manager = g['bridgeManager'] as BridgeManager | undefined;
 
   if (!manager) {
     return NextResponse.json({ connected: false, bridge: null });
   }
 
-  const bridge = manager.findAnyConnectedBridge();
-  if (!bridge) {
-    return NextResponse.json({ connected: false, bridge: null });
+  try {
+    const bridge = manager.findAnyConnectedBridge();
+    if (!bridge) {
+      return NextResponse.json({ connected: false, bridge: null });
+    }
+
+    const info: BridgeInfo = {
+      id: bridge.id,
+      connectedAt: bridge.connectedAt.toISOString(),
+      platform: bridge.platform,
+      version: bridge.version,
+    };
+
+    return NextResponse.json({ connected: true, bridge: info });
+  } catch (err: unknown) {
+    console.error('[bridge-status] error:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
-
-  const info: BridgeInfo = {
-    id: bridge.id,
-    userId: bridge.userId,
-    connectedAt: bridge.connectedAt.toISOString(),
-    platform: bridge.platform,
-    version: bridge.version,
-  };
-
-  return NextResponse.json({ connected: true, bridge: info });
 }
