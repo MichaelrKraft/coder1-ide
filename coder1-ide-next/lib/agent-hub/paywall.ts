@@ -1,21 +1,18 @@
 // lib/agent-hub/paywall.ts
-// Wraps subscription check for Agent Hub paid features
+import { isProLicenseActive } from '@/lib/pro-license';
 
 export interface SubscriptionStatus {
   isPaid: boolean;
-  plan?: string;
+  plan: 'pro' | 'free';
 }
 
-export async function checkSubscription(userId: string): Promise<SubscriptionStatus> {
-  // TODO: wire up to Stripe/Supabase subscription when available
-  // For now, check AGENT_HUB_PAID_USERS env var (comma-separated user IDs) for beta testing
-  const paidUsers = (process.env.AGENT_HUB_PAID_USERS ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-
+export async function checkSubscription(
+  // _userId kept for API compatibility — future per-user billing will use it
+  _userId: string
+): Promise<SubscriptionStatus> {
+  const paid = isProLicenseActive();
   return {
-    isPaid: paidUsers.length === 0 || paidUsers.includes(userId),
-    plan: 'team',
+    isPaid: paid,
+    plan: paid ? 'pro' : 'free',
   };
 }
