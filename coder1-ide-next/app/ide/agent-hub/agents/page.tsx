@@ -19,16 +19,20 @@ export default function AgentsPage() {
         />
       </div>
 
-      {/* Right: Agent Detail */}
-      {selectedAgentId && (
-        <div className="flex-1 flex flex-col min-w-0">
+      {/* Right: Agent Detail — always rendered so data-tour is in DOM for the tour */}
+      <div data-tour="agent-hub-command-center" className="flex-1 flex flex-col min-w-0">
+        {selectedAgentId ? (
           <AgentDetail
             agentId={selectedAgentId}
             onClose={() => setSelectedAgentId(null)}
             onAgentUpdated={() => setRefreshTrigger((n) => n + 1)}
           />
-        </div>
-      )}
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-text-muted text-xs">
+            Select an agent to start chatting
+          </div>
+        )}
+      </div>
     </div>
   );
 }
