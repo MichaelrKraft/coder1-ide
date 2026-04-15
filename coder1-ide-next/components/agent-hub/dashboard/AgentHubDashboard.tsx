@@ -323,7 +323,11 @@ export default function AgentHubDashboard() {
       <div className="bg-bg-secondary border border-border-default rounded-lg p-4 flex items-center gap-4">
         <span
           className={`w-3 h-3 rounded-full shrink-0 ${
-            bridgeStatus?.connected ? 'bg-green-400' : 'bg-red-400 animate-pulse'
+            bridgeStatus === null
+              ? 'bg-gray-400'
+              : bridgeStatus.connected
+              ? 'bg-green-400'
+              : 'bg-red-400 animate-pulse'
           }`}
         />
         <div>
@@ -425,9 +429,10 @@ export default function AgentHubDashboard() {
             </h2>
           </div>
           <div className="p-4 space-y-3">
-            {costByAgent.map((agent) => {
-              const totalCents = stats?.monthSpendCents ?? 0;
-              const pct = totalCents > 0 ? Math.round((agent.totalCents / totalCents) * 100) : 0;
+            {(() => {
+              const localTotal = costByAgent.reduce((s, a) => s + a.totalCents, 0);
+              return costByAgent.map((agent) => {
+              const pct = localTotal > 0 ? Math.round((agent.totalCents / localTotal) * 100) : 0;
               return (
                 <div key={agent.agentId} className="flex items-center gap-3">
                   <span className="text-xs text-text-secondary truncate w-32">{agent.agentName}</span>
@@ -442,7 +447,8 @@ export default function AgentHubDashboard() {
                   </span>
                 </div>
               );
-            })}
+            });
+            })()}
           </div>
         </div>
       )}
