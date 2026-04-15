@@ -24,7 +24,7 @@ const TOUR_STEPS: TourStep[] = [
   { id: 'sidebar', title: 'Your Command Center', content: 'Navigate between dashboard, agents, tasks, and projects. Everything for your AI team lives here.', target: 'agent-hub-sidebar', position: 'auto' },
   { id: 'agents-list', title: 'Your AI Team', content: 'Each agent has a role and skills. Click any agent to chat with it, teach it new workflows, or assign tasks.', target: 'agent-hub-agents-list', position: 'auto', highlightColor: 'accent' },
   { id: 'command-center', title: 'Chat with Your Agent', content: 'Talk to agents directly through the CommandCenter. Messages are routed through Claude Code on your machine.', target: 'agent-hub-command-center', position: 'auto' },
-  { id: 'teach-button', title: 'Teach by Doing', content: 'Click "Teach" to start a teaching session. Walk your agent through a workflow step by step, then convert it into a reusable skill.', target: 'agent-hub-teach-button', position: 'auto', highlightColor: 'accent' },
+  { id: 'teach-button', title: 'Teach by Doing', content: 'Select an agent, then click "Teach" in the chat panel to walk your agent through a workflow step by step and convert it into a reusable skill.', target: 'agent-hub-teach-button', position: 'center', highlightColor: 'accent' },
   { id: 'tasks', title: 'Task Board', content: 'Assign work to your agents and track progress. Tasks run autonomously in isolated git worktrees with approval gates.', target: 'agent-hub-tasks', position: 'auto' },
   { id: 'dashboard-stats', title: 'Track Everything', content: 'Monitor runs, costs, and success rates at a glance. Your agents improve over time as skills mature from Draft to Reliable.', target: 'agent-hub-dashboard-stats', position: 'auto' },
 ];
@@ -80,8 +80,9 @@ export default function AgentHubTour({ onClose, onComplete }: OnboardingTourProp
     let x = r.left + r.width / 2 - TOOLTIP_W / 2;
     let y = r.bottom + PAD;
     if (y + TOOLTIP_H > viewportSize.h - PAD) y = r.top - TOOLTIP_H - PAD;
-    if (x < PAD) x = PAD;
-    if (x + TOOLTIP_W > viewportSize.w - PAD) x = viewportSize.w - TOOLTIP_W - PAD;
+    // Clamp to viewport so tooltip never gets cut off at edges
+    x = Math.max(PAD, Math.min(viewportSize.w - TOOLTIP_W - PAD, x));
+    y = Math.max(PAD, Math.min(viewportSize.h - TOOLTIP_H - PAD, y));
     setTooltipPos({ x, y });
   }, [highlightRect, step.position, viewportSize]);
 

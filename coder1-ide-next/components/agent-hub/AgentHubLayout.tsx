@@ -51,6 +51,7 @@ function AgentHubLayoutInner({ children }: { children: React.ReactNode }) {
             <Link
               key={href}
               href={href}
+              data-tour={label === 'Tasks' ? 'agent-hub-tasks' : undefined}
               className={`flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-all ${
                 active
                   ? 'text-coder1-cyan bg-coder1-cyan/10'
