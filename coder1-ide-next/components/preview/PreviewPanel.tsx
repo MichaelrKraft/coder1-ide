@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Eye, X, RefreshCw, ExternalLink, Sparkles, Search, Users } from '@/lib/icons';
-import { Camera } from 'lucide-react';
+import { Camera, Presentation } from 'lucide-react';
 import ScreenshotToCode from '@/components/screenshot-to-code/ScreenshotToCode';
+import MarpPreview from '@/components/preview/MarpPreview';
 import { colors, glows } from '@/lib/design-tokens';
 import ContextualMemoryPanel from '@/components/contextual-memory/ContextualMemoryPanel';
 import { previewLoopPrevention, createDebouncedPreviewUpdate } from '@/lib/preview-loop-prevention';
@@ -12,7 +13,7 @@ import { useTeamStore } from '@/stores/useTeamStore';
 import { useVoiceCallStore } from '@/stores/useVoiceCallStore';
 import { features } from '@/lib/feature-flags';
 
-type PreviewMode = 'preview' | 'contextual-memory' | 'teams' | 'screenshot-to-code';
+type PreviewMode = 'preview' | 'contextual-memory' | 'teams' | 'screenshot-to-code' | 'marp-preview';
 
 interface PreviewPanelProps {
   fileOpen?: boolean;
@@ -41,7 +42,7 @@ const PreviewPanel = React.memo(function PreviewPanel({
   terminalCommands = [],
   claudeActive = false, // 🔧 FIX (Feb 1, 2025): Default to false
 }: PreviewPanelProps) {
-  const [mode, setMode] = useState<PreviewMode>('preview');
+  const [mode, setMode] = useState<PreviewMode>('teams');
 
   // Team store reads for badge indicators on the Teams tab
   const { syncTeam, onlineMembers } = useTeamStore();
@@ -123,10 +124,13 @@ const PreviewPanel = React.memo(function PreviewPanel({
 
   // Auto-switch based on context
   useEffect(() => {
-    if (fileOpen && isPreviewable) {
+    // Marp files take priority — switch to Slides tab
+    if (activeFile?.endsWith('.md') && /^---[\s\S]*?marp:\s*true[\s\S]*?---/m.test(editorContent)) {
+      setMode('marp-preview');
+    } else if (fileOpen && isPreviewable) {
       setMode('preview');
     }
-  }, [fileOpen, isPreviewable]);
+  }, [fileOpen, isPreviewable, activeFile, editorContent]);
 
   // Listen for switchToTeamsTab events (from status bar click)
   useEffect(() => {
@@ -342,6 +346,12 @@ const PreviewPanel = React.memo(function PreviewPanel({
             'Preview',
             'Live preview of your HTML, CSS, and JavaScript code'
           )}
+          {renderTabButton(
+            'marp-preview',
+            <Presentation className="w-4 h-4" />,
+            'Slides',
+            'Marp markdown presentation preview'
+          )}
         </div>
         
         {/* Close button */}
@@ -359,6 +369,13 @@ const PreviewPanel = React.memo(function PreviewPanel({
 
       {/* Content Area */}
       <div className="flex-1 overflow-auto">
+
+            {/* 🎞️ Marp Slides Preview */}
+            {mode === 'marp-preview' && (
+              <div className="h-full overflow-hidden">
+                <MarpPreview activeFile={activeFile} editorContent={editorContent} />
+              </div>
+            )}
 
             {/* 📸 Screenshot to Code */}
             {mode === 'screenshot-to-code' && (
