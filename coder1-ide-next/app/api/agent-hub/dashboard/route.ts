@@ -39,14 +39,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     `).get(userId, monthStart) as { total: number };
 
     // Per-agent cost breakdown for current month
-    interface AgentCostRow {
-      agent_id: string;
-      agent_name: string;
-      total_cents: number;
-    }
-
     const costByAgent = db.prepare(`
-      SELECT r.agent_id, a.name AS agent_name, COALESCE(SUM(r.cost_cents), 0) AS total_cents
+      SELECT r.agent_id, a.name AS agent_name, SUM(r.cost_cents) AS total_cents
       FROM agent_hub_runs r
       JOIN agent_hub_agents a ON r.agent_id = a.id
       WHERE r.user_id = ?
@@ -55,7 +49,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       GROUP BY r.agent_id
       ORDER BY total_cents DESC
       LIMIT 8
-    `).all(userId, monthStart) as AgentCostRow[];
+    `).all(userId, monthStart) as { agent_id: string; agent_name: string; total_cents: number }[];
 
     // Pending approvals
     const approvalRow = db.prepare(`
