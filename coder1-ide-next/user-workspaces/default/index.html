@@ -3,29 +3,360 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Coder1 Project</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Coder1 IDE</title>
+    <style>
+        :root {
+            --cyan: #00D9FF;
+            --cyan-dim: rgba(0, 217, 255, 0.12);
+            --cyan-glow: rgba(0, 217, 255, 0.35);
+            --purple: #8b5cf6;
+            --bg: #0a0a0a;
+            --surface: rgba(255,255,255,0.04);
+            --border: rgba(255,255,255,0.08);
+            --text: #e2e8f0;
+            --muted: #64748b;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        canvas {
+            position: fixed; top:0; left:0;
+            width:100%; height:100%;
+            pointer-events:none; z-index:0;
+        }
+        .page {
+            position:relative; z-index:1;
+            display:flex; flex-direction:column;
+            min-height:100vh;
+            padding:24px 20px;
+            max-width:600px;
+            margin:0 auto;
+        }
+
+        /* Header */
+        .header {
+            display:flex; align-items:center;
+            gap:12px; margin-bottom:40px;
+        }
+        .logo {
+            font-size:18px; font-weight:700;
+            letter-spacing:2px; color:var(--cyan);
+            font-family:'Courier New',monospace;
+        }
+        .logo span { color:var(--purple); }
+        .tag {
+            font-size:10px; font-weight:600;
+            letter-spacing:1.5px; text-transform:uppercase;
+            color:var(--muted); background:var(--surface);
+            border:1px solid var(--border);
+            padding:3px 8px; border-radius:4px;
+        }
+
+        /* Hero */
+        .hero { margin-bottom:32px; }
+        .headline {
+            font-size:26px; font-weight:700;
+            line-height:1.35; margin-bottom:14px;
+            color:#f1f5f9;
+        }
+        .typed-wrap {
+            color:var(--cyan);
+            border-right:2px solid var(--cyan);
+            padding-right:2px;
+            animation:blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            0%,100% { border-color:var(--cyan); }
+            50% { border-color:transparent; }
+        }
+        .sub {
+            font-size:13px; color:var(--muted); line-height:1.6;
+        }
+        .sub code {
+            background:var(--cyan-dim); color:var(--cyan);
+            padding:1px 6px; border-radius:4px;
+            font-size:12px; font-family:'Courier New',monospace;
+            border:1px solid rgba(0,217,255,0.2);
+        }
+
+        /* Stats */
+        .stats {
+            display:grid; grid-template-columns:repeat(3,1fr);
+            gap:10px; margin-bottom:24px;
+        }
+        .stat {
+            background:var(--surface);
+            border:1px solid var(--border);
+            border-radius:8px; padding:14px 10px;
+            text-align:center;
+            transition:border-color .3s;
+        }
+        .stat:hover { border-color:rgba(0,217,255,.3); }
+        .stat-n {
+            display:block; font-size:20px; font-weight:700;
+            color:var(--cyan); font-family:'Courier New',monospace;
+            margin-bottom:3px;
+        }
+        .stat-l {
+            font-size:9px; text-transform:uppercase;
+            letter-spacing:1px; color:var(--muted);
+        }
+
+        /* Cards */
+        .cards {
+            display:flex; flex-direction:column;
+            gap:10px; margin-bottom:28px;
+        }
+        .card {
+            display:flex; align-items:flex-start;
+            gap:14px; background:var(--surface);
+            border:1px solid var(--border);
+            border-radius:10px; padding:14px;
+            backdrop-filter:blur(10px);
+            transition:border-color .3s, background .3s;
+            animation:fadeUp .5s ease both;
+        }
+        .card:nth-child(1){animation-delay:.1s}
+        .card:nth-child(2){animation-delay:.2s}
+        .card:nth-child(3){animation-delay:.3s}
+        @keyframes fadeUp {
+            from{opacity:0;transform:translateY(10px)}
+            to{opacity:1;transform:translateY(0)}
+        }
+        .card:hover {
+            border-color:rgba(0,217,255,.22);
+            background:rgba(0,217,255,.035);
+        }
+        .icon {
+            flex-shrink:0; width:34px; height:34px;
+            background:var(--cyan-dim);
+            border:1px solid rgba(0,217,255,.2);
+            border-radius:8px; display:flex;
+            align-items:center; justify-content:center;
+            color:var(--cyan);
+        }
+        .card h3 {
+            font-size:13px; font-weight:600;
+            color:#f1f5f9; margin-bottom:3px;
+        }
+        .card p {
+            font-size:12px; color:var(--muted); line-height:1.5;
+        }
+
+        /* CTA */
+        .cta {
+            display:flex; flex-direction:column;
+            align-items:center; gap:10px;
+            margin-bottom:32px;
+        }
+        .btn {
+            background:transparent; color:var(--cyan);
+            border:1px solid var(--cyan);
+            padding:11px 32px; font-size:13px;
+            font-weight:600; border-radius:6px;
+            cursor:pointer; letter-spacing:.5px;
+            transition:background .2s, box-shadow .2s, transform .15s;
+            width:100%; max-width:220px;
+        }
+        .btn:hover {
+            background:var(--cyan-dim);
+            box-shadow:0 0 20px var(--cyan-glow);
+            transform:translateY(-1px);
+        }
+        .btn:active { transform:translateY(0); }
+        .hint { font-size:11px; color:var(--muted); }
+
+        /* Footer */
+        .footer {
+            margin-top:auto; padding-top:16px;
+            border-top:1px solid var(--border);
+            display:flex; align-items:center;
+            gap:6px; font-size:11px; color:var(--muted);
+        }
+        .footer strong { color:var(--cyan); font-weight:600; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to My Project! 🎉</h1>
-        <p>Edit this file to start building your application.</p>
-        
+<canvas id="c"></canvas>
+<div class="page">
+
+    <header class="header">
+        <div class="logo"><span>[</span>C1<span>]</span></div>
+        <div class="tag">AI-Powered IDE</div>
+    </header>
+
+    <section class="hero">
+        <h1 class="headline">Build anything.<br><span class="typed-wrap" id="typed"></span></h1>
+        <p class="sub">Your AI assistant is ready. Type <code>claude</code> in the terminal to start.</p>
+    </section>
+
+    <section class="stats">
+        <div class="stat"><span class="stat-n" data-t="10">0</span><span class="stat-l">x Faster</span></div>
+        <div class="stat"><span class="stat-n" data-t="100">0</span><span class="stat-l">% AI Native</span></div>
+        <div class="stat"><span class="stat-n" data-t="0">0</span><span class="stat-l">Setup Needed</span></div>
+    </section>
+
+    <section class="cards">
         <div class="card">
-            <h2>Getting Started</h2>
-            <p>This is a sample HTML page. You can:</p>
-            <ul>
-                <li>Edit this HTML file</li>
-                <li>Modify the styles in <code>styles.css</code></li>
-                <li>Add JavaScript in <code>app.js</code></li>
-                <li>Ask Claude for help building features!</li>
-            </ul>
+            <div class="icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                </svg>
+            </div>
+            <div><h3>Live Preview</h3><p>See your changes instantly as you edit. No refresh needed.</p></div>
         </div>
-        
-        <button id="clickMe">Click Me!</button>
-        <p id="output"></p>
-    </div>
-    
-    <script src="app.js"></script>
+        <div class="card">
+            <div class="icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+                </svg>
+            </div>
+            <div><h3>Claude Powered</h3><p>The most capable AI writes, debugs, and ships your code.</p></div>
+        </div>
+        <div class="card">
+            <div class="icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+            </div>
+            <div><h3>Team Ready</h3><p>Collaborate with multiple AI agents working in parallel.</p></div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <button class="btn" id="btn">Start Building</button>
+        <p class="hint">Edit this file to begin your project</p>
+    </section>
+
+    <footer class="footer">
+        <span>Built with</span><strong>Coder1</strong>
+    </footer>
+</div>
+
+<script>
+(function() {
+    // Particles
+    var canvas = document.getElementById('c');
+    var ctx = canvas.getContext('2d');
+    var pts = [];
+    var N = 45;
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (var i = 0; i < N; i++) {
+        pts.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: (Math.random() - 0.5) * 0.35,
+            vy: (Math.random() - 0.5) * 0.35,
+            r: Math.random() * 1.2 + 0.5
+        });
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var MAX = 110;
+        for (var i = 0; i < pts.length; i++) {
+            var p = pts[i];
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+            if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, 6.28);
+            ctx.fillStyle = 'rgba(0,217,255,0.45)';
+            ctx.fill();
+            for (var j = i + 1; j < pts.length; j++) {
+                var q = pts[j];
+                var dx = p.x - q.x, dy = p.y - q.y;
+                var d = Math.sqrt(dx*dx + dy*dy);
+                if (d < MAX) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(q.x, q.y);
+                    ctx.strokeStyle = 'rgba(0,217,255,' + ((1 - d/MAX) * 0.15) + ')';
+                    ctx.lineWidth = 0.7;
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(draw);
+    }
+    draw();
+
+    // Typing
+    var words = ['faster.', 'smarter.', 'together.', 'with AI.'];
+    var el = document.getElementById('typed');
+    var wi = 0, ci = 0, del = false, paused = false;
+
+    function type() {
+        if (paused) return;
+        var w = words[wi];
+        if (!del) {
+            el.textContent = w.slice(0, ci + 1);
+            ci++;
+            if (ci === w.length) {
+                paused = true;
+                setTimeout(function(){ del = true; paused = false; type(); }, 2000);
+            } else {
+                setTimeout(type, 80);
+            }
+        } else {
+            el.textContent = w.slice(0, ci - 1);
+            ci--;
+            if (ci === 0) {
+                del = false;
+                wi = (wi + 1) % words.length;
+                setTimeout(type, 300);
+            } else {
+                setTimeout(type, 45);
+            }
+        }
+    }
+    setTimeout(type, 700);
+
+    // Counters
+    function animateNum(el) {
+        var target = parseInt(el.getAttribute('data-t'), 10);
+        if (target === 0) return;
+        var step = target / 40;
+        var cur = 0;
+        var id = setInterval(function() {
+            cur += step;
+            if (cur >= target) { cur = target; clearInterval(id); }
+            el.textContent = Math.round(cur);
+        }, 30);
+    }
+
+    var obs = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting) {
+            document.querySelectorAll('.stat-n').forEach(animateNum);
+            obs.disconnect();
+        }
+    });
+    var stats = document.querySelector('.stats');
+    if (stats) obs.observe(stats);
+
+    // Button
+    var btn = document.getElementById('btn');
+    if (btn) {
+        btn.addEventListener('click', function() {
+            btn.textContent = 'Type "claude" in the terminal';
+        });
+    }
+})();
+</script>
 </body>
 </html>

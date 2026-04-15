@@ -8,7 +8,8 @@
 
 import { createWorktreeForRun } from './git-tracker';
 import { updateRun, getLastHumanInputResponse } from './runs';
-import { listSubordinates } from './agents';
+import { listSubordinates, getAgent, updateAgentSessionId } from './agents';
+import { getRecentHiveMindEntries } from './db';
 
 export interface AgentRunContext {
   runId: string;
@@ -62,6 +63,37 @@ async function buildInjectedPrompt(ctx: AgentRunContext): Promise<string> {
     // Non-critical — skip if unavailable
   }
 
+  // Inject recent hive mind activity so agent avoids duplicate work
+  let hiveMindSection: string | null = null;
+  try {
+    const entries = getRecentHiveMindEntries(ctx.userId, 10);
+    if (entries.length > 0) {
+      const lines = entries.map(
+        e => `- ${e.agentRole} — ${e.taskTitle}: ${e.summary} (outcome: ${e.outcome})`
+      );
+      hiveMindSection = '## Recent Team Activity (Hive Mind)\nYour teammates recently completed:\n' + lines.join('\n');
+    }
+  } catch {
+    // Non-critical — skip if unavailable
+  }
+
+  const schedulingSection = [
+    '## Self-Scheduling Capabilities',
+    '',
+    'You can schedule follow-up work in two ways:',
+    '',
+    '**In-session polling** (active while this run is running):',
+    '- Use CronCreate with a standard 5-field cron expression to check something periodically',
+    '- Example: CronCreate("*/5 * * * *", "check if the test suite finished and report results")',
+    '- Use CronList to see active tasks, CronDelete with the task ID to cancel',
+    '- Note: these tasks expire when this run ends (session-scoped)',
+    '',
+    '**Persistent recurring tasks** (survives across runs):',
+    '- Create a new Agent Hub task via the internal task API with a schedule',
+    `- Use the supervisor delegation endpoint you already have access to, with schedule_type and schedule_time fields`,
+    '- This persists even after this session ends',
+  ].join('\n');
+
   return buildContextStack({
     systemPrompt: ctx.systemPrompt,
     skills: ctx.skills,
@@ -70,7 +102,7 @@ async function buildInjectedPrompt(ctx: AgentRunContext): Promise<string> {
     runId: ctx.runId,
     workspacePath: ctx.workspacePath,
     supervisorSection: null,
-    memorySection: [memorySection, humanInputSection].filter(Boolean).join('\n\n---\n\n') || null,
+    memorySection: [memorySection, humanInputSection, hiveMindSection, schedulingSection].filter(Boolean).join('\n\n---\n\n') || null,
   });
 }
 
@@ -160,12 +192,19 @@ export async function startAgentRun(
     : injectedPrompt;
 
   console.log(`[AgentHub] Emitting agent:start to bridge socket ${bridge.socket.id}, runId=${ctx.runId}, workspacePath=${worktreePath}`);
+  // Fetch agent's last session ID for resumption
+  const agentRecord = getAgent(ctx.agentId, ctx.userId);
+  const lastSessionId = agentRecord?.lastSessionId ?? null;
+
+  const maxTurns = parseInt(process.env.AGENT_MAX_TURNS ?? '30');
   bridge.socket.emit('agent:start', {
     runId: ctx.runId,
     workspacePath: worktreePath,
     prompt: fullPrompt,
     model: ctx.model,
     mcpServers: ctx.mcpServers,
+    maxTurns,
+    resumeSessionId: lastSessionId ?? undefined,
   });
 
   // sessionId is assigned by the bridge when it starts the Claude process;
@@ -175,8 +214,8 @@ export async function startAgentRun(
 
 export async function stopAgentRun(
   runId: string,
-  workspacePath: string,
-  userId: string
+  userId: string,
+  workspacePath: string
 ): Promise<boolean> {
   const manager = getBridgeManager();
   if (!manager) return false;

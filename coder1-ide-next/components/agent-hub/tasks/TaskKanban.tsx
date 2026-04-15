@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import type { Task } from '@/lib/agent-hub/tasks';
 import type { Agent } from '@/lib/agent-hub/agents';
 import { TaskCard } from './TaskCard';
@@ -27,6 +27,8 @@ export function TaskKanban() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [autoAssigning, setAutoAssigning] = useState<Record<string, boolean>>({});
+  const [autoAssignError, setAutoAssignError] = useState<Record<string, string>>({});
 
   const fetchData = useCallback(async () => {
     try {
@@ -62,6 +64,28 @@ export function TaskKanban() {
   });
 
   const byStatus = (status: Status) => filtered.filter((t) => t.status === status);
+
+  const handleAutoAssign = useCallback(async (taskId: string) => {
+    setAutoAssigning((prev) => ({ ...prev, [taskId]: true }));
+    setAutoAssignError((prev) => ({ ...prev, [taskId]: '' }));
+    try {
+      const res = await fetch(`/api/agent-hub/tasks/${taskId}/auto-assign`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        throw new Error(data.error ?? 'Auto-assign failed');
+      }
+      const data = await res.json() as { agentId: string; agentRole: string };
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, agentId: data.agentId } : t))
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Auto-assign failed';
+      setAutoAssignError((prev) => ({ ...prev, [taskId]: msg }));
+      setTimeout(() => setAutoAssignError((prev) => ({ ...prev, [taskId]: '' })), 3000);
+    } finally {
+      setAutoAssigning((prev) => ({ ...prev, [taskId]: false }));
+    }
+  }, []);
 
   const handleTaskUpdated = () => {
     void fetchData();
@@ -142,12 +166,31 @@ export function TaskKanban() {
                     </div>
                   )}
                   {colTasks.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      agentName={agentMap[task.agentId]?.name ?? '—'}
-                      onClick={() => setSelectedTask(task)}
-                    />
+                    <div key={task.id} className="relative group">
+                      <TaskCard
+                        task={task}
+                        agentName={agentMap[task.agentId]?.name ?? '—'}
+                        onClick={() => setSelectedTask(task)}
+                      />
+                      {!task.agentId && (
+                        <div className="absolute top-1.5 right-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); void handleAutoAssign(task.id); }}
+                            disabled={autoAssigning[task.id]}
+                            title="Smart Assign"
+                            className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded bg-bg-secondary border border-border-default text-text-muted hover:border-coder1-cyan/50 hover:text-coder1-cyan transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Sparkles className="w-2.5 h-2.5" />
+                            {autoAssigning[task.id] ? '…' : 'Auto'}
+                          </button>
+                          {autoAssignError[task.id] && (
+                            <p className="text-[10px] text-red-400 mt-0.5 leading-tight">
+                              {autoAssignError[task.id]}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>

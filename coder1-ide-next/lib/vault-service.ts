@@ -495,11 +495,18 @@ export class VaultService {
 }
 
 // Singleton per process
-let _vaultService: VaultService | null = null;
+const _vaultServices = new Map<string, VaultService>();
 
-export function getVaultService(): VaultService {
-  if (!_vaultService) {
-    _vaultService = new VaultService();
+/**
+ * Return a VaultService scoped to the given userId.
+ * Each user gets their own SQLite database so notes are fully isolated.
+ */
+export function getVaultService(userId = 'default'): VaultService {
+  if (!_vaultServices.has(userId)) {
+    // Sanitize userId to a safe filename component
+    const safe = userId.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 64);
+    const dbPath = `~/.coder1/vaults/${safe}.db`;
+    _vaultServices.set(userId, new VaultService(undefined, dbPath));
   }
-  return _vaultService;
+  return _vaultServices.get(userId)!;
 }

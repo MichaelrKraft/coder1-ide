@@ -1,4 +1,13 @@
 /**
+ * @deprecated Replaced by the Morning Brief on Steroids system.
+ * Use the /morning-brief-steroids skill instead.
+ * Data pipeline: ~/.claude/skills/morning-brief-steroids/SKILL.md
+ * Web output: public/morning-briefs/{date}.html (served at localhost:3001)
+ * CLI output: /morning-brief command
+ * This file is kept for reference only and will be removed in a future cleanup.
+ */
+
+/**
  * Morning Brief Service
  *
  * Sends a daily 8 AM briefing via Telegram with:

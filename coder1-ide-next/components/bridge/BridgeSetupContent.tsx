@@ -101,39 +101,68 @@ export function BridgeSetupContent({
   }
 
   return (
-    <div className="p-6">
-      {/* Command */}
-      <p className="text-gray-300 mb-3 text-center">{terminalLabel}</p>
-      <div
-        className="bg-black rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-900 transition-colors mb-6"
-        onClick={() => copyToClipboard(installCommand, 'install')}
-      >
-        <code className="text-cyan-300 text-sm">
-          <span className="text-green-400">$</span> {installCommand}
-        </code>
-        <span className="text-xs text-gray-400 ml-2">
-          {copiedCommand === 'install' ? '✓ Copied!' : 'Copy'}
-        </span>
-      </div>
-
-      {/* Code */}
-      <p className="text-gray-300 mb-3 text-center">Then enter this code:</p>
-      <div className="text-center mb-4">
+    <div className="p-6 space-y-5">
+      {/* Step 1: Install */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Step 1 — {terminalLabel}</p>
         <div
-          className="inline-block px-6 py-3 bg-gray-900 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors"
-          onClick={() => pairingCode && copyToClipboard(pairingCode, 'code')}
+          className="bg-black rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-900 transition-colors"
+          onClick={() => copyToClipboard(installCommand, 'install')}
         >
-          <span className="text-4xl font-mono font-bold text-cyan-400 tracking-wider">
-            {pairingCode || '------'}
+          <code className="text-cyan-300 text-sm">
+            <span className="text-green-400">$</span> {installCommand}
+          </code>
+          <span className="text-xs text-gray-400 ml-2 shrink-0">
+            {copiedCommand === 'install' ? '✓ Copied!' : 'Copy'}
           </span>
         </div>
-        {copiedCommand === 'code' && (
-          <p className="text-green-400 text-xs mt-2">✓ Copied!</p>
-        )}
+      </div>
+
+      {/* Step 2: Start bridge */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Step 2 — In a new terminal tab, run:</p>
+        <div
+          className="bg-black rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-900 transition-colors"
+          onClick={() => copyToClipboard('coder1-bridge start', 'start')}
+        >
+          <code className="text-cyan-300 text-sm">
+            <span className="text-green-400">$</span> coder1-bridge start
+          </code>
+          <span className="text-xs text-gray-400 ml-2 shrink-0">
+            {copiedCommand === 'start' ? '✓ Copied!' : 'Copy'}
+          </span>
+        </div>
+        <details className="mt-2">
+          <summary className="text-xs text-gray-600 cursor-pointer hover:text-gray-400 select-none">Troubleshooting</summary>
+          <p className="text-xs text-gray-500 mt-1 pl-1">
+            If the CLI can't start, rebuild the native module:
+            <br />
+            <code className="text-cyan-700">cd ~/.coder1/lib/node_modules/coder1-bridge && npm rebuild node-pty</code>
+          </p>
+        </details>
+      </div>
+
+      {/* Step 3: Enter code */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Step 3 — Enter this code when prompted:</p>
+        <div className="text-center">
+          <div
+            className="inline-block px-6 py-3 bg-gray-900 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors"
+            onClick={() => pairingCode && copyToClipboard(pairingCode, 'code')}
+          >
+            <span className="text-4xl font-mono font-bold text-cyan-400 tracking-wider">
+              {pairingCode || '------'}
+            </span>
+          </div>
+          {copiedCommand === 'code' && (
+            <p className="text-green-400 text-xs mt-2">✓ Copied!</p>
+          )}
+          <p className="text-xs text-gray-600 mt-2">The CLI will ask for it after you run step 2</p>
+        </div>
       </div>
 
       {/* Status */}
-      <div className="text-center text-sm text-gray-500 mb-6">
+      <div className="text-center text-sm text-gray-500 pt-1">
         {codeExpired ? (
           <button
             onClick={onRefreshCode}
@@ -147,18 +176,6 @@ export function BridgeSetupContent({
             Waiting for connection...
           </span>
         )}
-      </div>
-
-      {/* Returning users */}
-      <div className="pt-4 border-t border-gray-700 text-center text-xs text-gray-500">
-        Already have bridge? Run:{' '}
-        <code
-          className="bg-gray-800 px-2 py-1 rounded cursor-pointer hover:bg-gray-700"
-          onClick={() => copyToClipboard('coder1-bridge start', 'start')}
-        >
-          coder1-bridge start
-        </code>
-        {copiedCommand === 'start' && <span className="text-green-400 ml-2">✓</span>}
       </div>
 
       {/* Don't show again checkbox */}

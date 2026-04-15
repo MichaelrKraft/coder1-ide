@@ -640,6 +640,105 @@ export class ClaudeCodeBridgeService extends EventEmitter {
   }
 
   /**
+   * Run orchestrator step: decompose requirement into role-specific subtasks.
+   * Returns a map of role -> subtask string, or null on failure (caller falls back to original requirement).
+   */
+  private async runOrchestrator(requirement: string, roles: string[]): Promise<Record<string, string> | null> {
+    const orchestratorPrompt = `You are a task orchestrator. Analyze this requirement and decompose it into role-specific subtasks.
+
+Requirement: ${requirement}
+
+Available roles: ${roles.join(', ')}
+
+Output ONLY valid JSON in this exact format, no other text:
+{
+  "frontend": "specific frontend subtask description",
+  "backend": "specific backend subtask description",
+  "testing": "specific testing subtask description"
+}
+
+Only include roles that have work to do. Be specific about what each role should build.
+Do NOT write any code. Output only the JSON.`;
+
+    return new Promise<Record<string, string> | null>((resolve) => {
+      const ORCHESTRATOR_TIMEOUT_MS = 30000;
+      let stdout = '';
+      let settled = false;
+
+      const done = (result: Record<string, string> | null) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(result);
+      };
+
+      const timer = setTimeout(() => {
+        logger.warn('[Orchestrator] Timed out after 30s — falling back to original requirement');
+        proc.kill('SIGTERM');
+        done(null);
+      }, ORCHESTRATOR_TIMEOUT_MS);
+
+      let proc: ChildProcess;
+      try {
+        proc = spawn('claude', [
+          '--print',
+          '--output-format', 'text',
+          '--max-turns', '3',
+          '--dangerously-skip-permissions',
+        ], {
+          stdio: ['pipe', 'pipe', 'pipe'],
+          env: {
+            ...process.env,
+            CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN,
+          }
+        });
+      } catch (spawnErr) {
+        logger.warn('[Orchestrator] Failed to spawn orchestrator process — falling back:', spawnErr);
+        clearTimeout(timer);
+        return resolve(null);
+      }
+
+      proc.stdin?.write(orchestratorPrompt + '\n');
+      proc.stdin?.end();
+
+      proc.stdout?.on('data', (chunk: Buffer) => {
+        stdout += chunk.toString();
+      });
+
+      proc.on('error', (err) => {
+        logger.warn('[Orchestrator] Process error — falling back:', err);
+        done(null);
+      });
+
+      proc.on('exit', () => {
+        // Extract first JSON object from output (Claude may add extra text)
+        const match = stdout.match(/\{[\s\S]*\}/);
+        if (!match) {
+          logger.warn('[Orchestrator] No JSON found in output — falling back');
+          done(null);
+          return;
+        }
+        try {
+          const parsed = JSON.parse(match[0]) as Record<string, string>;
+          // Validate it's a non-empty object with string values
+          const valid = typeof parsed === 'object' && parsed !== null &&
+            Object.values(parsed).every(v => typeof v === 'string' && v.length > 0);
+          if (!valid) {
+            logger.warn('[Orchestrator] Parsed JSON failed validation — falling back');
+            done(null);
+            return;
+          }
+          logger.info(`[Orchestrator] Successfully decomposed into ${Object.keys(parsed).length} subtasks`);
+          done(parsed);
+        } catch (parseErr) {
+          logger.warn('[Orchestrator] JSON parse error — falling back:', parseErr);
+          done(null);
+        }
+      });
+    });
+  }
+
+  /**
    * Start automated Claude Code execution for all agents in a team
    */
   private async startAutomatedExecution(team: ParallelTeam): Promise<void> {
@@ -647,6 +746,25 @@ export class ClaudeCodeBridgeService extends EventEmitter {
     team.startedAt = new Date();
 
     logger.info(`🤖 Starting automated execution for team ${team.teamId}`);
+
+    // Emit planning event so the UI can show "Planning..." state
+    this.emit('team:planning', { teamId: team.teamId });
+
+    // Orchestrator step: decompose requirement into role-specific subtasks
+    const roles = team.agents.map(a => a.role);
+    const subtasks = await this.runOrchestrator(team.projectRequirement, roles);
+
+    if (subtasks) {
+      // Apply role-specific subtasks to each agent's currentTask
+      for (const agent of team.agents) {
+        if (subtasks[agent.role]) {
+          agent.currentTask = subtasks[agent.role];
+          logger.info(`[Orchestrator] ${agent.role} subtask: ${agent.currentTask.substring(0, 80)}`);
+        }
+      }
+    } else {
+      logger.info('[Orchestrator] Using original requirement for all agents (fallback)');
+    }
 
     // Start each agent's Claude Code process
     for (const agent of team.agents) {
@@ -752,11 +870,13 @@ export class ClaudeCodeBridgeService extends EventEmitter {
       }
 
       // Fallback: Direct execution without sandbox
+      const maxTurns = parseInt(process.env.AGENT_MAX_TURNS ?? '30') || 30;
       const claudeProcess = spawn('claude', [
         '--print',
         '--output-format', 'json',
         '--session-id', agentSessionId,
-        '--dangerously-skip-permissions' // For automation
+        '--dangerously-skip-permissions', // For automation
+        '--max-turns', String(maxTurns),
         // Note: prompt will be sent via stdin, not as CLI argument
       ], {
         cwd: agent.workTreePath,

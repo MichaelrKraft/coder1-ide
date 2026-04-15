@@ -836,7 +836,7 @@ class BridgeClient extends EventEmitter {
        * Streams output back as agent:output, ends with agent:complete or agent:error.
        */
       this.socket.on('agent:start', async (data) => {
-        const { runId, workspacePath, prompt, model, mcpServers } = data;
+        const { runId, workspacePath, prompt, model, mcpServers, maxTurns, resumeSessionId } = data;
         logger.info('[Agent] Starting run', { runId, workspacePath, model });
 
         if (this.agentSessions.has(runId)) {
@@ -898,8 +898,10 @@ class BridgeClient extends EventEmitter {
         const safeModel = model && ALLOWED_MODELS.test(model) ? model : 'claude-sonnet-4-6';
         const modelFlag = ` --model ${safeModel}`;
         const mcpFlag = mcpConfigPath ? ` --mcp-config '${mcpConfigPath.replace(/'/g, "'\\''")}' --strict-mcp-config` : '';
+        const safeTurns = typeof maxTurns === 'number' && maxTurns > 0 ? maxTurns : (parseInt(process.env.AGENT_MAX_TURNS ?? '30') || 30);
+        const resumeFlag = resumeSessionId && /^[a-zA-Z0-9_-]+$/.test(resumeSessionId) ? ` --resume ${resumeSessionId}` : '';
         const safePath = workspacePath.replace(/'/g, "'\\''");
-        const command = `cd '${safePath}' && claude -p --output-format stream-json${modelFlag}${mcpFlag} -`;
+        const command = `cd '${safePath}' && claude -p --output-format stream-json${modelFlag}${mcpFlag} --max-turns ${safeTurns}${resumeFlag} -`;
 
         const sessionEntry = { killed: false, process: null, cleanupMcpConfig };
         this.agentSessions.set(runId, sessionEntry);
@@ -907,15 +909,67 @@ class BridgeClient extends EventEmitter {
         // Notify server we're starting
         this.socket.emit('agent:started', { runId, sessionId: `bridge-${runId}` });
 
+        // Track the Claude session ID emitted in stream-json output
+        let capturedSessionId = null;
+
         try {
           const result = await this.claudeExecutor.execute(command, {
             commandId: `agent-${runId}`,
             stdinData: prompt, // Pipe prompt via stdin — safe for any length
             onData: (chunk) => {
               if (!sessionEntry.killed) {
+                const text = chunk.toString();
+                // Parse stream-json lines to extract session_id and CronCreate results
+                for (const line of text.split('\n')) {
+                  const trimmed = line.trim();
+                  if (!trimmed) continue;
+                  try {
+                    const parsed = JSON.parse(trimmed);
+
+                    // Extract session_id (only needed once)
+                    if (!capturedSessionId && parsed.session_id && typeof parsed.session_id === 'string') {
+                      capturedSessionId = parsed.session_id;
+                    }
+
+                    // Detect CronCreate tool results.
+                    // Claude Code stream-json emits tool results as objects with:
+                    //   { type: 'tool_result', tool_use_id: '...', content: [...] }
+                    // or as assistant message content blocks with:
+                    //   { type: 'tool_result', name: 'CronCreate', content: '...' }
+                    // The result content from CronCreate contains a task_id field.
+                    // TODO: Verify exact field path against live stream-json output —
+                    //       field names below are best-guess from Claude Code v2.1.71 spec.
+                    //       Path used: parsed.type === 'tool_result' && parsed.content[0].text (JSON)
+                    //       or parsed.type === 'result' && parsed.subtype === 'tool_result'
+                    if (parsed.type === 'tool_result') {
+                      // content may be an array of blocks or a plain string
+                      let resultText = null;
+                      if (Array.isArray(parsed.content) && parsed.content.length > 0) {
+                        resultText = parsed.content[0].text ?? null;
+                      } else if (typeof parsed.content === 'string') {
+                        resultText = parsed.content;
+                      }
+                      if (resultText) {
+                        try {
+                          const resultObj = JSON.parse(resultText);
+                          // CronCreate result contains task_id, schedule, and prompt
+                          if (resultObj.task_id && typeof resultObj.task_id === 'string') {
+                            this.socket.emit('agent:cron-created', {
+                              agentId: parsed.agent_id ?? null, // may not be present; server falls back to run lookup
+                              runId,
+                              taskId: resultObj.task_id,
+                              schedule: resultObj.schedule ?? '',
+                              prompt: resultObj.prompt ?? '',
+                            });
+                          }
+                        } catch { /* result content is not JSON — not a CronCreate result */ }
+                      }
+                    }
+                  } catch { /* not JSON */ }
+                }
                 this.socket.emit('agent:output', {
                   runId,
-                  chunk: chunk.toString(),
+                  chunk: text,
                   type: 'stdout',
                 });
               }
@@ -939,6 +993,7 @@ class BridgeClient extends EventEmitter {
               runId,
               exitCode: result.exitCode ?? 0,
               costCents: 0,
+              sessionId: capturedSessionId,
             });
           }
         } catch (err) {

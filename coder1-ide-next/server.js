@@ -81,9 +81,14 @@ let parseThoughtFromChunk;
 let appendRunThought;
 let appendRunLogChunk;
 let getRunById;
+let scanForSecrets;
+let insertCronTask;
+let expireOldCronTasks;
 try {
   ({ parseThoughtFromChunk } = require('./lib/agent-hub/thought-parser.js'));
   ({ appendRunThought, appendRunLogChunk, getRunById } = require('./lib/agent-hub/runs'));
+  ({ scanForSecrets } = require('./lib/agent-hub/exfil-guard'));
+  ({ insertCronTask, expireOldCronTasks } = require('./lib/agent-hub/db'));
 } catch (e) {
   console.warn('[agent-hub] module preload failed:', e.message);
 }
@@ -2412,9 +2417,12 @@ app.prepare().then(() => {
           return;
         }
 
-        // Broadcast raw output to run room
+        // Scan chunk for secrets before broadcasting to clients
+        const safeChunkForEmit = scanForSecrets ? scanForSecrets(chunk).clean : chunk;
+
+        // Broadcast output to run room
         io.to(`run:${runId}`).emit(type === 'stderr' ? 'run:stderr' : 'run:stdout', {
-          chunk,
+          chunk: safeChunkForEmit,
           timestamp: new Date().toISOString(),
         });
 
@@ -2489,7 +2497,7 @@ app.prepare().then(() => {
       });
 
       // Bridge reports agent completed
-      socket.on('agent:complete', ({ runId, exitCode, costCents }) => {
+      socket.on('agent:complete', ({ runId, exitCode, costCents, sessionId }) => {
         const userId = socket.userId;
         if (!userId) {
           console.warn('[agent-hub] agent:complete received with no userId on socket, ignoring');
@@ -2552,6 +2560,28 @@ app.prepare().then(() => {
                   console.warn('[agent-hub] auto-summarize error:', e.message);
                 }
               });
+
+              // Write hive mind entry so teammates know what was completed
+              setImmediate(async () => {
+                try {
+                  const { writeHiveMindEntry } = require('./lib/agent-hub/runs');
+                  await writeHiveMindEntry(runId, run.userId);
+                } catch (e) {
+                  console.warn('[agent-hub] hive-mind entry error:', e.message);
+                }
+              });
+
+              // Persist session ID on agent for future resumption
+              if (sessionId && typeof sessionId === 'string') {
+                setImmediate(() => {
+                  try {
+                    const { updateAgentSessionId } = require('./lib/agent-hub/agents');
+                    updateAgentSessionId(run.agentId, run.userId, sessionId);
+                  } catch (e) {
+                    console.warn('[agent-hub] updateAgentSessionId error:', e.message);
+                  }
+                });
+              }
             }
           } catch (e) {
             console.warn('[agent-hub] agent:complete handler error:', e.message);
@@ -2589,6 +2619,40 @@ app.prepare().then(() => {
             }
           } catch (e) {
             console.warn('[agent-hub] agent:error handler error:', e.message);
+          }
+        });
+      });
+
+      // Bridge reports that agent used CronCreate tool — persist the cron task record
+      socket.on('agent:cron-created', ({ agentId, runId, taskId, schedule, prompt }) => {
+        const userId = socket.userId;
+        if (!userId) {
+          console.warn('[agent-hub] agent:cron-created received with no userId on socket, ignoring');
+          return;
+        }
+        setImmediate(() => {
+          try {
+            if (insertCronTask && taskId) {
+              // Resolve agentId from run record if bridge did not supply it
+              let resolvedAgentId = agentId;
+              if (!resolvedAgentId && getRunById) {
+                const run = getRunById(runId);
+                resolvedAgentId = run ? run.agentId : null;
+              }
+              if (resolvedAgentId) {
+                insertCronTask({
+                  id: taskId,
+                  userId,
+                  agentId: resolvedAgentId,
+                  runId,
+                  schedule: schedule || '',
+                  prompt: prompt || '',
+                  expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                });
+              }
+            }
+          } catch (e) {
+            console.warn('[agent-hub] agent:cron-created handler error:', e.message);
           }
         });
       });
@@ -5709,6 +5773,15 @@ app.prepare().then(() => {
   server.listen(port, (err) => {
     if (err) throw err;
     console.log('[DEBUG] server.listen() callback fired');
+
+    // Expire stale cron tasks from previous sessions (best-effort, non-blocking)
+    setImmediate(() => {
+      try {
+        if (expireOldCronTasks) expireOldCronTasks();
+      } catch (e) {
+        console.warn('[agent-hub] expireOldCronTasks startup error:', e.message);
+      }
+    });
     console.log('[DEBUG] Server request listeners at start:', server.listenerCount('request'));
 
     if (isAlphaMode) {

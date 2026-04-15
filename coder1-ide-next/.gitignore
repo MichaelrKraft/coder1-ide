@@ -124,3 +124,4 @@ test-telegram-*.ts
 
 # Git worktrees
 .worktrees/
+e2e/.auth/

@@ -5012,6 +5012,7 @@ export default function Terminal({ onAgentsSpawn, onTerminalClick, onClaudeTyped
       
       // Step 2: Spawn agents with extracted requirement
       console.log('[AI Team] Quality gate passed - starting agent spawn');
+      xtermRef.current.writeln('\r\n🧠 Planning... (orchestrator decomposing tasks for each agent)');
       xtermRef.current.writeln('🤖 Connecting to AI Team Management System...');
       
       const response = await fetch(`${unifiedServerUrl}/api/claude-bridge/spawn`, {

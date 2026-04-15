@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 import { getRun, getRunLogChunks, getRunThoughts } from '@/lib/agent-hub/runs';
+import { scanForSecrets } from '@/lib/agent-hub/exfil-guard';
 
 export async function GET(
   request: NextRequest,
@@ -21,7 +22,11 @@ export async function GET(
     if (!run) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
-    const logChunks = getRunLogChunks(id);
+    const rawChunks = getRunLogChunks(id);
+    const logChunks = rawChunks.map((c) => ({
+      ...c,
+      content: scanForSecrets(c.content).clean,
+    }));
     const thoughts = getRunThoughts(id);
     return NextResponse.json({ run, logChunks, thoughts });
   } catch (err: unknown) {
