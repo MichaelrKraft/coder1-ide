@@ -6,7 +6,7 @@ import { Resend } from 'resend';
 async function sendInviteEmail(toEmail: string, inviteLink: string, teamName: string, inviterName: string) {
   const apiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'Coder1 <noreply@coder1.dev>';
-  if (!apiKey) return;
+  if (!apiKey) throw new Error('RESEND_API_KEY not configured');
 
   try {
     const resend = new Resend(apiKey);
@@ -34,6 +34,7 @@ async function sendInviteEmail(toEmail: string, inviteLink: string, teamName: st
     });
   } catch (error) {
     console.error('[Team Invite] Failed to send email:', error);
+    throw error;
   }
 }
 
@@ -66,9 +67,16 @@ export async function POST(
 
     const inviteLink = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/team/join?token=${invitation.token}`;
 
-    // Send invite email (fire-and-forget — don't block response)
     const team = await getTeamById(teamId);
-    sendInviteEmail(email.trim(), inviteLink, team?.name || 'your team', user.username || 'A team member');
+    let emailSent = false;
+    let emailError: string | undefined;
+    try {
+      await sendInviteEmail(email.trim(), inviteLink, team?.name || 'your team', user.username || 'A team member');
+      emailSent = true;
+    } catch (err) {
+      emailError = err instanceof Error ? err.message : 'Unknown email error';
+      console.error('[Team Invite] Email send failed:', err);
+    }
 
     return NextResponse.json({
       success: true,
@@ -78,6 +86,8 @@ export async function POST(
         token: invitation.token,
         expires_at: invitation.expires_at,
         invite_link: inviteLink,
+        email_sent: emailSent,
+        ...(emailError ? { email_error: emailError } : {}),
       },
     });
   } catch (error) {
