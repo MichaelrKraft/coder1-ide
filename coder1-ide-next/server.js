@@ -84,13 +84,27 @@ let getRunById;
 let scanForSecrets;
 let insertCronTask;
 let expireOldCronTasks;
+let resetOrphanedRuns;
 try {
   ({ parseThoughtFromChunk } = require('./lib/agent-hub/thought-parser.js'));
-  ({ appendRunThought, appendRunLogChunk, getRunById } = require('./lib/agent-hub/runs'));
+  ({ appendRunThought, appendRunLogChunk, getRunById, resetOrphanedRuns } = require('./lib/agent-hub/runs'));
   ({ scanForSecrets } = require('./lib/agent-hub/exfil-guard'));
   ({ insertCronTask, expireOldCronTasks } = require('./lib/agent-hub/db'));
 } catch (e) {
   console.warn('[agent-hub] module preload failed:', e.message);
+}
+
+// Reset any runs left in 'running' state from a prior process — their associated
+// tasks get reset from 'in_progress' back to 'backlog' so the UI doesn't show phantom work.
+try {
+  if (resetOrphanedRuns) {
+    const { runsReset, tasksReset } = resetOrphanedRuns();
+    if (runsReset > 0) {
+      console.log(`[agent-hub] Recovered ${runsReset} orphaned run(s) and reset ${tasksReset} stuck task(s) to backlog`);
+    }
+  }
+} catch (e) {
+  console.warn('[agent-hub] startup orphan-reset failed:', e.message);
 }
 
 // Environment detection
@@ -2005,17 +2019,24 @@ app.prepare().then(() => {
 
       // Handle command output from bridge
       socket.on('claude:output', (data) => {
+        // FIX (Apr 17, 2026): Decode base64 if present to restore ANSI escape sequences
+        // Bridge now base64-encodes PTY output to prevent corruption during WebSocket transmission
+        const decodedData = data.encoding === 'base64'
+          ? Buffer.from(data.data, 'base64').toString('utf-8')
+          : data.data;
+
         // Forward output to the terminal session
         io.emit('terminal:data', {
           id: data.sessionId,
-          data: data.data
+          data: decodedData
         });
 
         // 🔧 FIX (Feb 11, 2026): Run git event detection on bridge claude:output
         // This is the ACTUAL path for bridge Claude CLI output (not command:output).
         // Without this, commits made by Claude CLI via bridge are never detected.
-        if (data.data && data.sessionId) {
-          const gitEvents = detectGitEvent(data.sessionId, data.data);
+        // FIX (Apr 17, 2026): Use decoded data for git event detection
+        if (decodedData && data.sessionId) {
+          const gitEvents = detectGitEvent(data.sessionId, decodedData);
 
           // Commit Context: capture via bridge output
           if (commitContextService && gitEvents.length > 0) {
@@ -2053,11 +2074,16 @@ app.prepare().then(() => {
       // Dual-listen: ai:output and ai:complete for v2 bridge compatibility
       // v1 bridge emits claude:*, v2 bridge emits ai:*. Server handles both.
       socket.on('ai:output', (data) => {
-        // Same handler as claude:output — forward to terminal
-        io.emit('terminal:data', { id: data.sessionId, data: data.data });
+        // FIX (Apr 17, 2026): Decode base64 if present to restore ANSI escape sequences
+        const decodedData = data.encoding === 'base64'
+          ? Buffer.from(data.data, 'base64').toString('utf-8')
+          : data.data;
 
-        if (data.data && data.sessionId) {
-          const gitEvents = detectGitEvent(data.sessionId, data.data);
+        // Same handler as claude:output — forward to terminal
+        io.emit('terminal:data', { id: data.sessionId, data: decodedData });
+
+        if (decodedData && data.sessionId) {
+          const gitEvents = detectGitEvent(data.sessionId, decodedData);
           // Commit Context: capture via bridge output
           if (commitContextService && gitEvents.length > 0) {
             const session = terminalSessions.get(data.sessionId);
@@ -2669,6 +2695,20 @@ app.prepare().then(() => {
         bridgeManager.off('bridge:connected', _handleBridgeConnected);
         bridgeManager.off('bridge:disconnected', _handleBridgeDisconnected);
         bridgeManager.unregisterBridge(bridgeId);
+
+        // Cancel any runs tied to this user's bridge — without it, the tasks
+        // stay stuck in 'in_progress' forever because agent:complete/agent:error never fire.
+        try {
+          const disconnectedUserId = socket.userId;
+          if (disconnectedUserId && resetOrphanedRuns) {
+            const { runsReset, tasksReset } = resetOrphanedRuns(disconnectedUserId);
+            if (runsReset > 0) {
+              console.log(`[agent-hub] Bridge disconnect for ${disconnectedUserId}: cancelled ${runsReset} run(s), reset ${tasksReset} task(s) to backlog`);
+            }
+          }
+        } catch (e) {
+          console.warn('[agent-hub] bridge-disconnect orphan-reset failed:', e.message);
+        }
       });
 
       console.log(`✅ Coder1 Bridge registered: ${bridgeId}`);
@@ -5780,6 +5820,26 @@ app.prepare().then(() => {
         if (expireOldCronTasks) expireOldCronTasks();
       } catch (e) {
         console.warn('[agent-hub] expireOldCronTasks startup error:', e.message);
+      }
+    });
+
+    // Seed PUR agents into Agent Hub (idempotent)
+    setImmediate(() => {
+      try {
+        const { seedPurAgents } = require('./lib/pur/seed-agents.ts');
+        seedPurAgents();
+      } catch (e) {
+        console.warn('[pur] seedPurAgents startup error:', e.message);
+      }
+    });
+
+    // Start PUR Discord Verifier Bot (no-ops gracefully if DISCORD_BOT_TOKEN not set)
+    setImmediate(async () => {
+      try {
+        const { startPurDiscordBot } = require('./services/pur-discord.ts');
+        await startPurDiscordBot();
+      } catch (e) {
+        console.warn('[pur-discord] Bot startup error:', e.message);
       }
     });
     console.log('[DEBUG] Server request listeners at start:', server.listenerCount('request'));

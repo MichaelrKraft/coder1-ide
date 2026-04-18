@@ -1273,10 +1273,14 @@ class BridgeClient extends EventEmitter {
           rows: context?.rows || 30,
           onData: (chunk) => {
             // Stream output back to server
+            // FIX (Apr 17, 2026): Base64-encode to preserve ANSI escape sequences
+            // Raw PTY output can contain binary/control characters that get corrupted
+            // during WebSocket transmission. Base64 ensures all bytes are preserved.
             this.socket.emit('claude:output', {
               sessionId,
               commandId,
-              data: chunk,
+              data: Buffer.from(chunk).toString('base64'),
+              encoding: 'base64', // Signal to server to decode
               stream: 'stdout',
               timestamp: Date.now(),
               interactive: isInteractive
@@ -1284,10 +1288,12 @@ class BridgeClient extends EventEmitter {
           },
           onError: (chunk) => {
             // Stream errors back to server
+            // FIX (Apr 17, 2026): Base64-encode to preserve ANSI escape sequences
             this.socket.emit('claude:output', {
               sessionId,
               commandId,
-              data: chunk,
+              data: Buffer.from(chunk).toString('base64'),
+              encoding: 'base64', // Signal to server to decode
               stream: 'stderr',
               timestamp: Date.now(),
               interactive: isInteractive
@@ -1321,12 +1327,14 @@ class BridgeClient extends EventEmitter {
 
               // FIX (Jan 2026): If command failed, send the error message to terminal
               // Previously these errors were swallowed and users saw nothing
+              // FIX (Apr 17, 2026): Base64-encode error output to preserve formatting
               if (result.exitCode !== 0 && (result.stderr || result.error)) {
                 const errorText = result.stderr || result.error;
                 this.socket.emit('claude:output', {
                   sessionId,
                   commandId,
-                  data: `\r\n${errorText}\r\n`,
+                  data: Buffer.from(`\r\n${errorText}\r\n`).toString('base64'),
+                  encoding: 'base64',
                   stream: 'stderr',
                   timestamp: Date.now()
                 });
@@ -1390,12 +1398,14 @@ class BridgeClient extends EventEmitter {
         const result = await this.claudeExecutor.execute(command, executeOptions);
 
         // FIX (Jan 2026): If command failed, send the error message to terminal
+        // FIX (Apr 17, 2026): Base64-encode error output to preserve formatting
         if (result.exitCode !== 0 && (result.stderr || result.error)) {
           const errorText = result.stderr || result.error;
           this.socket.emit('claude:output', {
             sessionId,
             commandId,
-            data: `\r\n${errorText}\r\n`,
+            data: Buffer.from(`\r\n${errorText}\r\n`).toString('base64'),
+            encoding: 'base64',
             stream: 'stderr',
             timestamp: Date.now()
           });
