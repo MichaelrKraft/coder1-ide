@@ -149,6 +149,23 @@ services:
       - key: NEXT_PUBLIC_ENABLE_AGENT_DASHBOARD
         value: false # Disabled for alpha
 
+      # Mission Control Kill Switches (safety flags ON by default; feature flags OFF by default)
+      # Set values in Render dashboard — never sync secrets to git
+      - key: SCHEDULER_ENABLED
+        sync: false
+
+      - key: WARROOM_TEXT_ENABLED
+        sync: false
+
+      - key: MISSION_AUTO_ASSIGN_ENABLED
+        sync: false
+
+      - key: LLM_SPAWN_ENABLED
+        sync: false
+
+      - key: EXFIL_GUARD_ENABLED
+        sync: false
+
       - key: NEXT_PUBLIC_ENABLE_TEAM_FEATURES
         value: "true"
         
@@ -182,6 +199,81 @@ services:
       name: coder1-data
       mountPath: /data
       sizeGB: 1 # 1GB is plenty for alpha
+
+  # =====================================================================
+  # JOHNNY5 CRON WORKER
+  # =====================================================================
+  # Dedicated background worker for the in-process croner scheduler.
+  # The web service can sleep, restart on deploy, or scale horizontally —
+  # none of which are friendly to in-process cron. This worker is a
+  # separate process whose only job is `cronService.start()`.
+  #
+  # What runs here:
+  #   - Daily Morning Brief (7am MT) → generates + sends to Telegram
+  #   - Trend Monitor Check (M-F business hours) → logs results
+  #   - GitHub Notifications Check (7am MT) → logs results
+  #   - Content Factory: Scout (6:50am MT) → logs results
+  #   - Weekly Memory Compression → logs results
+  #
+  # Notes:
+  #   - No HTTP listener, no health check. Render judges the worker alive
+  #     by process status alone.
+  #   - The worker logs a heartbeat every 5 min so the live tail in the
+  #     dashboard tells you it is running.
+  #   - Telegram delivery for the morning brief works from the worker
+  #     without any web-side coordination. Socket.IO emits to connected
+  #     web clients are skipped (the worker has no web tier); the IDE
+  #     picks up the latest brief on next page load from disk.
+  # =====================================================================
+  - type: worker
+    name: coder1-cron-worker
+    runtime: node
+    region: oregon
+    plan: starter
+    rootDir: coder1-ide-next
+    branch: master
+    autoDeploy: true
+
+    buildCommand: |
+      NODE_OPTIONS="--max-old-space-size=400" npm ci
+
+    startCommand: npx tsx worker/johnny5-cron-worker.ts
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=400
+
+      # Cron jobs persist their lastRun timestamps to this directory.
+      # The web service uses the same path; both can read but only the
+      # worker should write.
+      - key: CODER1_DATA_DIR
+        value: /data/.coder1
+
+      # Project paths so morning-brief-generator can find data files.
+      - key: PROJECT_ROOT
+        value: /opt/render/project/src/coder1-ide-next
+
+      - key: SUMMARIES_DIR
+        value: /data/summaries
+
+      # Gemini API for morning brief fact extraction (REQUIRED).
+      - key: GEMINI_API_KEY
+        sync: false # set in Render dashboard, same value as web service
+
+      # Telegram credentials so the morning brief reaches Mike's phone.
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false # set in Render dashboard
+
+      - key: TELEGRAM_CHAT_ID
+        sync: false # set in Render dashboard
+
+    disk:
+      name: coder1-cron-data
+      mountPath: /data
+      sizeGB: 1
 
 # Optional: PostgreSQL database (if you want to upgrade from SQLite)
 # Uncomment if you need more robust database storage
