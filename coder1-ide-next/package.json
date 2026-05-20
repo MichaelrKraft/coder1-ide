@@ -7,6 +7,7 @@
     "dev:custom": "node server.js",
     "dev:legacy": "next dev",
     "dev:unified": "node server.js",
+    "cron-worker": "tsx worker/johnny5-cron-worker.ts",
     "dev:alpha": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=400' ALPHA_MODE_ENABLED=true ALPHA_INVITE_CODE=CODER1ALPHA2025 MAX_ALPHA_USERS=5 DEPLOYMENT_MODE=alpha-limited node server.js",
     "prebuild": "[ ! -d node_modules ] && npm install || echo 'Dependencies already installed'",
     "copy-canonical": "cp ../CANONICAL/*.html public/ 2>/dev/null || true",
@@ -42,7 +43,7 @@
     "setup:manuslive": "node scripts/setup-manuslive.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.63.0",
+    "@anthropic-ai/sdk": "^0.70.0",
     "@babel/parser": "^7.28.3",
     "@babel/traverse": "^7.28.3",
     "@dnd-kit/core": "^6.3.1",
@@ -83,9 +84,11 @@
     "clsx": "^2.1.1",
     "composio-core": "^0.5.39",
     "croner": "^10.0.1",
+    "cytoscape": "^3.30.0",
     "csv-parse": "^6.1.0",
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
+    "discord.js": "^14.26.3",
     "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.9",
     "drizzle-orm": "^0.45.1",
@@ -151,6 +154,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/cytoscape": "^3.21.9",
     "@types/d3": "^7.4.3",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
