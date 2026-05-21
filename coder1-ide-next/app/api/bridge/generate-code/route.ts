@@ -14,9 +14,8 @@ export async function GET(request: NextRequest) {
   // Generate code using shared store
   const code = await bridgeStore.generateCode(userId);
 
-  return NextResponse.json({
-    code,
-    expiresIn: 300,
-    message: 'Enter this code in your Coder1 Bridge CLI'
-  });
+  return NextResponse.json(
+    { code, expiresIn: 300, message: 'Enter this code in your Coder1 Bridge CLI' },
+    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+  );
 }

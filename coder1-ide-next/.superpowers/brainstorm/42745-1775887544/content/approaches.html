@@ -1,0 +1,42 @@
+<h2>3 Architecture Approaches</h2>
+<p class="subtitle">Pick the shape that fits how you think about the product</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Reddride Extension</h3>
+      <p>New "Lead Gen" module built on top of Reddride. Social listening + review queue live in a new section. Reddride handles all posting. LinkedIn added as a sub-module.</p>
+      <div class="pros-cons" style="margin-top:0.75rem">
+        <div class="pros"><h4>Pros</h4><ul><li>Fastest to build</li><li>Leverages existing Reddit auth & API</li><li>One product, simpler UX</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Coupled to Reddride's codebase</li><li>Hard to sell standalone</li><li>LinkedIn feels bolted-on</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Standalone Lead Gen SaaS ⭐ Recommended</h3>
+      <p>Independent product focused on autonomous lead discovery + review queue. Reddride is an optional integration ("Connect your Reddride account"). Reddit + LinkedIn from day 1.</p>
+      <div class="pros-cons" style="margin-top:0.75rem">
+        <div class="pros"><h4>Pros</h4><ul><li>Clean, sellable standalone product</li><li>Not tied to Reddride's roadmap</li><li>Dogfood it to grow Reddride</li><li>Built on Agent SDK from scratch</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>More upfront build effort</li><li>Some Reddit API overlap</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Reddride v2 (Unified Platform)</h3>
+      <p>Evolve Reddride into a full autonomous lead gen + content platform. Agents, review queue, and LinkedIn all added to the existing codebase. One subscription, one product.</p>
+      <div class="pros-cons" style="margin-top:0.75rem">
+        <div class="pros"><h4>Pros</h4><ul><li>Single product to market</li><li>Existing users upgrade naturally</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Scope creep risk</li><li>Dilutes Reddride positioning</li><li>Harder to untangle later</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem">Click your preferred approach, or let me know in the terminal.</p>

@@ -1,0 +1,62 @@
+<h2>What's in the "Coder1 Power Pack" default bundle?</h2>
+<p class="subtitle">Select everything that should auto-install for every new customer on first bridge connect</p>
+
+<div class="options" data-multiselect>
+
+  <div class="option" data-choice="context-mode" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>context-mode MCP server</h3>
+      <p>Reduces tool output by up to 99%, extends session life from ~30 min to ~3 hours. Non-destructive, huge immediate value.</p>
+      <span class="label">MCP Server</span>
+    </div>
+  </div>
+
+  <div class="option" data-choice="claude-md" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Coder1 CLAUDE.md template</h3>
+      <p>A curated global CLAUDE.md (~/.claude/CLAUDE.md) with Coder1-specific instructions, loop prevention, build safety rules, and response style preferences — the best of Mike's config distilled for customers.</p>
+      <span class="label">Config File</span>
+    </div>
+  </div>
+
+  <div class="option" data-choice="hooks" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Smart hooks bundle</h3>
+      <p>Pre/post tool hooks for session tracking, loop prevention, and build safety. Prevents common AI coding disasters (runaway builds, duplicate processes, context blowout).</p>
+      <span class="label">Hooks</span>
+    </div>
+  </div>
+
+  <div class="option" data-choice="memory" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>Memory system scaffold</h3>
+      <p>Creates ~/.claude/memory/ with starter MEMORY.md index and user profile template. Gives Claude persistent memory across sessions out of the box.</p>
+      <span class="label">Memory</span>
+    </div>
+  </div>
+
+  <div class="option" data-choice="git-mcp" onclick="toggleSelect(this)">
+    <div class="letter">5</div>
+    <div class="content">
+      <h3>git-mcp server</h3>
+      <p>Gives Claude native git operations (status, diff, log, commit) without spawning shell processes. Cleaner history, better diffs.</p>
+      <span class="label">MCP Server</span>
+    </div>
+  </div>
+
+  <div class="option" data-choice="rules" onclick="toggleSelect(this)">
+    <div class="letter">6</div>
+    <div class="content">
+      <h3>Coding rules files</h3>
+      <p>~/.claude/rules/ with TypeScript strict mode, git workflow, security, and testing standards. The same rule files Mike uses — sensible defaults any developer would want.</p>
+      <span class="label">Rules Files</span>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top: 24px;">Select all that feel like "every customer should have this." Anything too niche or risky stays in the optional marketplace.</p>

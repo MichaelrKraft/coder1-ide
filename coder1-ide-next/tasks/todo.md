@@ -153,3 +153,97 @@ Self-contained SVG spotlight overlay tour that highlights Agent Hub UI elements 
 - Escape key closes tour; Back/Skip/Next navigation with progress bar
 - Accent color (`#8b5cf6`) used for agents-list and teach-button steps; primary (`#00D9FF`) for others
 - All styles inline, matches Coder1 dark theme design system
+
+# PUR Phase 3/5/6 + Agent Hub Seeds
+
+## Tasks
+- [ ] Implement lib/pur/drafter.ts (Phase 3)
+- [ ] Implement lib/pur/distributor.ts (Phase 5)
+- [ ] Implement lib/pur/analyst.ts (Phase 6)
+- [ ] Create lib/pur/seed-agents.ts (Agent Hub seeds)
+- [ ] Create public/morning-briefs/skills-panel.html
+- [ ] Run tsc --noEmit and fix type errors
+
+---
+
+# PUR Phase 1 & 2 Implementation
+
+## Phase 1: Scout (`lib/pur/scout.ts`)
+- [ ] Implement Reddit scraper (fetch JSON, filter score>=10, insert finds)
+- [ ] Implement HN Algolia scraper (filter points>=10, insert finds)
+- [ ] Gracefully skip email sources with debug log
+- [ ] Rate limiting: 1s delay between Reddit requests, retry once on 429
+- [ ] Update `last_scraped_at` after each source; increment `error_count` on failure
+- [ ] Return `ScoutResult[]` with per-source stats
+- [ ] Export `main()` with Telegram notification
+
+## Phase 2: Curator (`lib/pur/curator.ts`)
+- [ ] Load taste_profile.md
+- [ ] Pull candidates (7-day window, fallback 14-day), dedup by dedup_group_id
+- [ ] Enforce max 2 items per author before Claude call
+- [ ] Call Claude Sonnet with `return_picks` tool_use
+- [ ] Validate Claude response against category quotas
+- [ ] Insert into `pur_curated` with `mike_approved=0`
+- [ ] Send Telegram notification with picks summary
+- [ ] Export `main()` calling `runCurator(currentWeekIso())`
+
+## Verification
+- [ ] `npx tsc --noEmit` passes with zero errors
+- [ ] Line counts within 300-line limit per file
+
+---
+
+# ClaudeClaw Mission Control — Phase 0: Foundation
+
+## Goal
+Wire the kill-switch module, create DB migrations, upgrade Anthropic SDK, and add Render env vars so all subsequent phases have a safe foundation to build on.
+
+## Tasks
+- [x] Create `lib/agent-hub/feature-flags.ts` — 5 environment-controlled kill switches
+- [x] Create `db/migrations/005_mission_control.sql` — warroom_transcript + audit_log tables (reference copy)
+- [x] Modify `lib/agent-hub/db.ts` — added warroom_transcript + audit_log tables to initializeSchema(); added addColumnIfMissing for event_type + details_json on agent_hub_hive_mind; added next_run_at to CronTask + getDueScheduledTasks/updateCronTaskNextRun; added insertWarroomTranscript/listWarroomTranscript DB helpers
+- [x] Modify `package.json` — @anthropic-ai/sdk upgraded ^0.63.0 → ^0.70.0; cytoscape ^3.30.0 added
+- [x] Modify `render.yaml` — 5 kill-switch env vars added (sync: false)
+- [x] `npx tsc --noEmit` — zero errors in all Phase 0-5 new/modified files; 15 pre-existing errors in unrelated files
+- [x] Phase 1: lib/agent-hub/scheduler.ts created (108 lines) — croner polling daemon with onTaskDue callback; wired into server.js with internal create-task fetch
+- [x] Phase 2: telegram-poller.ts (128 lines) + telegram-commands.ts (35 lines) created; exfil-guard.ts fixed (Shannon entropy + padding gates); guardedSendAgentNotification added to telegram.ts; TelegramPollerRegistry wired into server.js
+- [x] Phase 3: warroom.ts + standup/transcript routes + WarRoomContainer UI + War Room nav item; agent:complete hook in server.js persists transcript
+- [x] Phase 4: hive-mind route updated with agentId/eventType/days filters + graph format; HiveMindList UI + Hive Mind nav item; cytoscape in package.json
+- [x] Phase 5: auto-assign.ts created (Gemini Flash, 5s timeout, 5min cache, agentId validation); tasks route wired; TaskForm "Auto-assign" option added
+
+## Review
+
+### All 5 Phases Complete — 2026-05-03
+
+**New files created (12):**
+- `lib/agent-hub/feature-flags.ts` — kill switch module
+- `lib/agent-hub/scheduler.ts` — cron polling daemon
+- `lib/agent-hub/telegram-poller.ts` — per-agent Telegram polling
+- `lib/agent-hub/telegram-commands.ts` — command parser
+- `lib/agent-hub/warroom.ts` — standup meeting state
+- `lib/agent-hub/auto-assign.ts` — Gemini Flash task router
+- `db/migrations/005_mission_control.sql` — reference DDL
+- `app/api/agent-hub/warroom/standup/route.ts`
+- `app/api/agent-hub/warroom/transcript/route.ts`
+- `app/ide/agent-hub/warroom/page.tsx`
+- `app/ide/agent-hub/hive-mind/page.tsx`
+- `components/agent-hub/warroom/WarRoomContainer.tsx`
+- `components/agent-hub/hive-mind/HiveMindList.tsx`
+
+**Files modified (10):**
+- `lib/agent-hub/db.ts` — schema, migrations, new helpers
+- `lib/agent-hub/exfil-guard.ts` — base64 false-positive fix (Shannon entropy gate)
+- `lib/agent-hub/telegram.ts` — guardedSendAgentNotification
+- `lib/agent-hub/scheduler.ts` — onTaskDue callback
+- `package.json` — SDK + cytoscape
+- `render.yaml` — 5 kill switches
+- `server.js` — scheduler + Telegram registry startup; warroom:complete hook in agent:complete
+- `app/api/agent-hub/hive-mind/route.ts` — filters + graph format
+- `app/api/agent-hub/agents/[id]/route.ts` — Telegram registry update on token change
+- `components/agent-hub/AgentHubLayout.tsx` — War Room + Hive Mind nav items
+
+**Next steps (when ready to ship):**
+1. Set `AGENT_HUB_INTERNAL_TOKEN` in Render dashboard (scheduler requires it)
+2. Enable features: `WARROOM_TEXT_ENABLED=true`, `SCHEDULER_ENABLED=true`, `MISSION_AUTO_ASSIGN_ENABLED=true`
+3. Add Telegram bot tokens to agents via Settings
+4. Test War Room standup with 2+ agents

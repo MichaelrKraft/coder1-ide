@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAgentHubDatabase } from '@/lib/agent-hub/db';
 import { getAgent } from '@/lib/agent-hub/agents';
 import { getTask, updateTask, computeNextRunAt } from '@/lib/agent-hub/tasks';
-import { createRun } from '@/lib/agent-hub/runs';
+import { createRun, updateRun } from '@/lib/agent-hub/runs';
 import { startAgentRun } from '@/lib/agent-hub/bridge-integration';
 
 export const dynamic = 'force-dynamic';
@@ -157,13 +157,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         model: agent.model,
       });
 
-      if (!result.success) {
-        console.warn(`[scheduler] Run start failed for task ${row.id}: ${result.error}`);
-      }
-
       // Fetch current task to append to runIds (not overwrite)
       const currentTask = getTask(row.id, row.user_id);
       const updatedRunIds = currentTask ? [...currentTask.runIds, run.id] : [run.id];
+
+      if (!result.success) {
+        // Bridge unavailable or failed to start — mark the run failed and leave
+        // the task in backlog so the UI doesn't show phantom in_progress work.
+        console.warn(`[scheduler] Run start failed for task ${row.id}: ${result.error}`);
+        updateRun(run.id, row.user_id, {
+          status: 'failed',
+          errorSummary: result.error,
+          completedAt: nowIso,
+        });
+        updateTask(row.id, row.user_id, {
+          status: 'backlog',
+          runIds: updatedRunIds,
+        });
+        skipped++;
+        continue;
+      }
 
       // nextRunAt and scheduleEnabled already handled by atomic claim above
       updateTask(row.id, row.user_id, {

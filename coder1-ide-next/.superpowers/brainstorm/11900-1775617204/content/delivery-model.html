@@ -1,0 +1,52 @@
+<h2>How should customers get these pre-configured setups?</h2>
+<p class="subtitle">The delivery model shapes everything — UX, complexity, and adoption rate</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Auto-push on bridge connect</h3>
+      <p>When a customer pairs their bridge for the first time, Coder1 automatically installs the full config bundle — MCP servers, hooks, CLAUDE.md — onto their machine. Zero friction, zero decisions.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Instant value, no effort</li><li>100% adoption</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Could conflict with existing setup</li><li>No customer choice</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>One-click install from the IDE</h3>
+      <p>A "Claude Code Starter Kit" button in the Coder1 IDE. Customer clicks it, bridge installs the curated bundle onto their machine. Opt-in but frictionless.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Customer is aware of what's installed</li><li>Easy to re-run or update</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Requires customer to find + click it</li><li>Lower adoption than auto</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Marketplace / pick-and-choose</h3>
+      <p>A browsable library of tools and configs (context-mode, hooks presets, CLAUDE.md templates). Customers select what they want and install à la carte.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Maximum customer control</li><li>Differentiating product feature</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Most complex to build</li><li>Decision fatigue for new users</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Opinionated default + optional extras</h3>
+      <p>Auto-install a curated "Coder1 Power Pack" on bridge connect (safe, non-destructive defaults), then offer an optional marketplace for extras. Best of A + C.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>High adoption + power-user flexibility</li><li>Progressive disclosure</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>More work to build both layers</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

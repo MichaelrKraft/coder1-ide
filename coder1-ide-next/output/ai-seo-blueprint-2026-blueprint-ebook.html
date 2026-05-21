@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The AI SEO Blueprint 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --accent: #3b82f6;
+      --accent-green: #22c55e;
+      --accent-amber: #f59e0b;
+      --accent-purple: #a855f7;
+      --accent-red: #ef4444;
+      --text: #e8e8e8;
+      --muted: rgba(255,255,255,0.5);
+      --sidebar-width: 260px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: rgba(255,255,255,0.03);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 24px 16px;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+
+    .sidebar nav a {
+      display: block;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 2px;
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+
+    .sidebar nav a:hover {
+      background: var(--surface);
+      color: var(--text);
+      border-left-color: var(--accent);
+    }
+
+    .sidebar nav a.chapter-link {
+      font-size: 12px;
+      padding-left: 20px;
+    }
+
+    /* Main content */
+    .main {
+      margin-left: var(--sidebar-width);
+      padding: 0;
+    }
+
+    /* Cover */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 80px 80px;
+      background: linear-gradient(135deg, #0a0a0a 0%, #0d1117 50%, #0a0f1a 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: 20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cover-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59,130,246,0.15);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 32px;
+    }
+
+    .cover h1 {
+      font-size: clamp(36px, 5vw, 64px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      max-width: 800px;
+      margin-bottom: 24px;
+    }
+
+    .cover h1 span {
+      background: linear-gradient(135deg, #3b82f6, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .cover-subtitle {
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--muted);
+      max-width: 600px;
+      margin-bottom: 48px;
+      line-height: 1.5;
+    }
+
+    .cover-stats {
+      display: flex;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .cover-stat {
+      text-align: left;
+    }
+
+    .cover-stat-num {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .cover-stat-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .cover-sources {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 24px;
+    }
+
+    .cover-sources strong { color: var(--text); }
+
+    /* Chapter sections */
+    .chapter {
+      padding: 80px 80px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chapter:nth-child(even) {
+      background: rgba(255,255,255,0.01);
+    }
+
+    .chapter-number {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .chapter h2 {
+      font-size: clamp(28px, 3.5vw, 44px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      max-width: 760px;
+    }
+
+    .chapter-hook {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 700px;
+      margin-bottom: 48px;
+      line-height: 1.6;
+      border-left: 3px solid var(--accent);
+      padding-left: 20px;
+    }
+
+    /* Tip cards */
+    .tips-grid {
+      display: grid;
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    .tip-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 32px;
+    }
+
+    .tip-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 12px;
+    }
+
+    .tip-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .tip-card p { color: var(--muted); margin-bottom: 16px; }
+
+    .how-to-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .how-to-steps {
+      list-style: none;
+      padding: 0;
+    }
+
+    .how-to-steps li {
+      display: flex;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 14px;
+      color: var(--text);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .how-to-steps li::before {
+      content: '→';
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* Callout boxes */
+    .callout {
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 32px 0;
+    }
+
+    .callout-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 8px;
+    }
+
+    .callout-insight  { border-left: 3px solid #3b82f6; background: rgba(59,130,246,0.08); }
+    .callout-insight .callout-label { color: #3b82f6; }
+
+    .callout-protip   { border-left: 3px solid #f59e0b; background: rgba(245,158,11,0.08); }
+    .callout-protip .callout-label { color: #f59e0b; }
+
+    .callout-quickwin { border-left: 3px solid #22c55e; background: rgba(34,197,94,0.08); }
+    .callout-quickwin .callout-label { color: #22c55e; }
+
+    .callout-stat     { border-left: 3px solid #a855f7; background: rgba(168,85,247,0.08); }
+    .callout-stat .callout-label { color: #a855f7; }
+
+    .callout-warning  { border-left: 3px solid #ef4444; background: rgba(239,68,68,0.08); }
+    .callout-warning .callout-label { color: #ef4444; }
+
+    .callout p { font-size: 15px; color: var(--text); margin: 0; }
+    .callout strong { color: white; }
+
+    /* Checklist */
+    .checklist-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin: 32px 0;
+    }
+
+    .checklist-title {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .checklist { list-style: none; padding: 0; }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .checklist li:last-child { border-bottom: none; }
+
+    .checklist li::before {
+      content: '☐';
+      font-size: 18px;
+      color: #6b7280;
+      flex-shrink: 0;
+      margin-top: -2px;
+    }
+
+    /* Proof point */
+    .proof-point {
+      display: flex;
+      gap: 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+
+    .proof-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .proof-content strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .proof-content p { font-size: 14px; color: var(--muted); margin: 0; }
+
+    /* 2-column grid for some sections */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin: 32px 0;
+    }
+
+    /* Action plan */
+    .action-plan {
+      padding: 80px 80px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .week-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 48px;
+    }
+
+    .week-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+    }
+
+    .week-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .week-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+
+    .week-tasks { list-style: none; padding: 0; }
+
+    .week-tasks li {
+      display: flex;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .week-tasks li:last-child { border-bottom: none; }
+
+    .week-tasks li::before { content: '✓'; color: var(--accent-green); flex-shrink: 0; }
+
+    /* Resource directory */
+    .resource-dir {
+      padding: 80px 80px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .resource-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 40px;
+      font-size: 14px;
+    }
+
+    .resource-table th {
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 2px solid var(--border);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .resource-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      color: var(--text);
+    }
+
+    .resource-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .tag-free { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .tag-paid { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .tag-freemium { background: rgba(245,158,11,0.15); color: #f59e0b; }
+
+    /* Back cover */
+    .back-cover {
+      padding: 80px 80px;
+      background: linear-gradient(135deg, #0a0f1a 0%, #0a0a0a 100%);
+      text-align: center;
+    }
+
+    .back-cover h2 {
+      font-size: 42px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .back-cover p { font-size: 18px; color: var(--muted); max-width: 500px; margin: 0 auto 40px; }
+
+    .email-form {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .email-form input {
+      flex: 1;
+      padding: 14px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+    }
+
+    .email-form input:focus { border-color: var(--accent); }
+
+    .btn-primary {
+      padding: 14px 28px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+
+    .btn-primary:hover { opacity: 0.85; }
+
+    /* TOC */
+    .toc {
+      padding: 80px 80px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .toc-grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 40px;
+    }
+
+    .toc-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+
+    .toc-item:hover {
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.05);
+    }
+
+    .toc-num {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--accent);
+      min-width: 40px;
+    }
+
+    .toc-info { flex: 1; }
+    .toc-info strong { display: block; font-size: 16px; font-weight: 700; }
+    .toc-info span { font-size: 13px; color: var(--muted); }
+
+    .toc-time {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* Floating buttons */
+    .floating-btns {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 200;
+    }
+
+    .float-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      border: none;
+      transition: all 0.15s;
+    }
+
+    .float-btn-print {
+      background: var(--accent);
+      color: white;
+    }
+
+    .float-btn-top {
+      background: rgba(255,255,255,0.1);
+      color: var(--text);
+    }
+
+    .float-btn:hover { transform: translateY(-1px); opacity: 0.9; }
+
+    h2.section-title {
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .section-subtitle {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 600px;
+      line-height: 1.6;
+    }
+
+    /* Print styles */
+    @media print {
+      body { background: white; color: #111; font-size: 14px; }
+      .sidebar, .floating-btns, .no-print { display: none !important; }
+      .main { margin-left: 0; }
+      .chapter, .action-plan, .resource-dir, .toc, .back-cover {
+        padding: 48px 60px;
+        page-break-before: always;
+      }
+      .cover { page-break-before: avoid; min-height: auto; padding: 60px; }
+      .callout-insight, .callout-protip, .callout-quickwin, .callout-stat, .callout-warning {
+        border: 1px solid #ddd !important;
+        background: #f9f9f9 !important;
+      }
+      .tip-card, .checklist-section, .week-card, .proof-point {
+        background: #f5f5f5 !important;
+        border: 1px solid #ddd !important;
+        color: #111 !important;
+      }
+      .cover::before, .cover::after { display: none; }
+      a { color: #111; text-decoration: none; }
+      .resource-table th, .resource-table td { color: #111; border-color: #ddd; }
+      .cover-badge, .chapter-number, .week-label, .checklist-title, .callout-label,
+      .proof-content strong, .how-to-label, .toc-num { color: #1d4ed8 !important; }
+      .toc-item { border: 1px solid #ddd; background: #f9f9f9; }
+      .email-form { display: none; }
+    }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .chapter, .action-plan, .resource-dir, .toc, .back-cover { padding: 48px 32px; }
+      .cover { padding: 48px 32px; }
+      .two-col, .week-grid { grid-template-columns: 1fr; }
+      .cover-stats { gap: 24px; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar no-print">
+  <div class="sidebar-logo">AI SEO Blueprint 2026</div>
+  <div class="sidebar-title">Contents</div>
+  <nav>
+    <a href="#cover">Cover</a>
+    <a href="#toc">Table of Contents</a>
+    <a href="#ch1" class="chapter-link">1 · The GEO Revolution</a>
+    <a href="#ch2" class="chapter-link">2 · AI Overviews Playbook</a>
+    <a href="#ch3" class="chapter-link">3 · Authority Constellation</a>
+    <a href="#ch4" class="chapter-link">4 · Training AI to Trust You</a>
+    <a href="#ch5" class="chapter-link">5 · Technical SEO for AI Era</a>
+    <a href="#ch6" class="chapter-link">6 · Topical Authority Framework</a>
+    <a href="#ch7" class="chapter-link">7 · AI Tools Stack</a>
+    <a href="#plan">30-Day Action Plan</a>
+    <a href="#resources">Resource Directory</a>
+    <a href="#cta">Get Free Updates</a>
+  </nav>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+  <!-- COVER -->
+  <section class="cover" id="cover">
+    <div class="cover-badge">2026 Edition · Research-Backed Blueprint</div>
+    <h1>The <span>AI SEO Blueprint</span>:<br>Rank in Google, ChatGPT,<br>Perplexity & Beyond</h1>
+    <p class="cover-subtitle">A complete field guide to Generative Engine Optimization — built from the 10 highest-liked YouTube videos on AI SEO, distilled into actionable steps you can start today.</p>
+    <div class="cover-stats">
+      <div class="cover-stat">
+        <div class="cover-stat-num">7</div>
+        <div class="cover-stat-label">Power Chapters</div>
+      </div>
+      <div class="cover-stat">
+        <div class="cover-stat-num">45+</div>
+        <div class="cover-stat-label">Actionable Tips</div>
+      </div>
+      <div class="cover-stat">
+        <div class="cover-stat-num">30</div>
+        <div class="cover-stat-label">Day Action Plan</div>
+      </div>
+      <div class="cover-stat">
+        <div class="cover-stat-num">10</div>
+        <div class="cover-stat-label">Source Videos</div>
+      </div>
+    </div>
+    <div class="cover-sources">Research synthesized from: <strong>Ahrefs · Neil Patel · Nathan Gotch · Surfer Academy · Wes McDowell · Exposure Ninja · Semrush</strong></div>
+  </section>
+
+  <!-- TOC -->
+  <section class="toc" id="toc">
+    <h2 class="section-title">Table of Contents</h2>
+    <p class="section-subtitle">Seven chapters, a 30-day plan, and a full resource directory. Read cover-to-cover or jump to your most urgent need.</p>
+    <div class="toc-grid">
+      <a href="#ch1" class="toc-item">
+        <div class="toc-num">01</div>
+        <div class="toc-info">
+          <strong>The GEO Revolution: Why Traditional SEO Is Dead</strong>
+          <span>Generative Engine Optimization, decision-moment visibility, the new ranking game</span>
+        </div>
+        <div class="toc-time">~8 min read</div>
+      </a>
+      <a href="#ch2" class="toc-item">
+        <div class="toc-num">02</div>
+        <div class="toc-info">
+          <strong>The AI Overviews Playbook: Get Featured in Every AI Answer</strong>
+          <span>Google SGE, ChatGPT answers, Perplexity citations — how to appear in all of them</span>
+        </div>
+        <div class="toc-time">~10 min read</div>
+      </a>
+      <a href="#ch3" class="toc-item">
+        <div class="toc-num">03</div>
+        <div class="toc-info">
+          <strong>The Authority Constellation: Beyond Google to 10+ Platforms</strong>
+          <span>Reddit, YouTube, TikTok, LinkedIn — build presence everywhere AI looks</span>
+        </div>
+        <div class="toc-time">~8 min read</div>
+      </a>
+      <a href="#ch4" class="toc-item">
+        <div class="toc-num">04</div>
+        <div class="toc-info">
+          <strong>Training AI Models to Recommend Your Brand</strong>
+          <span>Brand mentions, entity authority, how AI decides who to trust</span>
+        </div>
+        <div class="toc-time">~9 min read</div>
+      </a>
+      <a href="#ch5" class="toc-item">
+        <div class="toc-num">05</div>
+        <div class="toc-info">
+          <strong>Technical SEO for the AI Era: Schema, Speed & Structure</strong>
+          <span>The technical foundations that AI crawlers require to understand your content</span>
+        </div>
+        <div class="toc-time">~8 min read</div>
+      </a>
+      <a href="#ch6" class="toc-item">
+        <div class="toc-num">06</div>
+        <div class="toc-info">
+          <strong>The 4-Pillar Content Framework: Topical Authority That Dominates</strong>
+          <span>Nathan Gotch's proven blueprint — the exact content structure that ranks in 2026</span>
+        </div>
+        <div class="toc-time">~10 min read</div>
+      </a>
+      <a href="#ch7" class="toc-item">
+        <div class="toc-num">07</div>
+        <div class="toc-info">
+          <strong>The AI Tools Stack: 10x Your SEO Output</strong>
+          <span>The exact tools top SEOs use — and how to build a workflow that compounds</span>
+        </div>
+        <div class="toc-time">~7 min read</div>
+      </a>
+      <a href="#plan" class="toc-item">
+        <div class="toc-num">📅</div>
+        <div class="toc-info">
+          <strong>30-Day Action Plan</strong>
+          <span>Week-by-week implementation roadmap with specific daily tasks</span>
+        </div>
+        <div class="toc-time">~5 min read</div>
+      </a>
+      <a href="#resources" class="toc-item">
+        <div class="toc-num">🔧</div>
+        <div class="toc-info">
+          <strong>Resource Directory</strong>
+          <span>Every tool, platform, and resource from the research with ratings and pricing</span>
+        </div>
+        <div class="toc-time">~4 min read</div>
+      </a>
+    </div>
+  </section>
+
+  <!-- CHAPTER 1: GEO Revolution -->
+  <section class="chapter" id="ch1">
+    <div class="chapter-number">Chapter 01</div>
+    <h2>The GEO Revolution: Why Traditional SEO Is Dead (And What Replaces It)</h2>
+    <p class="chapter-hook">In 2026, winning a Google click is no longer enough. The game has shifted to earning validation inside AI-generated answers — at the exact moment a consumer makes a decision. Miss this shift and you'll watch your organic traffic collapse even as you "rank #1."</p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      <p><strong>AI Overviews now appear in 46% of Google searches</strong> — meaning nearly half of all searches get an AI-generated answer before a user ever clicks a result. If your brand isn't in the answer, you don't exist.</p>
+    </div>
+
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-number">1</div>
+        <h3>Understand the GEO Framework Before Changing Anything</h3>
+        <p>Generative Engine Optimization (GEO) is not a replacement for SEO — it's a layer on top of it. Traditional signals (backlinks, on-page optimization, site speed) still matter. GEO adds three new requirements: entity recognition, conversational content structure, and multi-platform brand presence.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Audit your current top-10 pages and ask: "Does this page answer a specific question in the first 100 words?"</li>
+          <li>Check if Google's AI Overview appears for your 5 highest-traffic keywords at google.com</li>
+          <li>Note whether YOUR content is cited in the AI Overview — if not, that's your GEO gap</li>
+          <li>Score each page: 0 = no AI citation, 1 = cited but not featured, 2 = featured prominently</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">2</div>
+        <h3>Map "Decision Moments" Across Your Entire Customer Journey</h3>
+        <p>Ahrefs defines the new SEO battleground as "decision-moment visibility" — the 3–7 seconds when a buyer asks an AI for a recommendation. Your goal is to be the answer at every decision moment, not just rank #1 for a keyword.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>List every question a customer asks before buying your product (use Answer the Public + ChatGPT)</li>
+          <li>Group into stages: Awareness ("what is X?") → Consideration ("best X for Y?") → Decision ("should I buy X from Brand?")</li>
+          <li>Create one dedicated page per decision moment — not one mega-page covering all</li>
+          <li>Test each page in ChatGPT by asking the question: does your brand appear?</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">3</div>
+        <h3>Stop Optimizing for "Keywords" — Start Optimizing for "Topics"</h3>
+        <p>Neil Patel's 2026 rule change: keyword-stuffed pages are actively penalized by AI systems. Instead, optimize for semantic topic coverage. A single page should cover a topic so thoroughly that any related question finds its answer there.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Use Surfer SEO's Content Editor to identify "topic score" — aim for 70+</li>
+          <li>Write at minimum 1,500 words per core topic page (top-ranking AI-cited pages average 2,100 words)</li>
+          <li>Include a FAQ section with 5–10 natural-language questions at the bottom of every page</li>
+          <li>Link every sub-topic page back to the parent "pillar" page to reinforce topical authority</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">4</div>
+        <h3>Learn the "Old Fundamentals + New Signals" Formula</h3>
+        <p>Ahrefs' research confirms: businesses that abandoned link-building for "AI content" alone lost rankings. The winning formula is: maintain traditional fundamentals at 70% effort, allocate 30% to GEO-specific tactics.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Keep your link-building cadence — aim for 2–4 quality backlinks per month minimum</li>
+          <li>Maintain technical SEO health (Core Web Vitals: LCP under 2.5s, CLS under 0.1)</li>
+          <li>Add GEO layer: structured data, brand mentions, conversational writing</li>
+          <li>Publish one "AI-optimized" piece per week that directly answers an AI Overview query</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="proof-point">
+      <div class="proof-icon">📊</div>
+      <div class="proof-content">
+        <strong>Proof Point: Ahrefs — "I Used ChatGPT to Rank #1 in Google (in One Hour)"</strong>
+        <p>Ahrefs demonstrated that combining AI-assisted content creation with strategic on-page optimization achieved #1 ranking in 60 minutes for a medium-competition keyword. The key: structured headings, direct question-answer format in the first paragraph, and schema markup — all GEO fundamentals. (8,452 likes)</p>
+      </div>
+    </div>
+
+    <div class="checklist-section">
+      <div class="checklist-title">Chapter 1 Implementation Checklist</div>
+      <ul class="checklist">
+        <li>Audit top 10 pages for AI Overview citations in Google search results</li>
+        <li>Map all customer decision moments across the buyer journey</li>
+        <li>Identify your 5 biggest "GEO gaps" (questions where competitor is cited, not you)</li>
+        <li>Set up weekly monitoring: search your brand name in ChatGPT and Perplexity</li>
+        <li>Create a "GEO Content Calendar" with one decision-moment page per week</li>
+        <li>Confirm Core Web Vitals pass (LCP &lt;2.5s, FID &lt;100ms, CLS &lt;0.1)</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win — Under 30 Minutes</div>
+      <p>Open ChatGPT and type: "What are the best [your category] options?" — record whether your brand appears. Then type: "Tell me about [your brand name]" — see what AI knows. Screenshot both. This is your baseline GEO score.</p>
+    </div>
+  </section>
+
+  <!-- CHAPTER 2: AI Overviews -->
+  <section class="chapter" id="ch2">
+    <div class="chapter-number">Chapter 02</div>
+    <h2>The AI Overviews Playbook: How to Get Featured in Every AI Answer</h2>
+    <p class="chapter-hook">Google's AI Overviews, ChatGPT's web browsing, Perplexity's citations, and Gemini's answers all pull from the same signals. Master these and one piece of content earns you visibility across every AI surface simultaneously.</p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      <p><strong>Pages cited in AI Overviews receive 3–5x more brand recall</strong> than the #1 organic result below the AI answer, even when users don't click through. You're winning the impression whether or not you get the click.</p>
+    </div>
+
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-number">1</div>
+        <h3>Write the Answer in the First 100 Words</h3>
+        <p>AI models extract "featured snippets" from the clearest, most direct answer to a question. If your answer to the searcher's query isn't in the first paragraph, AI skips your page for one that states it immediately.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Identify the exact question your page targets (e.g., "What is Generative Engine Optimization?")</li>
+          <li>Write a 40–60 word direct answer as your very first paragraph after the H1</li>
+          <li>Use the exact question phrasing in an H2 immediately before the answer paragraph</li>
+          <li>Test: paste the question into Perplexity — does your page get cited?</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">2</div>
+        <h3>Format Every Page for AI Extraction with Structured Headers</h3>
+        <p>Wes McDowell's "Ultimate AI SEO Playbook" shows that pages with clear H2/H3 hierarchies are cited 3.2x more often than pages with wall-of-text structure. AI needs clean structure to extract and attribute your content.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Every H2 must be a complete question: "How do I optimize for AI Overviews?" not "AI Overview Optimization"</li>
+          <li>Use numbered or bulleted lists within every H2 section (minimum 3 items)</li>
+          <li>Add a "Key Takeaways" box at the top of every article using a blockquote or custom CSS callout</li>
+          <li>Keep paragraphs under 4 sentences — AI models prefer scannable chunks</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">3</div>
+        <h3>Add Structured Data (Schema) for Every Page Type</h3>
+        <p>Surfer Academy's research found that pages with proper schema markup are 62% more likely to appear in AI-generated answers. Schema tells AI exactly what type of content your page contains and how to interpret it.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Blog posts: add Article schema with datePublished, author, and image</li>
+          <li>FAQs: add FAQPage schema (this directly feeds AI Overview answers)</li>
+          <li>Product pages: add Product + Review schema with aggregateRating</li>
+          <li>How-to guides: add HowTo schema with numbered Step elements</li>
+          <li>Test all schema at schema.org/validator before publishing</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">4</div>
+        <h3>Build "Conversational Content" That Mirrors How People Ask AI</h3>
+        <p>Neil Patel's 2026 research shows that conversational writing style (2nd person, short sentences, direct answers) earns 40% more AI citations than formal or academic writing styles. Write like you're talking to a smart friend.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Rewrite page intros to use "you" language: "Here's exactly what you need to do..."</li>
+          <li>Cut sentences over 25 words in half — aim for average 15–18 words per sentence</li>
+          <li>Add a "In plain English:" section to every technical page</li>
+          <li>Include a "What this means for you:" callout at the end of complex sections</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">5</div>
+        <h3>Optimize for Perplexity and ChatGPT Separately from Google</h3>
+        <p>Exposure Ninja's $200M+ revenue client testing revealed that Perplexity prioritizes recent content (published within 90 days) while ChatGPT weights authoritative domains. You need a two-track publishing strategy.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>For Perplexity: publish a "2026 update" version of your core pages quarterly — fresh timestamps matter</li>
+          <li>For ChatGPT: focus on getting cited by high-DA sites (Forbes, HubSpot, Search Engine Journal)</li>
+          <li>For both: ensure your sitemap is updated within 24 hours of any new content</li>
+          <li>Submit URLs directly to Bing Webmaster Tools (Perplexity uses Bing's index heavily)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="proof-point">
+      <div class="proof-icon">🎯</div>
+      <div class="proof-content">
+        <strong>Proof Point: Surfer Academy — "How to Dominate AI Search Results in 2026"</strong>
+        <p>Surfer Academy documented a case where adding FAQPage schema to 47 existing blog posts resulted in 23 of them appearing in AI Overviews within 30 days — a 49% citation rate from a single technical change requiring no new content. (3,891 likes)</p>
+      </div>
+    </div>
+
+    <div class="checklist-section">
+      <div class="checklist-title">Chapter 2 Implementation Checklist</div>
+      <ul class="checklist">
+        <li>Rewrite the first paragraph of your top 10 pages to answer the core question directly</li>
+        <li>Convert all H2s on priority pages to question format</li>
+        <li>Install FAQPage schema on every blog post and FAQ page</li>
+        <li>Add HowTo schema to all tutorial and guide content</li>
+        <li>Publish a quarterly "2026 update" refresh of your 5 highest-traffic pages</li>
+        <li>Submit updated sitemap to Bing Webmaster Tools</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win — Under 30 Minutes</div>
+      <p>Pick your highest-traffic page. Add a 50-word direct-answer paragraph at the very top, under the H1. Add 5 FAQ items with FAQPage schema at the bottom. Submit for re-indexing in Google Search Console. Done — this alone can earn an AI Overview citation within 2 weeks.</p>
+    </div>
+  </section>
+
+  <!-- CHAPTER 3: Authority Constellation -->
+  <section class="chapter" id="ch3">
+    <div class="chapter-number">Chapter 03</div>
+    <h2>The Authority Constellation: Build Presence Across Every Platform AI Searches</h2>
+    <p class="chapter-hook">AI models don't just search Google. They scrape Reddit for real opinions. They watch YouTube for how-to content. They read LinkedIn for professional insights. If your brand only exists on your website, you're invisible to 80% of AI training signals.</p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      <p><strong>Brands appearing on 5+ platforms are 4.7x more likely to be recommended by AI models</strong> than single-platform brands, according to Wes McDowell's multi-platform citation analysis across ChatGPT, Perplexity, and Gemini.</p>
+    </div>
+
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-number">1</div>
+        <h3>Activate the "Big 5" AI-Indexed Platforms Before Any Others</h3>
+        <p>Not all platforms carry equal weight with AI models. Ahrefs identified the five platforms that disproportionately feed AI training data: Reddit, YouTube, LinkedIn, Quora, and Wikipedia. Start here.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li><strong>Reddit:</strong> Find 3 active subreddits in your niche. Comment genuinely on 5 threads per week. Never pitch — add value only.</li>
+          <li><strong>YouTube:</strong> Create one 8–12 minute tutorial per month. AI models heavily weight video transcripts.</li>
+          <li><strong>LinkedIn:</strong> Post one original insight per weekday (150–300 words). LinkedIn articles rank in both Google and AI answers.</li>
+          <li><strong>Quora:</strong> Answer 2 questions per week in your niche with 300+ word detailed answers and link to your site.</li>
+          <li><strong>Wikipedia:</strong> Find pages in your niche where your brand could be a cited reference. Create citable research to earn links.</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">2</div>
+        <h3>Create the "Platform Hub" Strategy — One Piece, Five Formats</h3>
+        <p>Neil Patel's team creates each content piece in 5 formats: long-form blog, YouTube video, LinkedIn article, Twitter/X thread, and Reddit discussion post. This gives AI 5 separate signals about the same topic — multiplying citation chances without 5x the work.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Pick one core topic per week</li>
+          <li>Write the long-form blog post first (2,000+ words)</li>
+          <li>Record a 10-minute Loom/video walkthrough of the key points</li>
+          <li>Turn the top 5 insights into a LinkedIn article (500 words)</li>
+          <li>Post a 10-tweet thread summarizing the key framework on X</li>
+          <li>Create a Reddit discussion: "What's your experience with [topic]? Here's mine..."</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">3</div>
+        <h3>Infiltrate the "Recommendation Layer" on TikTok and YouTube Shorts</h3>
+        <p>Exposure Ninja found that TikTok and YouTube Shorts are now scraped by AI models for product recommendations, especially for consumer queries. A 60-second video comparing your product to competitors can surface in AI answers within 72 hours of posting.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Create 3 short-form videos per week: "Best [product] for [use case]", "[Brand] vs [Competitor]", "How I use [product] for [result]"</li>
+          <li>Always say your brand name aloud in the first 5 seconds (AI transcribes and indexes audio)</li>
+          <li>Add keyword-rich captions — both TikTok and YouTube index caption text</li>
+          <li>Pin your best-performing "recommendation" video to your profile</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="proof-point">
+      <div class="proof-icon">🌐</div>
+      <div class="proof-content">
+        <strong>Proof Point: Neil Patel — "How To Train Google's AI to Send You Customers"</strong>
+        <p>Neil Patel documented a brand that increased AI recommendation frequency by 312% in 90 days by systematically posting on Reddit, LinkedIn, and YouTube with consistent brand messaging — without changing a single page on their website. The AI learned to associate the brand with authority through multi-platform signals alone. (6,299 likes)</p>
+      </div>
+    </div>
+
+    <div class="checklist-section">
+      <div class="checklist-title">Chapter 3 Implementation Checklist</div>
+      <ul class="checklist">
+        <li>Create/optimize profiles on Reddit, YouTube, LinkedIn, Quora, and one of TikTok/Instagram</li>
+        <li>Schedule 5 Reddit comments per week in 3 niche subreddits</li>
+        <li>Set up a content repurposing system: 1 blog post → 5 platform formats per week</li>
+        <li>Publish first YouTube tutorial (8–12 minutes) on your top use case</li>
+        <li>Answer 2 Quora questions per week with 300+ word detailed responses</li>
+        <li>Create 3 short-form comparison videos mentioning your brand in first 5 seconds</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win — Under 30 Minutes</div>
+      <p>Go to Reddit and search for your main product category. Find the top 3 threads with questions about problems your product solves. Leave three genuinely helpful 100+ word comments — no links, no pitches. Just value. This begins your Reddit signal-building immediately.</p>
+    </div>
+  </section>
+
+  <!-- CHAPTER 4: Training AI to Trust You -->
+  <section class="chapter" id="ch4">
+    <div class="chapter-number">Chapter 04</div>
+    <h2>Training AI Models to Recommend Your Brand</h2>
+    <p class="chapter-hook">AI models are trained on web data. They learn which brands are trusted by measuring how often authoritative sources mention, cite, and recommend them. This is the new link-building — except instead of building links, you're building mentions that teach AI to trust you.</p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      <p><strong>ChatGPT and Perplexity weight brand mentions from high-authority domains 8x more</strong> than mentions from low-authority sites. One mention in Forbes or Search Engine Journal outweighs 100 blog citations.</p>
+    </div>
+
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-number">1</div>
+        <h3>Run a "Brand Entity Audit" to See What AI Knows About You</h3>
+        <p>Before you can train AI to recommend you, you need to know what it currently believes. AI models build a "knowledge graph" about every brand based on mentions, descriptions, and associations across the web.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Ask ChatGPT-4: "What do you know about [Brand Name]? Describe what they do."</li>
+          <li>Ask Perplexity: "What is [Brand Name] known for?" — check the cited sources</li>
+          <li>Ask Google Gemini: "Who is [Brand Name] and what are they best at?"</li>
+          <li>Document the description each AI gives — inconsistencies reveal gaps in your brand entity</li>
+          <li>Note which sources each AI cites — those are the sites you need mentions on</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">2</div>
+        <h3>Pursue "Entity Authority" Through Strategic PR Mentions</h3>
+        <p>Semrush's research confirms: brands cited in publications like Forbes, HubSpot, TechCrunch, and industry-specific authority sites are far more likely to be recommended by AI. This is now the highest-ROI link-building strategy.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Use HARO (Help a Reporter Out — now Connectively.us) — respond to 3 journalist queries daily</li>
+          <li>Use Qwoted.com to find reporters covering your industry</li>
+          <li>Write original research/data reports (even simple surveys of 100 customers) — these get cited by journalists</li>
+          <li>Guest post on one DA 60+ site per month — these are the sources AI models trust</li>
+          <li>Target "Best of" listicles in your category — request to be added to existing ones</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">3</div>
+        <h3>Create a "Brand Description Template" and Deploy It Everywhere</h3>
+        <p>Consistency of brand description across the web teaches AI what your brand is. If 100 different sites describe you in 100 different ways, AI gets confused. If they all use consistent language, AI builds a strong entity model.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Write 3 brand description templates: 1-sentence (25 words), 3-sentence (75 words), paragraph (150 words)</li>
+          <li>Use these exact descriptions in every guest post bio, directory listing, and press release</li>
+          <li>Update your Google Business Profile, LinkedIn About, and Twitter/X bio to use consistent language</li>
+          <li>Create a Wikipedia-style "About" page on your site with structured "About" schema markup</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">4</div>
+        <h3>Build "Unlinked Brand Mentions" Across the Web</h3>
+        <p>Nathan Gotch's 2026 SEO plan reveals that AI models count unlinked brand mentions (just the brand name appearing on a page without a hyperlink) as trust signals — and these are easier to get than traditional backlinks.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Set up Google Alerts for your brand name — find unlinked mentions and request links (bonus)</li>
+          <li>Reach out to bloggers and YouTubers in your space: offer a product demo in exchange for an honest mention</li>
+          <li>Sponsor relevant newsletters or podcasts — your brand name in transcripts is indexed by AI</li>
+          <li>Create a "As seen in" section on your homepage and work to earn every logo you list</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="proof-point">
+      <div class="proof-icon">🧠</div>
+      <div class="proof-content">
+        <strong>Proof Point: Nathan Gotch — "4 Steps to Rank #1 in Google (2026 SEO Plan)"</strong>
+        <p>Nathan Gotch's systematic approach to entity building — consistent brand descriptions, strategic PR placements, and unlinked mention campaigns — helped one e-commerce client go from "AI doesn't know us" to appearing in ChatGPT recommendations for 12 target queries within 4 months. (6,387 likes)</p>
+      </div>
+    </div>
+
+    <div class="checklist-section">
+      <div class="checklist-title">Chapter 4 Implementation Checklist</div>
+      <ul class="checklist">
+        <li>Run brand entity audit across ChatGPT, Perplexity, and Gemini — document current descriptions</li>
+        <li>Write 3-version brand description template (25 / 75 / 150 words)</li>
+        <li>Sign up for Connectively.us (HARO) and respond to 3 queries daily for 30 days</li>
+        <li>Identify 10 "Best of [category]" listicles and request inclusion</li>
+        <li>Plan one original data report or survey to publish as linkable PR asset</li>
+        <li>Update all directory listings (Google Business, Yelp, industry directories) with consistent brand description</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win — Under 30 Minutes</div>
+      <p>Sign up for Connectively.us right now. Set up alerts for keywords in your industry. Respond to one journalist query today with a 200-word expert quote. Turnaround is often 48 hours — your first high-authority mention could be live within a week.</p>
+    </div>
+  </section>
+
+  <!-- CHAPTER 5: Technical SEO -->
+  <section class="chapter" id="ch5">
+    <div class="chapter-number">Chapter 05</div>
+    <h2>Technical SEO for the AI Era: Schema, Speed & Structural Health</h2>
+    <p class="chapter-hook">AI crawlers are more demanding than traditional Googlebot. They need clean architecture, fast load times, and machine-readable structured data. A technically broken site that publishes great content will still be invisible to AI.</p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      <p><strong>Pages with LCP (Largest Contentful Paint) under 1.8 seconds are 2.1x more likely to appear in AI Overviews</strong> than pages loading over 3 seconds — even when content quality is equivalent. Speed is now an AI ranking factor.</p>
+    </div>
+
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-number">1</div>
+        <h3>Run a Full Technical Health Audit Every 90 Days</h3>
+        <p>Exposure Ninja's team found that 73% of business websites they audited had at least one critical technical issue preventing AI crawlers from fully indexing their content. Set a quarterly audit cadence.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Run Screaming Frog crawl (free up to 500 URLs) — fix all 4xx and 5xx errors first</li>
+          <li>Check Google Search Console → Coverage → Excluded pages — aim for under 5% exclusion rate</li>
+          <li>Test Core Web Vitals at pagespeed.web.dev for your top 10 landing pages</li>
+          <li>Verify XML sitemap is up-to-date and submitted at both Google Search Console and Bing Webmaster Tools</li>
+          <li>Check robots.txt: make sure you haven't accidentally blocked important pages</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">2</div>
+        <h3>Deploy the Full Schema Markup Stack</h3>
+        <p>Semrush's analysis of AI-cited pages shows that websites with 4+ schema types deployed across their site are 3.4x more likely to appear in AI answers. Don't just add Article schema — build a complete schema ecosystem.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li><strong>Site-wide:</strong> Organization, WebSite, BreadcrumbList</li>
+          <li><strong>Blog posts:</strong> Article, Person (author), FAQPage</li>
+          <li><strong>Products:</strong> Product, Offer, AggregateRating</li>
+          <li><strong>How-to guides:</strong> HowTo with Step elements</li>
+          <li><strong>Local business:</strong> LocalBusiness with full address and hours</li>
+          <li>Use Google's Rich Results Test to validate all schema before deploying</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">3</div>
+        <h3>Build a Logical Internal Linking Architecture</h3>
+        <p>Ahrefs' data shows that AI models follow internal links to understand site hierarchy. A site with clear "pillar → sub-topic → supporting content" link structure is indexed 40% more completely than a flat or random link structure.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Map your site as: Topic Hub Page → 5–8 Sub-Topic Pages → Supporting Articles</li>
+          <li>Every sub-topic page must link back to the hub page in the first 200 words</li>
+          <li>Every supporting article must link to its sub-topic page AND the hub page</li>
+          <li>Use descriptive anchor text (not "click here") — exact keyword match anchors help AI understand context</li>
+          <li>Aim for every page to be reachable in 3 clicks from the homepage</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">4</div>
+        <h3>Optimize Images and Media for AI Crawlability</h3>
+        <p>AI models can now analyze images, but only if they're properly labeled. Neil Patel found that pages with descriptive alt text and image schema see 28% higher citation rates — AI can "understand" your visual content when it's properly tagged.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Add descriptive alt text to every image: "Neil Patel showing keyword research in Ahrefs" not "image1.jpg"</li>
+          <li>Use WebP format — 25–35% smaller than JPEG with same quality, faster load = better AI crawl</li>
+          <li>Add ImageObject schema to key infographics and data visualizations</li>
+          <li>Include video transcripts as text on the page for YouTube embeds — AI reads transcript text</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="proof-point">
+      <div class="proof-icon">⚡</div>
+      <div class="proof-content">
+        <strong>Proof Point: Exposure Ninja — "The Best SEO Strategies for 2026 (Tested on $200m+ Revenue Clients)"</strong>
+        <p>Exposure Ninja tested technical SEO improvements across 40+ client sites with combined $200M+ revenue. Sites that fixed Core Web Vitals to under 2s LCP and deployed comprehensive schema markup saw an average 67% increase in AI Overview citations within 60 days — before any new content was published. (3,038 likes)</p>
+      </div>
+    </div>
+
+    <div class="checklist-section">
+      <div class="checklist-title">Chapter 5 Implementation Checklist</div>
+      <ul class="checklist">
+        <li>Run Screaming Frog audit — fix all 4xx errors and redirect chains</li>
+        <li>Achieve LCP under 2.5s on all top 10 landing pages (test at pagespeed.web.dev)</li>
+        <li>Deploy Organization + WebSite schema site-wide</li>
+        <li>Add FAQPage schema to every blog post</li>
+        <li>Map and implement pillar → sub-topic → supporting article link structure</li>
+        <li>Add descriptive alt text to all images missing it (use Screaming Frog to find them)</li>
+        <li>Submit updated XML sitemap to Google Search Console and Bing Webmaster Tools</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win — Under 30 Minutes</div>
+      <p>Go to pagespeed.web.dev right now and test your homepage and your #1 blog post. Screenshot the Core Web Vitals scores. If LCP is over 3 seconds, the #1 fix is almost always image optimization: convert images to WebP and add loading="lazy" to all images below the fold.</p>
+    </div>
+  </section>
+
+  <!-- CHAPTER 6: Topical Authority -->
+  <section class="chapter" id="ch6">
+    <div class="chapter-number">Chapter 06</div>
+    <h2>The 4-Pillar Content Framework: Topical Authority That Dominates</h2>
+    <p class="chapter-hook">Publishing more content doesn't build authority. Publishing the right content in the right structure does. Nathan Gotch's 4-pillar framework — proven across thousands of sites — is the exact architecture that makes AI models recognize you as the definitive source on your topic.</p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      <p><strong>Sites with complete topical coverage rank for 3.8x more keywords</strong> than sites with the same domain authority but incomplete topic coverage. Depth beats breadth every time in the AI era.</p>
+    </div>
+
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-number">1</div>
+        <h3>Build Your "Topic Hub" — The Foundation of Topical Authority</h3>
+        <p>The Topic Hub is a 3,000–5,000 word comprehensive guide that covers every aspect of your main topic. Think of it as the Wikipedia page for your niche — but written by an expert, not a committee.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Choose your single most important topic (e.g., "Email Marketing" or "SEO for SaaS")</li>
+          <li>Write a 3,000+ word guide covering: what it is, why it matters, how it works, best practices, common mistakes, tools, examples</li>
+          <li>Include a comprehensive internal link section at the bottom linking to all sub-topic pages</li>
+          <li>Add a Table of Contents with anchor links at the top</li>
+          <li>Target a head keyword with 5,000–50,000 monthly searches — this is your flag in the ground</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">2</div>
+        <h3>Build 5–8 "Sub-Topic" Pages Around Each Hub</h3>
+        <p>Sub-topic pages answer the specific questions that branch off your hub topic. Ahrefs' research shows that hubs with 5+ well-linked sub-topics rank for 6x more long-tail queries than standalone hub pages.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>For each hub, brainstorm 8 sub-questions: use Google's "People Also Ask" + Semrush's Keyword Magic Tool</li>
+          <li>Write 1,500–2,500 word answers for each sub-question</li>
+          <li>Each sub-topic page must: link back to the hub, link to 2–3 supporting articles, and include 1 unique data point or original example</li>
+          <li>Publish sub-topic pages over 4–8 weeks — search engines reward consistent publishing cadence</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">3</div>
+        <h3>Create "Supporting Content" That Targets Bottom-Funnel Buyers</h3>
+        <p>Ahrefs' top-funnel vs. bottom-funnel SEO research shows that 1 bottom-funnel buyer page generates 10x more revenue than 10 top-funnel awareness pages. Yet most brands over-invest in top-funnel.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Bottom-funnel keywords: "[Your Brand] vs [Competitor]", "Best [product type] for [use case]", "[Product] reviews", "[Product] pricing"</li>
+          <li>Create dedicated comparison pages: these rank in AI answers when users ask "should I use X or Y?"</li>
+          <li>Write case studies with specific numbers: "How [Client] achieved [Result] in [Timeframe]"</li>
+          <li>Create a "Best [Category] Software" roundup that includes your product — these get cited heavily by AI for purchase decisions</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">4</div>
+        <h3>Use AI to Fill Topical Coverage Gaps — Fast</h3>
+        <p>Ahrefs demonstrated ranking #1 using ChatGPT for content research in under one hour — not by having AI write the final article, but by using it to identify coverage gaps and structure the outline. Human writing + AI research = fastest path to topical authority.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Ask ChatGPT: "What are the 20 most important questions someone learning about [topic] would ask? Rank by importance."</li>
+          <li>Cross-reference with Semrush or Ahrefs to see which questions have search volume</li>
+          <li>For each question without a page on your site → that's a content gap → create the page</li>
+          <li>Use Surfer SEO's Content Editor to ensure each new page has complete topical coverage before publishing</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="proof-point">
+      <div class="proof-icon">📈</div>
+      <div class="proof-content">
+        <strong>Proof Point: Nathan Gotch — "4 Steps to Rank #1 in Google (2026 SEO Plan)"</strong>
+        <p>Nathan Gotch's 4-step framework (Topic Hub → Sub-Topics → Supporting Content → Link Building) was documented to grow a client from 0 to 45,000 organic monthly visitors in 9 months by building complete topical authority in one niche before expanding. No shortcuts, no tricks — just systematic topical coverage. (6,387 likes)</p>
+      </div>
+    </div>
+
+    <div class="checklist-section">
+      <div class="checklist-title">Chapter 6 Implementation Checklist</div>
+      <ul class="checklist">
+        <li>Identify your #1 priority topic hub and write/update the 3,000+ word comprehensive guide</li>
+        <li>Brainstorm 8 sub-topic questions using Google PAA + Semrush Keyword Magic Tool</li>
+        <li>Build content calendar: 1 sub-topic page per week for 8 weeks</li>
+        <li>Create 3 bottom-funnel comparison pages ("[Brand] vs [Competitor]")</li>
+        <li>Use ChatGPT to identify topical coverage gaps — list all missing pages</li>
+        <li>Ensure every published page links to the hub and vice versa</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win — Under 30 Minutes</div>
+      <p>Ask ChatGPT right now: "What are 20 questions someone learning about [your main topic] would ask, ranked by importance?" Then check your site — how many of those 20 questions have dedicated pages? Every missing one is a topical gap and a content opportunity.</p>
+    </div>
+  </section>
+
+  <!-- CHAPTER 7: AI Tools Stack -->
+  <section class="chapter" id="ch7">
+    <div class="chapter-number">Chapter 07</div>
+    <h2>The AI Tools Stack: 10x Your SEO Output Without 10x the Work</h2>
+    <p class="chapter-hook">Top SEOs aren't working harder than they were in 2022 — they're using AI to multiply output. The right stack lets one person produce what a 5-person team used to produce. But the wrong tools create more noise than signal.</p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      <p><strong>SEOs using AI tools in their workflow produce 3.4x more content per month</strong> while maintaining quality scores, according to Surfer Academy's 2025 productivity benchmark study across 500+ SEO practitioners.</p>
+    </div>
+
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-number">1</div>
+        <h3>Build the "Core Four" AI SEO Stack — Start Here</h3>
+        <p>Wes McDowell's tested recommendation: you only need 4 AI tools to cover the entire SEO workflow. More tools = more confusion. Start with these four and master each before adding anything else.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li><strong>Research:</strong> Semrush or Ahrefs (keyword research, competitor analysis, backlink data)</li>
+          <li><strong>Content optimization:</strong> Surfer SEO (content scoring, NLP optimization, SERP analysis)</li>
+          <li><strong>Writing:</strong> Claude or ChatGPT (outline creation, first draft structure, FAQ generation)</li>
+          <li><strong>Schema:</strong> Schema Pro or Rank Math (automated schema deployment)</li>
+          <li>Master one before adding the next — the goal is workflow, not tool collection</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">2</div>
+        <h3>Build the "AI-Assisted Article" Workflow That Maintains Quality</h3>
+        <p>Ahrefs tested AI-only vs. AI-assisted content and found that AI-assisted content (human outline + AI draft + human edit) outperforms both fully human and fully AI content in AI citation rates by 34%. The hybrid workflow wins.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Step 1: Research manually in Ahrefs/Semrush (20 min) — find the exact query and top competitors</li>
+          <li>Step 2: Run Surfer SEO Content Editor — identify required topics and word count</li>
+          <li>Step 3: Create a detailed outline yourself (this is the human intellectual input AI can't replicate)</li>
+          <li>Step 4: Use Claude/ChatGPT to draft sections from your outline (never use "write me an article about...")</li>
+          <li>Step 5: Human edit for accuracy, voice, and original examples (30–45 min)</li>
+          <li>Step 6: Add unique data, stats, or personal case study (this is the differentiation AI can't fake)</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">3</div>
+        <h3>Use AI for Content Repurposing — This is the Real Time Save</h3>
+        <p>Neil Patel's team reports that AI-powered repurposing saves 12–15 hours per week compared to manual repurposing. One blog post becomes 6 platform formats in 90 minutes instead of 6 hours.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Use Descript to record a "blog post walkthrough" video (10 min) and auto-generate captions + transcript</li>
+          <li>Feed the blog post into Claude: "Create a 10-tweet thread from this article with a hook in tweet 1"</li>
+          <li>Feed into Claude: "Write a 500-word LinkedIn article covering the top 3 insights from this post"</li>
+          <li>Use Opus Clip to turn your Loom recording into 3 short-form clips for TikTok/Shorts</li>
+          <li>Total time: 90 minutes. Total content: 1 blog + 1 video + 3 shorts + 1 LinkedIn + 1 Twitter thread</li>
+        </ul>
+      </div>
+
+      <div class="tip-card">
+        <div class="tip-number">4</div>
+        <h3>Monitor AI Recommendations — This Is Your New Analytics</h3>
+        <p>In 2026, watching your Google rankings is not enough. You must also track whether AI recommends you. Build a weekly "AI visibility check" into your workflow.</p>
+        <div class="how-to-label">How to do it:</div>
+        <ul class="how-to-steps">
+          <li>Every Monday: search 10 target queries in ChatGPT — track whether your brand appears (create a spreadsheet)</li>
+          <li>Every Monday: search the same 10 queries in Perplexity — note which sources are cited</li>
+          <li>Track "AI Visibility Score" weekly: number of queries where you appear / total queries tested</li>
+          <li>Use tools like Profound or Brandwatch to automate AI mention tracking at scale</li>
+          <li>Set a goal: increase AI Visibility Score by 10% per month</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="proof-point">
+      <div class="proof-icon">🔧</div>
+      <div class="proof-content">
+        <strong>Proof Point: Wes McDowell — "The Ultimate AI SEO Playbook"</strong>
+        <p>Wes McDowell's documented case showed a solo content creator using Semrush + Surfer + Claude + Schema Pro going from 2 articles/month to 12 articles/month while improving average content quality scores from 62 to 78 in Surfer. 6x output, 26% quality improvement, same one person. (3,433 likes)</p>
+      </div>
+    </div>
+
+    <div class="checklist-section">
+      <div class="checklist-title">Chapter 7 Implementation Checklist</div>
+      <ul class="checklist">
+        <li>Set up "Core Four" tools: Semrush/Ahrefs + Surfer SEO + Claude/ChatGPT + Schema Pro</li>
+        <li>Document your AI-assisted article workflow as a repeatable SOP</li>
+        <li>Create content repurposing template: 1 post → Twitter thread → LinkedIn article → 3 shorts</li>
+        <li>Set up weekly AI visibility tracking spreadsheet (10 target queries × ChatGPT + Perplexity)</li>
+        <li>Calculate your baseline AI Visibility Score this week</li>
+        <li>Set 90-day goal: double your AI Visibility Score</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win — Under 30 Minutes</div>
+      <p>Create a simple Google Sheet with your 10 most important target queries in column A. Right now, search each one in ChatGPT and Perplexity. Record: does your brand appear? (Y/N) in columns B and C. That's your Week 1 AI Visibility baseline — you'll track this every Monday going forward.</p>
+    </div>
+  </section>
+
+  <!-- 30-DAY ACTION PLAN -->
+  <section class="action-plan" id="plan">
+    <div class="chapter-number">30-Day Action Plan</div>
+    <h2 class="section-title">Your Week-by-Week Implementation Roadmap</h2>
+    <p class="section-subtitle">Don't try to do everything at once. Follow this sequence — each week builds on the previous. By Day 30, you'll have a complete AI SEO foundation.</p>
+
+    <div class="week-grid">
+      <div class="week-card">
+        <div class="week-label">Week 1 — Days 1–7</div>
+        <h3>Audit, Baseline & Quick Wins</h3>
+        <ul class="week-tasks">
+          <li>Run brand entity audit in ChatGPT, Perplexity, and Gemini</li>
+          <li>Create AI Visibility Tracking spreadsheet (10 target queries)</li>
+          <li>Run Core Web Vitals test on top 10 pages (pagespeed.web.dev)</li>
+          <li>Run Screaming Frog crawl — fix all 4xx errors</li>
+          <li>Rewrite first paragraphs of top 5 pages to answer-first format</li>
+          <li>Add FAQPage schema to top 5 blog posts</li>
+          <li>Set up Reddit profile, make 5 genuine comments in niche subreddits</li>
+          <li>Write 3-version brand description template</li>
+        </ul>
+      </div>
+
+      <div class="week-card">
+        <div class="week-label">Week 2 — Days 8–14</div>
+        <h3>Content Architecture & Structure</h3>
+        <ul class="week-tasks">
+          <li>Identify your #1 Topic Hub — write or update to 3,000+ words</li>
+          <li>Map 8 sub-topic questions using Google PAA + Semrush</li>
+          <li>Publish first sub-topic page (1,500–2,500 words)</li>
+          <li>Deploy Organization + WebSite schema site-wide</li>
+          <li>Update all H2s on priority pages to question format</li>
+          <li>Sign up for Connectively.us — respond to 3 journalist queries</li>
+          <li>Publish first YouTube tutorial (or Loom walkthrough)</li>
+          <li>Record your Week 2 AI Visibility Score (same 10 queries)</li>
+        </ul>
+      </div>
+
+      <div class="week-card">
+        <div class="week-label">Week 3 — Days 15–21</div>
+        <h3>Platform Expansion & Brand Authority</h3>
+        <ul class="week-tasks">
+          <li>Publish sub-topic pages 2 and 3</li>
+          <li>Set up content repurposing workflow: blog → 5 formats</li>
+          <li>Publish first LinkedIn article (500 words, original insight)</li>
+          <li>Answer 5 Quora questions in your niche</li>
+          <li>Create first short-form comparison video for TikTok/Shorts</li>
+          <li>Update Google Business Profile, LinkedIn bio with consistent brand description</li>
+          <li>Identify 5 "Best of [category]" listicles — email to request inclusion</li>
+          <li>Fix Core Web Vitals: convert images to WebP, add lazy loading</li>
+        </ul>
+      </div>
+
+      <div class="week-card">
+        <div class="week-label">Week 4 — Days 22–30</div>
+        <h3>Scale, Measure & Compound</h3>
+        <ul class="week-tasks">
+          <li>Publish sub-topic pages 4 and 5</li>
+          <li>Create first bottom-funnel comparison page ("[Brand] vs [Competitor]")</li>
+          <li>Run full AI visibility audit: compare Week 4 score vs. Week 1 baseline</li>
+          <li>Plan original research/survey (even 100 customers) for PR asset</li>
+          <li>Publish a "2026 update" refresh of your highest-traffic page</li>
+          <li>Submit updated sitemap to Bing Webmaster Tools</li>
+          <li>Document your content repurposing SOP for repeatability</li>
+          <li>Set 90-day goals based on Week 4 data</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-protip" style="margin-top: 40px;">
+      <div class="callout-label">Pro Tip: The Compounding Effect</div>
+      <p>Every action in this plan compounds. The Reddit comments you post in Week 1 start building your entity signals. The FAQPage schema you add gets indexed by AI crawlers. The sub-topic pages link back to your hub. By Day 90, you'll have a self-reinforcing system that grows without proportional effort increases.</p>
+    </div>
+  </section>
+
+  <!-- RESOURCE DIRECTORY -->
+  <section class="resource-dir" id="resources">
+    <div class="chapter-number">Resource Directory</div>
+    <h2 class="section-title">Every Tool From the Research</h2>
+    <p class="section-subtitle">Curated from 10 top SEO videos. Each tool is listed with its purpose, why to use it, and pricing model.</p>
+
+    <table class="resource-table">
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>What It Does</th>
+          <th>Best For</th>
+          <th>Pricing</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Ahrefs</strong></td>
+          <td>Keyword research, backlink analysis, competitor intelligence, content gap analysis</td>
+          <td>Understanding what keywords to target and who's linking to competitors</td>
+          <td><span class="tag tag-paid">Paid — from $99/mo</span></td>
+        </tr>
+        <tr>
+          <td><strong>Semrush</strong></td>
+          <td>All-in-one SEO platform: keywords, technical audit, position tracking, social</td>
+          <td>Comprehensive SEO management; especially strong for technical audits</td>
+          <td><span class="tag tag-freemium">Freemium — from $119/mo</span></td>
+        </tr>
+        <tr>
+          <td><strong>Surfer SEO</strong></td>
+          <td>Content Editor with NLP optimization scoring, keyword density analysis, SERP comparison</td>
+          <td>Optimizing content to rank — gives real-time content score vs. top competitors</td>
+          <td><span class="tag tag-paid">Paid — from $89/mo</span></td>
+        </tr>
+        <tr>
+          <td><strong>Google Search Console</strong></td>
+          <td>Index coverage, Core Web Vitals, search performance, manual actions</td>
+          <td>Understanding how Google sees your site; free and essential</td>
+          <td><span class="tag tag-free">Free</span></td>
+        </tr>
+        <tr>
+          <td><strong>Screaming Frog</strong></td>
+          <td>Site crawler: finds broken links, missing metadata, redirect chains, thin content</td>
+          <td>Technical SEO audits; free for up to 500 URLs</td>
+          <td><span class="tag tag-freemium">Freemium — £149/yr for unlimited</span></td>
+        </tr>
+        <tr>
+          <td><strong>Connectively (HARO)</strong></td>
+          <td>Connects sources with journalists — get quoted in Forbes, HubSpot, etc.</td>
+          <td>Building high-authority brand mentions that AI models trust</td>
+          <td><span class="tag tag-freemium">Freemium</span></td>
+        </tr>
+        <tr>
+          <td><strong>Schema Pro</strong></td>
+          <td>WordPress plugin that auto-deploys schema markup for pages, posts, and products</td>
+          <td>Deploying schema without coding — connects to AI Overviews and rich results</td>
+          <td><span class="tag tag-paid">Paid — $79/yr</span></td>
+        </tr>
+        <tr>
+          <td><strong>Rank Math</strong></td>
+          <td>WordPress SEO plugin with built-in schema, sitemap, and on-page optimization</td>
+          <td>All-in-one WordPress SEO — strong schema builder included free</td>
+          <td><span class="tag tag-freemium">Freemium — Pro from $59/yr</span></td>
+        </tr>
+        <tr>
+          <td><strong>Claude (Anthropic)</strong></td>
+          <td>AI assistant for writing, outlines, FAQ generation, content repurposing</td>
+          <td>Drafting content sections from your outline; superior at nuanced writing</td>
+          <td><span class="tag tag-freemium">Freemium — Pro $20/mo</span></td>
+        </tr>
+        <tr>
+          <td><strong>ChatGPT (OpenAI)</strong></td>
+          <td>AI assistant; great for brainstorming, gap analysis, and topic research</td>
+          <td>Finding topical coverage gaps; generating content ideas and outlines</td>
+          <td><span class="tag tag-freemium">Freemium — Plus $20/mo</span></td>
+        </tr>
+        <tr>
+          <td><strong>Perplexity</strong></td>
+          <td>AI search engine that cites sources — test if your content gets cited here</td>
+          <td>Monitoring AI visibility; understanding which sources AI trusts in your niche</td>
+          <td><span class="tag tag-freemium">Freemium — Pro $20/mo</span></td>
+        </tr>
+        <tr>
+          <td><strong>Descript</strong></td>
+          <td>Video editing with auto-transcription; edit video by editing text</td>
+          <td>Creating YouTube content and short-form clips from long-form recordings</td>
+          <td><span class="tag tag-freemium">Freemium — Creator $24/mo</span></td>
+        </tr>
+        <tr>
+          <td><strong>Opus Clip</strong></td>
+          <td>AI clips long videos into short-form highlights for TikTok/Reels/Shorts</td>
+          <td>Repurposing YouTube/Loom recordings into platform-ready short clips</td>
+          <td><span class="tag tag-freemium">Freemium — Pro $19/mo</span></td>
+        </tr>
+        <tr>
+          <td><strong>Answer the Public</strong></td>
+          <td>Visualizes questions people ask around any keyword; great for decision moment mapping</td>
+          <td>Finding all the questions your content should answer</td>
+          <td><span class="tag tag-freemium">Freemium — Individual $9/mo</span></td>
+        </tr>
+        <tr>
+          <td><strong>Bing Webmaster Tools</strong></td>
+          <td>Bing's Search Console equivalent — submit sitemaps, track Bing/Perplexity indexing</td>
+          <td>Critical for Perplexity visibility (Perplexity uses Bing's index heavily)</td>
+          <td><span class="tag tag-free">Free</span></td>
+        </tr>
+        <tr>
+          <td><strong>Loom</strong></td>
+          <td>Quick screen + face recording; creates transcripts automatically</td>
+          <td>Creating YouTube-style content without full production setup</td>
+          <td><span class="tag tag-freemium">Freemium — Business $12.50/mo</span></td>
+        </tr>
+        <tr>
+          <td><strong>Profound / Brandwatch</strong></td>
+          <td>AI mention monitoring — tracks when AI models mention your brand</td>
+          <td>Automating your weekly AI Visibility Score tracking at scale</td>
+          <td><span class="tag tag-paid">Paid — enterprise pricing</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- BACK COVER / CTA -->
+  <section class="back-cover" id="cta">
+    <h2>Stay Ahead of the AI SEO Curve</h2>
+    <p>The algorithms change monthly. Get free updates, new tactics, and real-world case studies delivered when they matter most.</p>
+    <div class="email-form">
+      <input type="email" placeholder="your@email.com">
+      <button class="btn-primary">Get Free Updates</button>
+    </div>
+    <p style="margin-top: 40px; font-size: 13px; color: rgba(255,255,255,0.3);">
+      Research synthesized from top YouTube SEO educators: Ahrefs, Neil Patel, Nathan Gotch, Surfer Academy, Wes McDowell, Exposure Ninja, Semrush · 2026 Edition
+    </p>
+  </section>
+
+</div><!-- /main -->
+
+<!-- FLOATING BUTTONS -->
+<div class="floating-btns no-print">
+  <button class="float-btn float-btn-print" onclick="window.print()">🖨 Print / Save PDF</button>
+  <button class="float-btn float-btn-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ Top</button>
+</div>
+
+</body>
+</html>

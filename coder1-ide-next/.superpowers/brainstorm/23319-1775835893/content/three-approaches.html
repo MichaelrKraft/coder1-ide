@@ -1,0 +1,89 @@
+<h2>Three Approaches to Your First Alpha Wave</h2>
+<p class="subtitle">Pick the one that matches your build appetite and timeline</p>
+
+<div class="options" style="flex-direction: column; gap: 1.2rem; margin-top: 1.5rem;">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)" style="align-items: flex-start;">
+    <div class="letter">A</div>
+    <div class="content" style="width: 100%;">
+      <h3>Relaunch Sessions — Right Subreddit, No Coder1 Mention</h3>
+      <p style="color: #9ca3af; margin: 0.4rem 0 0.8rem;">Zero build time. Fix the distribution and framing mistakes, let discovery happen naturally.</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.82rem;">
+        <div>
+          <div style="color: #16a34a; font-weight: 600; margin-bottom: 0.3rem;">What changes</div>
+          <ul style="margin:0; padding-left: 1.2rem; color: #d1d5db; line-height: 1.8;">
+            <li>Post to r/ClaudeAI + r/ClaudeCode</li>
+            <li>New title: emotional hook not feature list</li>
+            <li>Add a GIF of the dashboard</li>
+            <li>Remove Coder1 mention entirely</li>
+            <li>Add in-CLI prompt: "View in Coder1 →" after install</li>
+          </ul>
+        </div>
+        <div>
+          <div style="color: #ef4444; font-weight: 600; margin-bottom: 0.3rem;">Trade-offs</div>
+          <ul style="margin:0; padding-left: 1.2rem; color: #d1d5db; line-height: 1.8;">
+            <li>Sessions still doesn't deeply tie to Coder1</li>
+            <li>Coder1 hook is subtle (in-CLI prompt only)</li>
+            <li>May still get modest traction</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)" style="align-items: flex-start; border-color: #7c3aed;">
+    <div class="letter" style="background: #7c3aed; color: white; border-color: #7c3aed;">B</div>
+    <div class="content" style="width: 100%;">
+      <h3>Ambient → Coder1 Notes: Build the Sync, Then Launch</h3>
+      <p style="color: #9ca3af; margin: 0.4rem 0 0.8rem;"><strong style="color: #a78bfa;">Recommended.</strong> Small integration (Ambient calls Coder1 API → notes appear in NotesPanel). The "aha" moment is genuine — users see their day in Coder1 automatically.</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.82rem;">
+        <div>
+          <div style="color: #16a34a; font-weight: 600; margin-bottom: 0.3rem;">What you build</div>
+          <ul style="margin:0; padding-left: 1.2rem; color: #d1d5db; line-height: 1.8;">
+            <li>Coder1 API endpoint: POST /api/notes (with user token)</li>
+            <li>Ambient config: optional coder1_token + sync toggle</li>
+            <li>Reddit: r/Screenpipe + r/ClaudeAI (two separate posts)</li>
+            <li>Video: show the daily journal appearing in Coder1</li>
+            <li>GitHub README with the Coder1 integration section</li>
+          </ul>
+        </div>
+        <div>
+          <div style="color: #ef4444; font-weight: 600; margin-bottom: 0.3rem;">Trade-offs</div>
+          <ul style="margin:0; padding-left: 1.2rem; color: #d1d5db; line-height: 1.8;">
+            <li>Screenpipe dependency (but also distribution)</li>
+            <li>~1-2 days of build work for the sync</li>
+            <li>Privacy framing must lead, not follow</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)" style="align-items: flex-start;">
+    <div class="letter">C</div>
+    <div class="content" style="width: 100%;">
+      <h3>Both — Sessions Now, Ambient in 2 Weeks</h3>
+      <p style="color: #9ca3af; margin: 0.4rem 0 0.8rem;">Use Sessions relaunch as a warmup to practice the content+distribution playbook, then hit harder with Ambient + Coder1 integration.</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.82rem;">
+        <div>
+          <div style="color: #16a34a; font-weight: 600; margin-bottom: 0.3rem;">Sequence</div>
+          <ul style="margin:0; padding-left: 1.2rem; color: #d1d5db; line-height: 1.8;">
+            <li>Week 1: Relaunch Sessions post + video (no build)</li>
+            <li>Week 2: Build Ambient → Coder1 sync</li>
+            <li>Week 3: Launch Ambient to bigger audiences</li>
+          </ul>
+        </div>
+        <div>
+          <div style="color: #ef4444; font-weight: 600; margin-bottom: 0.3rem;">Trade-offs</div>
+          <ul style="margin:0; padding-left: 1.2rem; color: #d1d5db; line-height: 1.8;">
+            <li>More calendar time before real alpha wave</li>
+            <li>Risk of more second-guessing between steps</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p style="text-align: center; color: #6b7280; font-size: 0.8rem; margin-top: 1rem;">Click your preferred approach, or let me know in the terminal</p>

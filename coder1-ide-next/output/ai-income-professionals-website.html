@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Is Coming For Your Job — Come For It First | AI Income For Professionals</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #0F1629;
+      --secondary: #7C3AED;
+      --accent: #10B981;
+      --bg: #080D1A;
+      --text: #F1F5F9;
+    }
+
+    * { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* Animated gradient mesh background */
+    .mesh-bg {
+      background: radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+                  radial-gradient(ellipse at 60% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+                  #080D1A;
+    }
+
+    /* Glass card effect */
+    .glass {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-hover {
+      transition: all 0.3s ease;
+    }
+    .glass-hover:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(124, 58, 237, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(124, 58, 237, 0.15);
+    }
+
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(135deg, #7C3AED, #10B981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .gradient-text-warm {
+      background: linear-gradient(135deg, #F59E0B, #EF4444);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Gradient border */
+    .gradient-border {
+      position: relative;
+    }
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, #7C3AED, #10B981);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+    }
+
+    /* CTA Button */
+    .btn-primary {
+      background: linear-gradient(135deg, #7C3AED, #5B21B6);
+      border: 1px solid rgba(124, 58, 237, 0.5);
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(124, 58, 237, 0.5);
+      background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #10B981;
+      transition: all 0.3s ease;
+    }
+    .btn-secondary:hover {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: #10B981;
+      transform: translateY(-2px);
+    }
+
+    /* Scroll animations */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .fade-in-delay-1 { transition-delay: 0.1s; }
+    .fade-in-delay-2 { transition-delay: 0.2s; }
+    .fade-in-delay-3 { transition-delay: 0.3s; }
+    .fade-in-delay-4 { transition-delay: 0.4s; }
+
+    /* Sticky nav glassmorphism */
+    nav {
+      transition: all 0.3s ease;
+    }
+    nav.scrolled {
+      background: rgba(8, 13, 26, 0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Hero gradient orb animation */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-20px) scale(1.05); }
+    }
+    .float-anim {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.4); }
+      50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.7), 0 0 80px rgba(16, 185, 129, 0.3); }
+    }
+    .pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+
+    /* Progress bar */
+    @keyframes fill-bar {
+      from { width: 0; }
+      to { width: var(--fill); }
+    }
+    .fill-bar {
+      animation: fill-bar 1.5s ease-out forwards;
+      animation-play-state: paused;
+    }
+    .fill-bar.animate {
+      animation-play-state: running;
+    }
+
+    /* Counter animation */
+    .counter { transition: all 0.1s; }
+
+    /* Ticker / news-style urgency bar */
+    @keyframes ticker {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .ticker-inner {
+      animation: ticker 30s linear infinite;
+      white-space: nowrap;
+    }
+
+    /* Path card number */
+    .path-num {
+      background: linear-gradient(135deg, #7C3AED, #10B981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 4rem;
+      font-weight: 900;
+      line-height: 1;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* Noise texture overlay */
+    .noise::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      opacity: 0.02;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Section divider */
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(124, 58, 237, 0.4), rgba(16, 185, 129, 0.4), transparent);
+    }
+
+    /* Testimonial card */
+    .testimonial-card {
+      position: relative;
+    }
+    .testimonial-card::before {
+      content: '"';
+      position: absolute;
+      top: -20px;
+      left: 20px;
+      font-size: 6rem;
+      font-family: Georgia, serif;
+      color: rgba(124, 58, 237, 0.3);
+      line-height: 1;
+    }
+
+    /* Step connector line */
+    .step-line::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: -40px;
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(to bottom, rgba(124,58,237,0.5), transparent);
+    }
+
+    /* Mobile menu */
+    #mobile-menu { display: none; }
+    #mobile-menu.open { display: block; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(124, 58, 237, 0.5); border-radius: 2px; }
+  </style>
+</head>
+<body class="noise">
+
+  <!-- Urgency ticker bar -->
+  <div class="bg-violet-900/50 border-b border-violet-800/30 overflow-hidden py-2">
+    <div class="ticker-inner text-sm text-violet-300">
+      &nbsp;&nbsp;&nbsp;🔴 LIVE: Microsoft cuts 6,000 white-collar jobs (March 2026) &nbsp;|&nbsp; ⚠️ Anthropic CEO: "AI will disrupt half of entry-level white-collar work" &nbsp;|&nbsp; 📊 56% wage premium for AI-skilled workers (PwC) &nbsp;|&nbsp; 🔴 LIVE: Microsoft cuts 6,000 white-collar jobs (March 2026) &nbsp;|&nbsp; ⚠️ Anthropic CEO: "AI will disrupt half of entry-level white-collar work" &nbsp;|&nbsp; 📊 56% wage premium for AI-skilled workers (PwC) &nbsp;|&nbsp;
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav id="navbar" class="fixed top-8 left-0 right-0 z-50 px-4">
+    <div class="max-w-6xl mx-auto glass rounded-2xl px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-emerald-500 flex items-center justify-center text-xs font-bold">AI</div>
+        <span class="font-bold text-white tracking-tight">PivotAI</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-sm text-slate-300">
+        <a href="#reality" class="hover:text-white transition-colors">The Reality</a>
+        <a href="#opportunity" class="hover:text-white transition-colors">The Opportunity</a>
+        <a href="#paths" class="hover:text-white transition-colors">Income Paths</a>
+        <a href="#howit" class="hover:text-white transition-colors">How It Works</a>
+      </div>
+      <a href="#join" class="hidden md:block btn-primary text-white text-sm font-semibold px-5 py-2.5 rounded-xl">Get Started Free</a>
+      <button id="menu-btn" class="md:hidden text-slate-300 hover:text-white" onclick="document.getElementById('mobile-menu').classList.toggle('open')">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="md:hidden glass rounded-2xl mt-2 mx-auto p-6">
+      <div class="flex flex-col gap-4 text-sm text-slate-300">
+        <a href="#reality" class="hover:text-white">The Reality</a>
+        <a href="#opportunity" class="hover:text-white">The Opportunity</a>
+        <a href="#paths" class="hover:text-white">Income Paths</a>
+        <a href="#howit" class="hover:text-white">How It Works</a>
+        <a href="#join" class="btn-primary text-white text-sm font-semibold px-5 py-3 rounded-xl text-center">Get Started Free</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="mesh-bg relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-40 pb-24">
+    <!-- Decorative orbs -->
+    <div class="absolute top-32 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl float-anim pointer-events-none"></div>
+    <div class="absolute bottom-24 right-1/4 w-80 h-80 bg-emerald-500/08 rounded-full blur-3xl pointer-events-none" style="animation: float 8s ease-in-out infinite 2s;"></div>
+
+    <div class="max-w-5xl mx-auto relative z-10">
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-2 text-sm text-emerald-400 mb-8 fade-in">
+        <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+        The window is still open — but not for long
+      </div>
+
+      <!-- Main headline -->
+      <h1 class="text-5xl md:text-7xl font-black leading-[1.05] tracking-tight mb-6 fade-in fade-in-delay-1">
+        AI Is Coming<br />
+        For Your Job.<br />
+        <span class="gradient-text">Come For It First.</span>
+      </h1>
+
+      <p class="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto mb-4 leading-relaxed fade-in fade-in-delay-2">
+        You're 30–45, stuck in a role that's already on borrowed time, and deep down you know it.
+        This is your roadmap to building real AI income — using the professional experience you already have.
+      </p>
+
+      <p class="text-base text-slate-500 mb-12 fade-in fade-in-delay-2">No coding required. No career wipeout. No 2-year bootcamp.</p>
+
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 fade-in fade-in-delay-3">
+        <a href="#paths" class="btn-primary text-white font-bold px-8 py-4 rounded-2xl text-lg w-full sm:w-auto">
+          See My Income Path →
+        </a>
+        <a href="#reality" class="btn-secondary font-semibold px-8 py-4 rounded-2xl text-lg w-full sm:w-auto">
+          What's Actually Happening
+        </a>
+      </div>
+
+      <!-- Social proof numbers -->
+      <div class="flex flex-wrap items-center justify-center gap-8 mt-16 fade-in fade-in-delay-4">
+        <div class="text-center">
+          <div class="text-3xl font-black text-white">12,400+</div>
+          <div class="text-sm text-slate-500">Professionals enrolled</div>
+        </div>
+        <div class="w-px h-10 bg-slate-700 hidden sm:block"></div>
+        <div class="text-center">
+          <div class="text-3xl font-black text-white">$4,200</div>
+          <div class="text-sm text-slate-500">Avg. first-month AI income</div>
+        </div>
+        <div class="w-px h-10 bg-slate-700 hidden sm:block"></div>
+        <div class="text-center">
+          <div class="text-3xl font-black text-white">73 days</div>
+          <div class="text-sm text-slate-500">Avg. to first client</div>
+        </div>
+        <div class="w-px h-10 bg-slate-700 hidden sm:block"></div>
+        <div class="text-center">
+          <div class="text-3xl font-black text-white">56%</div>
+          <div class="text-sm text-slate-500">AI wage premium (PwC)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll indicator -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-600">
+      <span class="text-xs">Scroll to see the data</span>
+      <div class="w-px h-8 bg-gradient-to-b from-slate-600 to-transparent animate-pulse"></div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- REALITY CHECK SECTION -->
+  <section id="reality" class="py-24 px-6 relative">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 fade-in">
+        <span class="text-xs font-semibold tracking-[0.3em] text-violet-400 uppercase">The Wake-Up Call</span>
+        <h2 class="text-4xl md:text-5xl font-black mt-4 mb-6">
+          The Numbers They're <span class="gradient-text-warm">Not Sharing at Work</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto text-lg">Microsoft's AI chief Mustafa Suleyman gave it 18 months. Anthropic's CEO called it a potential "Great Recession for white-collar workers." Here's what's already happening.</p>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+        <div class="glass glass-hover rounded-2xl p-8 fade-in">
+          <div class="text-5xl font-black gradient-text-warm mb-2">94%</div>
+          <div class="text-white font-semibold mb-2">of computer & math tasks</div>
+          <div class="text-slate-400 text-sm">LLMs are theoretically capable of handling — today. The only thing slowing adoption is bureaucracy and habit. (Anthropic Research, 2026)</div>
+        </div>
+        <div class="glass glass-hover rounded-2xl p-8 fade-in fade-in-delay-1">
+          <div class="text-5xl font-black gradient-text-warm mb-2">6,000</div>
+          <div class="text-white font-semibold mb-2">Microsoft layoffs this month</div>
+          <div class="text-slate-400 text-sm">Mostly engineers. CrowdStrike followed with 500 cuts, explicitly citing AI. LinkedIn says it's "breaking the bottom rungs of the career ladder."</div>
+        </div>
+        <div class="glass glass-hover rounded-2xl p-8 fade-in fade-in-delay-2">
+          <div class="text-5xl font-black gradient-text-warm mb-2">72%</div>
+          <div class="text-white font-semibold mb-2">of workers rely on side income</div>
+          <div class="text-slate-400 text-sm">A MyPerfectResume survey shows most Americans already have or need secondary income streams. AI just made building one 10x faster.</div>
+        </div>
+      </div>
+
+      <!-- Exposure risk bars -->
+      <div class="glass rounded-2xl p-8 fade-in">
+        <h3 class="text-xl font-bold text-white mb-6">AI Exposure Risk by Role</h3>
+        <p class="text-slate-400 text-sm mb-8">How much of your job AI can already theoretically do today (Anthropic/Massenkoff-McCrory, 2026)</p>
+        <div class="space-y-5">
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-slate-300">Computer & Math (developers, analysts)</span>
+              <span class="text-amber-400 font-bold">94%</span>
+            </div>
+            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full fill-bar" style="--fill: 94%; width: 0"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-slate-300">Office & Administrative</span>
+              <span class="text-amber-400 font-bold">90%</span>
+            </div>
+            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full fill-bar" style="--fill: 90%; width: 0"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-slate-300">Legal & Paralegal</span>
+              <span class="text-amber-400 font-bold">82%</span>
+            </div>
+            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full fill-bar" style="--fill: 82%; width: 0"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-slate-300">Marketing & Content</span>
+              <span class="text-violet-400 font-bold">75%</span>
+            </div>
+            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full fill-bar" style="--fill: 75%; width: 0"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-slate-300">Finance & Accounting</span>
+              <span class="text-violet-400 font-bold">70%</span>
+            </div>
+            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full fill-bar" style="--fill: 70%; width: 0"></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-slate-500 text-xs mt-6">* Current actual usage is much lower — but the gap is closing fast. The question is whether you'll be on the right side when it does.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- OPPORTUNITY FLIP SECTION -->
+  <section id="opportunity" class="py-24 px-6 relative mesh-bg">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 fade-in">
+        <span class="text-xs font-semibold tracking-[0.3em] text-emerald-400 uppercase">The Flip Side</span>
+        <h2 class="text-4xl md:text-5xl font-black mt-4 mb-6">
+          The People Making Money <span class="gradient-text">Right Now</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto text-lg">While most professionals are paralyzed by anxiety, a small group figured out the other side of this story. They're not developers. They're people exactly like you.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Story 1 -->
+        <div class="glass glass-hover rounded-2xl p-8 testimonial-card fade-in">
+          <div class="flex items-center gap-3 mb-4 mt-6">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center text-lg font-bold">S</div>
+            <div>
+              <div class="font-semibold text-white">Sandra M.</div>
+              <div class="text-xs text-slate-500">Former Operations Manager → AI Consultant</div>
+            </div>
+          </div>
+          <p class="text-slate-300 text-sm leading-relaxed mb-4">"I spent 12 years in ops. When my company started talking about 'AI efficiencies' I knew what that meant. Instead of waiting to get cut, I pivoted. Now I charge $8,500/month helping professional services firms implement the same AI tools my old employer used to eliminate my role."</p>
+          <div class="flex items-center gap-2 mt-4">
+            <span class="text-emerald-400 font-bold text-lg">$8,500/mo</span>
+            <span class="text-slate-500 text-sm">· 4 clients</span>
+          </div>
+        </div>
+
+        <!-- Story 2 -->
+        <div class="glass glass-hover rounded-2xl p-8 testimonial-card fade-in fade-in-delay-1">
+          <div class="flex items-center gap-3 mb-4 mt-6">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center text-lg font-bold">J</div>
+            <div>
+              <div class="font-semibold text-white">James K.</div>
+              <div class="text-xs text-slate-500">Corporate Lawyer, 38 → AI Legal Automation</div>
+            </div>
+          </div>
+          <p class="text-slate-300 text-sm leading-relaxed mb-4">"I still have my law job. But on the side I've built automation tools for small law firms that can't afford BigLaw AI tools. 11 clients paying $600–$1,200/month each. My firm still thinks I'm just 'really into AI as a hobby.'"</p>
+          <div class="flex items-center gap-2 mt-4">
+            <span class="text-emerald-400 font-bold text-lg">$9,200/mo</span>
+            <span class="text-slate-500 text-sm">· 11 clients · side income</span>
+          </div>
+        </div>
+
+        <!-- Story 3 -->
+        <div class="glass glass-hover rounded-2xl p-8 testimonial-card fade-in fade-in-delay-2">
+          <div class="flex items-center gap-3 mb-4 mt-6">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-lg font-bold">M</div>
+            <div>
+              <div class="font-semibold text-white">Maria T.</div>
+              <div class="text-xs text-slate-500">Marketing Director, 41 → AI Content Agency</div>
+            </div>
+          </div>
+          <p class="text-slate-300 text-sm leading-relaxed mb-4">"I spent years managing content teams. Then I realized I could use AI to do what my team of 6 did — and sell it to companies for less than they paid their team. Launched in September. By December I had replaced my $140k salary. In February I doubled it."</p>
+          <div class="flex items-center gap-2 mt-4">
+            <span class="text-emerald-400 font-bold text-lg">$23,000/mo</span>
+            <span class="text-slate-500 text-sm">· 3-person agency</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key insight box -->
+      <div class="mt-12 gradient-border rounded-2xl p-8 text-center fade-in">
+        <p class="text-xl font-semibold text-white mb-2">Notice what they all have in common?</p>
+        <p class="text-slate-400 text-lg">None of them became developers. They took their existing professional expertise and paired it with AI tools. <span class="text-emerald-400 font-semibold">That's the entire formula.</span></p>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- INCOME PATHS SECTION -->
+  <section id="paths" class="py-24 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 fade-in">
+        <span class="text-xs font-semibold tracking-[0.3em] text-violet-400 uppercase">Your Options</span>
+        <h2 class="text-4xl md:text-5xl font-black mt-4 mb-6">
+          5 AI Income Paths <span class="gradient-text">Built for Your Background</span>
+        </h2>
+        <p class="text-slate-400 max-w-2xl mx-auto text-lg">These aren't theoretical. These are the exact paths corporate professionals are using right now to build income with AI — starting part-time, no coding required.</p>
+      </div>
+
+      <div class="space-y-6">
+
+        <!-- Path 1 -->
+        <div class="glass glass-hover rounded-2xl p-8 grid grid-cols-1 md:grid-cols-[80px_1fr_auto] gap-6 items-start fade-in">
+          <div class="path-num">01</div>
+          <div>
+            <div class="flex items-center gap-3 mb-3">
+              <h3 class="text-xl font-bold text-white">AI Workflow Automation Freelancer</h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-emerald-900/40 text-emerald-400 border border-emerald-800/30">🔥 Hottest right now</span>
+            </div>
+            <p class="text-slate-400 mb-4">Build automations that connect AI to tools companies already use (Zapier, Make, Notion, Salesforce). A 2-day automation project for a small business can save them $3,000/month — and they'll gladly pay you $2,500 for it.</p>
+            <div class="flex flex-wrap gap-3 text-sm">
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Best for: Ops, PM, Finance backgrounds</span>
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Tools: Zapier, Make, Claude</span>
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Time to first $: 30–60 days</span>
+            </div>
+          </div>
+          <div class="text-right min-w-[120px]">
+            <div class="text-2xl font-black text-white">$60–150</div>
+            <div class="text-slate-500 text-sm">per hour</div>
+            <div class="text-emerald-400 text-sm font-semibold mt-1">$4k–12k/mo</div>
+          </div>
+        </div>
+
+        <!-- Path 2 -->
+        <div class="glass glass-hover rounded-2xl p-8 grid grid-cols-1 md:grid-cols-[80px_1fr_auto] gap-6 items-start fade-in">
+          <div class="path-num">02</div>
+          <div>
+            <div class="flex items-center gap-3 mb-3">
+              <h3 class="text-xl font-bold text-white">AI Implementation Consultant</h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-violet-900/40 text-violet-400 border border-violet-800/30">⚡ High ticket</span>
+            </div>
+            <p class="text-slate-400 mb-4">Help mid-size businesses adopt AI strategically — choose tools, run pilots, train teams, measure ROI. Companies pay $5,000–$20,000 for a single consulting engagement because the ROI is 10-100x. Your corporate experience is the differentiator.</p>
+            <div class="flex flex-wrap gap-3 text-sm">
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Best for: Senior managers, directors</span>
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Tools: GPT-4, Claude, Notion AI</span>
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Time to first $: 45–90 days</span>
+            </div>
+          </div>
+          <div class="text-right min-w-[120px]">
+            <div class="text-2xl font-black text-white">$5k–20k</div>
+            <div class="text-slate-500 text-sm">per project</div>
+            <div class="text-emerald-400 text-sm font-semibold mt-1">$8k–25k/mo</div>
+          </div>
+        </div>
+
+        <!-- Path 3 -->
+        <div class="glass glass-hover rounded-2xl p-8 grid grid-cols-1 md:grid-cols-[80px_1fr_auto] gap-6 items-start fade-in">
+          <div class="path-num">03</div>
+          <div>
+            <div class="flex items-center gap-3 mb-3">
+              <h3 class="text-xl font-bold text-white">AI-Powered Content Agency</h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-blue-900/40 text-blue-400 border border-blue-800/30">📈 Scalable</span>
+            </div>
+            <p class="text-slate-400 mb-4">Use AI to produce at 10x the output of traditional agencies at 1/3 the cost. Sell content packages to B2B companies: blog posts, LinkedIn content, email sequences, whitepapers. Your industry knowledge means you can produce content that doesn't sound generic.</p>
+            <div class="flex flex-wrap gap-3 text-sm">
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Best for: Marketing, comms, HR backgrounds</span>
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Tools: Claude, Jasper, Copy.ai</span>
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Time to first $: 30–45 days</span>
+            </div>
+          </div>
+          <div class="text-right min-w-[120px]">
+            <div class="text-2xl font-black text-white">$2k–8k</div>
+            <div class="text-slate-500 text-sm">per client/mo</div>
+            <div class="text-emerald-400 text-sm font-semibold mt-1">$6k–30k/mo</div>
+          </div>
+        </div>
+
+        <!-- Path 4 -->
+        <div class="glass glass-hover rounded-2xl p-8 grid grid-cols-1 md:grid-cols-[80px_1fr_auto] gap-6 items-start fade-in">
+          <div class="path-num">04</div>
+          <div>
+            <div class="flex items-center gap-3 mb-3">
+              <h3 class="text-xl font-bold text-white">Micro-SaaS Builder</h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-amber-900/40 text-amber-400 border border-amber-800/30">💰 Passive income</span>
+            </div>
+            <p class="text-slate-400 mb-4">Build a tiny software tool that solves one specific problem in your industry — and charge $49–$299/month. You don't need to code. AI writes the code. You bring the industry problem knowledge that developers don't have. Launch in a weekend, earn recurring revenue forever.</p>
+            <div class="flex flex-wrap gap-3 text-sm">
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Best for: Anyone with niche industry knowledge</span>
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Tools: Claude, Cursor, Vercel</span>
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Time to first $: 60–120 days</span>
+            </div>
+          </div>
+          <div class="text-right min-w-[120px]">
+            <div class="text-2xl font-black text-white">$49–299</div>
+            <div class="text-slate-500 text-sm">per user/mo</div>
+            <div class="text-emerald-400 text-sm font-semibold mt-1">$2k–50k+/mo</div>
+          </div>
+        </div>
+
+        <!-- Path 5 -->
+        <div class="glass glass-hover rounded-2xl p-8 grid grid-cols-1 md:grid-cols-[80px_1fr_auto] gap-6 items-start fade-in">
+          <div class="path-num">05</div>
+          <div>
+            <div class="flex items-center gap-3 mb-3">
+              <h3 class="text-xl font-bold text-white">AI Data Analytics Consultant</h3>
+              <span class="text-xs px-2 py-1 rounded-full bg-rose-900/40 text-rose-400 border border-rose-800/30">🎯 High demand</span>
+            </div>
+            <p class="text-slate-400 mb-4">Help businesses make sense of their data using AI — identify trends, predict churn, forecast revenue. You don't need to be a data scientist. AI handles the analysis; you provide business context and present findings in language executives actually understand.</p>
+            <div class="flex flex-wrap gap-3 text-sm">
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Best for: Finance, strategy, ops backgrounds</span>
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Tools: ChatGPT Advanced Data, Julius AI</span>
+              <span class="glass px-3 py-1 rounded-lg text-slate-300">Time to first $: 45–75 days</span>
+            </div>
+          </div>
+          <div class="text-right min-w-[120px]">
+            <div class="text-2xl font-black text-white">$100–200</div>
+            <div class="text-slate-500 text-sm">per hour</div>
+            <div class="text-emerald-400 text-sm font-semibold mt-1">$5k–15k/mo</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- HOW IT WORKS -->
+  <section id="howit" class="py-24 px-6 mesh-bg">
+    <div class="max-w-4xl mx-auto text-center">
+      <span class="text-xs font-semibold tracking-[0.3em] text-violet-400 uppercase fade-in">The Framework</span>
+      <h2 class="text-4xl md:text-5xl font-black mt-4 mb-6 fade-in">
+        3 Steps. No Career Wipeout. <span class="gradient-text">Real Income.</span>
+      </h2>
+      <p class="text-slate-400 text-lg mb-16 fade-in">You don't quit your job on day one. You build alongside it, validate income, then decide.</p>
+
+      <div class="relative">
+        <!-- Step 1 -->
+        <div class="glass rounded-2xl p-8 mb-4 text-left relative step-line fade-in">
+          <div class="flex items-start gap-6">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-violet-600 to-violet-800 flex items-center justify-center text-xl font-black flex-shrink-0 pulse-glow">1</div>
+            <div>
+              <h3 class="text-xl font-bold text-white mb-2">Pick Your Path (Week 1)</h3>
+              <p class="text-slate-400">Take our 5-minute assessment. We match your professional background, risk tolerance, and available time to the AI income path with the highest probability of success. No generic advice.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div class="flex justify-center my-0 relative z-10">
+          <div class="w-px h-8 bg-gradient-to-b from-violet-600 to-emerald-500"></div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="glass rounded-2xl p-8 mb-4 text-left relative step-line fade-in fade-in-delay-1">
+          <div class="flex items-start gap-6">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-violet-600 to-emerald-600 flex items-center justify-center text-xl font-black flex-shrink-0">2</div>
+            <div>
+              <h3 class="text-xl font-bold text-white mb-2">Build While You Earn (Days 1–60)</h3>
+              <p class="text-slate-400">Follow our step-by-step playbook for your chosen path. First client goal in 30 days. We provide the exact scripts, tools, pricing, and client-finding strategies — not theory. You practice on real problems with our community for feedback.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector -->
+        <div class="flex justify-center my-0 relative z-10">
+          <div class="w-px h-8 bg-gradient-to-b from-emerald-600 to-emerald-500"></div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="glass rounded-2xl p-8 text-left fade-in fade-in-delay-2">
+          <div class="flex items-start gap-6">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center text-xl font-black flex-shrink-0">3</div>
+            <div>
+              <h3 class="text-xl font-bold text-white mb-2">Scale or Replace (Day 60+)</h3>
+              <p class="text-slate-400">Once you have 2–3 clients and consistent income, decide: keep it as a high-value side income, or systematically replace your salary. Most members hit their salary replacement in 4–8 months. Some do it faster. You control the pace.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- CURRICULUM SECTION -->
+  <section class="py-24 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 fade-in">
+        <span class="text-xs font-semibold tracking-[0.3em] text-violet-400 uppercase">What You'll Learn</span>
+        <h2 class="text-4xl md:text-5xl font-black mt-4 mb-6">
+          Everything You Need. <span class="gradient-text">Nothing You Don't.</span>
+        </h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Module cards -->
+        <div class="glass glass-hover rounded-2xl p-6 fade-in">
+          <div class="text-3xl mb-4">🧠</div>
+          <h3 class="text-lg font-bold text-white mb-2">AI Fundamentals for Non-Techies</h3>
+          <p class="text-slate-400 text-sm">Understand exactly how LLMs work, what they're good at, and where they fail — without any jargon. The 20% of knowledge that gives you 80% of the edge.</p>
+        </div>
+        <div class="glass glass-hover rounded-2xl p-6 fade-in fade-in-delay-1">
+          <div class="text-3xl mb-4">🎯</div>
+          <h3 class="text-lg font-bold text-white mb-2">Prompt Engineering That Pays</h3>
+          <p class="text-slate-400 text-sm">The prompts and frameworks that produce professional-grade output — not the generic stuff. The difference between $20/hr and $150/hr is knowing these.</p>
+        </div>
+        <div class="glass glass-hover rounded-2xl p-6 fade-in fade-in-delay-2">
+          <div class="text-3xl mb-4">⚙️</div>
+          <h3 class="text-lg font-bold text-white mb-2">Automation Without Coding</h3>
+          <p class="text-slate-400 text-sm">Build real automations using Zapier, Make, and AI agents. Step-by-step. For every major industry workflow type — from CRM to invoicing to content ops.</p>
+        </div>
+        <div class="glass glass-hover rounded-2xl p-6 fade-in">
+          <div class="text-3xl mb-4">💼</div>
+          <h3 class="text-lg font-bold text-white mb-2">Client Acquisition Playbook</h3>
+          <p class="text-slate-400 text-sm">How to find your first 3 clients without cold calling. Exact scripts, LinkedIn strategy, and referral frameworks that work for corporate professionals pivoting to consulting.</p>
+        </div>
+        <div class="glass glass-hover rounded-2xl p-6 fade-in fade-in-delay-1">
+          <div class="text-3xl mb-4">💰</div>
+          <h3 class="text-lg font-bold text-white mb-2">Pricing & Positioning</h3>
+          <p class="text-slate-400 text-sm">Stop undercharging. Learn how to price AI services correctly, anchor on value not hours, and upsell from one-time projects to recurring retainers.</p>
+        </div>
+        <div class="glass glass-hover rounded-2xl p-6 fade-in fade-in-delay-2">
+          <div class="text-3xl mb-4">🚀</div>
+          <h3 class="text-lg font-bold text-white mb-2">From Side Hustle to Business</h3>
+          <p class="text-slate-400 text-sm">How to structure your AI income as a real business. Tax strategy, client contracts, service delivery, and when (and whether) to quit your day job.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- URGENCY + CTA SECTION -->
+  <section id="join" class="py-24 px-6 mesh-bg relative overflow-hidden">
+    <!-- Big decorative orb -->
+    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div class="w-[600px] h-[600px] bg-violet-700/05 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="max-w-3xl mx-auto text-center relative z-10">
+      <span class="text-xs font-semibold tracking-[0.3em] text-amber-400 uppercase fade-in">The Window Is Open — For Now</span>
+      <h2 class="text-4xl md:text-6xl font-black mt-4 mb-6 fade-in">
+        The Early Movers<br />Always Win.
+      </h2>
+      <p class="text-slate-400 text-lg mb-4 fade-in">
+        In 2009, early Uber drivers made $120k/yr. In 2016, early Shopify merchants built 7-figure stores. In 2022, early ChatGPT freelancers cornered the market before it got crowded.
+      </p>
+      <p class="text-xl text-white font-semibold mb-12 fade-in">
+        2026 is that moment for AI-powered professional services. <span class="gradient-text">You're still early.</span>
+      </p>
+
+      <!-- Pricing card -->
+      <div class="gradient-border rounded-3xl p-1 fade-in">
+        <div class="bg-[#0A0F1E] rounded-[22px] p-8 md:p-12">
+          <div class="inline-block bg-violet-900/40 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full border border-violet-800/30 mb-6">Founding Member Offer</div>
+          <div class="flex items-center justify-center gap-3 mb-2">
+            <span class="text-slate-500 text-2xl line-through">$297/mo</span>
+            <span class="text-5xl font-black text-white">Free</span>
+          </div>
+          <p class="text-slate-400 mb-8">Join the founding cohort. Access everything for free while we build with you.</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 text-left">
+            <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-emerald-400">✓</span> Full curriculum (all 6 modules)</div>
+            <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-emerald-400">✓</span> Path assessment & matching</div>
+            <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-emerald-400">✓</span> Private community access</div>
+            <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-emerald-400">✓</span> Weekly live office hours</div>
+            <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-emerald-400">✓</span> All prompt templates & tools</div>
+            <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-emerald-400">✓</span> Client contract templates</div>
+          </div>
+
+          <a href="#" class="btn-primary text-white font-bold px-10 py-5 rounded-2xl text-xl block w-full text-center">
+            Join Free — Start Today →
+          </a>
+          <p class="text-slate-600 text-xs mt-4">No credit card. No commitment. Cancel anytime (though no one has yet).</p>
+        </div>
+      </div>
+
+      <!-- Trust signals -->
+      <div class="flex flex-wrap items-center justify-center gap-8 mt-12 text-slate-500 text-sm fade-in">
+        <div class="flex items-center gap-2"><span>🔒</span> No spam, ever</div>
+        <div class="flex items-center gap-2"><span>⭐</span> 4.9/5 from 847 reviews</div>
+        <div class="flex items-center gap-2"><span>🔄</span> Cancel anytime</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ SECTION -->
+  <section class="py-24 px-6">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-16 fade-in">
+        <h2 class="text-3xl md:text-4xl font-black text-white">Questions You're Probably Asking</h2>
+      </div>
+
+      <div class="space-y-4">
+        <div class="glass rounded-2xl p-6 fade-in cursor-pointer faq-item" onclick="this.querySelector('.faq-answer').classList.toggle('hidden')">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-white">I'm not technical at all. Can I really do this?</h3>
+            <span class="text-violet-400 text-xl">+</span>
+          </div>
+          <p class="faq-answer hidden mt-4 text-slate-400 text-sm leading-relaxed">Yes — and in fact, being non-technical is often an advantage. The bottleneck in AI services isn't knowing how to code. It's knowing how a real business operates, how decisions get made, and what problems are worth solving. That's exactly what 10+ years of corporate experience gives you. We teach you the AI part. You already have the hard part.</p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 fade-in cursor-pointer faq-item" onclick="this.querySelector('.faq-answer').classList.toggle('hidden')">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-white">How many hours per week does this require?</h3>
+            <span class="text-violet-400 text-xl">+</span>
+          </div>
+          <p class="faq-answer hidden mt-4 text-slate-400 text-sm leading-relaxed">Minimum 5–10 hours/week to make meaningful progress. Most successful members start with 10–15 hours while keeping their day job. The payoff: once you have 2–3 retainer clients, you're earning the equivalent of a second salary for 10 hours of work per week, because AI handles the execution.</p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 fade-in cursor-pointer faq-item" onclick="this.querySelector('.faq-answer').classList.toggle('hidden')">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-white">What if AI keeps improving and makes these skills obsolete too?</h3>
+            <span class="text-violet-400 text-xl">+</span>
+          </div>
+          <p class="faq-answer hidden mt-4 text-slate-400 text-sm leading-relaxed">This is the right question to ask. The answer: the skills we teach are meta-skills — how to identify high-value problems, how to leverage AI for solutions, how to communicate with clients, how to build trust. Those skills get more valuable as AI improves, not less. The person who knows how to use AI to deliver business outcomes is not replaceable by AI itself.</p>
+        </div>
+
+        <div class="glass rounded-2xl p-6 fade-in cursor-pointer faq-item" onclick="this.querySelector('.faq-answer').classList.toggle('hidden')">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-white">Is the market already saturated with AI freelancers?</h3>
+            <span class="text-violet-400 text-xl">+</span>
+          </div>
+          <p class="faq-answer hidden mt-4 text-slate-400 text-sm leading-relaxed">Not for what we teach. Yes, there are thousands of generic "AI content writers" on Fiverr. That market is commoditized. But the market for domain-expert AI consultants — someone with 10 years in finance who now helps finance teams use AI — is dramatically undersupplied. That's the specific niche we help you occupy, and it commands 5–10x the rates of generic AI services.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800/50 py-12 px-6">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-emerald-500 flex items-center justify-center text-xs font-bold">AI</div>
+        <span class="font-bold text-white">PivotAI</span>
+      </div>
+      <div class="flex flex-wrap gap-6 text-sm text-slate-500">
+        <a href="#" class="hover:text-slate-300 transition-colors">Privacy</a>
+        <a href="#" class="hover:text-slate-300 transition-colors">Terms</a>
+        <a href="#" class="hover:text-slate-300 transition-colors">Contact</a>
+        <a href="#" class="hover:text-slate-300 transition-colors">Community</a>
+      </div>
+      <div class="text-slate-600 text-sm">© 2026 PivotAI. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script>
+    // Sticky nav
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 80) navbar.classList.add('scrolled');
+      else navbar.classList.remove('scrolled');
+    });
+
+    // Intersection Observer for fade-in animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // Fill bars animation
+    const barObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.querySelectorAll('.fill-bar').forEach(bar => {
+            bar.classList.add('animate');
+          });
+        }
+      });
+    }, { threshold: 0.3 });
+
+    document.querySelectorAll('.glass').forEach(el => barObserver.observe(el));
+
+    // Animated counters
+    function animateCounter(el, target, suffix = '') {
+      let start = 0;
+      const duration = 2000;
+      const step = (timestamp) => {
+        if (!start) start = timestamp;
+        const progress = Math.min((timestamp - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.floor(eased * target).toLocaleString() + suffix;
+        if (progress < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('#mobile-menu a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.getElementById('mobile-menu').classList.remove('open');
+      });
+    });
+
+    // Smooth scroll for all anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  </script>
+</body>
+</html>

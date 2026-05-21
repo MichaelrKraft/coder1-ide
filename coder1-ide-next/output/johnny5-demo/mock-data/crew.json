@@ -1,0 +1,64 @@
+{
+  "crew": [
+    {
+      "id": "C-001",
+      "name": "Marcus Torres",
+      "role": "Crew Lead",
+      "phone": "720-555-0192",
+      "email": "m.torres@academysportsturf.com",
+      "status": "active_site",
+      "current_site": "Thornton Municipal Sports Complex",
+      "certifications": ["SFMA Level 2", "OSHA 10", "Forklift Operator"],
+      "available_for_reassignment": true,
+      "note": "On site but truck down — can supervise while Truck 14 is towed"
+    },
+    {
+      "id": "C-002",
+      "name": "Kyle Ramirez",
+      "role": "Field Technician",
+      "phone": "720-555-0247",
+      "email": "k.ramirez@academysportsturf.com",
+      "status": "active_site",
+      "current_site": "Westminster Sports Complex",
+      "certifications": ["SFMA Level 1", "OSHA 10"],
+      "available_for_reassignment": false
+    },
+    {
+      "id": "C-003",
+      "name": "Derek Johnson",
+      "role": "Installation Specialist",
+      "phone": "303-555-0381",
+      "email": "d.johnson@academysportsturf.com",
+      "status": "available",
+      "current_site": null,
+      "certifications": ["SFMA Level 2", "OSHA 30", "Irrigation Tech"],
+      "available_for_reassignment": true,
+      "note": "Free after 10am — was scheduled for Aurora phase 2 which is pushed 2 days"
+    },
+    {
+      "id": "C-004",
+      "name": "Tony Vela",
+      "role": "Equipment Operator",
+      "phone": "720-555-0419",
+      "email": "t.vela@academysportsturf.com",
+      "status": "active_site",
+      "current_site": "Aurora Del Mar Park",
+      "certifications": ["OSHA 10", "CDL Class B", "Forklift Operator"],
+      "available_for_reassignment": false
+    },
+    {
+      "id": "C-005",
+      "name": "Sarah Chen",
+      "role": "Project Manager",
+      "phone": "303-555-0512",
+      "email": "s.chen@academysportsturf.com",
+      "status": "office",
+      "current_site": null,
+      "certifications": ["PMP", "LEED Green Associate"],
+      "available_for_reassignment": true,
+      "note": "Handles all municipal RFPs and city council communications"
+    }
+  ],
+  "on_call_today": ["Marcus Torres", "Derek Johnson"],
+  "pto": []
+}

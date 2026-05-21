@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academy Sports Turf — AI Strategy Brief | Jason Lowery</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { scroll-behavior: smooth; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #080E1A; color: #E2E8F0; margin: 0; }
+
+    #progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: linear-gradient(90deg, #16A34A, #22C55E, #3B82F6);
+      width: 0%; z-index: 1000; transition: width 0.1s;
+    }
+
+    #top-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(8, 14, 26, 0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 14px 32px;
+    }
+
+    #chapter-dots {
+      position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
+      z-index: 100; display: flex; flex-direction: column; gap: 10px;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.18); cursor: pointer;
+      transition: all 0.3s; border: 1px solid rgba(255,255,255,0.25);
+    }
+    .dot.active { background: #22C55E; transform: scale(1.5); border-color: #22C55E; }
+    .dot:hover { background: rgba(255,255,255,0.5); }
+
+    h1, h2, h3, h4 { font-family: 'Montserrat', sans-serif; }
+
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s, transform 0.65s; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.1s; }
+    .reveal-d2 { transition-delay: 0.2s; }
+    .reveal-d3 { transition-delay: 0.3s; }
+    .reveal-d4 { transition-delay: 0.4s; }
+
+    .text-gradient { background: linear-gradient(135deg, #22C55E, #3B82F6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .text-gradient-fire { background: linear-gradient(135deg, #F59E0B, #EF4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    .glass-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      transition: all 0.3s;
+    }
+    .glass-card:hover {
+      background: rgba(255,255,255,0.055);
+      border-color: rgba(34,197,94,0.28);
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, rgba(22,163,74,0.1), rgba(59,130,246,0.05));
+      border: 1px solid rgba(22,163,74,0.2);
+      border-radius: 14px;
+    }
+
+    .badge {
+      display: inline-block; padding: 4px 12px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+
+    .section-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+
+    .bar { height: 8px; border-radius: 4px; width: 0; transition: width 1.3s ease-out; }
+    .bar.animate { width: var(--w); }
+
+    .quote-block {
+      border-left: 3px solid #22C55E;
+      background: rgba(34,197,94,0.05);
+      padding: 14px 18px; border-radius: 0 8px 8px 0;
+    }
+
+    .tool-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+
+    .win-num {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, #16A34A, #22C55E);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Montserrat', sans-serif; font-weight: 800;
+      font-size: 16px; color: white; flex-shrink: 0;
+    }
+
+    .flow-line { border-left: 2px solid rgba(34,197,94,0.3); padding-left: 20px; position: relative; }
+    .flow-dot { position: absolute; left: -9px; top: 0; width: 16px; height: 16px; border-radius: 50%; background: #22C55E; }
+    .flow-arrow { color: #22C55E; font-size: 22px; font-weight: bold; animation: pulse 2.2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
+
+    .comp-odd { background: rgba(255,255,255,0.025); }
+
+    .glow-green { box-shadow: 0 0 32px rgba(34,197,94,0.14); }
+    .glow-blue { box-shadow: 0 0 32px rgba(59,130,246,0.14); }
+
+    input[type="range"] {
+      -webkit-appearance: none; width: 100%; height: 6px;
+      background: rgba(255,255,255,0.1); border-radius: 3px; outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px;
+      background: #22C55E; border-radius: 50%; cursor: pointer;
+    }
+
+    footer { background: #060B14; border-top: 1px solid rgba(255,255,255,0.05); }
+  </style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<!-- NAV -->
+<nav id="top-nav">
+  <div style="max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#16A34A,#22C55E);display:flex;align-items:center;justify-content:center;">
+        <span style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:11px;color:white;">AST</span>
+      </div>
+      <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;color:white;">Academy Sports Turf</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="badge" style="background:rgba(34,197,94,0.12);color:#22C55E;border:1px solid rgba(34,197,94,0.28);">AI Strategy Brief</span>
+      <span style="font-size:12px;color:rgba(255,255,255,0.38);">Jason Lowery · CEO</span>
+    </div>
+  </div>
+</nav>
+
+<!-- CHAPTER DOTS -->
+<div id="chapter-dots">
+  <div class="dot active" data-ch="cover" onclick="scrollTo('cover')" title="Cover"></div>
+  <div class="dot" data-ch="problem" onclick="scrollTo('problem')" title="The Problem"></div>
+  <div class="dot" data-ch="stack" onclick="scrollTo('stack')" title="Your Stack"></div>
+  <div class="dot" data-ch="workflow" onclick="scrollTo('workflow')" title="Workflow"></div>
+  <div class="dot" data-ch="competitive" onclick="scrollTo('competitive')" title="vs FieldTurf"></div>
+  <div class="dot" data-ch="quickwins" onclick="scrollTo('quickwins')" title="Quick Wins"></div>
+  <div class="dot" data-ch="roi" onclick="scrollTo('roi')" title="ROI"></div>
+  <div class="dot" data-ch="johnny5" onclick="scrollTo('johnny5')" title="Meet Johnny5" style="background:rgba(245,158,11,0.4);border-color:rgba(245,158,11,0.6);"></div>
+  <div class="dot" data-ch="nextsteps" onclick="scrollTo('nextsteps')" title="Next Steps"></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 1 — COVER -->
+<!-- ============================================================ -->
+<section id="cover" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:120px 32px 80px;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 55% at 50% 40%, rgba(22,163,74,0.07) 0%, rgba(59,130,246,0.05) 40%, transparent 70%);"></div>
+  <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px);background-size:48px 48px;"></div>
+
+  <div style="max-width:860px;margin:0 auto;text-align:center;position:relative;z-index:1;">
+    <div class="reveal" style="margin-bottom:28px;">
+      <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);font-size:12px;padding:8px 22px;">
+        PREPARED EXCLUSIVELY FOR JASON LOWERY, CEO · MARCH 2026
+      </span>
+    </div>
+
+    <h1 class="reveal reveal-d1" style="font-size:clamp(36px,6vw,70px);font-weight:900;line-height:1.1;color:white;margin-bottom:22px;">
+      The AI Opportunity<br>
+      <span class="text-gradient">Inside Academy Sports Turf</span>
+    </h1>
+
+    <p class="reveal reveal-d2" style="font-size:19px;color:rgba(255,255,255,0.58);max-width:620px;margin:0 auto 40px;line-height:1.75;">
+      How three tools you already own — Outlook, Samsara, and MaintainX — can eliminate your scheduling bottleneck, outmaneuver FieldTurf on response time, and reclaim 10+ hours of your week.
+    </p>
+
+    <div class="reveal reveal-d3" style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-bottom:44px;">
+      <div class="stat-card" style="padding:18px 28px;text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:600;color:#22C55E;">10+ hrs</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:5px;letter-spacing:0.05em;">RECOVERED PER WEEK</div>
+      </div>
+      <div class="stat-card" style="padding:18px 28px;text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:600;color:#3B82F6;">$34K+</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:5px;letter-spacing:0.05em;">ANNUAL VALUE ESTIMATE</div>
+      </div>
+      <div class="stat-card" style="padding:18px 28px;text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:600;color:#F59E0B;">3 tools</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:5px;letter-spacing:0.05em;">YOU ALREADY OWN</div>
+      </div>
+      <div style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08));border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:18px 28px;text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:600;background:linear-gradient(135deg,#F59E0B,#EF4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Johnny5</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:5px;letter-spacing:0.05em;">THE AI THAT RUNS IT ALL</div>
+      </div>
+    </div>
+
+    <div class="reveal reveal-d4">
+      <p style="font-size:12px;color:rgba(255,255,255,0.28);">Confidential · Academy Sports Turf · Colorado · 1-800-372-6639</p>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 2 — THE PROBLEM -->
+<!-- ============================================================ -->
+<section id="problem" style="padding:96px 32px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="reveal" style="margin-bottom:12px;">
+      <span class="badge" style="background:rgba(239,68,68,0.1);color:#F87171;border:1px solid rgba(239,68,68,0.22);">THE HIDDEN COST</span>
+    </div>
+    <h2 class="reveal reveal-d1" style="font-size:clamp(30px,5vw,52px);font-weight:800;color:white;line-height:1.2;margin-bottom:16px;">
+      Your time is worth more than<br>
+      <span class="text-gradient-fire">scheduling logistics</span>
+    </h2>
+    <p class="reveal reveal-d2" style="font-size:18px;color:rgba(255,255,255,0.58);max-width:580px;line-height:1.72;margin-bottom:56px;">
+      Field services executives typically burn 20–25% of their work week on scheduling coordination — not strategy, not winning new municipal contracts, not building client relationships.
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px;">
+
+      <!-- Left: time chart -->
+      <div class="reveal glass-card" style="padding:32px;">
+        <h3 style="font-weight:700;font-size:18px;color:white;margin-bottom:24px;">Where Your Week Currently Goes</h3>
+        <div style="display:flex;flex-direction:column;gap:18px;">
+
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:14px;color:rgba(255,255,255,0.7);">Scheduling & coordination</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#F87171;font-weight:600;">23%</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.06);border-radius:4px;height:8px;">
+              <div class="bar" style="--w:23%;background:linear-gradient(90deg,#EF4444,#F87171);"></div>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:14px;color:rgba(255,255,255,0.7);">Email & communications</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#F59E0B;font-weight:600;">18%</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.06);border-radius:4px;height:8px;">
+              <div class="bar" style="--w:18%;background:linear-gradient(90deg,#F59E0B,#FCD34D);"></div>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:14px;color:rgba(255,255,255,0.7);">Project oversight</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#3B82F6;font-weight:600;">22%</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.06);border-radius:4px;height:8px;">
+              <div class="bar" style="--w:22%;background:linear-gradient(90deg,#3B82F6,#60A5FA);"></div>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:14px;color:rgba(255,255,255,0.7);">Client relationships & sales</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#22C55E;font-weight:600;">20%</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.06);border-radius:4px;height:8px;">
+              <div class="bar" style="--w:20%;background:linear-gradient(90deg,#16A34A,#22C55E);"></div>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:14px;color:rgba(255,255,255,0.7);">Strategy & growth</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(255,255,255,0.38);font-weight:600;">17%</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.06);border-radius:4px;height:8px;">
+              <div class="bar" style="--w:17%;background:rgba(255,255,255,0.18);"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right: cost cards -->
+      <div class="reveal reveal-d1" style="display:flex;flex-direction:column;gap:16px;">
+
+        <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.18);border-radius:14px;padding:24px;">
+          <div style="font-size:12px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;margin-bottom:8px;">SCHEDULING OVERHEAD (10 HRS/WEEK)</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:600;color:#F87171;">$130,000</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:6px;">estimated annual CEO time cost</div>
+        </div>
+
+        <div class="quote-block">
+          <p style="font-size:14px;color:rgba(255,255,255,0.72);line-height:1.7;font-style:italic;">
+            "Every hour spent wrangling crew schedules is an hour FieldTurf's sales team is closing a municipal contract you didn't have time to bid."
+          </p>
+        </div>
+
+        <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.18);border-radius:14px;padding:24px;">
+          <div style="font-size:12px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;margin-bottom:8px;">WITH AI — ANNUAL COST TO AUTOMATE</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:600;color:#22C55E;">$1,920/yr</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:6px;">using tools you already own + cheap add-ons</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 3 — YOUR STACK, UPGRADED -->
+<!-- ============================================================ -->
+<section id="stack" style="padding:96px 32px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="reveal" style="margin-bottom:12px;">
+      <span class="badge" style="background:rgba(59,130,246,0.1);color:#60A5FA;border:1px solid rgba(59,130,246,0.22);">YOUR EXISTING TOOLS</span>
+    </div>
+    <h2 class="reveal reveal-d1" style="font-size:clamp(30px,5vw,52px);font-weight:800;color:white;line-height:1.2;margin-bottom:16px;">
+      You already own the tools.<br>
+      <span class="text-gradient">You're just missing the AI layer.</span>
+    </h2>
+    <p class="reveal reveal-d2" style="font-size:18px;color:rgba(255,255,255,0.58);max-width:600px;line-height:1.72;margin-bottom:56px;">
+      Outlook, Samsara, and MaintainX are three of the most AI-extensible platforms in field services. Here's what unlocks the moment you add the intelligence layer to each.
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:20px;">
+
+      <!-- Outlook -->
+      <div class="reveal glass-card" style="padding:32px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+          <div class="tool-icon" style="background:rgba(0,120,212,0.18);border:1px solid rgba(0,120,212,0.35);">📧</div>
+          <div>
+            <div style="font-weight:700;color:white;font-size:16px;">Microsoft Outlook</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.4);">+ Copilot for M365</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#60A5FA;font-weight:700;margin-bottom:14px;letter-spacing:0.05em;">WHAT AI UNLOCKS:</div>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px;">
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>Draft municipal RFP responses in 20 minutes vs. 2 days</li>
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>Auto-schedule crew meetings when all parties are free</li>
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>Monday 7am briefing: all active projects + open bids + follow-ups</li>
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>Summarize 50-email threads into a 3-bullet decision in seconds</li>
+        </ul>
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:12px;color:rgba(255,255,255,0.38);letter-spacing:0.04em;">TIME SAVED PER WEEK</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;color:#22C55E;margin-top:4px;">3–5 hours</div>
+        </div>
+        <div style="margin-top:14px;padding:10px 14px;border-radius:8px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);display:flex;align-items:center;gap:8px;" onclick="document.getElementById('johnny5').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;">
+          <span style="font-size:14px;">⚡</span>
+          <span style="font-size:12px;color:#F59E0B;font-weight:600;">Johnny5 automates all of this — no setup required →</span>
+        </div>
+      </div>
+
+      <!-- Samsara -->
+      <div class="reveal reveal-d1 glass-card" style="padding:32px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+          <div class="tool-icon" style="background:rgba(245,158,11,0.18);border:1px solid rgba(245,158,11,0.35);">📍</div>
+          <div>
+            <div style="font-weight:700;color:white;font-size:16px;">Samsara</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.4);">+ AI Dispatch & Maintenance Intelligence</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#F59E0B;font-weight:700;margin-bottom:14px;letter-spacing:0.05em;">WHAT AI UNLOCKS:</div>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px;">
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>AI-optimized crew routing: dispatch nearest tech automatically</li>
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>Equipment sensor anomalies → predictive alerts before failures</li>
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>Auto-generated site visit logs from GPS + time-on-site data</li>
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>Geo-fence alerts: unauthorized equipment access notifications</li>
+        </ul>
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:12px;color:rgba(255,255,255,0.38);letter-spacing:0.04em;">COST AVOIDED ANNUALLY</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;color:#F59E0B;margin-top:4px;">$8–15K</div>
+        </div>
+        <div style="margin-top:14px;padding:10px 14px;border-radius:8px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);display:flex;align-items:center;gap:8px;">
+          <span style="font-size:14px;">⚡</span>
+          <span style="font-size:12px;color:#F59E0B;font-weight:600;">Johnny5 watches Samsara 24/7 so you don't have to →</span>
+        </div>
+      </div>
+
+      <!-- MaintainX -->
+      <div class="reveal reveal-d2 glass-card" style="padding:32px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+          <div class="tool-icon" style="background:rgba(34,197,94,0.18);border:1px solid rgba(34,197,94,0.35);">🔧</div>
+          <div>
+            <div style="font-weight:700;color:white;font-size:16px;">MaintainX</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.4);">+ Smart Work Orders</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#22C55E;font-weight:700;margin-bottom:14px;letter-spacing:0.05em;">WHAT AI UNLOCKS:</div>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px;">
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>Auto-create work orders from Samsara field alerts — zero manual entry</li>
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>Preventive maintenance scheduling by install date — never miss warranty windows</li>
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>Work order completed → auto-trigger invoice in billing system</li>
+          <li style="display:flex;gap:10px;font-size:14px;color:rgba(255,255,255,0.7);"><span style="color:#22C55E;flex-shrink:0;">→</span>AI-analyzed patterns → predict which fields need attention next quarter</li>
+        </ul>
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:12px;color:rgba(255,255,255,0.38);letter-spacing:0.04em;">SCHEDULING TIME SAVED</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;color:#22C55E;margin-top:4px;">4–6 hours/week</div>
+        </div>
+        <div style="margin-top:14px;padding:10px 14px;border-radius:8px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);display:flex;align-items:center;gap:8px;">
+          <span style="font-size:14px;">⚡</span>
+          <span style="font-size:12px;color:#F59E0B;font-weight:600;">Johnny5 creates and assigns work orders automatically →</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 4 — THE CONNECTED WORKFLOW -->
+<!-- ============================================================ -->
+<section id="workflow" style="padding:96px 32px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="reveal" style="margin-bottom:12px;">
+      <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">THE INTEGRATION PLAY</span>
+    </div>
+    <h2 class="reveal reveal-d1" style="font-size:clamp(30px,5vw,52px);font-weight:800;color:white;line-height:1.2;margin-bottom:16px;">
+      The workflow that runs<br>
+      <span class="text-gradient">without you in the loop</span>
+    </h2>
+    <p class="reveal reveal-d2" style="font-size:18px;color:rgba(255,255,255,0.58);max-width:620px;line-height:1.72;margin-bottom:56px;">
+      The real power isn't any single tool — it's connecting all three. Here's how a field issue gets resolved end-to-end with zero Jason involvement.
+    </p>
+
+    <div class="reveal reveal-d3">
+      <div class="glass-card" style="padding:40px;">
+
+        <!-- Step 1 -->
+        <div class="flow-line" style="padding-bottom:32px;">
+          <div class="flow-dot"></div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
+            <span style="font-size:13px;color:#22C55E;font-weight:700;letter-spacing:0.05em;">SAMSARA DETECTS</span>
+            <span class="badge" style="background:rgba(245,158,11,0.1);color:#F59E0B;border:1px solid rgba(245,158,11,0.25);">AUTOMATED</span>
+          </div>
+          <p style="font-size:15px;color:rgba(255,255,255,0.78);line-height:1.65;">
+            Sensor on Aurora Rec Center Field #2 triggers an anomaly alert — seam stress detected. Samsara GPS confirms crew truck is 6 minutes away and available.
+          </p>
+        </div>
+
+        <div style="padding-left:20px;padding-bottom:16px;"><span class="flow-arrow">↓</span></div>
+
+        <!-- Step 2 -->
+        <div class="flow-line" style="padding-bottom:32px;">
+          <div class="flow-dot"></div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
+            <span style="font-size:13px;color:#22C55E;font-weight:700;letter-spacing:0.05em;">MAINTAINX AUTO-CREATES WORK ORDER</span>
+            <span class="badge" style="background:rgba(245,158,11,0.1);color:#F59E0B;border:1px solid rgba(245,158,11,0.25);">AUTOMATED</span>
+          </div>
+          <p style="font-size:15px;color:rgba(255,255,255,0.78);line-height:1.65;">
+            Samsara alert triggers a MaintainX work order: "Seam inspection — Aurora Rec #2." Parts list auto-populated from install records. Priority: High. Est. repair: 1.5 hours.
+          </p>
+        </div>
+
+        <div style="padding-left:20px;padding-bottom:16px;"><span class="flow-arrow">↓</span></div>
+
+        <!-- Step 3 -->
+        <div class="flow-line" style="padding-bottom:32px;">
+          <div class="flow-dot"></div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
+            <span style="font-size:13px;color:#22C55E;font-weight:700;letter-spacing:0.05em;">OUTLOOK COPILOT SCHEDULES THE CREW</span>
+            <span class="badge" style="background:rgba(245,158,11,0.1);color:#F59E0B;border:1px solid rgba(245,158,11,0.25);">AUTOMATED</span>
+          </div>
+          <p style="font-size:15px;color:rgba(255,255,255,0.78);line-height:1.65;">
+            Copilot identifies the nearest available crew from Samsara GPS, confirms no calendar conflicts in Outlook, blocks a 2-hour window, and sends a calendar invite with the MaintainX work order attached.
+          </p>
+        </div>
+
+        <div style="padding-left:20px;padding-bottom:16px;"><span class="flow-arrow" style="color:#3B82F6;">↓</span></div>
+
+        <!-- Step 4 — Jason's only touchpoint -->
+        <div style="padding-left:20px;position:relative;">
+          <div style="position:absolute;left:-9px;top:0;width:16px;height:16px;border-radius:50%;background:#3B82F6;"></div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
+            <span style="font-size:13px;color:#3B82F6;font-weight:700;letter-spacing:0.05em;">JASON GETS ONE NOTIFICATION</span>
+            <span class="badge" style="background:rgba(59,130,246,0.1);color:#60A5FA;border:1px solid rgba(59,130,246,0.25);">REVIEW ONLY</span>
+          </div>
+          <p style="font-size:15px;color:rgba(255,255,255,0.78);line-height:1.65;">
+            A single Outlook summary: "Field issue detected → crew dispatched → repair scheduled 2pm today." Jason reviews in 30 seconds. His previous version of this scenario: 45 minutes of calls, texts, and calendar juggling.
+          </p>
+        </div>
+
+        <!-- Bottom callout -->
+        <div style="margin-top:32px;padding:20px;border-radius:12px;background:linear-gradient(135deg,rgba(22,163,74,0.1),rgba(59,130,246,0.05));border:1px solid rgba(34,197,94,0.2);display:flex;align-items:center;gap:14px;">
+          <span style="font-size:26px;">⚡</span>
+          <p style="font-size:15px;color:rgba(255,255,255,0.82);margin:0;line-height:1.6;">
+            <strong style="color:white;">Resolution time: 4 minutes automated</strong> vs. 45+ minutes manual. Multiply by 3–5 field events per week.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 5 — MEET JOHNNY5 -->
+<!-- ============================================================ -->
+<section id="johnny5" style="padding:96px 32px;background:#080C16;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="reveal" style="margin-bottom:12px;">
+      <span class="badge" style="background:rgba(245,158,11,0.12);color:#F59E0B;border:1px solid rgba(245,158,11,0.3);">MEET YOUR AI ASSISTANT</span>
+    </div>
+    <h2 class="reveal reveal-d1" style="font-size:clamp(30px,5vw,52px);font-weight:800;color:white;line-height:1.2;margin-bottom:16px;">
+      What if you didn't have to<br>
+      <span style="background:linear-gradient(135deg,#F59E0B,#EF4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">set any of this up yourself?</span>
+    </h2>
+    <p class="reveal reveal-d2" style="font-size:18px;color:rgba(255,255,255,0.58);max-width:660px;line-height:1.75;margin-bottom:16px;">
+      Everything in the previous chapter — the automated workflows, real-time alerts, crew scheduling, bid drafts — <strong style="color:white;">Johnny5 does all of it for you.</strong> No Zapier flows to configure. No Power Automate rules to build. No IT department needed.
+    </p>
+    <p class="reveal reveal-d2" style="font-size:16px;color:rgba(255,255,255,0.48);max-width:620px;line-height:1.72;margin-bottom:56px;">
+      Johnny5 is an autonomous AI assistant that plugs into your existing tools and operates them on your behalf. You talk to it like a person. It handles the rest.
+    </p>
+
+    <!-- What Johnny5 does — conversation cards -->
+    <div class="reveal reveal-d3" style="margin-bottom:48px;">
+      <div style="font-size:13px;color:rgba(255,255,255,0.4);letter-spacing:0.07em;font-weight:600;margin-bottom:20px;">IMAGINE SAYING THIS TO YOUR AI ASSISTANT:</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <!-- Prompt/response pair 1 -->
+        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:14px;overflow:hidden;">
+          <div style="padding:16px 20px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="width:28px;height:28px;border-radius:50%;background:rgba(59,130,246,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;">JL</div>
+            <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.75);font-style:italic;">"Which of my active fields needs attention this week?"</p>
+          </div>
+          <div style="padding:16px 20px;display:flex;align-items:flex-start;gap:12px;background:rgba(245,158,11,0.04);">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#F59E0B,#EF4444);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:800;color:white;font-family:'Montserrat',sans-serif;">J5</div>
+            <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.82);line-height:1.6;">You have 47 active fields. 3 need attention: Aurora Rec Center #2 (seam stress flagged by Samsara), Overland Park HS #1 (routine inspection overdue by 12 days), and Lakewood Municipal (warranty expiring in 34 days). I've created work orders for all three in MaintainX. Want me to schedule crews?</p>
+          </div>
+        </div>
+
+        <!-- Prompt/response pair 2 -->
+        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:14px;overflow:hidden;">
+          <div style="padding:16px 20px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="width:28px;height:28px;border-radius:50%;background:rgba(59,130,246,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;">JL</div>
+            <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.75);font-style:italic;">"Draft a proposal for the Fort Collins Parks RFP. It's due Friday."</p>
+          </div>
+          <div style="padding:16px 20px;display:flex;align-items:flex-start;gap:12px;background:rgba(245,158,11,0.04);">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#F59E0B,#EF4444);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:800;color:white;font-family:'Montserrat',sans-serif;">J5</div>
+            <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.82);line-height:1.6;">Done. I've drafted a 14-page proposal based on your Aurora and Colorado Springs municipal wins — similar scope, similar budget range. It's in your Outlook drafts for review. I used your standard pricing model and flagged 2 sections that may need your input. Estimated project value: $680,000.</p>
+          </div>
+        </div>
+
+        <!-- Prompt/response pair 3 -->
+        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:14px;overflow:hidden;">
+          <div style="padding:16px 20px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="width:28px;height:28px;border-radius:50%;background:rgba(59,130,246,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;">JL</div>
+            <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.75);font-style:italic;">"What does my week look like? I have back-to-back meetings."</p>
+          </div>
+          <div style="padding:16px 20px;display:flex;align-items:flex-start;gap:12px;background:rgba(245,158,11,0.04);">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#F59E0B,#EF4444);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:800;color:white;font-family:'Montserrat',sans-serif;">J5</div>
+            <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.82);line-height:1.6;">You have 6 active installs, 2 field repairs in progress, and 1 RFP due Thursday. I've already scheduled crews for everything — no conflicts. Your only required decision this week: approve the change order on the Denver project (I've summarized the 3-page email thread into a 4-line decision for you).</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Feature tiles -->
+    <div class="reveal" style="margin-bottom:48px;">
+      <div style="font-size:13px;color:rgba(255,255,255,0.4);letter-spacing:0.07em;font-weight:600;margin-bottom:20px;">WHAT JOHNNY5 HANDLES FOR ACADEMY SPORTS TURF:</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.18);border-radius:12px;padding:20px;">
+          <div style="font-size:20px;margin-bottom:10px;">🏟️</div>
+          <div style="font-weight:700;color:white;font-size:14px;margin-bottom:6px;">Field Monitoring</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6;">Watches all Samsara data 24/7. Flags issues before your clients call. Creates MaintainX work orders automatically.</div>
+        </div>
+
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.18);border-radius:12px;padding:20px;">
+          <div style="font-size:20px;margin-bottom:10px;">📅</div>
+          <div style="font-weight:700;color:white;font-size:14px;margin-bottom:6px;">Crew Scheduling</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6;">Dispatches the nearest available crew, checks Outlook calendars, sends updates — zero manual coordination.</div>
+        </div>
+
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.18);border-radius:12px;padding:20px;">
+          <div style="font-size:20px;margin-bottom:10px;">📋</div>
+          <div style="font-weight:700;color:white;font-size:14px;margin-bottom:6px;">Bid Writing</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6;">Drafts municipal RFP responses overnight using your past winning proposals as templates. Review and send.</div>
+        </div>
+
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.18);border-radius:12px;padding:20px;">
+          <div style="font-size:20px;margin-bottom:10px;">📊</div>
+          <div style="font-weight:700;color:white;font-size:14px;margin-bottom:6px;">Weekly Briefing</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6;">Every Monday at 7am: all active projects, crew status, pending bids, weather flags, and field alerts — one email.</div>
+        </div>
+
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.18);border-radius:12px;padding:20px;">
+          <div style="font-size:20px;margin-bottom:10px;">💬</div>
+          <div style="font-weight:700;color:white;font-size:14px;margin-bottom:6px;">Ask Anything</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6;">Ask Johnny5 anything about your business — project status, crew locations, overdue invoices — and get a real answer instantly.</div>
+        </div>
+
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.18);border-radius:12px;padding:20px;">
+          <div style="font-size:20px;margin-bottom:10px;">🔗</div>
+          <div style="font-weight:700;color:white;font-size:14px;margin-bottom:6px;">Works With Your Stack</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6;">Connects to Outlook, Samsara, and MaintainX on day one. No replacing what works. Just intelligence on top.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Next meeting callout -->
+    <div class="reveal" style="padding:32px 36px;border-radius:20px;background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(239,68,68,0.04));border:1px solid rgba(245,158,11,0.22);display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <span style="font-size:28px;">📅</span>
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:18px;color:white;margin-bottom:6px;">Next week: Johnny5 live demo</div>
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);margin:0;line-height:1.65;">
+          We'll walk through a live session — Johnny5 connected to your actual tools, doing the things described above in real time. No slides. No mock-ups. The real thing.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 6 — VS FIELDTURF (was 5) -->
+<!-- ============================================================ -->
+<section id="competitive" style="padding:96px 32px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="reveal" style="margin-bottom:12px;">
+      <span class="badge" style="background:rgba(59,130,246,0.1);color:#60A5FA;border:1px solid rgba(59,130,246,0.22);">COMPETITIVE INTELLIGENCE</span>
+    </div>
+    <h2 class="reveal reveal-d1" style="font-size:clamp(30px,5vw,52px);font-weight:800;color:white;line-height:1.2;margin-bottom:16px;">
+      Where Academy wins<br>
+      <span class="text-gradient">every time — with AI</span>
+    </h2>
+    <p class="reveal reveal-d2" style="font-size:18px;color:rgba(255,255,255,0.58);max-width:620px;line-height:1.72;margin-bottom:44px;">
+      FieldTurf is owned by Tarkett, a French multinational. That corporate overhead is your structural advantage — AI amplifies all three of them.
+    </p>
+
+    <!-- Comparison table -->
+    <div class="reveal reveal-d3" style="border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
+      <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr;padding:16px 24px;background:rgba(255,255,255,0.04);">
+        <div style="font-size:12px;color:rgba(255,255,255,0.45);font-weight:700;letter-spacing:0.06em;">DIMENSION</div>
+        <div style="font-size:12px;color:#F87171;font-weight:700;letter-spacing:0.06em;text-align:center;">FieldTurf</div>
+        <div style="font-size:12px;color:#22C55E;font-weight:700;letter-spacing:0.06em;text-align:center;">Academy + AI</div>
+      </div>
+      <div class="comp-odd" style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.04);">
+        <div style="font-size:14px;color:rgba(255,255,255,0.7);">RFP response time</div>
+        <div style="font-size:14px;color:#F87171;text-align:center;">5–10 business days</div>
+        <div style="font-size:14px;color:#22C55E;text-align:center;font-weight:600;">24–48 hours</div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.04);">
+        <div style="font-size:14px;color:rgba(255,255,255,0.7);">Field issue response</div>
+        <div style="font-size:14px;color:#F87171;text-align:center;">Regional dispatch (2–5 days)</div>
+        <div style="font-size:14px;color:#22C55E;text-align:center;font-weight:600;">Same day (auto-dispatch)</div>
+      </div>
+      <div class="comp-odd" style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.04);">
+        <div style="font-size:14px;color:rgba(255,255,255,0.7);">Proactive maintenance</div>
+        <div style="font-size:14px;color:#F87171;text-align:center;">Scheduled intervals only</div>
+        <div style="font-size:14px;color:#22C55E;text-align:center;font-weight:600;">AI-predicted, sensor-triggered</div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.04);">
+        <div style="font-size:14px;color:rgba(255,255,255,0.7);">Municipal relationship</div>
+        <div style="font-size:14px;color:#F87171;text-align:center;">National account manager</div>
+        <div style="font-size:14px;color:#22C55E;text-align:center;font-weight:600;">Local + AI-personalized</div>
+      </div>
+      <div class="comp-odd" style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.04);">
+        <div style="font-size:14px;color:rgba(255,255,255,0.7);">Colorado market expertise</div>
+        <div style="font-size:14px;color:#F87171;text-align:center;">Generic 50-state playbook</div>
+        <div style="font-size:14px;color:#22C55E;text-align:center;font-weight:600;">Local knowledge + AI data</div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1.5fr 1.5fr;padding:16px 24px;border-top:1px solid rgba(255,255,255,0.04);">
+        <div style="font-size:14px;color:rgba(255,255,255,0.7);">Follow-up cadence</div>
+        <div style="font-size:14px;color:#F87171;text-align:center;">Inconsistent (sales-driven)</div>
+        <div style="font-size:14px;color:#22C55E;text-align:center;font-weight:600;">Automated + systematic</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 6 — QUICK WINS -->
+<!-- ============================================================ -->
+<section id="quickwins" style="padding:96px 32px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="reveal" style="margin-bottom:12px;">
+      <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">THIS MONTH</span>
+    </div>
+    <h2 class="reveal reveal-d1" style="font-size:clamp(30px,5vw,52px);font-weight:800;color:white;line-height:1.2;margin-bottom:16px;">
+      5 quick wins — each takes<br>
+      <span class="text-gradient">less than a day to set up</span>
+    </h2>
+    <p class="reveal reveal-d2" style="font-size:18px;color:rgba(255,255,255,0.58);max-width:580px;line-height:1.72;margin-bottom:48px;">
+      Ranked by impact. No consultants required. No new software to buy for most of them.
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Win 1 -->
+      <div class="reveal glass-card" style="padding:24px 28px;display:flex;gap:20px;align-items:flex-start;">
+        <div class="win-num">1</div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div>
+              <h3 style="font-weight:700;font-size:18px;color:white;margin:0 0 8px;">Enable Microsoft Copilot for Business</h3>
+              <p style="font-size:14px;color:rgba(255,255,255,0.62);line-height:1.65;margin:0;">
+                If you're on M365 Business Premium, Copilot adds AI to Outlook, Teams, and Word. Turn it on for Jason + 2 key team members first. Immediate payoff: email drafts, meeting summaries, and intelligent scheduling suggestions.
+              </p>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:#22C55E;">$30/mo</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.38);">per user</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+            <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">⏱ 1-day setup</span>
+            <span class="badge" style="background:rgba(59,130,246,0.1);color:#60A5FA;border:1px solid rgba(59,130,246,0.22);">💰 Highest ROI</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Win 2 -->
+      <div class="reveal reveal-d1 glass-card" style="padding:24px 28px;display:flex;gap:20px;align-items:flex-start;">
+        <div class="win-num">2</div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div>
+              <h3 style="font-weight:700;font-size:18px;color:white;margin:0 0 8px;">Activate Samsara AI Maintenance Alerts</h3>
+              <p style="font-size:14px;color:rgba(255,255,255,0.62);line-height:1.65;margin:0;">
+                Samsara's Maintenance Intelligence features are likely already in your plan. Configure threshold alerts for your most-used equipment. One prevented breakdown saves $3,000–$12,000 in emergency repair cost and scheduling chaos.
+              </p>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:#F59E0B;">$0</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.38);">already in plan</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+            <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">⏱ Half day</span>
+            <span class="badge" style="background:rgba(245,158,11,0.1);color:#F59E0B;border:1px solid rgba(245,158,11,0.22);">🔧 Equipment protection</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Win 3 -->
+      <div class="reveal reveal-d2 glass-card" style="padding:24px 28px;display:flex;gap:20px;align-items:flex-start;">
+        <div class="win-num">3</div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div>
+              <h3 style="font-weight:700;font-size:18px;color:white;margin:0 0 8px;">Connect MaintainX → Outlook Calendar Sync</h3>
+              <p style="font-size:14px;color:rgba(255,255,255,0.62);line-height:1.65;margin:0;">
+                MaintainX integrates with Microsoft 365 via Zapier or direct webhook. When a work order is created or assigned, it drops directly into the crew member's Outlook calendar. Eliminates the "did you see that ticket?" conversation forever.
+              </p>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:#22C55E;">~$50/mo</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.38);">Zapier automation</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+            <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">⏱ 2–3 hours</span>
+            <span class="badge" style="background:rgba(59,130,246,0.1);color:#60A5FA;border:1px solid rgba(59,130,246,0.22);">📅 Directly solves scheduling</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Win 4 -->
+      <div class="reveal glass-card" style="padding:24px 28px;display:flex;gap:20px;align-items:flex-start;">
+        <div class="win-num">4</div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div>
+              <h3 style="font-weight:700;font-size:18px;color:white;margin:0 0 8px;">Build an AI Municipal Bid Template</h3>
+              <p style="font-size:14px;color:rgba(255,255,255,0.62);line-height:1.65;margin:0;">
+                Feed 2–3 of your best-performing municipal proposals into Claude or ChatGPT and ask it to extract the winning structure. You'll have a template that generates custom, professional RFP responses in 20 minutes instead of 2 days. Win 1 extra municipal bid per quarter = $400K–$1.2M in revenue.
+              </p>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:#22C55E;">$20/mo</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.38);">AI subscription</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+            <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">⏱ 1 afternoon</span>
+            <span class="badge" style="background:rgba(34,197,94,0.15);color:#22C55E;border:1px solid rgba(34,197,94,0.35);">🏆 Highest revenue impact</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Win 5 -->
+      <div class="reveal reveal-d1 glass-card" style="padding:24px 28px;display:flex;gap:20px;align-items:flex-start;">
+        <div class="win-num">5</div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div>
+              <h3 style="font-weight:700;font-size:18px;color:white;margin:0 0 8px;">Monday Morning AI Briefing — Every 7am</h3>
+              <p style="font-size:14px;color:rgba(255,255,255,0.62);line-height:1.65;margin:0;">
+                Power Automate + Copilot: every Monday at 7am, Jason receives one email summarizing all active projects (MaintainX), open bids (Outlook), crew locations (Samsara), and upcoming deadlines. Start the week with complete situational awareness — no calls, no check-ins needed.
+              </p>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:#3B82F6;">$0</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.38);">Power Automate free</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+            <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">⏱ 2 hours setup</span>
+            <span class="badge" style="background:rgba(59,130,246,0.1);color:#60A5FA;border:1px solid rgba(59,130,246,0.22);">🧠 Strategic clarity</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 7 — ROI -->
+<!-- ============================================================ -->
+<section id="roi" style="padding:96px 32px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="reveal" style="margin-bottom:12px;">
+      <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">THE NUMBERS</span>
+    </div>
+    <h2 class="reveal reveal-d1" style="font-size:clamp(30px,5vw,52px);font-weight:800;color:white;line-height:1.2;margin-bottom:16px;">
+      Conservative ROI:<br>
+      <span class="text-gradient">$34,000 year one</span>
+    </h2>
+    <p class="reveal reveal-d2" style="font-size:18px;color:rgba(255,255,255,0.58);max-width:580px;line-height:1.72;margin-bottom:48px;">
+      Scheduling recovery only — not counting additional municipal bids won from faster RFP response.
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;margin-bottom:32px;">
+
+      <!-- Cost -->
+      <div class="reveal glass-card" style="padding:32px;">
+        <h3 style="font-weight:700;font-size:18px;color:white;margin-bottom:24px;">Annual AI Investment</h3>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span style="font-size:14px;color:rgba(255,255,255,0.65);">Microsoft Copilot (3 users)</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:white;">$1,080</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span style="font-size:14px;color:rgba(255,255,255,0.65);">Zapier MaintainX → Outlook</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:white;">$600</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span style="font-size:14px;color:rgba(255,255,255,0.65);">AI bid tool (Claude/ChatGPT)</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:white;">$240</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span style="font-size:14px;color:rgba(255,255,255,0.65);">Samsara AI features</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#22C55E;">$0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:14px 0;">
+            <span style="font-size:15px;color:white;font-weight:600;">Total Annual Cost</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:#F87171;">$1,920</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Return -->
+      <div class="reveal reveal-d1 glass-card" style="padding:32px;">
+        <h3 style="font-weight:700;font-size:18px;color:white;margin-bottom:24px;">Annual Value Recovered</h3>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span style="font-size:14px;color:rgba(255,255,255,0.65);">Scheduling time recovered (8 hrs/wk)</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:white;">$20,800</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span style="font-size:14px;color:rgba(255,255,255,0.65);">Prevented equipment failures (est.)</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:white;">$8,000</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span style="font-size:14px;color:rgba(255,255,255,0.65);">Email & comms efficiency gain</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:white;">$5,200</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:14px 0;">
+            <span style="font-size:15px;color:white;font-weight:600;">Conservative Total Return</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:#22C55E;">$34,000</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Net ROI callout -->
+    <div class="reveal glow-green" style="padding:40px;border-radius:20px;background:linear-gradient(135deg,rgba(22,163,74,0.1),rgba(59,130,246,0.06));border:1px solid rgba(34,197,94,0.25);">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;text-align:center;margin-bottom:24px;">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:700;color:#22C55E;">$34K</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;letter-spacing:0.06em;">VALUE RECOVERED</div>
+        </div>
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:700;color:#F87171;">$1.9K</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;letter-spacing:0.06em;">ANNUAL COST</div>
+        </div>
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:700;color:#F59E0B;">17×</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;letter-spacing:0.06em;">ROI MULTIPLE</div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:rgba(255,255,255,0.4);text-align:center;margin:0;">
+        * Does not include revenue from faster RFP response. 1 additional municipal bid/quarter at avg $600K = $2.4M additional annual revenue.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 8 — NEXT STEPS -->
+<!-- ============================================================ -->
+<section id="nextsteps" style="padding:96px 32px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="reveal" style="margin-bottom:12px;">
+      <span class="badge" style="background:rgba(59,130,246,0.1);color:#60A5FA;border:1px solid rgba(59,130,246,0.22);">RECOMMENDED PATH</span>
+    </div>
+    <h2 class="reveal reveal-d1" style="font-size:clamp(30px,5vw,52px);font-weight:800;color:white;line-height:1.2;margin-bottom:16px;">
+      90-day roadmap:<br>
+      <span class="text-gradient">manual → intelligent</span>
+    </h2>
+    <p class="reveal reveal-d2" style="font-size:18px;color:rgba(255,255,255,0.58);max-width:580px;line-height:1.72;margin-bottom:48px;">
+      Start with what you already own. Build incrementally. See results in week one.
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:60px;">
+
+      <div class="reveal glass-card" style="padding:24px 28px;display:flex;gap:20px;align-items:flex-start;">
+        <div style="width:72px;flex-shrink:0;text-align:center;">
+          <div style="font-weight:800;font-size:12px;color:#22C55E;letter-spacing:0.06em;">WEEK 1</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:4px;letter-spacing:0.04em;">QUICK WIN</div>
+        </div>
+        <div>
+          <h3 style="font-weight:700;font-size:16px;color:white;margin:0 0 6px;">Enable Copilot + Configure Samsara AI Alerts</h3>
+          <p style="font-size:14px;color:rgba(255,255,255,0.6);margin:0;line-height:1.6;">Turn on Microsoft Copilot for Jason + 2 team members. Configure Samsara maintenance threshold alerts for top 5 pieces of equipment. Begin saving time immediately.</p>
+        </div>
+      </div>
+
+      <div class="reveal reveal-d1 glass-card" style="padding:24px 28px;display:flex;gap:20px;align-items:flex-start;">
+        <div style="width:72px;flex-shrink:0;text-align:center;">
+          <div style="font-weight:800;font-size:12px;color:#3B82F6;letter-spacing:0.06em;">MONTH 1</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:4px;letter-spacing:0.04em;">AUTOMATION</div>
+        </div>
+        <div>
+          <h3 style="font-weight:700;font-size:16px;color:white;margin:0 0 6px;">Connect MaintainX → Outlook + Build AI Bid Template</h3>
+          <p style="font-size:14px;color:rgba(255,255,255,0.6);margin:0;line-height:1.6;">Wire up the calendar integration via Zapier. Spend one afternoon building the AI municipal proposal template. Submit your next RFP in 48 hours instead of 2 weeks.</p>
+        </div>
+      </div>
+
+      <div class="reveal reveal-d2 glass-card" style="padding:24px 28px;display:flex;gap:20px;align-items:flex-start;">
+        <div style="width:72px;flex-shrink:0;text-align:center;">
+          <div style="font-weight:800;font-size:12px;color:#F59E0B;letter-spacing:0.06em;">MONTH 2</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:4px;letter-spacing:0.04em;">INTEGRATION</div>
+        </div>
+        <div>
+          <h3 style="font-weight:700;font-size:16px;color:white;margin:0 0 6px;">Full Stack: Samsara → MaintainX → Outlook Automation</h3>
+          <p style="font-size:14px;color:rgba(255,255,255,0.6);margin:0;line-height:1.6;">Set up the full automated workflow plus the Monday 7am briefing. Jason's direct scheduling involvement drops from 10 hours/week to under 2 hours.</p>
+        </div>
+      </div>
+
+      <div class="reveal glass-card" style="padding:24px 28px;display:flex;gap:20px;align-items:flex-start;">
+        <div style="width:72px;flex-shrink:0;text-align:center;">
+          <div style="font-weight:800;font-size:12px;color:#22C55E;letter-spacing:0.06em;">MONTH 3</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:4px;letter-spacing:0.04em;">GROWTH</div>
+        </div>
+        <div>
+          <h3 style="font-weight:700;font-size:16px;color:white;margin:0 0 6px;">AI-Powered Municipal Outreach Campaign</h3>
+          <p style="font-size:14px;color:rgba(255,255,255,0.6);margin:0;line-height:1.6;">Use recaptured time to run AI-personalized outreach to Denver Metro, Colorado Springs, Aurora, Fort Collins, and Front Range parks & rec departments. Position Academy as the AI-forward alternative to FieldTurf.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CTA -->
+    <div class="reveal" style="text-align:center;">
+      <div class="glow-blue" style="padding:48px;border-radius:24px;background:linear-gradient(135deg,rgba(22,163,74,0.07),rgba(59,130,246,0.05));border:1px solid rgba(34,197,94,0.18);">
+        <h3 style="font-weight:800;font-size:28px;color:white;margin:0 0 12px;">Want to see Johnny5 in action?</h3>
+        <p style="font-size:16px;color:rgba(255,255,255,0.58);max-width:560px;margin:0 auto 20px;line-height:1.7;">
+          I'll show you a live 20-minute demo — you'll see Johnny5 pull real data from a Samsara feed, create a MaintainX work order, schedule a crew in Outlook, and draft a municipal proposal. All in real time.
+        </p>
+        <p style="font-size:15px;color:rgba(255,255,255,0.45);max-width:480px;margin:0 auto 28px;line-height:1.65;">
+          No slides. No pitch deck. Just the actual product, connected to tools you recognize, doing the things you've been doing manually.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:24px;">
+          <div style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:rgba(255,255,255,0.7);padding:14px 28px;border-radius:8px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:14px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);">
+            Questions before our meeting? Let's talk →
+          </div>
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.3);">
+          Prepared for Jason Lowery · Academy Sports Turf · Colorado · March 2026
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="padding:40px 32px;">
+  <div style="max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#16A34A,#22C55E);display:flex;align-items:center;justify-content:center;">
+        <span style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:11px;color:white;">AST</span>
+      </div>
+      <span style="font-weight:700;font-size:14px;color:white;font-family:'Montserrat',sans-serif;">Academy Sports Turf</span>
+    </div>
+    <p style="font-size:12px;color:rgba(255,255,255,0.28);text-align:center;">AI Strategy Brief · For Jason Lowery, CEO · March 2026 · 1-800-372-6639</p>
+    <p style="font-size:12px;color:rgba(255,255,255,0.28);">Confidential</p>
+  </div>
+</footer>
+
+<script>
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const pct = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+  });
+
+  // Scroll reveal + bar animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        e.target.querySelectorAll('.bar').forEach(b => b.classList.add('animate'));
+      }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Init visible on load
+  document.querySelectorAll('.reveal').forEach(el => {
+    if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('visible');
+  });
+
+  // Chapter dots
+  const chapters = ['cover','problem','stack','workflow','johnny5','competitive','quickwins','roi','nextsteps'];
+  function scrollTo(id) { document.getElementById(id).scrollIntoView({ behavior: 'smooth' }); }
+  window.scrollTo = scrollTo; // override for onclick
+
+  function updateDots() {
+    const mid = window.scrollY + window.innerHeight / 2;
+    chapters.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const dot = document.querySelector(`.dot[data-ch="${id}"]`);
+      if (mid >= el.offsetTop && mid < el.offsetTop + el.offsetHeight) {
+        document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+        if (dot) dot.classList.add('active');
+      }
+    });
+  }
+  window.addEventListener('scroll', updateDots);
+</script>
+
+</body>
+</html>

@@ -2597,6 +2597,41 @@ app.prepare().then(() => {
                 }
               });
 
+              // War Room transcript persistence (ClaudeClaw Mission Control - Phase 3)
+              setImmediate(async () => {
+                try {
+                  const { completeMeetingRun } = require('./lib/agent-hub/warroom');
+                  const { insertWarroomTranscript, getAgentHubDatabase: getAHDB } = require('./lib/agent-hub/db');
+                  const { v4: uuidv4WR } = require('uuid');
+                  const warroomEntry = completeMeetingRun(runId);
+                  if (warroomEntry) {
+                    const wrDb = getAHDB();
+                    const chunks = wrDb.prepare(
+                      `SELECT chunk FROM agent_hub_run_log_chunks WHERE run_id = ? AND type = 'stdout' ORDER BY created_at ASC`
+                    ).all(runId);
+                    const fullOutput = chunks.map(c => c.chunk).join('').trim().substring(0, 4000);
+                    if (fullOutput) {
+                      insertWarroomTranscript({
+                        id: uuidv4WR(),
+                        meetingId: warroomEntry.meetingId,
+                        turnId: uuidv4WR(),
+                        agentId: warroomEntry.agentId,
+                        userId: warroomEntry.userId,
+                        messageText: fullOutput,
+                        role: 'assistant',
+                      });
+                      io.to(warroomEntry.userId).emit('warroom:agent-complete', {
+                        meetingId: warroomEntry.meetingId,
+                        agentId: warroomEntry.agentId,
+                        runId,
+                      });
+                    }
+                  }
+                } catch (e) {
+                  // war room not enabled or module unavailable
+                }
+              });
+
               // Persist session ID on agent for future resumption
               if (sessionId && typeof sessionId === 'string') {
                 setImmediate(() => {
@@ -5842,6 +5877,63 @@ app.prepare().then(() => {
         console.warn('[pur-discord] Bot startup error:', e.message);
       }
     });
+
+    // Start Agent Hub Scheduler (ClaudeClaw Mission Control - Phase 1)
+    try {
+      const { startAgentHubScheduler } = require('./lib/agent-hub/scheduler');
+      const stopScheduler = startAgentHubScheduler(io, async (task) => {
+        try {
+          const internalToken = process.env.AGENT_HUB_INTERNAL_TOKEN;
+          if (!internalToken) {
+            console.warn('[scheduler] AGENT_HUB_INTERNAL_TOKEN not set — cannot auto-run cron task', task.id);
+            return;
+          }
+          const serverPort = process.env.PORT || 3001;
+          const resp = await fetch(`http://localhost:${serverPort}/api/agent-hub/internal/create-task`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-internal-token': internalToken },
+            body: JSON.stringify({
+              title: `[Scheduled] ${task.prompt.substring(0, 80)}`,
+              description: task.prompt,
+              agentId: task.agentId,
+              userId: task.userId,
+              autoRun: true,
+            }),
+          });
+          if (!resp.ok) {
+            const text = await resp.text().catch(() => '');
+            console.warn('[scheduler] create-task failed:', resp.status, text.substring(0, 200));
+          }
+        } catch (e) {
+          console.warn('[scheduler] onTaskDue fetch error:', e.message);
+        }
+      });
+      process.on('SIGTERM', stopScheduler);
+      process.on('SIGINT', stopScheduler);
+    } catch (e) {
+      console.warn('[agent-hub] Scheduler failed to start:', e.message);
+    }
+
+    // Initialize Telegram Poller Registry (ClaudeClaw Mission Control - Phase 2)
+    setImmediate(async () => {
+      try {
+        const { TelegramPollerRegistry } = require('./lib/agent-hub/telegram-poller');
+        const { getAgentHubDatabase } = require('./lib/agent-hub/db');
+        const registry = new TelegramPollerRegistry();
+        global.telegramRegistry = registry;
+        const dbInstance = getAgentHubDatabase();
+        const agents = dbInstance.prepare(
+          `SELECT id, user_id, telegram_bot_token FROM agent_hub_agents WHERE telegram_bot_token IS NOT NULL AND telegram_bot_token != ''`
+        ).all();
+        for (const agent of agents) {
+          registry.register({ id: agent.id, userId: agent.user_id, telegram_bot_token: agent.telegram_bot_token });
+        }
+        console.log('[agent-hub] Telegram registry initialized with', agents.length, 'agent(s)');
+      } catch (e) {
+        console.warn('[agent-hub] Telegram registry failed to start:', e.message);
+      }
+    });
+
     console.log('[DEBUG] Server request listeners at start:', server.listenerCount('request'));
 
     if (isAlphaMode) {

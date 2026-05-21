@@ -1,0 +1,97 @@
+{
+  "vehicles": [
+    {
+      "id": "VH-14",
+      "name": "Truck 14",
+      "make": "Ford",
+      "model": "F-350 Super Duty",
+      "year": 2021,
+      "vin": "1FTBF3DT3MEC72114",
+      "license_plate": "CO-7821",
+      "status": "maintenance_alert",
+      "alert": "Oil pressure warning — engine shutoff triggered",
+      "alert_time": "2026-03-18T08:14:00-07:00",
+      "last_gps": {
+        "lat": 39.8683,
+        "lng": -104.9719,
+        "address": "Thornton Municipal Sports Complex, 9500 N Grant Ave, Thornton, CO 80229"
+      },
+      "odometer_miles": 48221,
+      "assigned_driver": "Marcus Torres",
+      "assigned_project": "Thornton City Park — Phase 2 Install",
+      "fuel_level_pct": 62
+    },
+    {
+      "id": "VH-22",
+      "name": "Truck 22",
+      "make": "RAM",
+      "model": "3500 Laramie",
+      "year": 2019,
+      "vin": "3C7WR9DT2KG507922",
+      "license_plate": "CO-4412",
+      "status": "active",
+      "alert": null,
+      "last_gps": {
+        "lat": 39.9372,
+        "lng": -105.0667,
+        "address": "Westminster Sports Complex, 6801 W 88th Ave, Westminster, CO 80021"
+      },
+      "odometer_miles": 71043,
+      "assigned_driver": "Kyle Ramirez",
+      "assigned_project": "Westminster High School — Field Renovation",
+      "fuel_level_pct": 44
+    },
+    {
+      "id": "VH-7",
+      "name": "Truck 7",
+      "make": "Ford",
+      "model": "F-250 XLT",
+      "year": 2022,
+      "vin": "1FTBW2BT8NEG08341",
+      "license_plate": "CO-9033",
+      "status": "active",
+      "alert": null,
+      "last_gps": {
+        "lat": 39.7294,
+        "lng": -104.8319,
+        "address": "Aurora Parks & Rec — Del Mar Park, 8301 E Jewell Ave, Aurora, CO 80012"
+      },
+      "odometer_miles": 22117,
+      "assigned_driver": "Tony Vela",
+      "assigned_project": "Aurora Del Mar Park — Soccer Field",
+      "fuel_level_pct": 81
+    },
+    {
+      "id": "EQ-T3",
+      "name": "Equipment Trailer #3",
+      "type": "Flatbed Trailer",
+      "status": "yard",
+      "alert": null,
+      "last_gps": {
+        "lat": 39.8419,
+        "lng": -104.9947,
+        "address": "Academy Sports Turf Yard, 8200 York St, Denver, CO 80229"
+      },
+      "contents": "Infill spreader, seam tape rolls, ballast bags x24"
+    },
+    {
+      "id": "EQ-S1",
+      "name": "Infill Spreader (Ride-On)",
+      "type": "Field Equipment",
+      "status": "in_use",
+      "alert": null,
+      "last_gps": {
+        "lat": 39.8683,
+        "lng": -104.9719,
+        "address": "Thornton Municipal Sports Complex"
+      },
+      "assigned_project": "Thornton City Park — Phase 2 Install"
+    }
+  ],
+  "summary": {
+    "total_vehicles": 3,
+    "active": 2,
+    "maintenance_alert": 1,
+    "yard": 0
+  }
+}
