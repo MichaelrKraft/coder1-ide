@@ -429,35 +429,35 @@ export default function MorningBriefTab({ className = '' }: MorningBriefTabProps
             <BriefSection
               type="built"
               items={morningBrief.builtOvernight}
-              defaultExpanded={true}
+              defaultExpanded={false}
               onItemAction={handleItemAction}
             />
 
             <BriefSection
               type="research"
               items={morningBrief.researchCompleted}
-              defaultExpanded={true}
+              defaultExpanded={false}
               onItemAction={handleItemAction}
             />
 
             <BriefSection
               type="trends"
               items={morningBrief.trendsSpotted}
-              defaultExpanded={morningBrief.trendsSpotted.length <= 3}
+              defaultExpanded={false}
               onItemAction={handleItemAction}
             />
 
             <BriefSection
               type="attention"
               items={morningBrief.needsAttention}
-              defaultExpanded={true}
+              defaultExpanded={false}
               onItemAction={handleItemAction}
             />
 
             <BriefSection
               type="learnings"
               items={morningBrief.learnings || []}
-              defaultExpanded={true}
+              defaultExpanded={false}
               onItemAction={handleItemAction}
             />
 

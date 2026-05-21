@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Bot, FolderKanban, CheckSquare, Target, Settings, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Bot, FolderKanban, CheckSquare, Target, Settings, ArrowLeft, Network, MessageSquare } from 'lucide-react';
 import Image from 'next/image';
 import AgentHubTour from './AgentHubTour';
 
@@ -13,6 +13,8 @@ const tabs = [
   { href: '/ide/agent-hub/projects', label: 'Projects', icon: FolderKanban },
   { href: '/ide/agent-hub/tasks',  label: 'Tasks',  icon: CheckSquare },
   { href: '/ide/agent-hub/goals',  label: 'Goals',  icon: Target },
+  { href: '/ide/agent-hub/hive-mind', label: 'Hive Mind', icon: Network },
+  { href: '/ide/agent-hub/warroom', label: 'War Room', icon: MessageSquare },
 ];
 
 function AgentHubLayoutInner({ children }: { children: React.ReactNode }) {

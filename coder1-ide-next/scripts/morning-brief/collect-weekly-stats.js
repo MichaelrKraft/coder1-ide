@@ -143,12 +143,14 @@ function patchBriefData(dateStr, weeklyStats) {
     toolCallsThisWeek = calcWeeklyToolCalls(cache);
   }
 
-  const weeklyStats = { claudeCodeCost, toolCallsThisWeek, gitCommits };
+  const { pctRemaining: subscriptionPctRemaining } = readSubscriptionPct();
+  const weeklyStats = { claudeCodeCost, subscriptionPctRemaining, toolCallsThisWeek, gitCommits };
 
   console.log('[weekly-stats] Result:', JSON.stringify(weeklyStats));
-  console.log(`  claudeCodeCost:    $${claudeCodeCost ?? '—'}`);
-  console.log(`  toolCallsThisWeek: ${toolCallsThisWeek ?? '—'}`);
-  console.log(`  gitCommits:        ${gitCommits ?? '—'}`);
+  console.log(`  claudeCodeCost:           $${claudeCodeCost ?? '—'}`);
+  console.log(`  subscriptionPctRemaining: ${subscriptionPctRemaining ?? '—'}%`);
+  console.log(`  toolCallsThisWeek:        ${toolCallsThisWeek ?? '—'}`);
+  console.log(`  gitCommits:               ${gitCommits ?? '—'}`);
 
   const patched = patchBriefData(dateArg, weeklyStats);
   if (patched) {

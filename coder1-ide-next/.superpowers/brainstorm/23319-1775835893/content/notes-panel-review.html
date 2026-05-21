@@ -1,0 +1,51 @@
+<h2>NotesPanel: Alpha Readiness Review</h2>
+<p class="subtitle">5 fixes needed before Ambient users land here — ranked by user impact</p>
+
+<div style="display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1.5rem;">
+
+  <div style="background: #1a1a2e; border-left: 4px solid #dc2626; border-radius: 0 8px 8px 0; padding: 1rem 1.2rem;">
+    <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.4rem;">
+      <span style="background: #dc2626; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: uppercase;">Blocking</span>
+      <strong>1. Dev-facing error message</strong>
+    </div>
+    <p style="font-size: 0.85rem; color: #9ca3af; margin: 0;">Current text: <em style="color: #fca5a5;">"Check that NEXT_PUBLIC_VAULT_ENABLED=true is set"</em>. A new user will close the tab. Fix: <em style="color: #86efac;">"Knowledge base is offline. Reload the page or contact support."</em></p>
+  </div>
+
+  <div style="background: #1a1a2e; border-left: 4px solid #dc2626; border-radius: 0 8px 8px 0; padding: 1rem 1.2rem;">
+    <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.4rem;">
+      <span style="background: #dc2626; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: uppercase;">Blocking</span>
+      <strong>2. Empty state gives no guidance</strong>
+    </div>
+    <p style="font-size: 0.85rem; color: #9ca3af; margin: 0;">Current: "No notes yet. Click + to create one." New users coming from Ambient expect to SEE their notes here automatically. Need an empty state that explains: "Connect Ambient to sync your daily notes here" with a setup CTA.</p>
+  </div>
+
+  <div style="background: #1a1a2e; border-left: 4px solid #d97706; border-radius: 0 8px 8px 0; padding: 1rem 1.2rem;">
+    <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.4rem;">
+      <span style="background: #d97706; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: uppercase;">High</span>
+      <strong>3. No confirmation before note deletion</strong>
+    </div>
+    <p style="font-size: 0.85rem; color: #9ca3af; margin: 0;">Delete button triggers on hover click — one mis-click wipes a note permanently. Add a simple confirmation modal. This will absolutely happen to early users and destroy trust.</p>
+  </div>
+
+  <div style="background: #1a1a2e; border-left: 4px solid #d97706; border-radius: 0 8px 8px 0; padding: 1rem 1.2rem;">
+    <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.4rem;">
+      <span style="background: #d97706; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: uppercase;">High</span>
+      <strong>4. Sessions folder is unexplained</strong>
+    </div>
+    <p style="font-size: 0.85rem; color: #9ca3af; margin: 0;">Users see "All Notes" and "Sessions" with no explanation of what Sessions are. Add a tooltip: "Auto-saved snapshots of your Claude Code sessions." Without this, users won't understand the structure.</p>
+  </div>
+
+  <div style="background: #1a1a2e; border-left: 4px solid #6b7280; border-radius: 0 8px 8px 0; padding: 1rem 1.2rem;">
+    <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.4rem;">
+      <span style="background: #6b7280; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: uppercase;">Medium</span>
+      <strong>5. Search mode needs a label</strong>
+    </div>
+    <p style="font-size: 0.85rem; color: #9ca3af; margin: 0;">Semantic/keyword toggle only appears after typing. Show it always, and add a brief tooltip explaining what "semantic search" means.</p>
+  </div>
+
+</div>
+
+<div style="margin-top: 1.5rem; background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 1rem 1.5rem;">
+  <strong style="color: #fbbf24;">Plan impact:</strong>
+  <span style="color: #d1d5db; font-size: 0.9rem;"> Items 1 + 2 are must-fix before any Ambient user lands here. Items 3-5 can be fixed in parallel with building the Ambient sync. Estimate: 1 focused day of polish work.</span>
+</div>

@@ -3,10 +3,22 @@ import { getAuthenticatedUserId } from '@/lib/agent-hub/auth';
 import { getAgentHubDatabase, getRecentHiveMindEntries } from '@/lib/agent-hub/db';
 import { v4 as uuidv4 } from 'uuid';
 
+type HiveMindRow = {
+  id: string; user_id: string; agent_id: string; agent_role: string;
+  action_type: string; task_title: string; summary: string; outcome: string;
+  files_modified: string | null; branch: string | null; run_id: string | null;
+  created_at: string; agent_name?: string;
+};
+
 /**
  * GET /api/agent-hub/hive-mind
  * List recent hive mind entries for the authenticated user.
- * Query params: limit (default 50), offset (default 0)
+ * Query params:
+ *   limit (default 50), offset (default 0)
+ *   agentId — filter by specific agent
+ *   eventType — filter by event_type column
+ *   days — look back N days (default 7, max 90)
+ *   format=graph — return graph format instead of list
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const userId = getAuthenticatedUserId(request);
@@ -16,21 +28,71 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') ?? '50'), 200);
   const offset = parseInt(request.nextUrl.searchParams.get('offset') ?? '0');
+  const agentId = request.nextUrl.searchParams.get('agentId');
+  const eventType = request.nextUrl.searchParams.get('eventType');
+  const daysParam = parseInt(request.nextUrl.searchParams.get('days') ?? '7');
+  const days = Math.min(Math.max(daysParam, 1), 90);
+  const format = request.nextUrl.searchParams.get('format');
+
+  // Build dynamic WHERE clause
+  const conditions: string[] = ['h.user_id = ?', `h.created_at >= datetime('now', '-${days} days')`];
+  const params: unknown[] = [userId];
+  if (agentId) { conditions.push('h.agent_id = ?'); params.push(agentId); }
+  if (eventType) { conditions.push('h.event_type = ?'); params.push(eventType); }
+  const whereClause = conditions.join(' AND ');
 
   try {
     const db = getAgentHubDatabase();
+
+    if (format === 'graph') {
+      const rows = db.prepare(
+        `SELECT h.*, a.name as agent_name
+         FROM agent_hub_hive_mind h
+         LEFT JOIN agent_hub_agents a ON h.agent_id = a.id
+         WHERE ${whereClause}
+         ORDER BY h.created_at DESC`
+      ).all(...params) as HiveMindRow[];
+
+      const agentNodes = new Map<string, { id: string; label: string; type: 'agent' | 'task' }>();
+      const taskNodes: Array<{ id: string; label: string; type: 'agent' | 'task' }> = [];
+      const edges: Array<{ source: string; target: string; outcome: string }> = [];
+
+      const maxTaskNodes = 100;
+      const truncated = rows.length > maxTaskNodes;
+      const slicedRows = truncated ? rows.slice(0, maxTaskNodes) : rows;
+
+      for (const row of slicedRows) {
+        const agentNodeId = `agent:${row.agent_id}`;
+        if (!agentNodes.has(agentNodeId)) {
+          agentNodes.set(agentNodeId, {
+            id: agentNodeId,
+            label: row.agent_name ?? '[Deleted Agent]',
+            type: 'agent',
+          });
+        }
+        const taskNodeId = `task:${row.id}`;
+        taskNodes.push({ id: taskNodeId, label: row.task_title, type: 'task' });
+        edges.push({ source: agentNodeId, target: taskNodeId, outcome: row.outcome });
+      }
+
+      const nodes = [...agentNodes.values(), ...taskNodes];
+      const result = truncated
+        ? { nodes, edges, truncated: true, message: 'Graph limited to 100 task nodes. Use filters to narrow results.' }
+        : { nodes, edges };
+
+      return NextResponse.json(result);
+    }
+
+    // Standard list format
     const rows = db.prepare(
-      `SELECT * FROM agent_hub_hive_mind WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
-    ).all(userId, limit, offset) as Array<{
-      id: string; user_id: string; agent_id: string; agent_role: string;
-      action_type: string; task_title: string; summary: string; outcome: string;
-      files_modified: string | null; branch: string | null; run_id: string | null;
-      created_at: string;
-    }>;
+      `SELECT h.* FROM agent_hub_hive_mind h
+       WHERE ${whereClause}
+       ORDER BY h.created_at DESC LIMIT ? OFFSET ?`
+    ).all(...params, limit, offset) as HiveMindRow[];
 
     const total = (db.prepare(
-      `SELECT COUNT(*) as cnt FROM agent_hub_hive_mind WHERE user_id = ?`
-    ).get(userId) as { cnt: number }).cnt;
+      `SELECT COUNT(*) as cnt FROM agent_hub_hive_mind h WHERE ${whereClause}`
+    ).get(...params) as { cnt: number }).cnt;
 
     const entries = rows.map(r => ({
       id: r.id,

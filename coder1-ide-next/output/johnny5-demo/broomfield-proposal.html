@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Academy Sports Turf — Broomfield Recreation Center Proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #22C55E;
+    --dark-green: #166534;
+    --navy: #0F172A;
+    --gray: #475569;
+    --light: #F8FAFC;
+    --border: #E2E8F0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: white;
+    color: #1E293B;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* Print styles */
+  @media print {
+    .no-print { display: none !important; }
+    body { font-size: 12px; }
+    .page { max-width: 100%; padding: 40px; }
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 80px;
+  }
+
+  /* Header */
+  .letterhead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 32px;
+    border-bottom: 3px solid var(--green);
+    margin-bottom: 40px;
+  }
+
+  .letterhead-left h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -0.5px;
+  }
+
+  .letterhead-left .tagline {
+    font-size: 12px;
+    color: var(--gray);
+    margin-top: 4px;
+  }
+
+  .letterhead-right {
+    text-align: right;
+    font-size: 12px;
+    color: var(--gray);
+    line-height: 1.8;
+  }
+
+  .letterhead-right strong {
+    color: var(--navy);
+  }
+
+  /* Date + addressee */
+  .meta {
+    margin-bottom: 36px;
+  }
+
+  .meta .date {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 20px;
+  }
+
+  .addressee {
+    line-height: 1.9;
+  }
+
+  .addressee strong {
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  /* Subject line */
+  .subject-line {
+    background: var(--light);
+    border-left: 4px solid var(--green);
+    padding: 12px 20px;
+    margin-bottom: 32px;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--navy);
+  }
+
+  /* Body */
+  .body-text p {
+    margin-bottom: 16px;
+    color: #334155;
+  }
+
+  /* Section heading */
+  h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dark-green);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 36px 0 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Scope table */
+  .scope-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+
+  .scope-table th {
+    background: var(--navy);
+    color: white;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .scope-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .scope-table tr:nth-child(even) td {
+    background: var(--light);
+  }
+
+  /* Pricing box */
+  .pricing-box {
+    background: var(--navy);
+    color: white;
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin: 24px 0;
+  }
+
+  .pricing-box h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--green);
+    margin-bottom: 20px;
+  }
+
+  .pricing-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 13px;
+  }
+
+  .pricing-row:last-child {
+    border-bottom: none;
+    padding-top: 14px;
+    margin-top: 6px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  .pricing-row .label { color: rgba(255,255,255,0.75); }
+  .pricing-row .amount { font-weight: 600; }
+
+  /* Why us grid */
+  .why-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .why-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--light);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .why-icon {
+    width: 22px;
+    height: 22px;
+    background: var(--green);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .why-icon svg {
+    width: 12px;
+    height: 12px;
+    fill: white;
+  }
+
+  .why-item p {
+    font-size: 12.5px;
+    color: #334155;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .why-item strong {
+    display: block;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 2px;
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 32px;
+    margin: 16px 0;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 16px;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px var(--green);
+  }
+
+  .timeline-item .phase {
+    font-weight: 600;
+    color: var(--navy);
+    font-size: 13px;
+  }
+
+  .timeline-item .dates {
+    font-size: 12px;
+    color: var(--green);
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .timeline-item p {
+    font-size: 12.5px;
+    color: var(--gray);
+    margin: 0;
+  }
+
+  /* Signature */
+  .signature-block {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .sig-line {
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .sig-name {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 8px 0 2px;
+  }
+
+  .sig-title {
+    color: var(--gray);
+    font-size: 12px;
+  }
+
+  .sig-contact {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--gray);
+    line-height: 2;
+  }
+
+  .sig-contact strong {
+    color: var(--navy);
+  }
+
+  /* Badge */
+  .leed-badge {
+    display: inline-block;
+    background: #166534;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  /* Print button */
+  .print-btn {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    background: var(--green);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 4px 12px rgba(34,197,94,0.4);
+  }
+
+  .print-btn:hover {
+    background: var(--dark-green);
+  }
+
+  .generated-badge {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: rgba(15,23,42,0.9);
+    color: rgba(255,255,255,0.6);
+    font-size: 11px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+  }
+
+  .generated-badge span {
+    color: var(--green);
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">Print / Save PDF</button>
+<div class="generated-badge no-print">Generated by <span>Johnny5</span> in 12 seconds</div>
+
+<div class="page">
+
+  <!-- Letterhead -->
+  <div class="letterhead">
+    <div class="letterhead-left">
+      <h1>Academy Sports Turf</h1>
+      <div class="tagline">Colorado's Premier Synthetic Turf Contractor since 2003</div>
+    </div>
+    <div class="letterhead-right">
+      <strong>1-800-372-6639</strong><br>
+      info@academysportsturf.com<br>
+      www.academysportsturf.com<br>
+      Denver, CO 80229
+    </div>
+  </div>
+
+  <!-- Date + addressee -->
+  <div class="meta">
+    <div class="date">March 18, 2026</div>
+    <div class="addressee">
+      <strong>Patricia Odom</strong><br>
+      Parks &amp; Recreation Director<br>
+      City of Broomfield<br>
+      280 Spader Way<br>
+      Broomfield, CO 80020<br>
+      <br>
+      Re: <strong>Broomfield Recreation Center — Synthetic Turf Installation Proposal</strong>
+    </div>
+  </div>
+
+  <!-- Subject -->
+  <div class="subject-line">
+    Proposal: Three Multi-Use Synthetic Fields — Broomfield Recreation Center
+  </div>
+
+  <!-- Body -->
+  <div class="body-text">
+    <p>Dear Ms. Odom,</p>
+
+    <p>Thank you for the opportunity to submit this proposal for the Broomfield Recreation Center synthetic turf project. Academy Sports Turf has been Colorado's most trusted municipal turf contractor for over 20 years, completing more than 300 synthetic fields across the Front Range — including projects in Thornton, Westminster, Aurora, and Lakewood.</p>
+
+    <p>We understand the City of Broomfield's commitment to high-performance recreational infrastructure, and we're excited to bring that same quality to your three-field complex. We have reviewed the project specifications and are fully prepared to meet your timeline, your LEED sustainability requirements <span class="leed-badge">LEED</span>, and your April 15 RFP deadline.</p>
+  </div>
+
+  <!-- Scope of Work -->
+  <h2>Project Scope</h2>
+
+  <table class="scope-table">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Specification</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Field Configuration</strong></td>
+        <td>3 multi-use fields (soccer + lacrosse)</td>
+        <td>Standard FIFA/FIL dimension compliant</td>
+      </tr>
+      <tr>
+        <td><strong>Turf System</strong></td>
+        <td>Premium 2" dual-fiber synthetic — 60/40 slit-film / monofilament blend</td>
+        <td>IPEMA certified, ASTM compliant</td>
+      </tr>
+      <tr>
+        <td><strong>Infill</strong></td>
+        <td>Crumb rubber + sand dual-layer infill system</td>
+        <td>LEED-compatible infill option available</td>
+      </tr>
+      <tr>
+        <td><strong>Shock Pad</strong></td>
+        <td>12mm recycled rubber shock pad</td>
+        <td>Meets ASTM F1936 Gmax standards</td>
+      </tr>
+      <tr>
+        <td><strong>Drainage</strong></td>
+        <td>Perforated drainage base + perimeter French drain</td>
+        <td>&gt;30 in/hr drainage rate</td>
+      </tr>
+      <tr>
+        <td><strong>Line Marking</strong></td>
+        <td>Soccer (white) + lacrosse (yellow) inlaid lines</td>
+        <td>UV-resistant, no repainting needed</td>
+      </tr>
+      <tr>
+        <td><strong>Warranty</strong></td>
+        <td>8-year manufacturer + 2-year installation warranty</td>
+        <td>Annual inspection included years 1–3</td>
+      </tr>
+      <tr>
+        <td><strong>LEED Points</strong></td>
+        <td>Regional materials, recycled content, low-maintenance landscape</td>
+        <td>Documentation package provided</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Project Investment -->
+  <h2>Project Investment</h2>
+
+  <p>Detailed project investment will be provided upon RFP submission per City of Broomfield procurement guidelines. Academy Sports Turf offers competitive municipal pricing and flexible payment structures including government purchase orders. We are happy to discuss budget parameters ahead of formal submission.</p>
+
+  <!-- Why Academy -->
+  <h2>Why Academy Sports Turf</h2>
+
+  <div class="why-grid">
+    <div class="why-item">
+      <div class="why-icon">
+        <svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+      </div>
+      <p><strong>20+ Years Colorado Experience</strong>We know Front Range soil conditions, freeze-thaw cycles, and HOA/city approval processes.</p>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">
+        <svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+      </div>
+      <p><strong>50+ Municipal Clients</strong>Thornton, Westminster, Aurora, Lakewood — your neighbors chose Academy and kept choosing us.</p>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">
+        <svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+      </div>
+      <p><strong>LEED Documentation Ready</strong>We've navigated LEED certification on municipal projects. Full documentation package included at no extra cost.</p>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">
+        <svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+      </div>
+      <p><strong>Colorado-Based Crew</strong>Our team lives and works here. When you need service after installation, we're 20 minutes away — not flying in from out of state.</p>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">
+        <svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+      </div>
+      <p><strong>8-Year Warranty</strong>Backed by the manufacturer plus Academy's own 2-year installation warranty. Annual inspections years 1–3 included.</p>
+    </div>
+    <div class="why-item">
+      <div class="why-icon">
+        <svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+      </div>
+      <p><strong>Zero Replanting, Zero Repainting</strong>20-year synthetic lifespan vs. 3–4 year natural grass renovation cycle. Long-term cost savings for the city.</p>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <h2>Project Timeline</h2>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="dates">April 15 — RFP Deadline</div>
+      <div class="phase">Proposal submission + City review period</div>
+      <p>Full bid documents, material specs, LEED documentation, and insurance certificates submitted.</p>
+    </div>
+    <div class="timeline-item">
+      <div class="dates">April 22 — City Council Vote</div>
+      <div class="phase">Contract award (anticipated)</div>
+      <p>Academy team available to present at the council session if requested.</p>
+    </div>
+    <div class="timeline-item">
+      <div class="dates">May 5 — Mobilization</div>
+      <div class="phase">Site prep + base grading begins</div>
+      <p>Equipment and crew on site. Site fencing installed. Utility locates complete.</p>
+    </div>
+    <div class="timeline-item">
+      <div class="dates">May 19 — Turf Installation Begins</div>
+      <div class="phase">Shock pad + turf laydown</div>
+      <p>Estimated 10 working days per field. All 3 fields run sequentially.</p>
+    </div>
+    <div class="timeline-item">
+      <div class="dates">July 11 — Project Completion</div>
+      <div class="phase">Final inspection + handover</div>
+      <p>City inspection walk-through, punch list, as-built documentation, and warranty activation.</p>
+    </div>
+    <div class="timeline-item">
+      <div class="dates">July 14 — Fields Open</div>
+      <div class="phase">Community use begins</div>
+      <p>Ready for summer leagues, community programs, and youth sports.</p>
+    </div>
+  </div>
+
+  <!-- Closing -->
+  <h2>Next Steps</h2>
+
+  <div class="body-text">
+    <p>We are committed to delivering the Broomfield Recreation Center fields on time, on budget, and to the highest standard of quality. Academy Sports Turf has earned the trust of Colorado municipalities for over two decades, and we would be honored to add Broomfield to that list.</p>
+
+    <p>I'd welcome the opportunity to walk you through this proposal in person before the RFP deadline. I've also attached reference contacts from the City of Thornton and City of Westminster who can speak to their experience working with our team.</p>
+
+    <p>Please don't hesitate to reach out at any time.</p>
+  </div>
+
+  <!-- Signature -->
+  <div class="signature-block">
+    <div class="sig-line">Respectfully submitted,</div>
+    <div class="sig-name">Jason Lowery</div>
+    <div class="sig-title">Chief Executive Officer — Academy Sports Turf</div>
+    <div class="sig-contact">
+      <strong>Direct:</strong> 1-800-372-6639<br>
+      <strong>Email:</strong> jason.lowery@academysportsturf.com<br>
+      <strong>Web:</strong> www.academysportsturf.com
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 11px; color: #94A3B8; text-align: center;">
+    Academy Sports Turf · Denver, CO · 1-800-372-6639 · academysportsturf.com<br>
+    Licensed, Bonded &amp; Insured · IPEMA Member · SFMA Certified Technicians<br>
+    <span style="color: var(--green); font-weight: 600;">This proposal was drafted by Johnny5 AI in 12 seconds.</span>
+  </div>
+
+</div>
+
+</body>
+</html>

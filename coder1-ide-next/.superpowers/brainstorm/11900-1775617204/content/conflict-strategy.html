@@ -1,0 +1,54 @@
+<h2>What happens when a customer already has their own setup?</h2>
+<p class="subtitle">Many Claude Code power users have existing CLAUDE.md files, MCP configs, and hooks. How should the Power Pack handle conflicts?</p>
+
+<div class="options">
+
+  <div class="option" data-choice="skip" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Skip if exists (safe, hands-off)</h3>
+      <p>If ~/.claude/CLAUDE.md already exists, don't touch it. Only install what's missing. The customer keeps full control — Coder1 never overwrites anything.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Zero risk of breaking existing setups</li><li>Customers trust it immediately</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Power users get no benefit from Coder1 defaults</li><li>Harder to ensure consistent experience</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="append" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Append a Coder1 section (non-destructive merge)</h3>
+      <p>Add a clearly marked <code># Coder1 Configuration</code> block to the bottom of any existing file. MCP servers are added to existing ~/.mcp.json rather than replacing it.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Customer gets Coder1 defaults AND keeps their setup</li><li>Visible, auditable — customer can see what was added</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Could produce duplicate rules</li><li>File gets messy over time</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="backup-replace" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Backup + replace (opinionated takeover)</h3>
+      <p>Back up existing files to ~/.claude/CLAUDE.md.backup, then install the Coder1 template fresh. Customer is shown a diff and can restore the backup anytime.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Consistent experience for all customers</li><li>Coder1 defaults always apply</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Some customers will feel violated</li><li>Risky if backup/restore has bugs</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="ask" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Ask on first connect (interactive setup)</h3>
+      <p>On first bridge pairing, show a one-time setup screen in the IDE: "We found an existing CLAUDE.md — keep yours, merge, or replace with Coder1 defaults?" Customer chooses.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Maximum transparency and customer trust</li><li>Power users feel respected</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Adds friction to first-run experience</li><li>Decision fatigue for new users</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>

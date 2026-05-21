@@ -102,13 +102,16 @@ function sectionHeader(iconName, label, iconColor = '#64748B') {
 
 function landingSection(eyebrow, heading, subtitle, content, accentColor = '#00D9FF') {
   return `
-<div class="brief-section" style="border-top:1px solid rgba(255,255,255,0.06);padding:72px 40px;max-width:960px;margin:0 auto;position:relative;">
-  <div class="brief-section-header" style="margin-bottom:44px;">
-    <span style="font-size:13px;font-weight:700;letter-spacing:0.15em;color:${accentColor};text-transform:uppercase;display:block;margin-bottom:14px;">${eyebrow}</span>
-    <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(28px,3.5vw,46px);font-weight:700;color:#fff;letter-spacing:-0.5px;line-height:1.12;margin:0 0 14px;">${heading}</h2>
-    ${subtitle ? `<p style="font-size:20px;line-height:1.6;color:rgba(255,255,255,0.5);max-width:520px;margin:0;">${subtitle}</p>` : ''}
+<div class="brief-section" style="border-top:1px solid rgba(255,255,255,0.06);padding:48px 40px;max-width:960px;margin:0 auto;position:relative;">
+  <div class="brief-section-header collapsible-header" style="margin-bottom:0;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:12px 0;" onclick="toggleSection(this)">
+    <div>
+      <span style="font-size:13px;font-weight:700;letter-spacing:0.15em;color:${accentColor};text-transform:uppercase;display:block;margin-bottom:10px;">${eyebrow}</span>
+      <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(22px,3vw,36px);font-weight:700;color:#fff;letter-spacing:-0.5px;line-height:1.12;margin:0 0 8px;">${heading}</h2>
+      ${subtitle ? `<p style="font-size:16px;line-height:1.5;color:rgba(255,255,255,0.5);max-width:520px;margin:0;">${subtitle}</p>` : ''}
+    </div>
+    <span class="section-chevron" style="flex-shrink:0;margin-top:6px;color:rgba(255,255,255,0.35);font-size:20px;transition:transform 0.3s ease;">▶</span>
   </div>
-  <div class="brief-section-content">
+  <div class="brief-section-content collapsible-content" style="display:none;padding-top:32px;">
     ${content}
   </div>
 </div>`;
@@ -180,6 +183,164 @@ function renderCommandCenter(d) {
 </div>`;
 }
 
+// ─── Strategic Command Center ────────────────────────────────────────────────
+// 5 tiles: Weekly Rhythm (horizontal strip) + Hero / Ship Lane / GoAutomated / 500 Club
+function renderStrategicCommand(d) {
+  const sc = d.strategicCommand;
+  if (!sc) return '';
+
+  const DAY_ORDER = ['mon','tue','wed','thu','fri','sat','sun'];
+  const DAY_LABEL = { mon:'MON', tue:'TUE', wed:'WED', thu:'THU', fri:'FRI', sat:'SAT', sun:'SUN' };
+
+  // Determine today's key (local time, Mon=0 mapping)
+  const now = new Date();
+  const jsDay = now.getDay(); // 0=Sun..6=Sat
+  const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][jsDay];
+
+  const statusColor = (s) => {
+    switch (s) {
+      case 'green':   return { dot: '#10B981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.35)',  text: '#10B981' };
+      case 'yellow':  return { dot: '#F59E0B', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.35)',  text: '#F59E0B' };
+      case 'red':     return { dot: '#EF4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.35)',   text: '#EF4444' };
+      case 'off':     return { dot: 'rgba(255,255,255,0.25)', bg: 'rgba(255,255,255,0.02)', border: 'rgba(255,255,255,0.08)', text: 'rgba(255,255,255,0.4)' };
+      default:        return { dot: 'rgba(255,255,255,0.35)', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.1)',  text: 'rgba(255,255,255,0.55)' };
+    }
+  };
+
+  // ─ Weekly Rhythm strip (7-day horizontal)
+  const rhythm = sc.weeklyRhythm || { days: {} };
+  const rhythmCells = DAY_ORDER.map(key => {
+    const day = rhythm.days[key] || { task: '—', status: 'pending' };
+    const sColor = statusColor(day.status);
+    const isToday = key === todayKey;
+    const todayRing = isToday ? 'box-shadow:0 0 0 2px #A78BFA, 0 0 24px rgba(167,139,250,0.35);' : '';
+    const todayBadge = isToday
+      ? `<span style="display:inline-block;margin-top:4px;font-size:9px;font-weight:800;letter-spacing:0.15em;color:#A78BFA;text-transform:uppercase;">TODAY</span>`
+      : '';
+    return `<div style="flex:1;min-width:0;background:${sColor.bg};border:1px solid ${sColor.border};border-radius:12px;padding:14px 10px;text-align:center;${todayRing}">
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:${sColor.dot};display:inline-block;"></span>
+        <span style="font-size:11px;font-weight:800;letter-spacing:0.12em;color:rgba(255,255,255,0.75);">${DAY_LABEL[key]}</span>
+      </div>
+      <div style="font-size:13px;color:${sColor.text};margin-top:8px;line-height:1.35;min-height:36px;">${escapeHtml(day.task || '')}</div>
+      ${todayBadge}
+    </div>`;
+  }).join('');
+
+  const rhythmStrip = `<div style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <span style="font-size:12px;font-weight:800;letter-spacing:0.15em;color:rgba(255,255,255,0.45);text-transform:uppercase;">Weekly Rhythm</span>
+      <span style="font-size:12px;color:rgba(255,255,255,0.3);">· one hero per week, everything else is atomization</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">${rhythmCells}</div>
+  </div>`;
+
+  // ─ Tile builders
+  const tile = (eyebrow, title, body, accent, footer) => {
+    return `<div style="flex:1;min-width:260px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px 22px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:${accent};display:inline-block;"></span>
+        <span style="font-size:11px;font-weight:800;letter-spacing:0.14em;color:rgba(255,255,255,0.45);text-transform:uppercase;">${escapeHtml(eyebrow)}</span>
+      </div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:10px;">${title}</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.55;">${body}</div>
+      ${footer ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:rgba(255,255,255,0.4);">${footer}</div>` : ''}
+    </div>`;
+  };
+
+  // ─ Hero tile
+  const hero = sc.heroContent || {};
+  const heroStatusMap = {
+    ideating:   { label: 'Ideating',   color: '#94A3B8' },
+    scripted:   { label: 'Scripted',   color: '#60A5FA' },
+    recording:  { label: 'Recording',  color: '#F59E0B' },
+    editing:    { label: 'Editing',    color: '#A78BFA' },
+    publishing: { label: 'Publishing', color: '#10B981' },
+    published:  { label: 'Published',  color: '#10B981' },
+  };
+  const hStat = heroStatusMap[hero.status] || { label: hero.statusLabel || 'Unknown', color: '#94A3B8' };
+  const heroTile = tile(
+    `This Week's Hero · ${escapeHtml(hero.pillar || '—')}`,
+    escapeHtml(hero.title || 'No hero topic set'),
+    `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:9999px;background:${hStat.color}22;color:${hStat.color};font-size:12px;font-weight:700;"><span style="width:6px;height:6px;border-radius:50%;background:${hStat.color};"></span>${escapeHtml(hStat.label)}</span>
+     <span style="margin-left:8px;font-size:13px;color:rgba(255,255,255,0.5);">Target: ${escapeHtml(hero.publishTarget || '—')}</span>`,
+    '#F87171',
+    hero.notes ? escapeHtml(hero.notes) : ''
+  );
+
+  // ─ Ship Lane tile
+  const ship = sc.shipLane || {};
+  const pct = Math.max(0, Math.min(100, Number(ship.percentComplete || 0)));
+  const pctColor = pct >= 80 ? '#10B981' : pct >= 50 ? '#00D9FF' : pct >= 25 ? '#F59E0B' : '#EF4444';
+  const shipTile = tile(
+    'Ship Lane',
+    escapeHtml(ship.appName || 'No active app'),
+    `<div style="font-size:14px;color:rgba(255,255,255,0.7);margin-bottom:10px;">${escapeHtml(ship.milestone || '')}</div>
+     <div style="display:flex;align-items:center;gap:10px;">
+       <div style="flex:1;height:8px;background:rgba(255,255,255,0.08);border-radius:9999px;overflow:hidden;">
+         <div style="width:${pct}%;height:100%;background:${pctColor};border-radius:9999px;"></div>
+       </div>
+       <span style="font-size:13px;font-weight:700;color:${pctColor};">${pct}%</span>
+     </div>`,
+    '#00D9FF',
+    ship.nextStep ? `Next: ${escapeHtml(ship.nextStep)}` : (ship.targetDate ? `Target: ${escapeHtml(ship.targetDate)}` : '')
+  );
+
+  // ─ GoAutomated Pipeline tile
+  const pipe = sc.goAutomatedPipeline || {};
+  const miniStat = (n, label, color) =>
+    `<div style="text-align:center;flex:1;"><div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:${color};line-height:1;">${escapeHtml(String(n ?? 0))}</div><div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-top:5px;">${escapeHtml(label)}</div></div>`;
+  const mrr = Number(pipe.retainerMRR || 0);
+  const mrrLabel = mrr >= 1000 ? `$${(mrr / 1000).toFixed(1)}k` : `$${mrr}`;
+  const pipeTile = tile(
+    'GoAutomated Pipeline',
+    'Consulting funnel',
+    `<div style="display:flex;gap:8px;align-items:stretch;">
+      ${miniStat(pipe.discoveryCalls, 'Calls',     '#60A5FA')}
+      ${miniStat(pipe.proposalsOut,   'Proposals', '#F59E0B')}
+      ${miniStat(pipe.signedClients,  'Signed',    '#10B981')}
+      ${miniStat(mrrLabel,            'MRR',       '#A78BFA')}
+     </div>`,
+    '#A78BFA',
+    pipe.notes ? escapeHtml(pipe.notes) : ''
+  );
+
+  // ─ 500 Club tile
+  const club = sc.fiveHundredClub || {};
+  const clubStatusMap = {
+    'coming-soon':  { label: 'Coming Soon',      color: '#A78BFA' },
+    'founding':     { label: 'Founding Cohort',  color: '#F59E0B' },
+    'open':         { label: 'Open',             color: '#10B981' },
+    'at-capacity':  { label: 'At Capacity',      color: '#EF4444' },
+  };
+  const cStat = clubStatusMap[club.status] || { label: club.statusLabel || 'Unknown', color: '#94A3B8' };
+  const clubBody = club.status === 'coming-soon'
+    ? `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:9999px;background:${cStat.color}22;color:${cStat.color};font-size:12px;font-weight:700;"><span style="width:6px;height:6px;border-radius:50%;background:${cStat.color};"></span>${escapeHtml(cStat.label)}</span>
+       <span style="margin-left:8px;font-size:13px;color:rgba(255,255,255,0.5);">Launch: ${escapeHtml(club.launchTarget || '—')}</span>`
+    : `<div style="display:flex;gap:8px;align-items:stretch;">
+        ${miniStat(club.memberCount,          'Members',  '#10B981')}
+        ${miniStat(club.applicationsPending,  'Pending',  '#F59E0B')}
+        ${miniStat(club.foundingCohortSlots,  'Slots',    '#A78BFA')}
+       </div>`;
+  const clubTile = tile(
+    'The 500 Club',
+    'Power-user community',
+    clubBody,
+    '#F59E0B',
+    club.note ? escapeHtml(club.note) : ''
+  );
+
+  const tilesRow = `<div style="display:flex;gap:14px;flex-wrap:wrap;">
+    ${heroTile}${shipTile}
+  </div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;">
+    ${pipeTile}${clubTile}
+  </div>`;
+
+  const inner = rhythmStrip + tilesRow;
+  return landingSection('Command Center', 'This week at a glance', 'Strategic dashboard — what matters, where you are, what\u2019s next.', inner, '#A78BFA');
+}
+
 // ─── Weekly Stats Band ────────────────────────────────────────────────────────
 function renderWeeklyStats(d) {
   const ws = d.weeklyStats;
@@ -194,6 +355,11 @@ function renderWeeklyStats(d) {
     : tc >= 1000 ? `${(tc / 1000).toFixed(1)}k`
     : String(tc);
 
+  // Subscription % remaining
+  const pct = ws.subscriptionPctRemaining;
+  const pctLabel = pct == null ? '—' : `${pct}%`;
+  const pctColor = pct == null ? '#A78BFA' : pct > 50 ? '#10B981' : pct > 20 ? '#F59E0B' : '#EF4444';
+
   const stat = (value, label, color) =>
     `<div style="flex:1;min-width:100px;text-align:center;padding:18px 24px;">
       <div style="font-size:30px;font-weight:700;color:${color};font-family:'Space Grotesk',sans-serif;letter-spacing:-0.5px;">${escapeHtml(String(value))}</div>
@@ -205,6 +371,8 @@ function renderWeeklyStats(d) {
   return `<div style="background:rgba(255,255,255,0.025);border-bottom:1px solid rgba(255,255,255,0.06);">
   <div style="max-width:960px;margin:0 auto;padding:0 40px;display:flex;align-items:stretch;">
     ${stat(costLabel, 'Claude Code · This Week', '#00D9FF')}
+    ${divider}
+    ${stat(pctLabel,  'Subscription · Remaining', pctColor)}
     ${divider}
     ${stat(tcLabel,   'Tool Calls · This Week',  '#A78BFA')}
     ${divider}
@@ -334,7 +502,7 @@ function renderFocus(d) {
            <div class="parked-text" style="font-size:15px;color:rgba(255,255,255,0.85);font-weight:500;">${escapeHtml(p.text)}</div>
            <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px;">${escapeHtml(p.date)}${p.context ? ' · ' + escapeHtml(p.context) : ''}</div>
          </div>
-         <button onclick="dismissParked('${pid}')" title="Mark done &amp; remove"
+         <button onclick="dismissParked('${pid}', ${JSON.stringify(escapeHtml(p.text))})" title="Mark done &amp; remove"
            style="flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;margin-top:1px;"
            onmouseover="this.style.borderColor='#10B981';this.style.background='rgba(16,185,129,0.15)'"
            onmouseout="this.style.borderColor='rgba(255,255,255,0.2)';this.style.background='transparent'">${svgIcon('check-circle',13,'rgba(255,255,255,0.4)')}</button>
@@ -696,6 +864,7 @@ function renderClosing(d) {
 // ─── Full page template ───────────────────────────────────────────────────────
 function buildPage(d, dateStr) {
   const zone1      = renderCommandCenter(d);
+  const zoneCommand = renderStrategicCommand(d);
   const zoneStats  = renderWeeklyStats(d);
   const zone2      = renderSignal(d);
   const zone3 = renderOvernight(d);
@@ -824,13 +993,23 @@ if (ideasBtn) {
   });
 }
 
-// Dismiss a parked idea (strikethrough → collapse → remove)
-function dismissParked(id) {
+// Dismiss a parked idea (strikethrough → collapse → remove + persist to parking-lot.md)
+function dismissParked(id, text) {
   var el = document.getElementById(id);
   if (!el) return;
   var textEl = el.querySelector('.parked-text');
   if (textEl) textEl.style.textDecoration = 'line-through';
   el.style.opacity = '0.35';
+
+  // Persist the dismissal so it doesn't reappear tomorrow
+  if (text) {
+    fetch('/api/morning-brief/dismiss-parked-idea', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text })
+    }).catch(function() { /* silent — visual dismissal still happens */ });
+  }
+
   setTimeout(function() {
     el.style.transition = 'max-height 0.35s ease, margin-bottom 0.35s ease, padding 0.35s ease, opacity 0.35s ease';
     el.style.maxHeight = '0';
@@ -872,7 +1051,20 @@ document.body.style.opacity = '0';
 document.body.style.transition = 'opacity 0.35s ease';
 window.addEventListener('load', function() { document.body.style.opacity = '1'; });
 
-// Scroll reveal
+// Collapsible sections
+function toggleSection(header) {
+  var content = header.nextElementSibling;
+  var isOpen = header.classList.contains('open');
+  header.classList.toggle('open', !isOpen);
+  if (!isOpen) {
+    content.classList.add('open');
+    content.classList.add('revealed');
+  } else {
+    content.classList.remove('open');
+  }
+}
+
+// Scroll reveal (headers only — content is hidden until toggled)
 (function() {
   var revealObs = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
@@ -882,7 +1074,7 @@ window.addEventListener('load', function() { document.body.style.opacity = '1'; 
       }
     });
   }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-  document.querySelectorAll('.brief-section-header, .brief-section-content').forEach(function(el) {
+  document.querySelectorAll('.brief-section-header').forEach(function(el) {
     revealObs.observe(el);
   });
 })();
@@ -908,6 +1100,8 @@ window.addEventListener('load', function() { document.body.style.opacity = '1'; 
   <div style="display:flex;align-items:center;gap:10px;">
     <div style="width:28px;height:28px;background:linear-gradient(135deg,#635bff,#00D9FF);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:white;">C1</div>
     <span style="font-size:16px;font-weight:600;color:white;">Morning Brief</span>
+    <a href="http://localhost:8765/bookmark-explorer.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin-left:12px;padding:5px 12px;border-radius:7px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.75);text-decoration:none;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.16)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">🔖 Bookmarks</a>
+    <a href="http://localhost:3001/morning-briefs/skills-catalog.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:5px 12px;border-radius:7px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.75);text-decoration:none;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.16)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">⚡ Skills</a>
   </div>
   <div style="display:flex;align-items:center;gap:16px;">
     ${navWeather}
@@ -943,6 +1137,9 @@ window.addEventListener('load', function() { document.body.style.opacity = '1'; 
     .brief-section-header { opacity: 0; transform: translateY(32px); transition: opacity 0.75s cubic-bezier(0.16,1,0.3,1), transform 0.75s cubic-bezier(0.16,1,0.3,1); }
     .brief-section-content { opacity: 0; transform: translateY(24px); transition: opacity 0.75s cubic-bezier(0.16,1,0.3,1) 0.12s, transform 0.75s cubic-bezier(0.16,1,0.3,1) 0.12s; }
     .brief-section-header.revealed, .brief-section-content.revealed { opacity: 1; transform: translateY(0); }
+    .collapsible-header:hover { background: rgba(255,255,255,0.03); border-radius: 8px; }
+    .collapsible-header.open .section-chevron { transform: rotate(90deg); }
+    .collapsible-content.open { display: block !important; }
   </style>
 </head>
 <body>
@@ -950,6 +1147,7 @@ window.addEventListener('load', function() { document.body.style.opacity = '1'; 
   ${orbs}
   <div style="max-width:100%;overflow-x:hidden;position:relative;z-index:1;">
     ${zone1}
+    ${zoneCommand}
     ${zoneStats}
     ${zone2}
     ${zone3}

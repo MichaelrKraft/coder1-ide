@@ -218,6 +218,45 @@ export function listRuns(userId: string): Run[] {
   return rows.map(rowToRun);
 }
 
+/**
+ * Reset all orphaned runs (status='running') and their associated tasks.
+ * Called on server startup — any run still 'running' at boot means the previous
+ * process died without receiving agent:complete or agent:error, so it's orphaned.
+ *
+ * Also callable with a userId filter for bridge-disconnect cleanup.
+ */
+export function resetOrphanedRuns(userId?: string): { runsReset: number; tasksReset: number } {
+  const db = getAgentHubDatabase();
+  const now = new Date().toISOString();
+  const reason = 'Run interrupted — server restart or bridge disconnect. Task moved back to backlog.';
+
+  const runQuery = userId
+    ? 'SELECT id, task_id, user_id FROM agent_hub_runs WHERE status = ? AND user_id = ?'
+    : 'SELECT id, task_id, user_id FROM agent_hub_runs WHERE status = ?';
+  const runParams = userId ? ['running', userId] : ['running'];
+  const orphaned = db.prepare(runQuery).all(...runParams) as Array<{ id: string; task_id: string; user_id: string }>;
+
+  if (orphaned.length === 0) return { runsReset: 0, tasksReset: 0 };
+
+  const runIds = orphaned.map((r) => r.id);
+  const taskIds = Array.from(new Set(orphaned.map((r) => r.task_id)));
+
+  const updateRunStmt = db.prepare(
+    `UPDATE agent_hub_runs SET status = 'cancelled', error_summary = ?, completed_at = ? WHERE id = ?`
+  );
+  const updateTaskStmt = db.prepare(
+    `UPDATE agent_hub_tasks SET status = 'backlog' WHERE id = ? AND status = 'in_progress'`
+  );
+
+  const txn = db.transaction(() => {
+    for (const id of runIds) updateRunStmt.run(reason, now, id);
+    for (const id of taskIds) updateTaskStmt.run(id);
+  });
+  txn();
+
+  return { runsReset: runIds.length, tasksReset: taskIds.length };
+}
+
 export interface RunLogChunk {
   id: string;
   runId: string;

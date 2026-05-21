@@ -19,7 +19,7 @@ interface TaskFormProps {
 export function TaskForm({ agents, onClose, onCreated }: TaskFormProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [agentId, setAgentId] = useState(agents[0]?.id ?? '');
+  const [agentId, setAgentId] = useState('auto');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -200,6 +200,7 @@ export function TaskForm({ agents, onClose, onCreated }: TaskFormProps) {
                   onChange={(e) => setAgentId(e.target.value)}
                   className="w-full bg-bg-secondary border border-border-default rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-coder1-cyan/50"
                 >
+                  <option value="auto">Auto-assign (AI selects best agent)</option>
                   {agents.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
                   ))}

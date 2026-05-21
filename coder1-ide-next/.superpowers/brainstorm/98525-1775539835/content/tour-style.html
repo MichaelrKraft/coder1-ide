@@ -1,0 +1,95 @@
+<h2>Tour Visual Style</h2>
+<p class="subtitle">When generating a tour for a new SaaS site, which visual approach?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0d1117;padding:12px;border-radius:8px;position:relative;height:160px;overflow:hidden;font-family:monospace;">
+        <!-- fake app UI -->
+        <div style="background:#161b22;border-radius:4px;padding:6px 10px;margin-bottom:6px;font-size:11px;color:#8b949e;">Nav Bar</div>
+        <div style="display:flex;gap:6px;height:110px;">
+          <div style="background:#161b22;border-radius:4px;width:80px;font-size:10px;color:#8b949e;padding:6px;">Sidebar</div>
+          <div style="flex:1;background:#161b22;border-radius:4px;padding:6px;">
+            <!-- dark overlay with spotlight -->
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.7);border-radius:8px;"></div>
+            <!-- highlighted element -->
+            <div style="position:absolute;top:42px;left:96px;right:12px;bottom:12px;border:2px solid #00D9FF;border-radius:6px;box-shadow:0 0 20px rgba(0,217,255,0.5);background:#1a2233;padding:6px;z-index:2;">
+              <div style="font-size:10px;color:#00D9FF;font-weight:bold;">Main Feature</div>
+              <div style="font-size:9px;color:#8b949e;margin-top:2px;">Key content area</div>
+            </div>
+            <!-- tooltip card -->
+            <div style="position:absolute;bottom:16px;left:96px;right:12px;background:#0d1117;border:1px solid #00D9FF;border-radius:6px;padding:8px;z-index:3;">
+              <div style="font-size:10px;color:#fff;font-weight:bold;">Step 3 of 6</div>
+              <div style="font-size:9px;color:#8b949e;margin-top:3px;">This is your main workspace. Everything you need...</div>
+              <div style="display:flex;gap:4px;margin-top:5px;">
+                <div style="flex:1;background:#00D9FF;border-radius:3px;padding:2px 4px;font-size:9px;color:#000;text-align:center;">Next →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:12px;left:12px;font-size:9px;color:#00D9FF;">● Coder1 Style</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Always use your Coder1 style</h3>
+      <p>Dark overlay, SVG spotlight, turquoise/orange glows. Consistent across all your SaaS products — your signature look.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#f8fafc;padding:12px;border-radius:8px;position:relative;height:160px;overflow:hidden;font-family:sans-serif;">
+        <!-- light-themed fake app -->
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:4px;padding:6px 10px;margin-bottom:6px;font-size:11px;color:#64748b;">Nav Bar</div>
+        <div style="display:flex;gap:6px;height:110px;">
+          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:4px;width:80px;font-size:10px;color:#64748b;padding:6px;">Sidebar</div>
+          <div style="flex:1;background:#fff;border:1px solid #e2e8f0;border-radius:4px;padding:6px;position:relative;">
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:4px;"></div>
+            <div style="position:absolute;top:6px;left:6px;right:6px;bottom:40px;border:2px solid #6366f1;border-radius:4px;box-shadow:0 0 16px rgba(99,102,241,0.4);background:#fff;padding:6px;z-index:2;">
+              <div style="font-size:10px;color:#6366f1;font-weight:bold;">Main Feature</div>
+              <div style="font-size:9px;color:#64748b;margin-top:2px;">Key content area</div>
+            </div>
+            <div style="position:absolute;bottom:4px;left:6px;right:6px;background:#fff;border:1px solid #6366f1;border-radius:4px;padding:6px;z-index:3;">
+              <div style="font-size:9px;color:#1e293b;font-weight:bold;">Step 3 of 6</div>
+              <div style="font-size:8px;color:#64748b;margin-top:2px;">This is your main workspace...</div>
+              <div style="margin-top:4px;background:#6366f1;border-radius:3px;padding:2px 4px;font-size:8px;color:#fff;text-align:center;width:30px;">Next</div>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:12px;left:12px;font-size:9px;color:#6366f1;">● Adapted to site's brand</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Adapt to the target site's brand</h3>
+      <p>Skill reads the site's color scheme (Tailwind config, CSS vars) and generates a tour that matches. Light site = light tour.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#0d1117;padding:12px;border-radius:8px;height:160px;overflow:hidden;font-family:monospace;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+        <div style="color:#f59e0b;font-size:24px;margin-bottom:8px;">⚙</div>
+        <div style="color:#8b949e;font-size:11px;text-align:center;">Skill asks:</div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:8px 12px;margin-top:6px;font-size:10px;color:#e6edf3;text-align:center;">
+          "What's your brand color?<br/>
+          <span style="color:#8b949e;">#6366f1</span> or turquoise/orange?"
+        </div>
+        <div style="display:flex;gap:4px;margin-top:8px;">
+          <div style="width:18px;height:18px;background:#00D9FF;border-radius:50%;"></div>
+          <div style="width:18px;height:18px;background:#FB923C;border-radius:50%;"></div>
+          <div style="width:18px;height:18px;background:#6366f1;border-radius:50%;"></div>
+          <div style="width:18px;height:18px;background:#10b981;border-radius:50%;"></div>
+          <div style="width:18px;height:18px;background:#f43f5e;border-radius:50%;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Prompt you for brand colors</h3>
+      <p>When invoked, the skill asks for primary/accent colors. You specify, it generates. Full control, no auto-detection.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Click your preferred approach, then reply in the terminal.</p>

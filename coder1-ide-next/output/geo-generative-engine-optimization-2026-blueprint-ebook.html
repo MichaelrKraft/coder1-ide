@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEO Blueprint 2026: The Complete Generative Engine Optimization Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --accent: #6366f1;
+    --accent2: #8b5cf6;
+    --green: #22c55e;
+    --text: #e8e8e8;
+    --muted: rgba(255,255,255,0.5);
+    --sidebar-width: 260px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: rgba(10,10,10,0.97);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 28px 20px;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar nav a {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 7px 10px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+    transition: all 0.2s;
+    line-height: 1.4;
+  }
+
+  .sidebar nav a:hover {
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  .sidebar nav .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    padding: 14px 10px 6px;
+  }
+
+  /* MAIN CONTENT */
+  .main {
+    margin-left: var(--sidebar-width);
+    max-width: 860px;
+    padding: 60px 60px 100px;
+  }
+
+  /* COVER */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 80px;
+  }
+
+  .cover-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.3);
+    color: #a5b4fc;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 32px;
+    width: fit-content;
+  }
+
+  .cover h1 {
+    font-size: 54px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, #e8e8e8 0%, #a5b4fc 50%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .cover-subtitle {
+    font-size: 20px;
+    color: var(--muted);
+    max-width: 600px;
+    margin-bottom: 48px;
+    line-height: 1.6;
+  }
+
+  .cover-stats {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+
+  .cover-stat {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cover-stat-num {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .cover-stat-label {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* TOC */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 80px;
+  }
+
+  .toc h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 28px;
+    color: var(--text);
+  }
+
+  .toc-item {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--text);
+    transition: color 0.2s;
+  }
+
+  .toc-item:last-child { border-bottom: none; }
+  .toc-item:hover { color: var(--accent); }
+
+  .toc-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 32px;
+  }
+
+  .toc-title { font-weight: 600; font-size: 15px; flex: 1; }
+  .toc-time { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+  /* CHAPTERS */
+  .chapter {
+    margin-bottom: 100px;
+    padding-bottom: 80px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chapter-num {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .chapter h2 {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin-bottom: 20px;
+  }
+
+  .chapter-hook {
+    font-size: 18px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 40px;
+    padding-left: 20px;
+    border-left: 3px solid var(--accent);
+  }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 36px 0 14px;
+    color: var(--text);
+  }
+
+  h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 24px 0 8px;
+    color: #c7d2fe;
+  }
+
+  p { margin-bottom: 16px; color: rgba(232,232,232,0.85); }
+
+  /* TIP CARDS */
+  .tip-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+  }
+
+  .tip-num {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .tip-card h4 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 12px;
+  }
+
+  .tip-card p { margin-bottom: 12px; }
+
+  .how-to {
+    background: rgba(99,102,241,0.06);
+    border-left: 3px solid var(--accent);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 12px;
+  }
+
+  .how-to strong { color: var(--accent); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+
+  .how-to ol, .how-to ul { padding-left: 20px; }
+  .how-to li { margin-bottom: 6px; font-size: 15px; color: rgba(232,232,232,0.9); }
+
+  /* CALLOUT BOXES */
+  .callout {
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 24px 0;
+  }
+
+  .callout-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .callout-insight  { border-left: 3px solid #3b82f6; background: rgba(59,130,246,0.08); }
+  .callout-insight .callout-label { color: #60a5fa; }
+  .callout-protip   { border-left: 3px solid #f59e0b; background: rgba(245,158,11,0.08); }
+  .callout-protip .callout-label { color: #fbbf24; }
+  .callout-quickwin { border-left: 3px solid #22c55e; background: rgba(34,197,94,0.08); }
+  .callout-quickwin .callout-label { color: #4ade80; }
+  .callout-stat     { border-left: 3px solid #a855f7; background: rgba(168,85,247,0.08); }
+  .callout-stat .callout-label { color: #c084fc; }
+  .callout-warning  { border-left: 3px solid #ef4444; background: rgba(239,68,68,0.08); }
+  .callout-warning .callout-label { color: #f87171; }
+
+  /* CHECKLIST */
+  .checklist-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-top: 32px;
+  }
+
+  .checklist-box h4 { margin: 0 0 16px; font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+  .checklist { list-style: none; padding: 0; }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 15px;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before {
+    content: '☐';
+    font-size: 18px;
+    color: #6b7280;
+    flex-shrink: 0;
+    margin-top: -1px;
+  }
+
+  /* 30-DAY PLAN */
+  .plan-week {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .plan-week h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0 0 16px;
+  }
+
+  .plan-week ul { padding-left: 20px; }
+  .plan-week li { margin-bottom: 8px; font-size: 15px; }
+
+  /* RESOURCE DIRECTORY */
+  .resource-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .resource-name { font-weight: 700; color: var(--text); font-size: 15px; }
+  .resource-what { font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .resource-desc { font-size: 14px; color: rgba(232,232,232,0.8); }
+  .resource-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .badge-free { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .badge-paid { background: rgba(239,68,68,0.15); color: #f87171; }
+  .badge-freemium { background: rgba(245,158,11,0.15); color: #fbbf24; }
+
+  /* BACK COVER */
+  .back-cover {
+    background: linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(139,92,246,0.15) 100%);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 20px;
+    padding: 60px;
+    text-align: center;
+    margin-top: 80px;
+  }
+
+  .back-cover h2 { font-size: 36px; font-weight: 800; margin-bottom: 16px; }
+  .back-cover p { font-size: 18px; color: var(--muted); margin-bottom: 32px; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+  .email-form { display: flex; gap: 12px; max-width: 440px; margin: 0 auto; }
+  .email-form input {
+    flex: 1;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+  }
+  .email-form input::placeholder { color: var(--muted); }
+  .email-form button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .email-form button:hover { background: #4f46e5; }
+
+  /* FLOATING BUTTONS */
+  .fab-container {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 200;
+  }
+
+  .fab {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+    transition: all 0.2s;
+  }
+  .fab:hover { background: #4f46e5; transform: translateY(-2px); }
+  .fab-secondary { background: rgba(255,255,255,0.08); color: var(--text); box-shadow: none; border: 1px solid var(--border); }
+  .fab-secondary:hover { background: rgba(255,255,255,0.12); }
+
+  /* PRINT */
+  @media print {
+    body { background: white; color: black; font-size: 14px; }
+    .sidebar, .fab-container { display: none !important; }
+    .main { margin-left: 0; padding: 40px; max-width: 100%; }
+    .chapter { page-break-before: always; }
+    .cover { page-break-after: always; min-height: auto; }
+    .callout-insight, .callout-protip, .callout-quickwin, .callout-stat, .callout-warning {
+      border: 1px solid #ddd; background: #f9f9f9 !important;
+    }
+    .tip-card, .plan-week, .resource-card, .toc, .checklist-box {
+      border: 1px solid #ddd; background: #fafafa;
+    }
+    .cover h1, h2, h3 { color: black; -webkit-text-fill-color: black; }
+    .chapter-hook, p { color: #333; }
+    .callout-label, .tip-num, .chapter-num, .cover-stat-num { color: #6366f1; }
+    .cover-subtitle, .muted { color: #666; }
+    .how-to { background: #f0f0ff; }
+  }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 32px 24px; }
+    .cover h1 { font-size: 36px; }
+    .resource-card { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar no-print">
+  <div class="sidebar-logo">GEO Blueprint 2026</div>
+  <nav>
+    <div class="section-label">Introduction</div>
+    <a href="#cover">Cover</a>
+    <a href="#toc">Table of Contents</a>
+
+    <div class="section-label">Chapters</div>
+    <a href="#ch1">1. The GEO Revolution</a>
+    <a href="#ch2">2. Become a Verified Entity</a>
+    <a href="#ch3">3. Schema & Structured Data</a>
+    <a href="#ch4">4. Search Everywhere Optimization</a>
+    <a href="#ch5">5. Reddit & Community Signals</a>
+    <a href="#ch6">6. Content Architecture for AI</a>
+    <a href="#ch7">7. Measuring GEO Success</a>
+
+    <div class="section-label">Appendix</div>
+    <a href="#plan">30-Day Action Plan</a>
+    <a href="#resources">Resource Directory</a>
+    <a href="#cta">Get More</a>
+  </nav>
+</aside>
+
+<!-- FAB BUTTONS -->
+<div class="fab-container no-print">
+  <button class="fab" onclick="window.print()">⬇ Save as PDF</button>
+  <button class="fab fab-secondary" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ Top</button>
+</div>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- COVER -->
+  <section class="cover" id="cover">
+    <div class="cover-badge">★ 2026 Blueprint Series</div>
+    <h1>GEO Blueprint 2026</h1>
+    <p class="cover-subtitle">The complete step-by-step guide to Generative Engine Optimization — rank in ChatGPT, Perplexity, Gemini, and every AI answer engine replacing traditional Google search.</p>
+    <div class="cover-stats">
+      <div class="cover-stat">
+        <span class="cover-stat-num">7</span>
+        <span class="cover-stat-label">Chapters</span>
+      </div>
+      <div class="cover-stat">
+        <span class="cover-stat-num">42+</span>
+        <span class="cover-stat-label">Action Tips</span>
+      </div>
+      <div class="cover-stat">
+        <span class="cover-stat-label-num">10</span>
+        <span class="cover-stat-label">Expert Sources</span>
+      </div>
+      <div class="cover-stat">
+        <span class="cover-stat-num">~45</span>
+        <span class="cover-stat-label">Min Read</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOC -->
+  <section id="toc" class="toc">
+    <h2>Table of Contents</h2>
+    <a href="#ch1" class="toc-item">
+      <span class="toc-num">01</span>
+      <span class="toc-title">The GEO Revolution: Why Google's Monopoly Is Over</span>
+      <span class="toc-time">~6 min</span>
+    </a>
+    <a href="#ch2" class="toc-item">
+      <span class="toc-num">02</span>
+      <span class="toc-title">Become a Verified Entity: How AI Engines Decide Who to Cite</span>
+      <span class="toc-time">~8 min</span>
+    </a>
+    <a href="#ch3" class="toc-item">
+      <span class="toc-num">03</span>
+      <span class="toc-title">Schema & Structured Data: The Technical Foundation AI Needs</span>
+      <span class="toc-time">~7 min</span>
+    </a>
+    <a href="#ch4" class="toc-item">
+      <span class="toc-num">04</span>
+      <span class="toc-title">Search Everywhere Optimization: Dominate Every AI Platform</span>
+      <span class="toc-time">~7 min</span>
+    </a>
+    <a href="#ch5" class="toc-item">
+      <span class="toc-num">05</span>
+      <span class="toc-title">Reddit & Community Signals: The Hidden GEO Ranking Factor</span>
+      <span class="toc-time">~6 min</span>
+    </a>
+    <a href="#ch6" class="toc-item">
+      <span class="toc-num">06</span>
+      <span class="toc-title">Content Architecture for AI Citations: Writing That Gets Referenced</span>
+      <span class="toc-time">~7 min</span>
+    </a>
+    <a href="#ch7" class="toc-item">
+      <span class="toc-num">07</span>
+      <span class="toc-title">Measuring GEO Success: Tracking AI Citations & Knowledge Graph</span>
+      <span class="toc-time">~4 min</span>
+    </a>
+    <a href="#plan" class="toc-item">
+      <span class="toc-num">★</span>
+      <span class="toc-title">30-Day GEO Action Plan</span>
+      <span class="toc-time">~3 min</span>
+    </a>
+    <a href="#resources" class="toc-item">
+      <span class="toc-num">⊕</span>
+      <span class="toc-title">Resource Directory (15 Tools)</span>
+      <span class="toc-time">~2 min</span>
+    </a>
+  </section>
+
+  <!-- ============================
+       CHAPTER 1
+  ============================= -->
+  <section class="chapter" id="ch1">
+    <div class="chapter-num">Chapter 01</div>
+    <h2>The GEO Revolution: Why Google's Monopoly Is Over and What to Do About It</h2>
+    <p class="chapter-hook">
+      For 25 years, SEO meant one thing: rank on Google. That era is ending. Users are migrating by the hundreds of millions to AI platforms — ChatGPT, Perplexity, Gemini — that don't show 10 blue links. They synthesize an answer, cite 2–4 sources, and dismiss everyone else. If you're not one of those citations, you're invisible.
+    </p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      ChatGPT surpassed 200M weekly active users in 2025. Perplexity processes over 100M queries per month. AI search is no longer emerging — it's here.
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 01</div>
+      <h4>Audit Where Your Customers Are Actually Searching Now</h4>
+      <p>Before optimizing for AI engines, you need to know which ones your audience uses. Different demographics skew toward different platforms — younger tech users go to Perplexity; general consumers use ChatGPT; enterprise users use Microsoft Copilot.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Open Google Analytics → Acquisition → Referral Sources. Look for ai.com, perplexity.ai, chat.openai.com in your referral traffic already.</li>
+          <li>Run a customer survey with one question: "When you look for information about [your topic], what do you use?" Include ChatGPT, Perplexity, Google, Gemini, Reddit as options.</li>
+          <li>Search for your top 5 keywords in ChatGPT, Perplexity, and Gemini. Screenshot who they cite. If competitors appear and you don't, those are your GEO gaps.</li>
+          <li>Repeat this audit every 30 days. AI platform market share is shifting weekly.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 02</div>
+      <h4>Understand the "Zero Click" Shift — and How to Win Anyway</h4>
+      <p>AI answers reduce organic clicks. Perplexity and ChatGPT give complete answers without users clicking through. Exposure Ninja's research confirms organic click-through rates are declining for informational queries. But there's a path forward: get cited as a source, not just found in search.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Shift your content KPI from "organic clicks" to "brand citations." Use tools like Brandwatch or Mention.com to track when AI tools reference your brand name.</li>
+          <li>Add unique data, original research, or proprietary statistics to your content. AI engines consistently cite sources with data that can't be found elsewhere.</li>
+          <li>Build a "stats page" on your website — a single URL with all your original research, case study numbers, and proprietary benchmarks. This becomes highly citable.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 03</div>
+      <h4>Map Your GEO Competitive Landscape</h4>
+      <p>GEO competition is different from SEO competition. On Google, 10 pages compete for position 1–10. In an AI answer, 2–4 sources get cited — and the selection criteria is entirely different.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Ask ChatGPT, Perplexity, and Gemini your top 10 buying-intent questions. E.g., "What is the best [your category] for [your use case]?"</li>
+          <li>Record every brand cited in the answers. Build a spreadsheet: Query → Platform → Sources Cited.</li>
+          <li>Analyze the cited sources: What do they have in common? Typically: high E-E-A-T signals, schema markup, press mentions, Wikipedia/Wikidata entries, and strong Reddit presence.</li>
+          <li>Identify which of those you lack and build your 90-day GEO plan around closing those gaps.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="callout callout-insight">
+      <div class="callout-label">Insight</div>
+      <strong>AEO + GEO + LLMO:</strong> Eric Siu (Leveling Up, 1.2M+ YouTube subscribers) breaks GEO into three sub-disciplines — Answer Engine Optimization (AEO), Generative Engine Optimization (GEO), and Large Language Model Optimization (LLMO). Each targets a slightly different layer of the AI stack, but the foundational strategy is identical: become a trusted, citable entity.
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win (Under 30 Minutes)</div>
+      Search your brand name in ChatGPT and Perplexity. Ask: "What do you know about [your brand name]?" If you get "I don't have information about that brand," you have zero GEO presence. If you get an accurate description, note what they cite. This baseline takes 15 minutes and tells you exactly where you stand.
+    </div>
+
+    <div class="checklist-box">
+      <h4>Chapter 1 Implementation Checklist</h4>
+      <ul class="checklist">
+        <li>Search your top 5 keywords in ChatGPT, Perplexity, and Gemini — screenshot who gets cited</li>
+        <li>Run a customer survey to identify which AI platforms your audience uses</li>
+        <li>Set up Google Analytics referral tracking for ai.com, perplexity.ai, chat.openai.com</li>
+        <li>Build a competitor citation tracking spreadsheet (Query → Platform → Sources Cited)</li>
+        <li>Create a "stats page" on your website with all original research and proprietary data</li>
+        <li>Shift at least one KPI from "organic clicks" to "brand citations in AI answers"</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================
+       CHAPTER 2
+  ============================= -->
+  <section class="chapter" id="ch2">
+    <div class="chapter-num">Chapter 02</div>
+    <h2>Become a Verified Entity: How AI Engines Decide Who to Cite</h2>
+    <p class="chapter-hook">
+      AI engines don't rank websites. They recognize entities — people, companies, products — that have been validated across multiple authoritative sources. If your brand isn't an entity in their knowledge graph, you don't exist. Building entity status is the single most impactful GEO investment you can make.
+    </p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      Google's E-E-A-T guidelines (Experience, Expertise, Authoritativeness, Trustworthiness) now directly influence which sources AI models are trained to trust. Brands that fail E-E-A-T checks are systematically underrepresented in AI-generated answers.
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 01</div>
+      <h4>Claim and Optimize Your Google Business Profile and Knowledge Panel</h4>
+      <p>Google's Knowledge Graph feeds directly into Gemini and increasingly into other AI models. A verified Knowledge Panel is one of the clearest signals that your entity is real and trusted.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Go to Google Business Profile (business.google.com). Claim your business listing and verify via postcard, phone, or video verification.</li>
+          <li>Fill every field completely: categories (primary + secondary), business description (use your exact keyword phrases), hours, photos (minimum 10 high-quality images), products/services.</li>
+          <li>Search Google for your brand name. If a Knowledge Panel appears, click "Claim this knowledge panel" and verify ownership via Google Search Console.</li>
+          <li>Add your social media profiles, Wikipedia link (if applicable), and official website to the panel. Each connection strengthens your entity graph.</li>
+          <li>Publish Google Posts weekly — these signal to Google that your entity is actively maintained.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 02</div>
+      <h4>Build a Wikidata Entry for Your Brand or Personal Brand</h4>
+      <p>Wikidata is the structured data backbone that multiple AI systems — including ChatGPT's browsing tool and Perplexity — use to verify entities. Having a Wikidata entry makes you a first-class citizen in the AI knowledge graph.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Go to wikidata.org. Create an account and click "Create a new item."</li>
+          <li>Add your entity label (brand name), description (one sentence), and aliases (abbreviations, common variations).</li>
+          <li>Add key statements: instance of (Q4830453 = business), official website (P856), inception date (P571), country (P17), industry (P452).</li>
+          <li>Add external identifier properties: LinkedIn company ID (P4264), Twitter username (P2002), YouTube channel ID (P2397). These cross-references validate your entity.</li>
+          <li>If your brand has been mentioned in major publications (Forbes, TechCrunch, Inc.), add those as references in your Wikidata statements.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 03</div>
+      <h4>Earn Press Mentions on High-Authority Publications</h4>
+      <p>AI models are trained on web data and heavily weight mentions in authoritative publications. A single feature in Forbes, Business Insider, or a major industry trade publication can dramatically increase your entity authority.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Sign up for HARO (Help a Reporter Out) at helpareporter.com. Set alerts for your industry. Respond to 5 journalist queries per week with specific, data-backed answers.</li>
+          <li>Use Qwoted (qwoted.com) and Featured.com — PR platforms specifically for expert sources. Complete your profile with your credentials and expertise areas.</li>
+          <li>Create a "Media" page on your website with your bio, high-res headshot, and past press mentions formatted for journalist use. This makes journalists more likely to quote you accurately.</li>
+          <li>Target industry-specific publications first — they're easier to earn coverage in and still carry entity-building weight.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 04</div>
+      <h4>Build Author Entity Pages for Every Content Creator on Your Team</h4>
+      <p>Grace Leung's AI SEO Roadmap emphasizes that AI engines look for the human expertise behind content, not just the brand. Every author on your website needs a validated entity profile.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Create a dedicated author page for every content creator at yoursite.com/authors/[name]. Include: full name, credentials, years of experience, areas of expertise, social profiles, external publications.</li>
+          <li>Add Schema markup to the author page (Person schema with @id, name, url, sameAs pointing to LinkedIn/Twitter/Google Scholar).</li>
+          <li>Link every article back to the author page using the "author" attribute in your article schema.</li>
+          <li>Have each author maintain a consistent posting presence on LinkedIn where they share expertise. LinkedIn profiles are heavily indexed by AI systems.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="callout callout-protip">
+      <div class="callout-label">Pro Tip</div>
+      <strong>Wikipedia is the gold standard for entity validation.</strong> AI models are explicitly trained to trust Wikipedia. If your brand genuinely meets Wikipedia's notability standards (significant coverage in reliable secondary sources), having a Wikipedia article is worth more for GEO than almost any other action. Work with a professional Wikipedia editor (hire through Wikipedia's own community) — self-created articles are often deleted.
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win (Under 30 Minutes)</div>
+      Go to your Google Search Console. Search for your brand name. Click "Coverage" to check if Google has indexed your about page, team page, and author pages. If any of these are "Not indexed," submit them for indexing immediately. Unindexed entity pages are invisible to AI.
+    </div>
+
+    <div class="checklist-box">
+      <h4>Chapter 2 Implementation Checklist</h4>
+      <ul class="checklist">
+        <li>Claim and fully complete Google Business Profile (all fields, 10+ photos)</li>
+        <li>Verify your Google Knowledge Panel if one exists</li>
+        <li>Create or update your Wikidata entity entry with all relevant properties</li>
+        <li>Sign up for HARO and Qwoted, complete your expert profile</li>
+        <li>Create a dedicated author page for every content creator (with Person schema)</li>
+        <li>Build or update your "About" page with verifiable credentials and entity signals</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================
+       CHAPTER 3
+  ============================= -->
+  <section class="chapter" id="ch3">
+    <div class="chapter-num">Chapter 03</div>
+    <h2>Schema & Structured Data: The Technical Foundation AI Needs to Trust You</h2>
+    <p class="chapter-hook">
+      Schema markup is the language AI engines speak natively. Without it, AI models have to guess what your content is about. With it, you're telling them explicitly — and they reward that clarity with citations. Ahrefs' research on top GEO ranking factors identifies schema as one of the highest-leverage technical investments you can make.
+    </p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      Websites with complete Schema.org markup are 2.7x more likely to appear in AI-generated answer citations, according to early GEO studies. Structured data provides the machine-readable signals AI models need to confidently reference your content.
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 01</div>
+      <h4>Implement Organization Schema on Your Homepage</h4>
+      <p>Organization schema tells AI engines your basic entity facts: who you are, what you do, where you're located, and how to verify you're real. This is the minimum viable schema for any business.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Go to your homepage's HTML. Add a &lt;script type="application/ld+json"&gt; block in the &lt;head&gt;.</li>
+          <li>Include these required fields: @context, @type, name, url, logo, description, sameAs (array of all your social URLs + Wikidata URL), contactPoint, address.</li>
+          <li>The sameAs array is critical — include LinkedIn, Twitter/X, YouTube, Facebook, Crunchbase, and your Wikidata URL (format: https://www.wikidata.org/wiki/Q[number]).</li>
+          <li>Test with Google's Rich Results Test at search.google.com/test/rich-results. Zero errors required.</li>
+          <li>Use Schema.org's validator at validator.schema.org for additional checks.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 02</div>
+      <h4>Add FAQ Schema to Your Top 20 Pages</h4>
+      <p>FAQ schema directly maps your content to the question-answer format that AI engines use. When a user asks ChatGPT or Perplexity a question, AI engines look for content that explicitly answers that format — FAQ schema makes it obvious.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Identify the top 5 questions your audience asks about each page's topic. Use Google's "People Also Ask" boxes, AnswerThePublic.com, and AlsoAsked.com.</li>
+          <li>Write direct, concise answers to each question (100–200 words each).</li>
+          <li>Add FAQPage schema with each question as a Question entity and each answer as an Answer entity.</li>
+          <li>Include these questions in the visible page content as an FAQ section — schema without matching visible content can be flagged as misleading.</li>
+          <li>Focus on questions with high AI search intent: "What is...", "How do I...", "What's the best...", "Why does..."</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 03</div>
+      <h4>Implement HowTo Schema for Instructional Content</h4>
+      <p>HowTo schema is particularly powerful for GEO because AI models love step-by-step answers. When you markup your tutorials with HowTo schema, AI engines can extract your steps and present them directly in their answers — with your brand as the source.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Identify your top tutorial and how-to pages. These are prime candidates for HowTo schema.</li>
+          <li>Structure your HowTo schema with: name (the task), description, totalTime (ISO 8601 format, e.g., "PT30M" for 30 minutes), and a steps array.</li>
+          <li>Each step needs: @type: HowToStep, name (step title), text (detailed description), image (URL of step screenshot if applicable).</li>
+          <li>Deploy via Google Tag Manager for scalability — create a custom HTML tag with the JSON-LD and fire it on relevant page types.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 04</div>
+      <h4>Deploy Article and BlogPosting Schema on All Content</h4>
+      <p>Article schema provides critical metadata that AI engines use to assess content quality and recency. Without it, AI models may not correctly attribute authorship, publication date, or topical relevance.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Add Article or BlogPosting schema to every content page. Key fields: headline, author (Person entity with @id), datePublished, dateModified, image, publisher (Organization entity).</li>
+          <li>Set dateModified to the actual last edit date — AI models use this to assess freshness. Update this field every time you meaningfully update content.</li>
+          <li>The author @id should link to your author entity page (e.g., "https://yoursite.com/authors/jane-smith"), creating a verified connection between content and creator.</li>
+          <li>If you use WordPress, plugins like Rank Math or Yoast SEO can generate this schema automatically — configure them thoroughly.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win (Under 30 Minutes)</div>
+      Go to Google's Rich Results Test (search.google.com/test/rich-results) and test your homepage URL. Check what schema it currently detects. If you see zero structured data detected, install Rank Math SEO (free) on WordPress and enable the Organization schema in settings. It generates correct JSON-LD in under 10 minutes.
+    </div>
+
+    <div class="checklist-box">
+      <h4>Chapter 3 Implementation Checklist</h4>
+      <ul class="checklist">
+        <li>Add Organization schema to homepage with complete sameAs array (6+ social URLs)</li>
+        <li>Implement FAQ schema on your top 20 most-visited pages</li>
+        <li>Add HowTo schema to all tutorial and instructional content</li>
+        <li>Deploy Article/BlogPosting schema with author entities on all blog posts</li>
+        <li>Validate all schema with Google's Rich Results Test (zero errors)</li>
+        <li>Set up monthly schema audit to catch broken markup after CMS updates</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================
+       CHAPTER 4
+  ============================= -->
+  <section class="chapter" id="ch4">
+    <div class="chapter-num">Chapter 04</div>
+    <h2>Search Everywhere Optimization: Dominate Every AI Platform</h2>
+    <p class="chapter-hook">
+      GEO isn't just about one platform. ChatGPT, Perplexity, Gemini, Microsoft Copilot, Apple Intelligence, and Claude each have different training data, retrieval mechanisms, and citation preferences. The strategy called "Search Everywhere Optimization" — popularized across multiple GEO expert sources — treats each platform as a distinct search engine requiring its own optimization approach.
+    </p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      WsCube Tech's analysis found that ranking in ChatGPT, Perplexity, and Gemini simultaneously requires different signals: Perplexity favors real-time web sources; ChatGPT favors training data authority; Gemini favors Google's own entity graph. One-size-fits-all doesn't work.
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 01</div>
+      <h4>Optimize for Perplexity.ai — The Real-Time AI Search Engine</h4>
+      <p>Perplexity crawls the live web in real time, making it the most SEO-adjacent AI platform. Content that ranks in Google's top 10 and has strong E-E-A-T signals tends to get cited in Perplexity answers.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Ensure Perplexity's crawler (PerplexityBot) is not blocked in your robots.txt. Check your robots.txt at yoursite.com/robots.txt — look for any lines blocking bots.</li>
+          <li>Optimize for question-format queries. Search your target keywords in Perplexity and note the exact phrasing of questions it answers. Write content that directly matches those phrasings.</li>
+          <li>Publish fresh content on trending topics in your niche within 24–48 hours of a news event. Perplexity prioritizes recency for breaking topics.</li>
+          <li>Submit your sitemap to Perplexity via their publisher program at perplexity.ai/publishers.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 02</div>
+      <h4>Optimize for ChatGPT — Training Data and Plugin Authority</h4>
+      <p>ChatGPT's core model (without browsing) relies on training data from before its cutoff date. Getting your content into the training data means being heavily cited on authoritative sites, having a Wikipedia presence, and appearing in large web crawls.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Create pillar content — comprehensive 3,000–5,000 word guides on your core topics. These are the types of pages that get scraped into training datasets.</li>
+          <li>Get your content linked from high-authority domains (DA 70+). Tools like Ahrefs Site Explorer show you which domains are linking to your competitors — use this as a prospecting list for your link building.</li>
+          <li>Enable ChatGPT's browsing features by ensuring your site isn't blocking GPTBot in robots.txt. Add this to your robots.txt: "User-agent: GPTBot / Allow: /"</li>
+          <li>If you have a product, consider building a ChatGPT Plugin or Custom GPT that uses your content — this creates a direct citation pathway.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 03</div>
+      <h4>Optimize for Google Gemini — Leverage Google's Ecosystem</h4>
+      <p>Gemini draws heavily from Google's own data infrastructure — Search, Business Profiles, Knowledge Graph, and YouTube. Brands already visible in Google's ecosystem have a natural advantage in Gemini.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Optimize your Google Business Profile (see Chapter 2) — Gemini uses this data directly.</li>
+          <li>Create YouTube videos on your top topics. Gemini integrates YouTube results, and video content gets cited in Gemini AI Overviews.</li>
+          <li>Publish content that earns Google's "Featured Snippet" position. Google AI Overviews heavily source from featured snippet content.</li>
+          <li>Ensure your site has strong Core Web Vitals scores. Run Google PageSpeed Insights (pagespeed.web.dev) and target scores above 90 for LCP, FID, and CLS.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="callout callout-protip">
+      <div class="callout-label">Pro Tip — Allow All AI Crawlers</div>
+      Check your robots.txt file right now. Many legacy SEO configurations block all bots except Googlebot. This means you're blocking GPTBot (ChatGPT), PerplexityBot, ClaudeBot (Anthropic), and others. Add explicit Allow rules for each: GPTBot, PerplexityBot, ClaudeBot, Applebot-Extended. This takes 5 minutes and immediately makes your content accessible to AI training and retrieval.
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win (Under 30 Minutes)</div>
+      Open your robots.txt file. Search for "Disallow: /" — if it exists as a global rule or blocks AI bots, update it immediately. Then go to Perplexity.ai/publishers and register your site. Both actions take under 15 minutes each and open you up to AI crawler indexing.
+    </div>
+
+    <div class="checklist-box">
+      <h4>Chapter 4 Implementation Checklist</h4>
+      <ul class="checklist">
+        <li>Check robots.txt and allow GPTBot, PerplexityBot, ClaudeBot, Applebot-Extended</li>
+        <li>Register your site with Perplexity publisher program</li>
+        <li>Identify and target 10 question-format keywords for each major AI platform</li>
+        <li>Create at least 3 comprehensive pillar content pages (3,000+ words each)</li>
+        <li>Launch a YouTube channel or publish at least 4 videos on core topics for Gemini optimization</li>
+        <li>Run Core Web Vitals audit via PageSpeed Insights, fix any scores below 75</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================
+       CHAPTER 5
+  ============================= -->
+  <section class="chapter" id="ch5">
+    <div class="chapter-num">Chapter 05</div>
+    <h2>Reddit & Community Signals: The Hidden GEO Ranking Factor</h2>
+    <p class="chapter-hook">
+      Reddit became one of the most important GEO signals almost overnight. In 2024, Google paid Reddit $60M per year for training data access. ChatGPT's training data includes Reddit. Perplexity frequently cites Reddit threads. If your brand appears positively in authentic Reddit discussions, it dramatically increases your AI citation probability.
+    </p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      Surfer Academy's research shows that Reddit threads appear in AI-generated answers at a rate 3–4x higher than their Google organic ranking would suggest. AI models treat Reddit as a trusted community-validation signal — independent of traditional SEO authority metrics.
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 01</div>
+      <h4>Identify the 5 Subreddits Where Your Customers Ask Questions</h4>
+      <p>Before you can build Reddit presence, you need to know where your audience already lives. Different industries have wildly different subreddit ecosystems.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Go to Reddit.com and search for your primary keyword. Look at which subreddits the top posts appear in.</li>
+          <li>Use RedditSearch.io to search for your brand name, competitor names, and industry terms. Note which subreddits produce results.</li>
+          <li>Target subreddits with 50K+ members for the best reach, but don't ignore niche subreddits with 5K–50K highly engaged members — these often get cited by AI because of their specificity.</li>
+          <li>Focus on 3–5 subreddits maximum. Spreading too thin reduces your credibility score within each community.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 02</div>
+      <h4>Build Reddit Karma Through Genuine Expertise, Not Promotion</h4>
+      <p>Reddit communities are highly sensitive to promotional content. AI models are also trained to recognize and downweight shilling. The only sustainable Reddit GEO strategy is genuine community contribution.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Create a dedicated Reddit account for your personal brand or expert team member (not a brand account — personal accounts are more trusted).</li>
+          <li>Spend the first 30 days only answering questions. No self-promotion, no links to your site. Aim for 10+ quality answers per week in your target subreddits.</li>
+          <li>When you do share a link to your content, it must be the single best answer to the question being asked. Community guidelines vary — always read the subreddit rules first.</li>
+          <li>Track upvotes and engagement on your answers. High-upvote answers are far more likely to get cited by AI engines than low-engagement ones.</li>
+          <li>Post original questions too — "Has anyone tried X? Here's what I found..." format works exceptionally well and generates discussion around your expertise.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 03</div>
+      <h4>Create "Definitive Thread" Content That Gets Bookmarked</h4>
+      <p>The Reddit posts that AI engines cite most often are "megathreads" and "definitive guides" — long, upvoted posts that communities use as reference resources.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>After 60+ days of community participation, identify a question your subreddit asks repeatedly. Write a comprehensive answer post — aim for 800–1,500 words.</li>
+          <li>Structure it with headers (Reddit supports markdown): use ## for sections, bullet points for lists, bold for key terms.</li>
+          <li>Include specific numbers, tool names, and step-by-step processes — the same content quality rules that make great blog posts make great Reddit posts.</li>
+          <li>Ask moderators to add it to the subreddit wiki or pin it as a resource. Wiki-linked posts carry dramatically higher citation weight.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="callout callout-insight">
+      <div class="callout-label">Insight</div>
+      Surfer Academy's "How to Use Reddit to Dominate AI Search Rankings in 2026" documents a case where a brand went from zero Reddit presence to appearing in 40% of AI answers for their core keywords within 90 days — entirely through consistent, genuine Reddit community participation. No advertising, no paid promotion.
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win (Under 30 Minutes)</div>
+      Search Reddit for your top 3 keywords. Find a post with 10+ comments where someone is asking a question you can answer better than any existing comment. Write a detailed, helpful answer. This single post, if upvoted, may start appearing in AI answers within 2–4 weeks.
+    </div>
+
+    <div class="checklist-box">
+      <h4>Chapter 5 Implementation Checklist</h4>
+      <ul class="checklist">
+        <li>Identify your top 5 target subreddits using Reddit search + RedditSearch.io</li>
+        <li>Create a personal-brand Reddit account (separate from brand accounts)</li>
+        <li>Complete 30 days of answer-only activity (no self-promotion) before sharing links</li>
+        <li>Track upvote scores on all your answers to identify what the community values most</li>
+        <li>Write one "definitive thread" post after 60 days of participation</li>
+        <li>Request moderator review to add your best posts to the subreddit wiki</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================
+       CHAPTER 6
+  ============================= -->
+  <section class="chapter" id="ch6">
+    <div class="chapter-num">Chapter 06</div>
+    <h2>Content Architecture for AI Citations: Writing That Gets Referenced</h2>
+    <p class="chapter-hook">
+      AI engines don't cite articles randomly. They cite content that is structured to answer questions directly, uses clear factual claims, includes specific data points, and covers topics comprehensively enough to be the single best source. Understanding this citation logic is the key to creating content that AI will use as a primary source.
+    </p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      Ahrefs' analysis of top GEO ranking factors found that long-tail, high-intent queries produce AI citations at 4x the rate of broad informational queries. The more specific the question, the fewer credible sources exist — and the easier it is for your content to become the definitive reference.
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 01</div>
+      <h4>Target Long-Tail Questions With "AI Answer Intent"</h4>
+      <p>Not all queries trigger AI-generated answers. Queries with clear question intent ("what is," "how to," "why does," "best X for Y") consistently produce AI responses with citations. Broad queries ("marketing tips") produce traditional search results.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Open Ahrefs Keyword Explorer or Semrush. Filter for keywords with question modifiers: "how," "what," "why," "which," "when," "best."</li>
+          <li>Further filter for keywords with 100–1,000 monthly searches. These have enough volume to matter but low enough competition that your content can become the definitive source.</li>
+          <li>Search each keyword in ChatGPT and Perplexity. If an AI answer appears, a citation is possible. If not, it's likely a transactional query that won't get AI treatment.</li>
+          <li>Prioritize keywords where the top Google result is from 2021 or older — outdated content is the easiest GEO gap to fill.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 02</div>
+      <h4>Use the "Direct Answer First" Content Structure</h4>
+      <p>AI engines extract content by looking for the most direct answer to a query, usually within the first 100 words of a section. The inverted pyramid structure — answer first, then explanation — is the GEO-optimal format.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Start every blog post with a 2–3 sentence "TL;DR" or "Key Takeaway" box that directly answers the page's main query.</li>
+          <li>Use H2 and H3 headers phrased as questions: "What is GEO?" "How does entity verification work?" "What schema types matter most?" These match AI query patterns exactly.</li>
+          <li>Put the direct answer in the first sentence after each header. Don't build to a conclusion — AI systems scan for the answer, not the journey.</li>
+          <li>Use numbered lists and bullet points for any process or comparison. These are extracted far more reliably than prose paragraphs.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 03</div>
+      <h4>Embed Original Statistics and Unique Data Points</h4>
+      <p>AI engines cite sources that contain information unavailable elsewhere. Original statistics, proprietary benchmark data, and first-person research are the highest-value content assets in a GEO context.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Run a customer survey (even 50 responses is meaningful) on a relevant industry question. Publish the results as a standalone post with the headline "We surveyed 50 [audience] on [topic] — here's what we found."</li>
+          <li>Compile publicly available data into a new synthesis. E.g., "We analyzed the top 100 GEO-cited brands and found these 5 patterns" — the synthesis itself is original.</li>
+          <li>Create benchmark comparison tables. "We tested [Tool A] vs [Tool B] for 30 days" with specific metrics. These tables get extracted and cited constantly.</li>
+          <li>Update these data pieces quarterly with new data. "Updated Q2 2026" in the title signals freshness to AI retrieval systems.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 04</div>
+      <h4>Automate Content Updates With LLM Workflows</h4>
+      <p>NERD UP's research on AI search optimization emphasizes that content freshness is a major GEO signal. Manual content updates at scale are unsustainable — LLM workflows make it possible.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Build a Google Sheets + Make.com (or Zapier) workflow: Column A = article URLs, Column B = "last verified date." Set a trigger to flag any article older than 90 days.</li>
+          <li>For flagged articles, use Claude or GPT-4 API to generate an "update summary" — what has changed in the topic since the original publication date.</li>
+          <li>Have a human editor review the AI-generated update, incorporate the changes, and update the dateModified in your Article schema.</li>
+          <li>Use Screaming Frog to crawl your site monthly and export a report of all pages with dateModified older than 6 months. These are your update priorities.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win (Under 30 Minutes)</div>
+      Pick your single most-visited blog post. Rewrite the first 150 words to follow "Direct Answer First" format: add a "Key Takeaway" box at the top with a 2-sentence direct answer to the post's main question. Update the dateModified field. Republish. This single change can increase AI citation probability for that post by 40–60%.
+    </div>
+
+    <div class="checklist-box">
+      <h4>Chapter 6 Implementation Checklist</h4>
+      <ul class="checklist">
+        <li>Audit your top 20 posts for long-tail question intent — flag any that lack question-format targeting</li>
+        <li>Reformat top 10 posts with "Direct Answer First" structure (TL;DR box + question headers)</li>
+        <li>Commission or run one original survey or data study per quarter</li>
+        <li>Build a content freshness tracking system (Google Sheets + automation trigger)</li>
+        <li>Create at least 2 original benchmark comparison tables in your niche</li>
+        <li>Add dateModified to Article schema on all posts and keep it updated</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================
+       CHAPTER 7
+  ============================= -->
+  <section class="chapter" id="ch7">
+    <div class="chapter-num">Chapter 07</div>
+    <h2>Measuring GEO Success: Tracking AI Citations, Knowledge Graph & Traffic</h2>
+    <p class="chapter-hook">
+      You can't manage what you can't measure — and GEO measurement is fundamentally different from traditional SEO analytics. There's no "AI Position 1" in Google Search Console. You need a new measurement framework that tracks brand citations, AI referral traffic, and knowledge graph presence.
+    </p>
+
+    <div class="callout callout-stat">
+      <div class="callout-label">Key Stat</div>
+      Hostinger Academy reports that brands with active GEO monitoring programs identify citation opportunities 3x faster than those relying on passive analytics. The difference is systematic query testing, not just waiting for traffic to appear.
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 01</div>
+      <h4>Build a Manual GEO Rank Tracking System</h4>
+      <p>Until dedicated GEO tracking tools mature, manual testing is the most reliable method. Create a systematic query testing process that tells you exactly where you stand in AI answers each month.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Create a Google Sheet with columns: Query | Platform | Date | Were You Cited? | Who Was Cited? | Your Position (1st, 2nd, 3rd, Not Cited).</li>
+          <li>Select your top 20 target queries. Test each in ChatGPT (without browsing), Perplexity, and Gemini on the 1st of every month.</li>
+          <li>Record results consistently. Track your citation rate (% of queries where you're cited) and citation position. Your goal is to move from "Not Cited" to "Cited" and eventually to "Cited First."</li>
+          <li>Share a monthly GEO scorecard with your team that shows trend lines, not just snapshots.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 02</div>
+      <h4>Track AI Referral Traffic in Google Analytics</h4>
+      <p>AI platforms are beginning to send measurable referral traffic. Setting up proper tracking lets you quantify the ROI of your GEO work in terms you can take to leadership.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>In Google Analytics 4, go to Acquisition → Traffic Acquisition. Create a custom report filtered by Session Source containing: "perplexity.ai", "ai.com", "chat.openai.com", "bard.google.com", "copilot.microsoft.com".</li>
+          <li>Save this as a custom report called "AI Referral Traffic." Review weekly.</li>
+          <li>Set up GA4 custom events to track when users from AI referral sources convert (sign up, purchase, contact). This is your GEO ROI metric.</li>
+          <li>In Google Search Console, filter Performance by query and look for queries that start with question words ("what," "how," "why"). High impressions with low clicks on these indicate AI Overviews may be intercepting the click — but your brand is still appearing.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-num">Tip 03</div>
+      <h4>Monitor Brand Mentions Across AI Outputs With Automation</h4>
+      <p>AI brand mentions happen in real time across millions of conversations. Automating your monitoring is the only way to keep up.</p>
+      <div class="how-to">
+        <strong>How to do it:</strong>
+        <ol>
+          <li>Set up Google Alerts for your brand name, your top 3 products, and your key executives. Set delivery to "As it happens."</li>
+          <li>Use Mention.com or Brandwatch (paid) for more comprehensive monitoring including Reddit, forums, and social mentions — these are the community signals that feed GEO.</li>
+          <li>Every time you spot a brand mention in an AI-related context (someone sharing a ChatGPT screenshot that mentions you, a Reddit post linking to your content), document it in your GEO tracking sheet.</li>
+          <li>Build a monthly "GEO Health Score" combining: citation rate across 20 queries, AI referral sessions, branded search volume growth, and Reddit mention sentiment.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="callout callout-quickwin">
+      <div class="callout-label">Quick Win (Under 30 Minutes)</div>
+      Right now, test your brand in these 5 AI platforms: ChatGPT (chatgpt.com), Perplexity (perplexity.ai), Gemini (gemini.google.com), Claude (claude.ai), Microsoft Copilot (copilot.microsoft.com). Ask: "What is [your brand name]?" and "What are the best [your category] tools?" Record the results. This is your GEO baseline and takes under 20 minutes.
+    </div>
+
+    <div class="checklist-box">
+      <h4>Chapter 7 Implementation Checklist</h4>
+      <ul class="checklist">
+        <li>Build your GEO rank tracking spreadsheet (20 queries × 3 platforms)</li>
+        <li>Run your first manual GEO audit and record baseline citation rates</li>
+        <li>Set up GA4 custom report for AI referral traffic sources</li>
+        <li>Configure Google Alerts for your brand, products, and executives</li>
+        <li>Set up Mention.com or equivalent for Reddit and forum monitoring</li>
+        <li>Schedule monthly GEO scorecard reviews with leadership</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================
+       30-DAY ACTION PLAN
+  ============================= -->
+  <section class="chapter" id="plan">
+    <div class="chapter-num">30-Day Action Plan</div>
+    <h2>Your GEO Launch Roadmap</h2>
+    <p class="chapter-hook">
+      GEO results compound over 60–90 days. The first 30 days are about infrastructure — getting the technical and entity foundations in place so everything else builds on solid ground. Follow this week-by-week plan to see measurable progress in your first month.
+    </p>
+
+    <div class="plan-week">
+      <h3>Week 1: Baseline & Entity Foundation (Days 1–7)</h3>
+      <ul>
+        <li><strong>Day 1:</strong> Run GEO baseline audit — test top 20 queries in ChatGPT, Perplexity, Gemini. Record results in tracking spreadsheet.</li>
+        <li><strong>Day 2:</strong> Audit robots.txt — allow GPTBot, PerplexityBot, ClaudeBot, Applebot-Extended.</li>
+        <li><strong>Day 3:</strong> Claim and fully complete Google Business Profile (all fields + 10 photos).</li>
+        <li><strong>Day 4:</strong> Check Google Knowledge Panel for your brand. Verify ownership if it exists.</li>
+        <li><strong>Day 5:</strong> Create or update your Wikidata entity entry.</li>
+        <li><strong>Day 6:</strong> Sign up for HARO and Qwoted. Complete your expert profile.</li>
+        <li><strong>Day 7:</strong> Register your site with Perplexity publisher program. Set up GA4 AI referral report.</li>
+      </ul>
+    </div>
+
+    <div class="plan-week">
+      <h3>Week 2: Schema Implementation (Days 8–14)</h3>
+      <ul>
+        <li><strong>Day 8:</strong> Add Organization schema to homepage with complete sameAs array.</li>
+        <li><strong>Day 9:</strong> Test schema with Google Rich Results Test. Fix all errors.</li>
+        <li><strong>Day 10:</strong> Create author entity pages for all content creators. Add Person schema.</li>
+        <li><strong>Day 11:</strong> Add Article/BlogPosting schema to your top 20 posts.</li>
+        <li><strong>Day 12:</strong> Identify top 20 pages for FAQ schema. Research questions using AnswerThePublic.</li>
+        <li><strong>Day 13:</strong> Write FAQ content and add FAQPage schema to first 10 pages.</li>
+        <li><strong>Day 14:</strong> Add FAQPage schema to remaining 10 pages. Run full schema audit.</li>
+      </ul>
+    </div>
+
+    <div class="plan-week">
+      <h3>Week 3: Content Architecture (Days 15–21)</h3>
+      <ul>
+        <li><strong>Day 15:</strong> Audit top 20 blog posts for "Direct Answer First" structure. Flag all that need updates.</li>
+        <li><strong>Day 16–17:</strong> Rewrite first 150 words of top 10 posts with TL;DR boxes and question-format headers.</li>
+        <li><strong>Day 18:</strong> Identify 5 long-tail question keywords with AI answer intent. Plan content for each.</li>
+        <li><strong>Day 19:</strong> Write or commission the first GEO-optimized long-tail article (2,000+ words, direct answer first).</li>
+        <li><strong>Day 20:</strong> Set up content freshness tracking spreadsheet with 90-day review triggers.</li>
+        <li><strong>Day 21:</strong> Create your website's "Stats & Research" page — compile all proprietary data in one citable URL.</li>
+      </ul>
+    </div>
+
+    <div class="plan-week">
+      <h3>Week 4: Community & Measurement (Days 22–30)</h3>
+      <ul>
+        <li><strong>Day 22:</strong> Identify top 5 target subreddits. Create personal Reddit account for your expert.</li>
+        <li><strong>Day 23–27:</strong> Answer 2 Reddit questions per day in target subreddits (10 total answers this week). Zero self-promotion.</li>
+        <li><strong>Day 28:</strong> Set up Google Alerts for brand, products, and executives.</li>
+        <li><strong>Day 29:</strong> Set up Mention.com for Reddit and forum monitoring.</li>
+        <li><strong>Day 30:</strong> Run GEO measurement audit — retest all 20 queries. Compare to Week 1 baseline. Calculate citation rate improvement. Build your Month 2 priorities based on results.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================
+       RESOURCE DIRECTORY
+  ============================= -->
+  <section class="chapter" id="resources">
+    <div class="chapter-num">Resource Directory</div>
+    <h2>Every Tool You Need for GEO</h2>
+    <p style="margin-bottom: 32px;">Curated from all 10 source videos — only tools specifically named by GEO experts made this list.</p>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Perplexity AI</div><div class="resource-what">AI answer engine</div></div>
+      <div class="resource-desc">Both a GEO target platform and a research tool. Use it to test how your content appears in AI answers and to research competitor citations. Register at perplexity.ai/publishers to get your site indexed.</div>
+      <div><span class="resource-badge badge-freemium">Freemium</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Ahrefs</div><div class="resource-what">SEO + GEO research platform</div></div>
+      <div class="resource-desc">Site Explorer shows which domains link to your competitors — essential for entity-building link prospecting. Keywords Explorer identifies long-tail question queries for AI citation targeting. Used by Ahrefs themselves to document top GEO ranking factors.</div>
+      <div><span class="resource-badge badge-paid">Paid</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Semrush</div><div class="resource-what">SEO + competitive analysis</div></div>
+      <div class="resource-desc">Featured in multiple GEO expert guides for keyword research and competitive gap analysis. Their Topic Research tool surfaces question-format queries ideal for AI citation targeting. Also has a brand monitoring feature for tracking your AI mentions.</div>
+      <div><span class="resource-badge badge-freemium">Freemium</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Google Search Console</div><div class="resource-what">Search performance tracking</div></div>
+      <div class="resource-desc">Free tool to monitor indexing, submit sitemaps, check Core Web Vitals, and track impressions vs clicks on question-format queries. Essential for identifying where AI Overviews are intercepting your traffic.</div>
+      <div><span class="resource-badge badge-free">Free</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Google Rich Results Test</div><div class="resource-what">Schema validation</div></div>
+      <div class="resource-desc">Official Google tool to validate all schema markup. Run every URL that has structured data through this tool before publishing. Zero errors required. Available at search.google.com/test/rich-results.</div>
+      <div><span class="resource-badge badge-free">Free</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Schema.org Validator</div><div class="resource-what">Schema markup testing</div></div>
+      <div class="resource-desc">Secondary validation tool at validator.schema.org. Catches issues that Google's Rich Results Test misses, particularly around entity relationship markup and sameAs arrays.</div>
+      <div><span class="resource-badge badge-free">Free</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Rank Math SEO</div><div class="resource-what">WordPress schema plugin</div></div>
+      <div class="resource-desc">The most complete free schema implementation for WordPress. Automatically generates Organization, Article, and Person schema. Highly recommended by GEO practitioners over Yoast for its more complete schema output.</div>
+      <div><span class="resource-badge badge-freemium">Freemium</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Wikidata</div><div class="resource-what">AI entity registry</div></div>
+      <div class="resource-desc">The structured knowledge base that feeds multiple AI systems. Creating and maintaining your entity entry here is one of the highest-leverage GEO actions available. Free, but requires community standards compliance. wikidata.org</div>
+      <div><span class="resource-badge badge-free">Free</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">HARO (Help a Reporter Out)</div><div class="resource-what">PR & press mention platform</div></div>
+      <div class="resource-desc">Connects journalists seeking expert sources with brands wanting media coverage. High-DA press mentions are critical for entity authority and AI training data inclusion. Free basic tier sends 3 query emails per day. helpareporter.com</div>
+      <div><span class="resource-badge badge-freemium">Freemium</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Qwoted</div><div class="resource-what">Expert source platform</div></div>
+      <div class="resource-desc">More targeted alternative to HARO. Journalists request specific expert types — you get matched when your profile fits. Higher quality queries than HARO, lower volume. Recommended by multiple GEO practitioners for earning authoritative press mentions.</div>
+      <div><span class="resource-badge badge-freemium">Freemium</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">AnswerThePublic</div><div class="resource-what">Question keyword research</div></div>
+      <div class="resource-desc">Visualizes the questions, prepositions, and comparisons people search for around any keyword. Essential for identifying FAQ schema questions and GEO-targeted content topics. The free tier allows 3 searches per day.</div>
+      <div><span class="resource-badge badge-freemium">Freemium</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">RedditSearch.io</div><div class="resource-what">Reddit research tool</div></div>
+      <div class="resource-desc">Searches all of Reddit (including historical posts) for any keyword. Use it to identify which subreddits discuss your brand or topic, and to find existing threads where a detailed answer would be welcomed.</div>
+      <div><span class="resource-badge badge-free">Free</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Mention.com</div><div class="resource-what">Brand monitoring</div></div>
+      <div class="resource-desc">Tracks brand mentions across web, Reddit, forums, social media, and news. Essential for GEO brand citation monitoring. Set up alerts for your brand name, executives, and product names. More comprehensive than Google Alerts alone.</div>
+      <div><span class="resource-badge badge-paid">Paid</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">Screaming Frog</div><div class="resource-what">Site crawler & schema auditor</div></div>
+      <div class="resource-desc">Crawls your entire site and exports structured data found on each page. Use it monthly to audit schema implementation, catch broken markup, and find pages missing structured data. Essential for GEO technical maintenance.</div>
+      <div><span class="resource-badge badge-freemium">Freemium</span></div>
+    </div>
+
+    <div class="resource-card">
+      <div><div class="resource-name">PageSpeed Insights</div><div class="resource-what">Core Web Vitals checker</div></div>
+      <div class="resource-desc">Google's free tool for measuring Core Web Vitals (LCP, FID, CLS) — signals Gemini uses for content quality assessment. Target scores above 90 on all metrics. Run monthly on your top 10 pages. pagespeed.web.dev</div>
+      <div><span class="resource-badge badge-free">Free</span></div>
+    </div>
+  </section>
+
+  <!-- BACK COVER / CTA -->
+  <section id="cta" class="back-cover">
+    <h2>Stay Ahead of the GEO Curve</h2>
+    <p>GEO is evolving weekly. Get the latest strategies, algorithm updates, and citation tracking techniques delivered to your inbox.</p>
+    <div class="email-form">
+      <input type="email" placeholder="your@email.com">
+      <button onclick="alert('Thanks! We\'ll be in touch.')">Get Updates</button>
+    </div>
+    <p style="font-size: 13px; margin-top: 16px; color: rgba(255,255,255,0.3);">No spam. Unsubscribe anytime. GEO tactics only.</p>
+  </section>
+
+</main>
+</body>
+</html>

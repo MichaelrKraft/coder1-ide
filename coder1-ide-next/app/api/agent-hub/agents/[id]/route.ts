@@ -88,6 +88,17 @@ export async function PATCH(request: NextRequest, context: RouteContext): Promis
     if (!agent) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     }
+
+    // Update Telegram poller registry if bot token changed
+    if (typeof body.telegramBotToken === 'string') {
+      try {
+        const registry = (global as Record<string, unknown>).telegramRegistry as
+          | { register: (agent: { id: string; userId: string; telegram_bot_token?: string | null }) => void }
+          | undefined;
+        registry?.register({ id: agent.id, userId, telegram_bot_token: agent.telegramBotToken });
+      } catch { /* registry may not be initialized in dev */ }
+    }
+
     return NextResponse.json({ agent });
   } catch (error) {
     console.error('[agent-hub] PATCH /agents/[id] error:', error);

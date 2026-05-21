@@ -1,0 +1,886 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-21T17:31:08.242Z",
+  "source": "auto-postool",
+  "partial": false,
+  "phase": null,
+  "phase_name": null,
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "auto-checkpoint",
+  "completed_tasks": [],
+  "remaining_tasks": [],
+  "blockers": [],
+  "human_actions_pending": [],
+  "decisions": [],
+  "uncommitted_files": [
+    {
+      "status": "M",
+      "path": "coder1-ide-next/README.md"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/app/alpha/page.tsx"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/app/api/agent-hub/agents/[id]/route.ts"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/app/api/agent-hub/cron-tasks/route.ts"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/app/api/agent-hub/hive-mind/route.ts"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/app/api/agent-hub/tasks/route.ts"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/app/api/bridge/generate-code/route.ts"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/app/api/cron/scheduled-tasks/route.ts"
+    },
+    {
+      "status": "D",
+      "path": "coder1-ide-next/app/api/parallel-exploration/build/[sessionId]/[strategyId]/route.ts"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/app/layout.tsx"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/app/page.tsx"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/components/agent-hub/AgentHubLayout.tsx"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/components/agent-hub/tasks/TaskForm.tsx"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/components/johnny5/morning-brief/MorningBriefTab.tsx"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/lib/agent-hub/db.ts"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/lib/agent-hub/exfil-guard.ts"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/lib/agent-hub/runs.ts"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/lib/agent-hub/telegram.ts"
+    },
+    {
+      "status": "D",
+      "path": "coder1-ide-next/lib/ai-mastermind-reference/ai_mastermind_package/ai_mastermind/__pycache__/__init__.cpython-311.pyc"
+    },
+    {
+      "status": "D",
+      "path": "coder1-ide-next/lib/ai-mastermind-reference/ai_mastermind_package/ai_mastermind/__pycache__/claude_agent_interface.cpython-311.pyc"
+    },
+    {
+      "status": "D",
+      "path": "coder1-ide-next/lib/ai-mastermind-reference/ai_mastermind_package/ai_mastermind/__pycache__/orchestrator.cpython-311.pyc"
+    },
+    {
+      "status": "D",
+      "path": "coder1-ide-next/lib/ai-mastermind-reference/ai_mastermind_package/ai_mastermind/__pycache__/personas.cpython-311.pyc"
+    },
+    {
+      "status": "D",
+      "path": "coder1-ide-next/lib/ai-mastermind-reference/ai_mastermind_package/ai_mastermind/__pycache__/phase_one.cpython-311.pyc"
+    },
+    {
+      "status": "D",
+      "path": "coder1-ide-next/lib/ai-mastermind-reference/ai_mastermind_package/ai_mastermind/__pycache__/phase_two.cpython-311.pyc"
+    },
+    {
+      "status": "D",
+      "path": "coder1-ide-next/lib/ai-mastermind-reference/ai_mastermind_package/ai_mastermind/__pycache__/report_generator.cpython-311.pyc"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/package-lock.json"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/scripts/morning-brief/collect-weekly-stats.js"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/scripts/morning-brief/render.js"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/server.js"
+    },
+    {
+      "status": "M",
+      "path": "coder1-ide-next/tasks/todo.md"
+    },
+    {
+      "status": "M",
+      "path": "deckpress/public/deck/js/config.js"
+    },
+    {
+      "status": "M",
+      "path": "deckpress/public/decks/keynote/js/config.js"
+    },
+    {
+      "status": "??",
+      "path": ".coder1/AGENT_SWARM_INTELLIGENCE.md"
+    },
+    {
+      "status": "??",
+      "path": ".coder1/agents/architecture.json"
+    },
+    {
+      "status": "??",
+      "path": ".coder1/agents/devops-engineer.json"
+    },
+    {
+      "status": "??",
+      "path": ".coder1/agents/product-manager.json"
+    },
+    {
+      "status": "??",
+      "path": ".coder1/agents/rules.json"
+    },
+    {
+      "status": "??",
+      "path": ".coder1/agents/security-analyst.json"
+    },
+    {
+      "status": "??",
+      "path": ".coder1/agents/ux-designer.json"
+    },
+    {
+      "status": "??",
+      "path": ".coder1/benchmark-routing.js"
+    },
+    {
+      "status": "??",
+      "path": ".coder1/usage/"
+    },
+    {
+      "status": "??",
+      "path": ".github/ISSUE_TEMPLATE/"
+    },
+    {
+      "status": "??",
+      "path": ".github/pull_request_template.md"
+    },
+    {
+      "status": "??",
+      "path": ".planning/"
+    },
+    {
+      "status": "??",
+      "path": ".vercelignore"
+    },
+    {
+      "status": "??",
+      "path": "AI_HOOKS_SYSTEM_GUIDE.md"
+    },
+    {
+      "status": "??",
+      "path": "AI_INTELLIGENCE_SYSTEMS_COMPLETE.md"
+    },
+    {
+      "status": "??",
+      "path": "AI_MAGIC_WAND_GUIDE.md"
+    },
+    {
+      "status": "??",
+      "path": "AI_MASTERMIND_BIBLE.md"
+    },
+    {
+      "status": "??",
+      "path": "AI_MASTERMIND_EVOLUTION_ORCHESTRATOR_LED.md"
+    },
+    {
+      "status": "??",
+      "path": "AI_TEAM_BUTTON_TEST_REPORT.md"
+    },
+    {
+      "status": "??",
+      "path": "AI_TEAM_HANDOFF_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "AI_TEAM_TEST_RESULTS.md"
+    },
+    {
+      "status": "??",
+      "path": "ARCHITECTURE.md"
+    },
+    {
+      "status": "??",
+      "path": "BASELINE_WORKING_STATE.md"
+    },
+    {
+      "status": "??",
+      "path": "BUILD_INSTRUCTIONS.md"
+    },
+    {
+      "status": "??",
+      "path": "\"CANONICAL/Claude Coder1 Logo.png\""
+    },
+    {
+      "status": "??",
+      "path": "CANONICAL/README.md"
+    },
+    {
+      "status": "??",
+      "path": "CANONICAL/agent-dashboard.html"
+    },
+    {
+      "status": "??",
+      "path": "CANONICAL/coder1-logo-newest.png"
+    },
+    {
+      "status": "??",
+      "path": "CANONICAL/coder1-logo.png"
+    },
+    {
+      "status": "??",
+      "path": "\"CANONICAL/ide-build/Claude Coder1 Logo.png\""
+    },
+    {
+      "status": "??",
+      "path": "CANONICAL/ide-build/logo192.png"
+    },
+    {
+      "status": "??",
+      "path": "CANONICAL/ide-build/logo512.png"
+    },
+    {
+      "status": "??",
+      "path": "CLAUDE_BUTTONS_TESTING_GUIDE.md"
+    },
+    {
+      "status": "??",
+      "path": "CLAUDE_BUTTONS_TEST_RESULTS.md"
+    },
+    {
+      "status": "??",
+      "path": "CLAUDE_CONDUCTOR_FEATURES.md"
+    },
+    {
+      "status": "??",
+      "path": "CLAUDE_SESSIONS.md"
+    },
+    {
+      "status": "??",
+      "path": "CLEANUP_COMPLETE.md"
+    },
+    {
+      "status": "??",
+      "path": "CLEANUP_RECOMMENDATIONS.md"
+    },
+    {
+      "status": "??",
+      "path": "CLEANUP_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "CODER1_COMMANDS_GUIDE.md"
+    },
+    {
+      "status": "??",
+      "path": "CODER1_EVOLUTION_PLAN.md"
+    },
+    {
+      "status": "??",
+      "path": "CODER_ONE_STATUSLINE_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "CODE_OF_CONDUCT.md"
+    },
+    {
+      "status": "??",
+      "path": "CONTRIBUTING.md"
+    },
+    {
+      "status": "??",
+      "path": "CORRECT_IDE_VERSION.md"
+    },
+    {
+      "status": "??",
+      "path": "CURRENT_IDE_STATUS.md"
+    },
+    {
+      "status": "??",
+      "path": "DEPLOYMENT_SIMPLIFIED.md"
+    },
+    {
+      "status": "??",
+      "path": "DEPLOYMENT_STATUS.md"
+    },
+    {
+      "status": "??",
+      "path": "DIRECTORY_STRUCTURE.md"
+    },
+    {
+      "status": "??",
+      "path": "DOCKER_COMMERCIALIZATION_COMPLETE.md"
+    },
+    {
+      "status": "??",
+      "path": "DOCUMENTATION_TESTING_GUIDE.md"
+    },
+    {
+      "status": "??",
+      "path": "DYNAMIC_PRELOADING_COMPLETE.md"
+    },
+    {
+      "status": "??",
+      "path": "ENHANCED_COMPONENT_PROPERTIES_REPORT.md"
+    },
+    {
+      "status": "??",
+      "path": "ENHANCED_SYSTEM_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "FINAL_ENHANCEMENT_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "HYBRID_HOOKS_FLOW.md"
+    },
+    {
+      "status": "??",
+      "path": "IDE_DEVELOPMENT_GUIDE.md"
+    },
+    {
+      "status": "??",
+      "path": "IDE_STANDARDIZATION.md"
+    },
+    {
+      "status": "??",
+      "path": "MAGIC_UI_FIX_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "MASTER_CONTEXT.md"
+    },
+    {
+      "status": "??",
+      "path": "MULTI_AGENT_DEPLOYMENT_IMPLEMENTATION.md"
+    },
+    {
+      "status": "??",
+      "path": "MULTI_AI_SYSTEM_ARCHITECTURE_ANALYSIS.md"
+    },
+    {
+      "status": "??",
+      "path": "MVP_READINESS_REPORT.md"
+    },
+    {
+      "status": "??",
+      "path": "NEW_USER_EXPERIENCE.md"
+    },
+    {
+      "status": "??",
+      "path": "ORCHESTRATOR_TEST_REPORT.md"
+    },
+    {
+      "status": "??",
+      "path": "PERMANENT_MEMORY_IMPLEMENTATION_PLAN.md"
+    },
+    {
+      "status": "??",
+      "path": "PRD_GENERATOR_FUTURE_PLANS.md"
+    },
+    {
+      "status": "??",
+      "path": "PRELOADING_IMPLEMENTATION_COMPLETE.md"
+    },
+    {
+      "status": "??",
+      "path": "PRODUCTION_SETUP.md"
+    },
+    {
+      "status": "??",
+      "path": "PROJECT_COMPLETION_WORKFLOW.md"
+    },
+    {
+      "status": "??",
+      "path": "PROJECT_STATUS.md"
+    },
+    {
+      "status": "??",
+      "path": "PTY_EXHAUSTION_AGAIN.md"
+    },
+    {
+      "status": "??",
+      "path": "QUEEN_AGENT_TEST_REPORT.md"
+    },
+    {
+      "status": "??",
+      "path": "QUEEN_AGENT_USER_GUIDE.md"
+    },
+    {
+      "status": "??",
+      "path": "REACTDOM_CREATEROOT_FIX_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "README-SAFEPTYMANAGER.md"
+    },
+    {
+      "status": "??",
+      "path": "README-TERMINAL.md"
+    },
+    {
+      "status": "??",
+      "path": "README_AI_HOOKS.md"
+    },
+    {
+      "status": "??",
+      "path": "REPOSITORY_INTELLIGENCE_COMPLETE.md"
+    },
+    {
+      "status": "??",
+      "path": "REVOLUTIONARY_MCP_IMPLEMENTATION.md"
+    },
+    {
+      "status": "??",
+      "path": "SESSIONS_HOOK_SETUP.md"
+    },
+    {
+      "status": "??",
+      "path": "SESSION_DOCUMENTATION.md"
+    },
+    {
+      "status": "??",
+      "path": "SESSION_SUMMARY_TERMINAL_FIX_AND_DEPLOYMENT.md"
+    },
+    {
+      "status": "??",
+      "path": "SETUP_API_KEY.md"
+    },
+    {
+      "status": "??",
+      "path": "SMART_SLASH_COMMANDS_HANDOFF.md"
+    },
+    {
+      "status": "??",
+      "path": "START_BACKEND_NOW.md"
+    },
+    {
+      "status": "??",
+      "path": "SUPERVISION_INTERVENTION_RESEARCH_REPORT.md"
+    },
+    {
+      "status": "??",
+      "path": "TECHNICAL_ARCHITECTURE.md"
+    },
+    {
+      "status": "??",
+      "path": "TERMINAL_BACKSPACE_FIX_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "TERMINAL_FIX_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "TERMINAL_RESIZE_DEBUGGING_COMPLETE_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "TERMINAL_SESSION_NOTES.md"
+    },
+    {
+      "status": "??",
+      "path": "TERMINAL_STARTUP_GUIDE.md"
+    },
+    {
+      "status": "??",
+      "path": "TESTING_GUIDE.md"
+    },
+    {
+      "status": "??",
+      "path": "TEST_RESULTS.md"
+    },
+    {
+      "status": "??",
+      "path": "TEST_RESULTS_2025_08_19.md"
+    },
+    {
+      "status": "??",
+      "path": "TIMER_IMPLEMENTATION_TEST.md"
+    },
+    {
+      "status": "??",
+      "path": "TMUX_ORCHESTRATOR_IMPLEMENTATION.md"
+    },
+    {
+      "status": "??",
+      "path": "UNIVERSAL_REPOSITORY_QUERY_COMPLETE.md"
+    },
+    {
+      "status": "??",
+      "path": "VIBE_CODER_ERROR_DEMO.md"
+    },
+    {
+      "status": "??",
+      "path": "WEBSOCKET_FIX_SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "WORKING_FEATURES.md"
+    },
+    {
+      "status": "??",
+      "path": "add-terminal-button.js"
+    },
+    {
+      "status": "??",
+      "path": "browser-test.js"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/.planning/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/.pur-discord.lock"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/.superpowers/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/AGENT_AUDIT_REPORT.md"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/GODIN-README-SUMMARY.md"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/LANDING-PAGE-GODIN.md"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/README-COMPARISON.md"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/README.backup.20260421_100536.md"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/README.godin.md"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/README.original.md"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/app/alpha-godin/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/app/alpha-system/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/app/alpha/layout.tsx"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/app/api/agent-hub/warroom/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/app/api/morning-brief/dismiss-parked-idea/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/app/api/skills-catalog/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/app/ide/agent-hub/hive-mind/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/app/ide/agent-hub/warroom/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/components/agent-hub/hive-mind/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/components/agent-hub/warroom/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/db/migrations/005_mission_control.sql"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/docs/superpowers/plans/2026-04-15-agent-hub-launch-readiness.md"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/docs/superpowers/plans/2026-04-15-agent-hub-p2-polish.md"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/lib/agent-hub/auto-assign.ts"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/lib/agent-hub/feature-flags.ts"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/lib/agent-hub/scheduler.ts"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/lib/agent-hub/telegram-commands.ts"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/lib/agent-hub/telegram-poller.ts"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/lib/agent-hub/warroom.ts"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/lib/pur/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/output/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/outputs/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/services/pur-discord.ts"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/switch-readme.sh"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/test-results/"
+    },
+    {
+      "status": "??",
+      "path": "coder1-ide-next/types/pur.ts"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/128x128.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/128x128@2x.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/32x32.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/Square107x107Logo.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/Square142x142Logo.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/Square150x150Logo.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/Square284x284Logo.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/Square30x30Logo.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/Square310x310Logo.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/Square44x44Logo.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/Square71x71Logo.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/Square89x89Logo.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/StoreLogo.png"
+    },
+    {
+      "status": "??",
+      "path": "coder1-tauri/src-tauri/icons/icon.png"
+    },
+    {
+      "status": "??",
+      "path": "com.coder1.pty-limit.plist"
+    },
+    {
+      "status": "??",
+      "path": "component-evaluation.md"
+    },
+    {
+      "status": "??",
+      "path": "data/documentation/"
+    },
+    {
+      "status": "??",
+      "path": "data/slash-commands-example.json"
+    },
+    {
+      "status": "??",
+      "path": "docs/SUPERVISION_SYSTEM_GUIDE.md"
+    },
+    {
+      "status": "??",
+      "path": "docs/prettier-integration/"
+    },
+    {
+      "status": "??",
+      "path": "ecosystem.config.js"
+    },
+    {
+      "status": "??",
+      "path": "enhance-remaining-components.md"
+    },
+    {
+      "status": "??",
+      "path": "eslint.config.js"
+    },
+    {
+      "status": "??",
+      "path": "full-server.js"
+    },
+    {
+      "status": "??",
+      "path": "generated/"
+    },
+    {
+      "status": "??",
+      "path": "inspect-ide.js"
+    },
+    {
+      "status": "??",
+      "path": "mike-portfolio/"
+    },
+    {
+      "status": "??",
+      "path": "orchestrator-standalone/"
+    },
+    {
+      "status": "??",
+      "path": "proxy-server.js"
+    },
+    {
+      "status": "??",
+      "path": "render-simple.yaml"
+    },
+    {
+      "status": "??",
+      "path": "screenshotz/"
+    },
+    {
+      "status": "??",
+      "path": "scripts/update-server-config.js"
+    },
+    {
+      "status": "??",
+      "path": "serve-ide.js"
+    },
+    {
+      "status": "??",
+      "path": "supervision-intervention-failure.md"
+    },
+    {
+      "status": "??",
+      "path": "tasks/flight-recorder-strategy.md"
+    },
+    {
+      "status": "??",
+      "path": "tasks/preview-enhancement/"
+    },
+    {
+      "status": "??",
+      "path": "tasks/react-bits-implementation.md"
+    },
+    {
+      "status": "??",
+      "path": "tasks/react-bits-integration.md"
+    },
+    {
+      "status": "??",
+      "path": "test-brainstorm-user-input.md"
+    },
+    {
+      "status": "??",
+      "path": "test-repo-command.md"
+    },
+    {
+      "status": "??",
+      "path": "test-results-alpha.md"
+    },
+    {
+      "status": "??",
+      "path": "test-results-terminal-buttons.md"
+    },
+    {
+      "status": "??",
+      "path": "test-supervision-real-claude-results.md"
+    },
+    {
+      "status": "??",
+      "path": "vercel.json"
+    }
+  ],
+  "next_action": null,
+  "context_notes": "Recent commits:\n8518ba9e6 feat(cron): standalone Johnny5 cron worker for Render Background Worker\n0f28b5fe5 chore: update bridge-cli.tar.gz artifact [skip ci]\nb3b5bf5c3 fix(bridge): preserve ANSI escape codes with base64 encoding\n0a5e7c6cf fix(team-invite): surface email send failures instead of silently succeeding\nea7dfc05d fix(tsconfig): exclude __tests__ and admin-temp from TypeScript compilation"
+}

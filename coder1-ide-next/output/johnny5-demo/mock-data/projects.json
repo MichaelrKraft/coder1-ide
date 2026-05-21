@@ -1,0 +1,69 @@
+{
+  "active_projects": [
+    {
+      "id": "PRJ-2026-041",
+      "name": "Thornton Municipal Sports Complex — Phase 2 Install",
+      "client": "City of Thornton Parks & Recreation",
+      "contact_name": "Linda Castillo",
+      "contact_email": "lcastillo@thorntonco.gov",
+      "contact_phone": "720-977-5800",
+      "address": "9500 N Grant Ave, Thornton, CO 80229",
+      "status": "in_progress",
+      "phase": "Phase 2 of 3 — Infill application",
+      "contract_value": 284000,
+      "start_date": "2026-02-10",
+      "completion_date": "2026-04-05",
+      "field_type": "Synthetic Turf — Soccer (2 fields)",
+      "crew_lead": "Marcus Torres",
+      "notes": "City inspection scheduled April 7. DO NOT miss this date — penalty clause."
+    },
+    {
+      "id": "PRJ-2026-038",
+      "name": "Westminster High School — Field Renovation",
+      "client": "Jefferson County School District",
+      "contact_name": "Bob Nguyen",
+      "contact_email": "bnguyen@jeffco.k12.co.us",
+      "contract_value": 196000,
+      "status": "in_progress",
+      "phase": "Phase 1 — Base prep",
+      "crew_lead": "Kyle Ramirez"
+    },
+    {
+      "id": "PRJ-2026-029",
+      "name": "Aurora Del Mar Park — Soccer Field",
+      "client": "City of Aurora",
+      "contact_name": "James Wu",
+      "contact_email": "jwu@auroragov.org",
+      "contract_value": 142000,
+      "status": "in_progress",
+      "phase": "Phase 3 — Final seaming + infill",
+      "crew_lead": "Tony Vela"
+    }
+  ],
+  "pipeline_prospects": [
+    {
+      "id": "PROSPECT-001",
+      "name": "Broomfield Recreation Center — 3 Synthetic Fields",
+      "client": "City of Broomfield",
+      "contact_name": "Patricia Odom",
+      "contact_title": "Parks Director",
+      "contact_email": "parks@broomfieldco.gov",
+      "contact_phone": "303-438-6100",
+      "address": "280 Spader Way, Broomfield, CO 80020",
+      "estimated_value": 410000,
+      "status": "RFP_pending",
+      "rfp_deadline": "2026-04-15",
+      "notes": "City council vote on April 22. 3 multi-use fields (soccer + lacrosse). LEED certification preferred. Competitive bid — FieldTurf also bidding. Pricing TBD per RFP submission.",
+      "decision_maker": "Patricia Odom (Parks Director) + Council Member Dave Sheer"
+    },
+    {
+      "id": "PROSPECT-002",
+      "name": "Lakewood Community Sports Park",
+      "client": "City of Lakewood",
+      "contact_name": "Mike Brandt",
+      "contract_value_est": 220000,
+      "status": "initial_contact",
+      "notes": "Jason met him at CPRS conference March 12. Follow-up call scheduled April 2."
+    }
+  ]
+}

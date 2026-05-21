@@ -1,0 +1,54 @@
+<h2>What's the quiz's primary job?</h2>
+<p class="subtitle">This determines what questions to ask and how to route users at the end</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Segment by use case / persona</h3>
+      <p>Quiz identifies <em>who they are</em> — solo vs team, beginner vs power user, low-volume vs high-volume agent. Email sequence and onboarding are personalized to their persona bucket. Each bucket gets a different nurture sequence with content tailored to their world.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Best for</h4><ul><li>Products with multiple distinct user types</li><li>Building a segmented email list from day one</li></ul></div>
+        <div class="cons"><h4>Requires</h4><ul><li>2–3 separate email sequences</li><li>Clear persona definitions</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Qualify by pain point</h3>
+      <p>Quiz uncovers <em>what's hurting them right now</em> — their biggest bottleneck, what's costing them time/money, what they've tried before. The email sequence speaks directly to that specific pain. Single sequence, but dynamically references their answer.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Best for</h4><ul><li>Products that solve a universal pain</li><li>High-trust, consultative sales</li></ul></div>
+        <div class="cons"><h4>Requires</h4><ul><li>Dynamic email personalization</li><li>Clear pain → solution mapping</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Score readiness / fit</h3>
+      <p>Quiz calculates a <em>score</em> — "Your AI Readiness Score: 72/100" — that reveals whether they're a good fit now or not yet. High scorers get a direct trial CTA. Low scorers get a nurture sequence to bring them up to speed first.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Best for</h4><ul><li>Products with a learning curve</li><li>Filtering out bad-fit users who churn</li></ul></div>
+        <div class="cons"><h4>Requires</h4><ul><li>Scoring rubric</li><li>Two-track flow (ready vs not)</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Recommend the right plan / tier</h3>
+      <p>Quiz acts as a <em>plan selector</em> — answers map to Free, Pro, or Team tier. End result: "Based on your answers, Pro is your best fit — here's why." Removes decision paralysis, increases plan upgrades.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Best for</h4><ul><li>Products with tiered pricing</li><li>Reducing free-tier churn</li></ul></div>
+        <div class="cons"><h4>Requires</h4><ul><li>Clear tier differentiation</li><li>Honest plan matching logic</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:24px">You can select different answers for Coder1 vs Dunn Deal — just tell me in the terminal which applies to which.</p>

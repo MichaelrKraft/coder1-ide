@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a12; color: #e2e8f0; font-family: -apple-system, sans-serif; padding: 24px; }
+  h2 { color: #e2e8f0; font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .subtitle { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+
+  .layout-demo {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .main-col { display: flex; flex-direction: column; gap: 8px; }
+
+  /* Sections */
+  .section-block {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #1e2035;
+    position: relative;
+  }
+  .section-hero {
+    background: linear-gradient(135deg, #1a0a3a 0%, #0a1a3a 100%);
+    padding: 28px 24px;
+    text-align: center;
+    min-height: 100px;
+  }
+  .section-hero .co-name { font-size: 22px; font-weight: 800; background: linear-gradient(90deg, #a78bfa, #67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .section-hero .tagline { color: #94a3b8; font-size: 12px; margin-top: 4px; }
+  .section-hero .badges { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+  .badge { background: rgba(167,139,250,0.15); border: 1px solid rgba(167,139,250,0.3); border-radius: 20px; padding: 3px 10px; font-size: 10px; color: #a78bfa; }
+
+  .section-content {
+    background: #0f0f1e;
+    padding: 16px 20px;
+  }
+  .section-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #7c3aed; margin-bottom: 6px; text-transform: uppercase; }
+  .section-title { font-size: 14px; font-weight: 700; color: #e2e8f0; margin-bottom: 6px; }
+  .section-body { font-size: 11px; color: #64748b; line-height: 1.5; }
+  .section-content.problem { border-left: 3px solid #ef4444; }
+  .section-content.solution { border-left: 3px solid #10b981; }
+  .section-content.market { border-left: 3px solid #f59e0b; }
+  .section-content.traction { border-left: 3px solid #06b6d4; }
+
+  /* ROI Calculator preview */
+  .roi-section {
+    background: #0f0f1e;
+    padding: 16px 20px;
+    border-left: 3px solid #8b5cf6;
+  }
+  .roi-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #8b5cf6; margin-bottom: 8px; text-transform: uppercase; }
+  .roi-inputs { display: flex; gap: 8px; margin-bottom: 8px; }
+  .roi-input-mock { background: #1a1a2e; border: 1px solid #2d2d4a; border-radius: 4px; padding: 5px 8px; font-size: 10px; color: #94a3b8; flex: 1; }
+  .roi-result { background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3); border-radius: 4px; padding: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .roi-result-label { font-size: 10px; color: #a78bfa; }
+  .roi-result-val { font-size: 16px; font-weight: 700; color: #a78bfa; }
+
+  /* Feedback box */
+  .feedback-section {
+    background: #0f0f1e;
+    padding: 16px 20px;
+    border: 1px dashed #2d2d4a;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .feedback-title { font-size: 12px; color: #64748b; margin-bottom: 8px; }
+  .feedback-mock-input { background: #1a1a2e; border: 1px solid #2d2d4a; border-radius: 4px; padding: 8px; font-size: 10px; color: #475569; width: 100%; margin-bottom: 6px; text-align: left; }
+  .feedback-btn { background: #1e293b; border: 1px solid #334155; border-radius: 4px; padding: 5px 12px; font-size: 10px; color: #64748b; }
+
+  /* Right sidebar overlays */
+  .right-col { display: flex; flex-direction: column; gap: 12px; }
+
+  /* Scroll nav */
+  .scroll-nav {
+    background: #0f0f1e;
+    border: 1px solid #1e2035;
+    border-radius: 8px;
+    padding: 14px;
+    position: sticky;
+    top: 0;
+  }
+  .scroll-nav-title { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #475569; text-transform: uppercase; margin-bottom: 10px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #2d2d4a; flex-shrink: 0; }
+  .nav-dot.active { background: #7c3aed; }
+  .nav-text { font-size: 10px; color: #475569; }
+  .nav-text.active { color: #a78bfa; font-weight: 600; }
+  .nav-bar { width: 2px; height: 24px; background: #1e2035; margin-left: 2px; }
+
+  /* Analytics preview */
+  .analytics-panel {
+    background: #0f0f1e;
+    border: 1px solid #1e2035;
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .analytics-title { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #475569; text-transform: uppercase; margin-bottom: 10px; }
+  .heatmap-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .heatmap-label { font-size: 9px; color: #64748b; width: 60px; flex-shrink: 0; }
+  .heatmap-bar-bg { flex: 1; background: #1a1a2e; border-radius: 3px; height: 8px; overflow: hidden; }
+  .heatmap-bar { height: 100%; border-radius: 3px; }
+  .heatmap-time { font-size: 9px; color: #64748b; width: 28px; text-align: right; flex-shrink: 0; }
+
+  /* Chat widget */
+  .chat-widget {
+    background: #0f0f1e;
+    border: 1px solid #1e2035;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .chat-header { background: #1a1a2e; padding: 8px 12px; display: flex; align-items: center; gap: 8px; }
+  .chat-avatar { width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #06b6d4); }
+  .chat-founder-name { font-size: 10px; font-weight: 600; color: #e2e8f0; }
+  .chat-status { font-size: 9px; color: #10b981; }
+  .chat-messages { padding: 10px; display: flex; flex-direction: column; gap: 6px; min-height: 80px; }
+  .msg { font-size: 10px; padding: 5px 8px; border-radius: 8px; max-width: 80%; }
+  .msg-investor { background: #1e2035; color: #94a3b8; align-self: flex-end; }
+  .msg-founder { background: rgba(124,58,237,0.2); color: #c4b5fd; align-self: flex-start; border: 1px solid rgba(124,58,237,0.3); }
+  .chat-input-row { display: flex; gap: 6px; padding: 8px; border-top: 1px solid #1e2035; }
+  .chat-input-mock { flex: 1; background: #1a1a2e; border: 1px solid #2d2d4a; border-radius: 12px; padding: 5px 10px; font-size: 10px; color: #475569; }
+  .chat-send-btn { background: #7c3aed; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+
+  /* Founder video */
+  .founder-video {
+    background: #1a1a2e;
+    border: 1px solid #2d2d4a;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .video-cutout-mock {
+    width: 100%;
+    height: 90px;
+    background: linear-gradient(180deg, transparent 0%, #0f0f1e 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .founder-silhouette {
+    width: 50px;
+    height: 75px;
+    background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 40%, #4c1d95 100%);
+    border-radius: 25px 25px 10px 10px;
+    position: relative;
+  }
+  .founder-head {
+    width: 28px;
+    height: 28px;
+    background: #c4a882;
+    border-radius: 50%;
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 2px solid #1a1a2e;
+  }
+  .drag-hint { font-size: 9px; color: #475569; margin-top: 6px; }
+
+  /* Section scroll indicator */
+  .scroll-hint { text-align: center; padding: 6px; font-size: 9px; color: #2d2d4a; }
+
+  .tag { display: inline-block; background: #1e2035; border-radius: 4px; padding: 2px 6px; font-size: 9px; color: #64748b; margin: 2px; }
+  .label-inline { display: flex; align-items: center; gap: 6px; }
+
+  .section-divider { height: 1px; background: linear-gradient(90deg, transparent, #1e2035, transparent); margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<h2>Interactive Investor Deck — Page Layout</h2>
+<p class="subtitle">Scrollable long-form. Fixed overlays on right. All sections below are the actual scrolling content.</p>
+
+<div class="layout-demo">
+  <!-- Main scrolling content -->
+  <div class="main-col">
+
+    <!-- Hero section -->
+    <div class="section-block">
+      <div class="section-hero">
+        <div class="co-name">Coder1 IDE</div>
+        <div class="tagline">The First Agentic IDE Built for Claude Code Users</div>
+        <div class="badges">
+          <span class="badge">$2M ARR</span>
+          <span class="badge">12,400 Users</span>
+          <span class="badge">Seed Round</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Problem -->
+    <div class="section-block">
+      <div class="section-content problem">
+        <div class="section-label">03 · Problem · Pain Test</div>
+        <div class="section-title">Claude Code is powerful — but has no IDE built for it</div>
+        <div class="section-body">Developers are forced to use VS Code hacks, terminal windows, and context-switching to get Claude Code's full value. There's no purpose-built environment that matches how agentic AI actually works.</div>
+      </div>
+    </div>
+
+    <!-- Solution -->
+    <div class="section-block">
+      <div class="section-content solution">
+        <div class="section-label">05 · Solution · Clarity Test</div>
+        <div class="section-title">Coder1: the IDE Claude Code deserves</div>
+        <div class="section-body">Purpose-built for agentic development. Live preview, agent hub, team collaboration, and session persistence — all designed around how Claude Code actually thinks and works.</div>
+        <div style="margin-top:8px;">
+          <span class="tag">Team Mode</span>
+          <span class="tag">Agent Hub</span>
+          <span class="tag">Marp Preview</span>
+          <span class="tag">Session Memory</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Market -->
+    <div class="section-block">
+      <div class="section-content market">
+        <div class="section-label">11 · Market Size · Math Test</div>
+        <div class="section-title">$8.4B developer tooling market, 4.4M Claude Code users</div>
+        <div class="section-body">The agentic IDE category is nascent. First-mover advantage with the fastest-growing AI coding community.</div>
+      </div>
+    </div>
+
+    <!-- ROI Calculator -->
+    <div class="section-block">
+      <div class="roi-section">
+        <div class="roi-label">Interactive · Developer Time Saved Calculator</div>
+        <div class="roi-inputs">
+          <div class="roi-input-mock">👩‍💻 Developers: 12</div>
+          <div class="roi-input-mock">⏱ Hrs saved/week: 8</div>
+          <div class="roi-input-mock">💰 Eng cost/hr: $150</div>
+        </div>
+        <div class="roi-result">
+          <span class="roi-result-label">Annual savings for your team</span>
+          <span class="roi-result-val">$748,800</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Traction -->
+    <div class="section-block">
+      <div class="section-content traction">
+        <div class="section-label">15 · Traction · Evidence Test</div>
+        <div class="section-title">12,400 users · $2M ARR · 340% YoY growth</div>
+        <div class="section-body">Organic growth through Claude Code community. 94% retention at 30 days. NPS of 72.</div>
+      </div>
+    </div>
+
+    <!-- Feedback section -->
+    <div class="section-divider"></div>
+    <div class="feedback-section">
+      <div class="feedback-title">Not the right fit? Your feedback helps us improve.</div>
+      <div class="feedback-mock-input">Thanks for sending this, but we're focused on...</div>
+      <div>
+        <button class="feedback-btn">Send feedback anonymously</button>
+      </div>
+    </div>
+    <div class="scroll-hint">· · ·</div>
+
+  </div>
+
+  <!-- Right column: fixed overlays -->
+  <div class="right-col">
+
+    <!-- Progress nav -->
+    <div class="scroll-nav">
+      <div class="scroll-nav-title">Progress</div>
+      <div class="nav-item"><div class="nav-dot active"></div><span class="nav-text active">Cover</span></div>
+      <div class="nav-bar"></div>
+      <div class="nav-item"><div class="nav-dot active"></div><span class="nav-text active">Problem</span></div>
+      <div class="nav-bar"></div>
+      <div class="nav-item"><div class="nav-dot active"></div><span class="nav-text active">Solution</span></div>
+      <div class="nav-bar"></div>
+      <div class="nav-item"><div class="nav-dot"></div><span class="nav-text">Market</span></div>
+      <div class="nav-bar"></div>
+      <div class="nav-item"><div class="nav-dot"></div><span class="nav-text">ROI Calc</span></div>
+      <div class="nav-bar"></div>
+      <div class="nav-item"><div class="nav-dot"></div><span class="nav-text">Traction</span></div>
+      <div class="nav-bar"></div>
+      <div class="nav-item"><div class="nav-dot"></div><span class="nav-text">Team</span></div>
+      <div class="nav-bar"></div>
+      <div class="nav-item"><div class="nav-dot"></div><span class="nav-text">The Ask</span></div>
+    </div>
+
+    <!-- Founder video (draggable) -->
+    <div class="founder-video">
+      <div class="video-cutout-mock">
+        <div class="founder-silhouette"><div class="founder-head"></div></div>
+      </div>
+      <div class="drag-hint">drag to reposition</div>
+    </div>
+
+    <!-- Chat widget -->
+    <div class="chat-widget">
+      <div class="chat-header">
+        <div class="chat-avatar"></div>
+        <div>
+          <div class="chat-founder-name">Mike Kraft · Founder</div>
+          <div class="chat-status">● online</div>
+        </div>
+      </div>
+      <div class="chat-messages">
+        <div class="msg msg-investor">What's your go-to-market for enterprise?</div>
+        <div class="msg msg-founder">Great question — we're seeing strong bottom-up adoption...</div>
+      </div>
+      <div class="chat-input-row">
+        <div class="chat-input-mock">Ask a question...</div>
+        <div class="chat-send-btn">↑</div>
+      </div>
+    </div>
+
+    <!-- Analytics (founder view, hidden from investor) -->
+    <div class="analytics-panel">
+      <div class="analytics-title">Founder View · Time on Section</div>
+      <div class="heatmap-row">
+        <div class="heatmap-label">Problem</div>
+        <div class="heatmap-bar-bg"><div class="heatmap-bar" style="width:85%;background:#ef4444;"></div></div>
+        <div class="heatmap-time">4:12</div>
+      </div>
+      <div class="heatmap-row">
+        <div class="heatmap-label">ROI Calc</div>
+        <div class="heatmap-bar-bg"><div class="heatmap-bar" style="width:70%;background:#f59e0b;"></div></div>
+        <div class="heatmap-time">3:28</div>
+      </div>
+      <div class="heatmap-row">
+        <div class="heatmap-label">Solution</div>
+        <div class="heatmap-bar-bg"><div class="heatmap-bar" style="width:55%;background:#10b981;"></div></div>
+        <div class="heatmap-time">2:45</div>
+      </div>
+      <div class="heatmap-row">
+        <div class="heatmap-label">Traction</div>
+        <div class="heatmap-bar-bg"><div class="heatmap-bar" style="width:30%;background:#06b6d4;"></div></div>
+        <div class="heatmap-time">1:30</div>
+      </div>
+      <div class="heatmap-row">
+        <div class="heatmap-label">Team</div>
+        <div class="heatmap-bar-bg"><div class="heatmap-bar" style="width:15%;background:#6366f1;"></div></div>
+        <div class="heatmap-time">0:45</div>
+      </div>
+      <div style="margin-top:10px;font-size:9px;color:#334155;border-top:1px solid #1e2035;padding-top:8px;">
+        Opened 3× · Last: 14 min ago · Andreessen Horowitz link
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

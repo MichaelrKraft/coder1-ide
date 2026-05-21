@@ -3,6 +3,8 @@
  * Each agent has its own bot token from @BotFather.
  */
 
+import { scanForSecrets } from './exfil-guard';
+
 export async function sendAgentNotification(
   botToken: string,
   chatId: string,
@@ -27,6 +29,27 @@ export async function sendAgentNotification(
   } catch (err) {
     console.warn('[telegram] Send error:', err instanceof Error ? err.message : err);
     return false;
+  }
+}
+
+/**
+ * Wraps sendAgentNotification with exfil guard scanning.
+ * Redacts secrets before sending; appends a notice if content was filtered.
+ * Never throws — all errors are caught internally.
+ */
+export async function guardedSendAgentNotification(
+  botToken: string,
+  chatId: string,
+  text: string
+): Promise<void> {
+  try {
+    const { clean, redacted } = scanForSecrets(text);
+    const finalText = redacted
+      ? `${clean}\n\n[Some content was filtered for security]`
+      : text;
+    await sendAgentNotification(botToken, chatId, finalText);
+  } catch (err) {
+    console.error('[telegram] guardedSendAgentNotification error:', err);
   }
 }
 

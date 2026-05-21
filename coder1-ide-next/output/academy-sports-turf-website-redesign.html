@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academy Sports Turf | Colorado's Premier Sports Field Specialists</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { scroll-behavior: smooth; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #0A1008; color: #E8F0E8; margin: 0; }
+
+    /* ── NAV ── */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      transition: all 0.4s;
+      padding: 20px 40px;
+    }
+    #nav.scrolled {
+      background: rgba(8, 14, 8, 0.94);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(34,197,94,0.12);
+      padding: 14px 40px;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.4);
+    }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #0A1A0A 0%, #0D1F0D 40%, #091408 100%);
+      position: relative; overflow: hidden;
+      display: flex; align-items: center;
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(34,197,94,0.025) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(34,197,94,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-glow {
+      position: absolute; width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(22,163,74,0.12) 0%, transparent 70%);
+      top: -100px; right: -100px; pointer-events: none;
+    }
+    .hero-glow-2 {
+      position: absolute; width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%);
+      bottom: 0; left: 0; pointer-events: none;
+    }
+
+    h1, h2, h3, h4, h5 { font-family: 'Montserrat', sans-serif; }
+
+    .text-green { background: linear-gradient(135deg, #22C55E, #10B981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .text-white-g { color: white; }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #16A34A, #22C55E);
+      color: white; padding: 14px 28px; border-radius: 8px;
+      font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px;
+      text-decoration: none; transition: all 0.3s; letter-spacing: 0.02em;
+      border: none; cursor: pointer;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(34,197,94,0.4);
+    }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: white;
+      padding: 14px 28px; border-radius: 8px;
+      font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 14px;
+      text-decoration: none; transition: all 0.3s;
+      border: 1px solid rgba(255,255,255,0.25); cursor: pointer;
+    }
+    .btn-outline:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.5);
+    }
+
+    .badge {
+      display: inline-block; padding: 5px 14px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    }
+
+    /* ── CARDS ── */
+    .service-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px; padding: 32px;
+      transition: all 0.35s; cursor: pointer;
+    }
+    .service-card:hover {
+      background: rgba(34,197,94,0.06);
+      border-color: rgba(34,197,94,0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .stat-block {
+      text-align: center; padding: 28px 20px;
+    }
+
+    /* ── REVEAL ── */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.65s, transform 0.65s; }
+    .reveal.vis { opacity: 1; transform: translateY(0); }
+    .d1 { transition-delay: 0.1s; }
+    .d2 { transition-delay: 0.2s; }
+    .d3 { transition-delay: 0.3s; }
+    .d4 { transition-delay: 0.4s; }
+    .d5 { transition-delay: 0.5s; }
+
+    /* ── PROCESS STEP ── */
+    .process-step {
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; padding: 28px;
+      position: relative; transition: all 0.3s;
+    }
+    .process-step:hover {
+      background: rgba(22,163,74,0.07);
+      border-color: rgba(34,197,94,0.2);
+    }
+    .step-num {
+      font-family: 'Montserrat', sans-serif; font-weight: 900;
+      font-size: 64px; color: rgba(34,197,94,0.12);
+      position: absolute; top: 10px; right: 20px; line-height: 1;
+      user-select: none;
+    }
+
+    /* ── SECTION DIVIDER ── */
+    .sdiv { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+
+    /* ── TESTIMONIAL ── */
+    .testimonial-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px; padding: 32px;
+    }
+
+    /* ── CTA SECTION ── */
+    #cta-section {
+      background: linear-gradient(135deg, rgba(22,163,74,0.12), rgba(16,185,129,0.06));
+      border-top: 1px solid rgba(34,197,94,0.15);
+      border-bottom: 1px solid rgba(34,197,94,0.15);
+    }
+
+    /* ── AFFILIATION LOGOS ── */
+    .affil-badge {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 12px 20px;
+      font-size: 13px; color: rgba(255,255,255,0.55);
+      font-weight: 500; letter-spacing: 0.03em;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #060C06;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* ── PHONE PILL ── */
+    .phone-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(34,197,94,0.12); color: #22C55E;
+      padding: 10px 20px; border-radius: 100px;
+      font-weight: 700; font-size: 15px;
+      border: 1px solid rgba(34,197,94,0.3);
+      text-decoration: none; transition: all 0.3s; letter-spacing: 0.02em;
+    }
+    .phone-pill:hover { background: rgba(34,197,94,0.2); box-shadow: 0 0 24px rgba(34,197,94,0.25); }
+
+    @media (max-width: 768px) {
+      #nav { padding: 16px 20px; }
+      #nav.scrolled { padding: 12px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ================================================================ -->
+<!-- NAVIGATION -->
+<!-- ================================================================ -->
+<nav id="nav">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
+    <!-- Logo -->
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#16A34A,#22C55E);display:flex;align-items:center;justify-content:center;">
+        <span style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:13px;color:white;">AST</span>
+      </div>
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:16px;color:white;line-height:1.1;">Academy Sports Turf</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.42);letter-spacing:0.08em;">COLORADO'S FIELD SPECIALISTS</div>
+      </div>
+    </div>
+    <!-- Nav links -->
+    <div style="display:flex;align-items:center;gap:28px;">
+      <a href="#services" style="font-size:14px;color:rgba(255,255,255,0.65);text-decoration:none;font-weight:500;transition:color 0.2s;" onmouseover="this.style.color='#22C55E'" onmouseout="this.style.color='rgba(255,255,255,0.65)'">Services</a>
+      <a href="#process" style="font-size:14px;color:rgba(255,255,255,0.65);text-decoration:none;font-weight:500;transition:color 0.2s;" onmouseover="this.style.color='#22C55E'" onmouseout="this.style.color='rgba(255,255,255,0.65)'">Our Process</a>
+      <a href="#projects" style="font-size:14px;color:rgba(255,255,255,0.65);text-decoration:none;font-weight:500;transition:color 0.2s;" onmouseover="this.style.color='#22C55E'" onmouseout="this.style.color='rgba(255,255,255,0.65)'">Projects</a>
+      <a href="#contact" class="btn-primary" style="padding:10px 22px;font-size:13px;">Get a Quote</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ================================================================ -->
+<!-- HERO -->
+<!-- ================================================================ -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-glow-2"></div>
+
+  <div style="max-width:1200px;margin:0 auto;padding:140px 40px 80px;position:relative;z-index:1;">
+    <div class="reveal" style="margin-bottom:20px;">
+      <span class="badge" style="background:rgba(34,197,94,0.12);color:#22C55E;border:1px solid rgba(34,197,94,0.25);">Colorado's Premier Sports Turf Installer</span>
+    </div>
+
+    <h1 class="reveal d1" style="font-size:clamp(38px,6.5vw,80px);font-weight:900;line-height:1.08;color:white;margin-bottom:24px;max-width:800px;">
+      Fields That Perform.<br>
+      <span class="text-green">Turf That Lasts.</span>
+    </h1>
+
+    <p class="reveal d2" style="font-size:20px;color:rgba(255,255,255,0.6);max-width:580px;line-height:1.72;margin-bottom:40px;">
+      From municipal sports complexes to multi-sport high school fields, Academy Sports Turf delivers world-class artificial turf that serious athletic programs demand — installed right, backed for life.
+    </p>
+
+    <div class="reveal d3" style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:64px;">
+      <a href="#contact" class="btn-primary">Get a Free Field Assessment →</a>
+      <a href="#projects" class="btn-outline">View Our Portfolio</a>
+    </div>
+
+    <!-- Stat strip -->
+    <div class="reveal d4" style="display:flex;flex-wrap:wrap;gap:0;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;background:rgba(255,255,255,0.025);max-width:700px;">
+      <div class="stat-block" style="flex:1;min-width:140px;border-right:1px solid rgba(255,255,255,0.07);">
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:34px;color:#22C55E;line-height:1;">20+</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:6px;letter-spacing:0.04em;">YEARS IN COLORADO</div>
+      </div>
+      <div class="stat-block" style="flex:1;min-width:140px;border-right:1px solid rgba(255,255,255,0.07);">
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:34px;color:#22C55E;line-height:1;">300+</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:6px;letter-spacing:0.04em;">FIELDS INSTALLED</div>
+      </div>
+      <div class="stat-block" style="flex:1;min-width:140px;border-right:1px solid rgba(255,255,255,0.07);">
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:34px;color:#22C55E;line-height:1;">50+</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:6px;letter-spacing:0.04em;">MUNICIPAL CLIENTS</div>
+      </div>
+      <div class="stat-block" style="flex:1;min-width:140px;">
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:34px;color:#22C55E;line-height:1;">LEED</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:6px;letter-spacing:0.04em;">CERTIFIED PARTNER</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- ================================================================ -->
+<!-- SERVICES -->
+<!-- ================================================================ -->
+<section id="services" style="padding:96px 40px;background:#0A1008;">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div class="reveal" style="margin-bottom:12px;text-align:center;">
+      <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">WHAT WE BUILD</span>
+    </div>
+    <h2 class="reveal d1" style="font-size:clamp(28px,4.5vw,52px);font-weight:800;color:white;line-height:1.2;margin-bottom:16px;text-align:center;">
+      Every field type.<br>
+      <span class="text-green">Every sport. Every surface.</span>
+    </h2>
+    <p class="reveal d2" style="font-size:18px;color:rgba(255,255,255,0.55);text-align:center;max-width:560px;margin:0 auto 56px;line-height:1.7;">
+      Academy Sports Turf specializes in custom synthetic surfaces engineered for Colorado's climate and your athletic program's specific demands.
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:20px;">
+
+      <div class="reveal service-card">
+        <div style="width:52px;height:52px;border-radius:12px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px;">🏟️</div>
+        <h3 style="font-weight:700;font-size:20px;color:white;margin-bottom:10px;">Athletic Fields</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7;margin-bottom:16px;">
+          Football, soccer, baseball, softball — purpose-built synthetic turf systems with professional-grade sub-base engineering. Designed for Colorado's freeze-thaw cycles.
+        </p>
+        <a href="#contact" style="font-size:13px;color:#22C55E;text-decoration:none;font-weight:600;">Get Quote →</a>
+      </div>
+
+      <div class="reveal d1 service-card">
+        <div style="width:52px;height:52px;border-radius:12px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px;">⚽</div>
+        <h3 style="font-weight:700;font-size:20px;color:white;margin-bottom:10px;">Multi-Sport Fields</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7;margin-bottom:16px;">
+          One field, every sport. We install overlapping boundaries for football, soccer, lacrosse, field hockey, and more. Maximize your facility's ROI with a single versatile surface.
+        </p>
+        <a href="#contact" style="font-size:13px;color:#22C55E;text-decoration:none;font-weight:600;">Get Quote →</a>
+      </div>
+
+      <div class="reveal d2 service-card">
+        <div style="width:52px;height:52px;border-radius:12px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px;">🏃</div>
+        <h3 style="font-weight:700;font-size:20px;color:white;margin-bottom:10px;">Running Tracks</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7;margin-bottom:16px;">
+          Complete design and construction of professional-grade running tracks. Serving schools, municipalities, and athletic facilities throughout the Front Range and Colorado.
+        </p>
+        <a href="#contact" style="font-size:13px;color:#22C55E;text-decoration:none;font-weight:600;">Get Quote →</a>
+      </div>
+
+      <div class="reveal d3 service-card">
+        <div style="width:52px;height:52px;border-radius:12px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px;">🏢</div>
+        <h3 style="font-weight:700;font-size:20px;color:white;margin-bottom:10px;">Commercial & Residential</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7;margin-bottom:16px;">
+          Luxury landscaping, putting greens, roadway medians, and commercial installations. Stunning year-round appearance with zero water consumption and minimal maintenance.
+        </p>
+        <a href="#contact" style="font-size:13px;color:#22C55E;text-decoration:none;font-weight:600;">Get Quote →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- ================================================================ -->
+<!-- WHY ACADEMY -->
+<!-- ================================================================ -->
+<section style="padding:96px 40px;background:#080E08;">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;">
+
+      <!-- Left: content -->
+      <div>
+        <div class="reveal" style="margin-bottom:12px;">
+          <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">WHY ACADEMY</span>
+        </div>
+        <h2 class="reveal d1" style="font-size:clamp(26px,4vw,46px);font-weight:800;color:white;line-height:1.22;margin-bottom:20px;">
+          Serious athletic programs<br>
+          <span class="text-green">need serious turf.</span>
+        </h2>
+        <p class="reveal d2" style="font-size:17px;color:rgba(255,255,255,0.58);line-height:1.75;margin-bottom:32px;">
+          We don't sell generic turf. Our team educates your decision-makers on the best artificial turf technologies available, then engineers a custom sub-surface and surface system matched to your program's exact requirements.
+        </p>
+
+        <div class="reveal d3" style="display:flex;flex-direction:column;gap:16px;">
+          <div style="display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">✓</div>
+            <div>
+              <div style="font-weight:600;color:white;font-size:15px;margin-bottom:4px;">Colorado-engineered sub-base</div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.55);">Designed for our altitude, freeze-thaw cycles, and UV conditions. Not a one-size-fits-all approach.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">✓</div>
+            <div>
+              <div style="font-weight:600;color:white;font-size:15px;margin-bottom:4px;">LEED-certified products</div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.55);">Environmentally responsible materials that meet municipal sustainability requirements and qualify for green building credits.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">✓</div>
+            <div>
+              <div style="font-weight:600;color:white;font-size:15px;margin-bottom:4px;">Local team, direct accountability</div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.55);">No national account managers, no multi-day dispatch delays. We're Colorado-based and respond fast when your field needs attention.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">✓</div>
+            <div>
+              <div style="font-weight:600;color:white;font-size:15px;margin-bottom:4px;">End-to-end project management</div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.55);">From site assessment and permits to installation and post-installation maintenance — one team, one point of contact.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: stats cards -->
+      <div class="reveal d2">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:16px;padding:28px;text-align:center;">
+            <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:40px;color:#22C55E;line-height:1;">90%</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:8px;line-height:1.4;">reduction in field maintenance costs vs. natural grass</div>
+          </div>
+          <div style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-radius:16px;padding:28px;text-align:center;">
+            <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:40px;color:#60A5FA;line-height:1;">500K+</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:8px;line-height:1.4;">gallons of water saved per field annually</div>
+          </div>
+          <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);border-radius:16px;padding:28px;text-align:center;">
+            <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:40px;color:#F59E0B;line-height:1;">3×</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:8px;line-height:1.4;">more playing hours vs. natural grass</div>
+          </div>
+          <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:16px;padding:28px;text-align:center;">
+            <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:40px;color:#22C55E;line-height:1;">15yr</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:8px;line-height:1.4;">typical field lifespan with proper maintenance</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- ================================================================ -->
+<!-- PROCESS -->
+<!-- ================================================================ -->
+<section id="process" style="padding:96px 40px;background:#0A1008;">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div class="reveal" style="margin-bottom:12px;text-align:center;">
+      <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">HOW IT WORKS</span>
+    </div>
+    <h2 class="reveal d1" style="font-size:clamp(26px,4vw,48px);font-weight:800;color:white;text-align:center;margin-bottom:16px;">
+      Our proven <span class="text-green">field installation process</span>
+    </h2>
+    <p class="reveal d2" style="font-size:17px;color:rgba(255,255,255,0.55);text-align:center;max-width:520px;margin:0 auto 56px;line-height:1.72;">
+      Built over 20 years and 300+ Colorado installations. Clear communication, no surprises.
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+
+      <div class="reveal process-step">
+        <div class="step-num">01</div>
+        <div style="font-size:24px;margin-bottom:14px;">📋</div>
+        <h3 style="font-weight:700;font-size:17px;color:white;margin-bottom:8px;">Site Assessment</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,0.58);line-height:1.65;margin:0;">Our team evaluates your site, use case, and budget. We provide honest recommendations — not just the most expensive option.</p>
+      </div>
+
+      <div class="reveal d1 process-step">
+        <div class="step-num">02</div>
+        <div style="font-size:24px;margin-bottom:14px;">🎨</div>
+        <h3 style="font-weight:700;font-size:17px;color:white;margin-bottom:8px;">Custom Design</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,0.58);line-height:1.65;margin:0;">We craft the sub-surface and surface specifications for your field — taking into account your sports, usage volume, and Colorado climate conditions.</p>
+      </div>
+
+      <div class="reveal d2 process-step">
+        <div class="step-num">03</div>
+        <div style="font-size:24px;margin-bottom:14px;">📐</div>
+        <h3 style="font-weight:700;font-size:17px;color:white;margin-bottom:8px;">Material Production</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,0.58);line-height:1.65;margin:0;">Custom-made sub-surface and surface materials are produced to your exact field specifications. State-of-the-art products matched to your program's needs.</p>
+      </div>
+
+      <div class="reveal d3 process-step">
+        <div class="step-num">04</div>
+        <div style="font-size:24px;margin-bottom:14px;">🏗️</div>
+        <h3 style="font-weight:700;font-size:17px;color:white;margin-bottom:8px;">Professional Installation</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,0.58);line-height:1.65;margin:0;">Our experienced installation crews complete the project on time and on spec. We manage every detail from ground prep to final line painting.</p>
+      </div>
+
+      <div class="reveal d4 process-step">
+        <div class="step-num">05</div>
+        <div style="font-size:24px;margin-bottom:14px;">✅</div>
+        <h3 style="font-weight:700;font-size:17px;color:white;margin-bottom:8px;">Post-Install Support</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,0.58);line-height:1.65;margin:0;">We're local — which means we're available. Warranty support, maintenance guidance, and field servicing from the same team that built your field.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- ================================================================ -->
+<!-- PROJECTS GALLERY TEASER -->
+<!-- ================================================================ -->
+<section id="projects" style="padding:96px 40px;background:#080E08;">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px;margin-bottom:48px;">
+      <div>
+        <div class="reveal" style="margin-bottom:12px;">
+          <span class="badge" style="background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.22);">OUR WORK</span>
+        </div>
+        <h2 class="reveal d1" style="font-size:clamp(26px,4vw,46px);font-weight:800;color:white;margin:0;">
+          Colorado fields we've built.<br>
+          <span class="text-green">Take a look.</span>
+        </h2>
+      </div>
+      <div class="reveal d2">
+        <a href="#contact" class="btn-outline">See Full Portfolio →</a>
+      </div>
+    </div>
+
+    <!-- Project cards (visual placeholders with gradient backgrounds) -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:240px 240px;gap:16px;">
+
+      <div class="reveal" style="grid-column:span 2;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#0F2E10,#1A4A1C);position:relative;display:flex;align-items:flex-end;">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(22,163,74,0.15),rgba(16,185,129,0.08));"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:64px;opacity:0.1;">🏟️</div>
+        <div style="position:relative;z-index:1;padding:24px;">
+          <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:18px;color:white;">Denver Metro Municipal Complex</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;">Multi-sport · 80,000 sq ft · 2024</div>
+        </div>
+      </div>
+
+      <div class="reveal d1" style="border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#142814,#1E3C1E);position:relative;display:flex;align-items:flex-end;">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(22,163,74,0.12),rgba(16,185,129,0.06));"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px;opacity:0.1;">⚽</div>
+        <div style="position:relative;z-index:1;padding:20px;">
+          <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;color:white;">Aurora Parks & Recreation</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">Soccer Complex · 2023</div>
+        </div>
+      </div>
+
+      <div class="reveal d2" style="border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#1A2A1A,#243824);position:relative;display:flex;align-items:flex-end;">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(22,163,74,0.06));"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px;opacity:0.1;">🏈</div>
+        <div style="position:relative;z-index:1;padding:20px;">
+          <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;color:white;">Front Range High School</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">Football · Multi-sport · 2024</div>
+        </div>
+      </div>
+
+      <div class="reveal d1" style="border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#0F1E0F,#183018);position:relative;display:flex;align-items:flex-end;">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(245,158,11,0.07),rgba(22,163,74,0.06));"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px;opacity:0.1;">🏃</div>
+        <div style="position:relative;z-index:1;padding:20px;">
+          <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;color:white;">Colorado Springs Athletic Facility</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">Running Track · 2025</div>
+        </div>
+      </div>
+
+      <div class="reveal d3" style="grid-column:span 2;border-radius:16px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;text-align:center;padding:32px;">
+        <div>
+          <div style="font-size:40px;margin-bottom:12px;">📸</div>
+          <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:20px;color:white;margin-bottom:8px;">300+ Projects Across Colorado</div>
+          <p style="font-size:14px;color:rgba(255,255,255,0.5);max-width:360px;line-height:1.6;margin:0 auto 20px;">From Fort Collins to Pueblo, Denver Metro to the Western Slope — see our complete portfolio.</p>
+          <a href="#contact" class="btn-primary" style="font-size:13px;padding:12px 22px;">View All Projects →</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- ================================================================ -->
+<!-- CTA SECTION -->
+<!-- ================================================================ -->
+<section id="cta-section" style="padding:80px 40px;">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;">
+
+      <div>
+        <h2 class="reveal" style="font-size:clamp(26px,4vw,46px);font-weight:800;color:white;line-height:1.22;margin-bottom:16px;">
+          Ready to build<br>
+          <span class="text-green">your next field?</span>
+        </h2>
+        <p class="reveal d1" style="font-size:17px;color:rgba(255,255,255,0.58);line-height:1.72;margin-bottom:32px;">
+          Whether you're a municipality planning a new sports complex or a school upgrading an aging field, we'll walk you through every option — no pressure, no sales pitch, just honest expertise.
+        </p>
+        <div class="reveal d2" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+          <a href="tel:18003726639" class="phone-pill">📞 1-800-372-6639</a>
+          <a href="#contact" class="btn-primary">Request Free Assessment</a>
+        </div>
+      </div>
+
+      <div class="reveal d2">
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:36px;">
+          <h3 style="font-weight:700;font-size:18px;color:white;margin-bottom:24px;">Get a Free Field Assessment</h3>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <input type="text" placeholder="Your Name" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;color:white;font-size:14px;outline:none;font-family:'Inter',sans-serif;">
+            <input type="text" placeholder="Organization / School / Municipality" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;color:white;font-size:14px;outline:none;font-family:'Inter',sans-serif;">
+            <input type="email" placeholder="Email Address" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;color:white;font-size:14px;outline:none;font-family:'Inter',sans-serif;">
+            <select style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;color:rgba(255,255,255,0.7);font-size:14px;outline:none;font-family:'Inter',sans-serif;">
+              <option value="" disabled selected>Field Type</option>
+              <option>Athletic / Sports Field</option>
+              <option>Multi-Sport Complex</option>
+              <option>Running Track</option>
+              <option>Commercial / Residential</option>
+            </select>
+            <button class="btn-primary" style="width:100%;justify-content:center;padding:16px;">Submit Request →</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- ================================================================ -->
+<!-- AFFILIATIONS -->
+<!-- ================================================================ -->
+<section style="padding:48px 40px;background:#080E08;">
+  <div style="max-width:1200px;margin:0 auto;text-align:center;">
+    <p class="reveal" style="font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:0.1em;margin-bottom:24px;">AFFILIATIONS & ACCREDITATIONS</p>
+    <div class="reveal d1" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;">
+      <div class="affil-badge">Colorado Sports Turf Association</div>
+      <div class="affil-badge">Colorado Football Officials</div>
+      <div class="affil-badge">LEED Certified Partner</div>
+      <div class="affil-badge">Field Builders Association</div>
+      <div class="affil-badge">Colorado Parks & Recreation</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- FOOTER -->
+<!-- ================================================================ -->
+<footer id="contact" style="padding:56px 40px 32px;">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px;flex-wrap:wrap;">
+
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#16A34A,#22C55E);display:flex;align-items:center;justify-content:center;">
+            <span style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:11px;color:white;">AST</span>
+          </div>
+          <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;color:white;">Academy Sports Turf</span>
+        </div>
+        <p style="font-size:14px;color:rgba(255,255,255,0.48);line-height:1.7;margin-bottom:20px;max-width:280px;">
+          Colorado's premier sports turf installer. Serving municipalities, schools, and athletic programs across the Front Range for over 20 years.
+        </p>
+        <a href="tel:18003726639" class="phone-pill" style="font-size:14px;">📞 1-800-372-6639</a>
+      </div>
+
+      <div>
+        <div style="font-weight:700;font-size:14px;color:white;margin-bottom:16px;letter-spacing:0.04em;">SERVICES</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <a href="#" style="font-size:13px;color:rgba(255,255,255,0.52);text-decoration:none;">Athletic Fields</a>
+          <a href="#" style="font-size:13px;color:rgba(255,255,255,0.52);text-decoration:none;">Multi-Sport Fields</a>
+          <a href="#" style="font-size:13px;color:rgba(255,255,255,0.52);text-decoration:none;">Running Tracks</a>
+          <a href="#" style="font-size:13px;color:rgba(255,255,255,0.52);text-decoration:none;">Commercial</a>
+          <a href="#" style="font-size:13px;color:rgba(255,255,255,0.52);text-decoration:none;">Residential</a>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight:700;font-size:14px;color:white;margin-bottom:16px;letter-spacing:0.04em;">COMPANY</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <a href="#" style="font-size:13px;color:rgba(255,255,255,0.52);text-decoration:none;">About Us</a>
+          <a href="#projects" style="font-size:13px;color:rgba(255,255,255,0.52);text-decoration:none;">Projects Gallery</a>
+          <a href="#process" style="font-size:13px;color:rgba(255,255,255,0.52);text-decoration:none;">Our Process</a>
+          <a href="#contact" style="font-size:13px;color:rgba(255,255,255,0.52);text-decoration:none;">Contact</a>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight:700;font-size:14px;color:white;margin-bottom:16px;letter-spacing:0.04em;">CONTACT</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:13px;color:rgba(255,255,255,0.52);">Denver, Colorado</div>
+          <a href="tel:18003726639" style="font-size:13px;color:rgba(255,255,255,0.52);text-decoration:none;">1-800-372-6639</a>
+          <div style="font-size:13px;color:rgba(255,255,255,0.52);">info@academysportsturf.com</div>
+          <a href="#contact" style="font-size:13px;color:#22C55E;text-decoration:none;font-weight:600;margin-top:4px;">Request a Quote →</a>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:24px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
+      <p style="font-size:12px;color:rgba(255,255,255,0.28);margin:0;">© 2026 Academy Sports Turf. All rights reserved. | Colorado Sports Turf Specialists</p>
+      <p style="font-size:12px;color:rgba(255,255,255,0.22);margin:0;">Serving Denver · Aurora · Colorado Springs · Fort Collins · Front Range</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Nav scroll effect
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 60);
+  });
+
+  // Reveal on scroll
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis'); });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  // Init visible on load
+  document.querySelectorAll('.reveal').forEach(el => {
+    if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('vis');
+  });
+</script>
+
+</body>
+</html>
