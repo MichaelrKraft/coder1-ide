@@ -136,11 +136,7 @@ function renderCommandCenter(d) {
     : `<span style="font-size:14px;color:rgba(255,255,255,0.35);">Audio unavailable</span>`;
 
   const quickLinks = [
-    { label: 'Coder1',         href: 'http://localhost:3000',      icon: 'code-2'    },
-    { label: 'Gmail',          href: 'https://mail.google.com',    icon: 'mail'      },
-    { label: 'Obsidian',       href: 'obsidian://open',            icon: 'book-open' },
     { label: 'YouTube Studio', href: 'https://studio.youtube.com', icon: 'play-square'},
-    { label: 'Telegram',       href: 'https://web.telegram.org',   icon: 'send'      },
   ];
 
   const dockHtml = quickLinks.map(l =>
@@ -863,15 +859,18 @@ function renderClosing(d) {
 
 // ─── Full page template ───────────────────────────────────────────────────────
 function buildPage(d, dateStr) {
+  // Section toggles (from Settings). A zone is hidden only when explicitly false.
+  const sections = d.sections || {};
+  const on = (key) => sections[key] !== false;
   const zone1      = renderCommandCenter(d);
-  const zoneCommand = renderStrategicCommand(d);
+  const zoneCommand = on('strategicCommand') ? renderStrategicCommand(d) : '';
   const zoneStats  = renderWeeklyStats(d);
-  const zone2      = renderSignal(d);
-  const zone3 = renderOvernight(d);
-  const zone4 = renderFocus(d);
-  const zone5 = renderIntelligence(d, dateStr);
-  const zone6 = renderYouTube(d);
-  const zone7 = renderClosing(d);
+  const zone2      = on('todaysSignal')      ? renderSignal(d)            : '';
+  const zone3 = on('overnight')   ? renderOvernight(d)          : '';
+  const zone4 = on('todaysFocus') ? renderFocus(d)              : '';
+  const zone5 = on('intelligence') ? renderIntelligence(d, dateStr) : '';
+  const zone6 = on('youtube')     ? renderYouTube(d)            : '';
+  const zone7 = on('closing')     ? renderClosing(d)            : '';
 
   const inlineScript = `
 <script>
@@ -895,6 +894,21 @@ document.querySelectorAll('.tab-btn').forEach(function(btn) {
   });
 });
 
+// Pre-fill today's priorities from Ambient (its intentions, else suggestions).
+// Only fills empty fields, so it never clobbers what you're typing.
+(async function() {
+  try {
+    var r = await fetch('/api/intentions');
+    if (!r.ok) return;
+    var d = await r.json();
+    var src = (d.items && d.items.length) ? d.items : (d.suggestions || []).map(function(t){ return { text: t }; });
+    for (var i = 0; i < 3; i++) {
+      var el = document.getElementById('goal-' + (i + 1));
+      if (el && !el.value && src[i] && src[i].text) el.value = src[i].text;
+    }
+  } catch (_) { /* standalone / offline — leave fields as-is */ }
+})();
+
 // Goals form save
 var saveBtn = document.getElementById('save-goals-btn');
 if (saveBtn) {
@@ -910,6 +924,15 @@ if (saveBtn) {
     var errEl = document.getElementById('goals-error');
     if (errEl) errEl.textContent = '';
     try {
+      // Persist to Ambient (the source of truth) when reachable; keep a
+      // localStorage copy as an offline/standalone fallback.
+      try {
+        await fetch('/api/intentions', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ items: goals.map(function(t){ return { text: t, goal_id: null, done: false }; }) })
+        });
+      } catch (_) { /* standalone / offline — localStorage still saves below */ }
       localStorage.setItem('morning-brief-goals-${dateStr}', JSON.stringify(goals));
       if (successEl) { successEl.style.display = 'flex'; }
       saveBtn.style.background = 'linear-gradient(135deg,#10B981,#059669)';
@@ -1098,10 +1121,8 @@ function toggleSection(header) {
 
   const navBar = `<nav style="position:sticky;top:0;z-index:100;background:rgba(8,12,24,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.07);padding:0 40px;height:60px;display:flex;align-items:center;justify-content:space-between;">
   <div style="display:flex;align-items:center;gap:10px;">
-    <div style="width:28px;height:28px;background:linear-gradient(135deg,#635bff,#00D9FF);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:white;">C1</div>
-    <span style="font-size:16px;font-weight:600;color:white;">Morning Brief</span>
     <a href="http://localhost:8765/bookmark-explorer.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin-left:12px;padding:5px 12px;border-radius:7px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.75);text-decoration:none;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.16)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">🔖 Bookmarks</a>
-    <a href="http://localhost:3001/morning-briefs/skills-catalog.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:5px 12px;border-radius:7px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.75);text-decoration:none;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.16)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">⚡ Skills</a>
+    <a href="/morning-briefs/skills-catalog.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:5px 12px;border-radius:7px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.75);text-decoration:none;font-size:13px;font-weight:500;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.16)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">⚡ Skills</a>
   </div>
   <div style="display:flex;align-items:center;gap:16px;">
     ${navWeather}
