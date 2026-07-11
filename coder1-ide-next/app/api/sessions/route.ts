@@ -2,40 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import path from 'path';
 import fs from 'fs/promises';
-import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+import { getAuthenticatedUserId } from '@/lib/auth/request-auth';
 import { logAudit } from '@/lib/johnny5-db';
 
 export const dynamic = 'force-dynamic';
-
-/**
- * Extract authenticated userId from request.
- * Returns null if not authenticated (caller should return 401).
- */
-function getAuthenticatedUserId(request: NextRequest): string | null {
-  // 1. Check Authorization header
-  const authHeader = request.headers.get('authorization');
-  if (authHeader) {
-    const token = extractTokenFromHeader(authHeader);
-    if (token) {
-      const decoded = verifyAccessToken(token);
-      if (decoded) return decoded.userId;
-    }
-  }
-
-  // 2. Fall back to auth-token cookie
-  const cookieToken = request.cookies.get('auth-token')?.value;
-  if (cookieToken) {
-    const decoded = verifyAccessToken(cookieToken);
-    if (decoded) return decoded.userId;
-  }
-
-  // 3. Development mode fallback
-  if (process.env.NODE_ENV === 'development') {
-    return 'default';
-  }
-
-  return null;
-}
 
 // Get the correct data directory path (consistent with checkpoint API)
 const getDataDirectory = () => {

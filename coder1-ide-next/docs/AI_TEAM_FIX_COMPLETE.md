@@ -131,7 +131,7 @@ const { bridgeManager: manager } = require('./services/bridge-manager.ts');
 
 ```bash
 # OAuth token for Claude CLI (not API key!)
-CLAUDE_CODE_OAUTH_TOKEN=***REMOVED-OAUTH-TOKEN***
+CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-...REDACTED... # get with: claude auth token
 
 # Parent directory containing .git repository
 PROJECT_ROOT=/Users/michaelkraft/autonomous_vibe_interface
