@@ -238,9 +238,12 @@ export const withAIMiddleware = (handler: APIHandler) => withAPIMiddleware(handl
 });
 
 // File operation endpoints
+// SECURITY (C2): file routes read/write on behalf of a specific user (including
+// routing through that user's bridge to their local machine), so they MUST be
+// authenticated — otherwise a caller can name any userId and act as them.
 export const withFileMiddleware = (handler: APIHandler) => withAPIMiddleware(handler, {
   rateLimit: 'files',
-  requireAuth: false,
+  requireAuth: true,
   logRequests: true,
   validateBody: false
 });

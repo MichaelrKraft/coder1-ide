@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as tmuxServer from '@/lib/enhanced-tmux-server';
 import { logger } from '@/lib/logger';
+import { requireUser } from '@/lib/auth/request-auth';
 
 interface RouteParams {
   params: {
@@ -12,18 +13,49 @@ interface RouteParams {
   };
 }
 
+/**
+ * SECURITY (C1): the sandbox routes execute shell commands and manipulate
+ * sandboxes, so every method must (1) require a verified user and (2) confirm
+ * that user owns the target sandbox. Returns the loaded sandbox on success, or
+ * a ready-to-return NextResponse (401/403/404) on failure.
+ */
+async function authorizeSandbox(
+  request: NextRequest,
+  sandboxId: string
+): Promise<{ sandbox: tmuxServer.SandboxSession } | { response: NextResponse }> {
+  const auth = requireUser(request);
+  if (auth.response) return { response: auth.response };
+
+  const sandbox = await tmuxServer.getSandbox(sandboxId);
+  if (!sandbox) {
+    return {
+      response: NextResponse.json(
+        { success: false, error: 'Sandbox not found' },
+        { status: 404 }
+      ),
+    };
+  }
+
+  if (sandbox.userId !== auth.userId) {
+    // Do not distinguish "not yours" from "not found" to avoid ID enumeration.
+    return {
+      response: NextResponse.json(
+        { success: false, error: 'Sandbox not found' },
+        { status: 404 }
+      ),
+    };
+  }
+
+  return { sandbox };
+}
+
 // GET /api/sandbox/[sandboxId] - Get sandbox details
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const sandbox = await tmuxServer.getSandbox(params.sandboxId);
-    
-    if (!sandbox) {
-      return NextResponse.json(
-        { success: false, error: 'Sandbox not found' },
-        { status: 404 }
-      );
-    }
-    
+    const authz = await authorizeSandbox(request, params.sandboxId);
+    if ('response' in authz) return authz.response;
+    const { sandbox } = authz;
+
     return NextResponse.json({
       success: true,
       sandbox: {
@@ -53,18 +85,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // POST /api/sandbox/[sandboxId] - Execute command in sandbox
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    const authz = await authorizeSandbox(request, params.sandboxId);
+    if ('response' in authz) return authz.response;
+
     const body = await request.json();
     const { command, action } = body;
-    
-    const sandbox = await tmuxServer.getSandbox(params.sandboxId);
-    
-    if (!sandbox) {
-      return NextResponse.json(
-        { success: false, error: 'Sandbox not found' },
-        { status: 404 }
-      );
-    }
-    
+
     // Handle different actions
     switch (action) {
       case 'run':
@@ -117,8 +143,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/sandbox/[sandboxId] - Destroy specific sandbox
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    const authz = await authorizeSandbox(request, params.sandboxId);
+    if ('response' in authz) return authz.response;
+
     await tmuxServer.destroySandbox(params.sandboxId);
-    
+
     return NextResponse.json({
       success: true,
       message: `Sandbox ${params.sandboxId} destroyed`

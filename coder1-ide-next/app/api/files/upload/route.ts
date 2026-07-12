@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { logger } from '@/lib/logger';
+import { requireUser } from '@/lib/auth/request-auth';
 
 export const dynamic = 'force-dynamic';
 
-// Get user workspace directory
-const getWorkspaceRoot = () => {
+// Get the authenticated user's own workspace directory.
+// SECURITY (H2): scope uploads per-user instead of a shared `default` dir.
+// userId is a JWT-derived value; basename-guard it before using it as a path segment.
+const getWorkspaceRoot = (userId: string) => {
   const workspacePath = process.env.USER_WORKSPACE_PATH || 'user-workspaces';
-  return path.join(process.cwd(), workspacePath, 'default'); // Default to 'default' user for now
+  const safeUserId = path.basename(userId);
+  return path.join(process.cwd(), workspacePath, safeUserId);
 };
 
 // Blocked file extensions for security
@@ -24,6 +28,11 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 async function fileUploadHandler(request: NextRequest): Promise<NextResponse> {
   try {
+    // SECURITY: require a verified user; uploads land in that user's workspace.
+    const auth = requireUser(request);
+    if (auth.response) return auth.response;
+    const userId = auth.userId;
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -58,7 +67,7 @@ async function fileUploadHandler(request: NextRequest): Promise<NextResponse> {
     }
 
     // Get workspace directory
-    const workspaceRoot = getWorkspaceRoot();
+    const workspaceRoot = getWorkspaceRoot(userId);
 
     // Ensure workspace directory exists
     await fs.mkdir(workspaceRoot, { recursive: true });

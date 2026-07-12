@@ -22,7 +22,12 @@ const getProjectRoot = (customPath?: string) => {
         // CRITICAL SECURITY: Only allow paths within the user workspace
         // In development, allow any local path (bridge runs on user's own machine)
         const isDevelopment = process.env.NODE_ENV === 'development';
-        if (!isDevelopment && !resolvedPath.startsWith(workspaceRoot)) {
+        // SECURITY (H4): require a separator after the root so a sibling dir like
+        // `<workspaceRoot>-secrets` cannot pass a bare prefix check.
+        const withinWorkspace =
+            resolvedPath === workspaceRoot ||
+            resolvedPath.startsWith(workspaceRoot + path.sep);
+        if (!isDevelopment && !withinWorkspace) {
             throw new Error('Access denied: Path must be within user workspace');
         }
         
@@ -130,11 +135,16 @@ async function fileTreeHandler({ req, user }: { req: NextRequest; user?: any }):
         const url = new URL(request.url);
         const rootPath = url.searchParams.get('rootPath');
         const useBridge = url.searchParams.get('useBridge') !== 'false'; // Default to true
-        const queryUserId = url.searchParams.get('userId');
 
-        // Check if bridge is connected and should be used
-        // Use userId from: auth context > query param > fallback for backwards compatibility
-        const userId = user?.id || queryUserId || 'default-user';
+        // SECURITY (C2): userId comes ONLY from the verified auth context — never from a
+        // client-supplied query param. withFileMiddleware enforces requireAuth.
+        if (!user?.id) {
+            return NextResponse.json(
+                { success: false, error: 'Authentication required' },
+                { status: 401 }
+            );
+        }
+        const userId = user.id;
 
         if (useBridge && bridgeManager.hasBridgeForUser(userId)) {
             // Route through bridge to user's local machine

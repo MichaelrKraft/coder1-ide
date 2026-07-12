@@ -66,7 +66,6 @@ async function fileReadHandler({ req, user }: { req: NextRequest; user?: any }):
         const { searchParams } = new URL(request.url);
         const filePath = searchParams.get('path');
         const useBridge = searchParams.get('useBridge') !== 'false'; // Default to true
-        const queryUserId = searchParams.get('userId');
 
         if (!filePath) {
             return NextResponse.json(
@@ -78,9 +77,16 @@ async function fileReadHandler({ req, user }: { req: NextRequest; user?: any }):
             );
         }
 
-        // Check if bridge is connected and should be used
-        // Use userId from: auth context > query param > fallback for backwards compatibility
-        const userId = user?.id || queryUserId || 'default-user';
+        // SECURITY (C2): userId comes ONLY from the verified auth context — never from a
+        // client-supplied query param. withFileMiddleware sets requireAuth, so `user` is
+        // guaranteed present here; the guard is defense-in-depth.
+        if (!user?.id) {
+            return NextResponse.json(
+                { success: false, error: 'Authentication required' },
+                { status: 401 }
+            );
+        }
+        const userId = user.id;
 
         if (useBridge && bridgeManager.hasBridgeForUser(userId)) {
             // Route through bridge to user's local machine
@@ -141,7 +147,9 @@ async function fileReadHandler({ req, user }: { req: NextRequest; user?: any }):
         const fullPath = path.resolve(projectRoot, filePath);
 
         // Enhanced security checks
-        if (!fullPath.startsWith(projectRoot)) {
+        // SECURITY (H4): require a path separator after the root so that a sibling dir
+        // like `<root>-secrets` cannot pass a bare startsWith(root) prefix check.
+        if (fullPath !== projectRoot && !fullPath.startsWith(projectRoot + path.sep)) {
             return NextResponse.json(
                 {
                     success: false,

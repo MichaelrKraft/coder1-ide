@@ -15,6 +15,16 @@ const execAsync = promisify(exec);
 export const dynamic = 'force-dynamic';
 
 /**
+ * SECURITY (H1): sessionId is used as a path segment under data/sessions/.
+ * Reject anything that isn't a plain id token so it can never traverse
+ * (`../`), reference an absolute path, or contain separators.
+ */
+const SESSION_ID_RE = /^[A-Za-z0-9_-]+$/;
+function isValidSessionId(id: unknown): id is string {
+  return typeof id === 'string' && id.length > 0 && id.length <= 128 && SESSION_ID_RE.test(id);
+}
+
+/**
  * Extract file paths from snapshot files data.
  * Handles both JSON-stringified IDEFile[] arrays and plain objects.
  */
@@ -159,7 +169,16 @@ const readCheckpointsFromAllLocations = async (checkpointsBaseDir: string) => {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    
+
+    // SECURITY (H1): if the client supplied a sessionId, it must be a safe id token
+    // before it's used as a path segment; server-generated ids are always safe.
+    if (data.sessionId !== undefined && !isValidSessionId(data.sessionId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid sessionId' },
+        { status: 400 }
+      );
+    }
+
     // Get or create sessionId
     const sessionId = data.sessionId || `session_${Date.now()}_${randomBytes(6).toString('hex')}`;
     const checkpointId = `checkpoint_${Date.now()}_${randomBytes(6).toString('hex')}`;
@@ -447,7 +466,16 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
-    
+
+    // SECURITY (H1): reject traversal in a client-supplied sessionId before it
+    // reaches any path.join below. Null/absent is allowed (falls back to latest).
+    if (sessionId !== null && !isValidSessionId(sessionId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid sessionId' },
+        { status: 400 }
+      );
+    }
+
     const dataDir = getDataDirectory();
     const sessionsDir = path.join(dataDir, 'sessions');
     
