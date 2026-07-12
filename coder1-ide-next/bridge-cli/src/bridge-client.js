@@ -20,6 +20,80 @@ const { saveCredentials, loadCredentials, clearCredentials, hasCredentials } = r
 const GitWatcher = require('./git-watcher');
 
 /**
+ * SECURITY (C3): allowlist for commands the bridge will execute.
+ *
+ * The bridge exists to run the Claude CLI on the user's machine and nothing else.
+ * The server sends a full command STRING (that design is intentional — it avoids
+ * shell-escaping bugs with large multi-line prompts), so the safety boundary is
+ * here: verify the string is a `claude` invocation before it ever reaches the
+ * shell. This does NOT parse/allowlist individual flags — the CLI itself bounds
+ * what those do; it only guarantees the executable is `claude`.
+ *
+ * Accepts the shapes the server legitimately builds (verified against
+ * services/*.ts command construction):
+ *   - `claude ...`
+ *   - `/abs/path/to/claude ...`
+ *   - `VAR="value" claude ...`  (e.g. CLAUDE_CODE_OAUTH_TOKEN="..." claude --print ...)
+ *
+ * Prompt text is passed as a double- or single-quoted argument, so the guard
+ * only inspects the command PREFIX (everything up to the first quote) for shell
+ * metacharacters — a `$(`, backtick, or `;` inside the quoted prompt is the
+ * shell's problem to quote correctly, not a bridge-boundary violation, and
+ * flagging it here would reject legitimate prompts.
+ */
+function hasUnquotedShellOperator(s) {
+  // Walk the string tracking single/double-quote state. A shell control operator
+  // that appears OUTSIDE quotes can chain/substitute a second command; inside
+  // quotes it's just prompt text. Unbalanced quotes are treated as unsafe.
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inSingle) {
+      if (c === "'") inSingle = false;
+      continue;
+    }
+    if (inDouble) {
+      if (c === '"' && s[i - 1] !== '\\') inDouble = false;
+      continue;
+    }
+    if (c === "'") { inSingle = true; continue; }
+    if (c === '"') { inDouble = true; continue; }
+    // Unquoted context:
+    if (c === ';' || c === '|' || c === '&' || c === '\n' || c === '\r' ||
+        c === '>' || c === '<' || c === '`') {
+      return true;
+    }
+    if (c === '$' && s[i + 1] === '(') return true;
+  }
+  return inSingle || inDouble; // unbalanced quotes -> unsafe
+}
+
+function isAllowedBridgeCommand(command) {
+  if (typeof command !== 'string') return false;
+  const trimmed = command.trim();
+  if (trimmed.length === 0) return false;
+
+  // Strip any leading env-var assignments (bare or quoted values), e.g.
+  // `CLAUDE_CODE_OAUTH_TOKEN="..." claude --print ...`.
+  const cleaned = trimmed.replace(
+    /^(?:[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]*)\s+)+/,
+    ''
+  );
+
+  // Executable token must be `claude` or an absolute path ending in /claude
+  // (word-exact, so `claudexyz` and `/tmp/claude-fake` are rejected).
+  const execToken = cleaned.split(/\s+/)[0] || '';
+  if (!(execToken === 'claude' || /(^|\/)claude$/.test(execToken))) return false;
+
+  // No unquoted shell operator anywhere — prompt metacharacters inside quotes
+  // are fine, chaining/substitution outside quotes is not.
+  if (hasUnquotedShellOperator(trimmed)) return false;
+
+  return true;
+}
+
+/**
  * ManusLiveProxy — transparent WebSocket tunnel from bridge to ManusLive daemon.
  * Handles the Moltbot authentication handshake locally; all other messages are
  * forwarded raw to the server so j5-bridge.ts can parse them unchanged.
@@ -1219,6 +1293,24 @@ class BridgeClient extends EventEmitter {
    */
   async handleClaudeCommand(data) {
     const { sessionId, commandId, command, context, stdinData } = data;
+
+    // SECURITY (C3): the bridge runs commands from whatever server it is connected
+    // to. It must ONLY ever run the Claude CLI — never an arbitrary shell command.
+    // Reject anything that isn't a `claude ...` invocation before it reaches the
+    // queue/shell, so a compromised/malicious server can't turn the bridge into RCE.
+    if (!isAllowedBridgeCommand(command)) {
+      logger.warn('Rejected non-claude command from server', {
+        commandId,
+        sessionId,
+        preview: typeof command === 'string' ? command.substring(0, 80) : typeof command
+      });
+      this.socket.emit('claude:error', {
+        commandId,
+        sessionId,
+        error: 'Bridge rejected command: only the Claude CLI may be executed.'
+      });
+      return;
+    }
 
     // Check if this will be an interactive session
     const isInteractive = this.claudeExecutor.needsInteractiveMode(command);

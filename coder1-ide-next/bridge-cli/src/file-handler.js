@@ -206,27 +206,36 @@ class FileHandler {
   validatePath(resolvedPath) {
     // Ensure path doesn't escape working directory (unless absolute)
     const relative = path.relative(this.workingDirectory, resolvedPath);
-    
+
     // Check for path traversal attempts
     if (relative.startsWith('..') && !path.isAbsolute(resolvedPath)) {
       throw new Error('Path traversal not allowed');
     }
-    
-    // Check for sensitive directories
-    const sensitivePatterns = [
-      /\/\.git\//,
-      /\/node_modules\//,
-      /\/\.env/,
-      /\/\.ssh\//
+
+    // SECURITY (C2 defense-in-depth): the bridge legitimately reads files across
+    // the user's own machine, so we don't confine to workingDirectory — but we
+    // HARD-BLOCK credential/secret paths that no file-browsing feature needs.
+    // Previously these only warned, which left `~/.ssh/id_rsa` exfiltratable if
+    // the web-side auth is ever bypassed. Blocking here is a second line of
+    // defense independent of the API auth fix.
+    const normalized = path.normalize(resolvedPath);
+    const blockedPatterns = [
+      /(^|\/)\.ssh(\/|$)/,
+      /(^|\/)\.aws(\/|$)/,
+      /(^|\/)\.gnupg(\/|$)/,
+      /(^|\/)\.env(\.[^/]+)?$/,
+      /(^|\/)id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/,
+      /\.(pem|key)$/,
+      /(^|\/)\.netrc$/,
+      /(^|\/)\.git-credentials$/
     ];
-    
-    for (const pattern of sensitivePatterns) {
-      if (pattern.test(resolvedPath)) {
-        this.warn(`Access to sensitive path attempted: ${resolvedPath}`);
-        // Note: We'll allow it but warn (user's local machine)
+    for (const pattern of blockedPatterns) {
+      if (pattern.test(normalized)) {
+        this.warn(`Blocked access to sensitive path: ${normalized}`);
+        throw new Error('Access to sensitive path is not allowed');
       }
     }
-    
+
     return true;
   }
 
