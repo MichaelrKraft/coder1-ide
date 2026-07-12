@@ -578,6 +578,9 @@ Only mention code/git status if the user explicitly asks about it.
       // NOTE: --verbose intentionally omitted — it outputs non-JSON debug text to stdout which
       // conflicts with --output-format stream-json and causes silent command failures.
       const command = `claude --print --output-format stream-json --include-partial-messages --model ${modelOverride}${permissionFlag}`;
+      // Phase 4: equivalent argv (prompt still delivered via stdinData, not here).
+      const argv = ['--print', '--output-format', 'stream-json', '--include-partial-messages', '--model', modelOverride];
+      if (mcpEnabled) argv.push('--permission-mode', 'bypassPermissions');
 
       console.log(`[Johnny5Bridge] MCP enabled: ${mcpEnabled}, command: ${command}, prompt via stdin (${prompt.length} chars)`);
 
@@ -586,6 +589,7 @@ Only mention code/git status if the user explicitly asks about it.
         sessionId: 'johnny5-chat',
         commandId,
         command,
+        argv,
         stdinData: prompt,
         context: {
           workingDirectory: '/tmp',

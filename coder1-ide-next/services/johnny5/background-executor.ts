@@ -315,10 +315,14 @@ class BackgroundExecutor {
     }
 
     try {
+      // Phase 4: send structured argv (prompt is an inert array element — no shell
+      // quoting/injection). `command` is kept for back-compat with older bridges.
+      const prompt = task.description || task.title;
       const result = await this.bridgeManager.executeCommand(anyBridge.userId, {
         sessionId: `bg-${task.id}`,
         commandId: `bg-cmd-${task.id}`,
-        command: `claude --print "${task.description?.replace(/"/g, '\\"') || task.title}"`,
+        command: `claude --print "${prompt.replace(/"/g, '\\"')}"`,
+        argv: ['--print', prompt],
         context: { workingDirectory: '~' },
       });
 

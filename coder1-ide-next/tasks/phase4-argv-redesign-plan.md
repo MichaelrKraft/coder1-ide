@@ -72,3 +72,17 @@ Start with the highest-risk / most-used, each replacing string interpolation wit
 
 ## Estimated size
 Steps 1-2 (protocol + bridge core): ~half day, self-contained, shippable alone with the fallback. Step 3 (call-site migration): incremental, ~1-2 hrs per cluster. Step 4 (remove shell path): small, gated on step 3 completion + live verification.
+
+---
+
+## Step 3 progress (2026-07-11)
+
+**Key correction from tracing:** most of the ~10 "claude string builders" grep-flagged earlier do NOT feed the socket bridge. The ACTUAL sinks that call `bridgeManager.executeCommand` (the `claude:execute` socket path) are only four:
+- `services/johnny5/background-executor.ts:318` — **migrated** (argv `['--print', prompt]`; prompt was interpolated with fragile `\"` escaping — real injection sink, now inert).
+- `services/johnny5-bridge-service.ts:585` — **migrated** (argv flags; prompt already went via `stdinData`, so lower risk, but shell removed).
+- `server.js:1010` (slash commands) — **migrated** (argv `[claudePrompt]`; also fixes a pre-existing bug where the unquoted multi-word prompt was malformed as a shell string).
+- `server.js:4738` (interactive terminal) — **LEFT ON LEGACY STRING PATH intentionally.** `commandToExecute` is the raw command the user typed in the terminal (`buffer.trim()`); decomposing it to argv would require parsing shell syntax on the server — the exact fragile tokenizer we're removing. It stays string + C3 allowlist guard (the user can only run `claude ...`).
+
+Non-sinks confirmed harmless (do NOT need migration): `claude-session-bridge.ts:253` / `claude-file-bridge.ts:353` return display strings placed in JSON API responses, never executed on the bridge. `claude-code-bridge.ts` `executeCommand` is a SEPARATE local-exec method (git/which/version on the server), not the socket path.
+
+**Remaining for step 4:** the interactive-terminal site (server.js:4738) is the one caller still on the string path, so the bridge CANNOT yet reject the legacy path without breaking terminal use. Closing that requires either accepting a small server-side argv tokenizer for that one input, or a product decision to constrain terminal input. Revisit before step 4's "reject legacy string path" flip.

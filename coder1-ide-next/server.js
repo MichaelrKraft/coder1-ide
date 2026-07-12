@@ -1007,7 +1007,11 @@ async function routeSlashCommandToClaudeCode(sessionId, slashCommand, claudeProm
     const commandRequest = {
       sessionId,
       commandId: `slash_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}`,
-      command: `claude ${claudePrompt}`,  // Format as proper Claude CLI command
+      command: `claude ${claudePrompt}`,  // Legacy string (back-compat with older bridges)
+      // Phase 4: the prompt is a single inert argv element — fixes both injection
+      // AND the pre-existing bug where an unquoted multi-word prompt was malformed
+      // as a shell string.
+      argv: [claudePrompt],
       context: {
         workingDirectory: process.cwd(),
         currentFile: null,
