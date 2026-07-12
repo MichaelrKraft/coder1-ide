@@ -19,17 +19,22 @@ Guiding decision: **the reusable auth helper already exists** — `getAuthentica
 - [ ] Repoint `app/api/sessions/route.ts` to import it (no behavior change — proves the extraction is sound).
 - **Verify:** sessions endpoints behave identically before/after; a request with no token still 401s in prod, still works in dev.
 
-## Phase 2 — Lock the file routes (C2 + H2, the cross-tenant read) (~1–2 hr)
-- [ ] `lib/api-middleware.ts:243` — flip `withFileMiddleware` to `requireAuth: true`.
-- [ ] In every file route, derive `userId` **only** from `getAuthenticatedUserId()`. Delete the `queryUserId`/`'default-user'` fallback at `app/api/files/read/route.ts:83` and the equivalents in `files/write`, `files/create`, `files/upload`, `files/tree`, `save-temp-image`, `export`.
-- [ ] `files/upload/route.ts:9-11` — replace the hardcoded `user-workspaces/default` with the authenticated user's own workspace dir.
-- [ ] Bridge-side containment fix — `bridge-cli/src/file-handler.js:197-227`: compute the real project root, `path.resolve` the requested path, and **reject unless `resolved === root || resolved.startsWith(root + path.sep)`**. Make `.ssh`/`.env`/sensitive paths a hard block (return error), not a warning. This closes the "traversal guard is a no-op on absolute paths" bug independently of the web-side auth fix (defense in depth).
-- **Verify:** `GET /api/files/read?path=/etc/passwd&userId=someoneelse` → 401 (no token) and, even with a valid token, the bridge rejects any path outside the user's project root.
+## Phase 2 — Lock the file routes (C2 + H2, the cross-tenant read)  ✅ done (commit 7f67ee8df)
+- [x] `lib/api-middleware.ts` — `withFileMiddleware` flipped to `requireAuth: true`.
+- [x] `files/read` + `files/tree` — userId derived ONLY from verified `user`; removed the `queryUserId || 'default-user'` fallback.
+- [x] `files/write`, `files/create`, `save-temp-image` — added `requireUser()` (were previously **unauthenticated raw handlers** — worse than the audit's "flip a flag" framing); fixed the `startsWith` sibling-prefix bug (H4) on each; canonicalized the `/tmp` guard in save-temp-image.
+- [x] `files/upload` — added `requireUser()`; uploads now scoped to the authenticated user's own workspace dir (basename-guarded), not shared `default`.
+- [ ] **Bridge-side containment fix — NOT DONE** (`bridge-cli/src/file-handler.js:197-227`). Deferred: the web-side auth fix (C2) already blocks the cross-tenant exploit, but the bridge's own no-op absolute-path guard should still be hardened as defense-in-depth. Left for a bridge-focused follow-up.
+- **Verify:** guard logic unit-verified via node; full route-level verify (`GET /api/files/read?path=/etc/passwd&userId=x` → 401) needs a running server + deps installed.
 
-## Phase 3 — Lock the sandbox + checkpoint routes (C1 + H1) (~1 hr)
-- [ ] `app/api/sandbox/[sandboxId]/route.ts` — add `requireUser()` at the top of `GET`/`POST`/etc.; verify the caller **owns** `params.sandboxId` (look up the sandbox's owner via `tmuxServer.getSandbox`, compare to authenticated userId) before any `action`.
-- [ ] `app/api/checkpoint/route.ts:159,446` — add auth; validate `sessionId` against traversal (`path.basename(sessionId) === sessionId` or a strict `/^[\w-]+$/` allowlist) before it reaches `path.join` at :172/:511; confirm ownership.
-- **Verify:** unauthenticated `POST /api/sandbox/<id>` with `{action:'run',command:'id'}` → 401; a `sessionId` of `../../etc` → 400.
+## Phase 3 — Lock the sandbox + checkpoint routes (C1 + H1)  ✅ done (commit 7f67ee8df)
+- [x] `app/api/sandbox/[sandboxId]/route.ts` — `authorizeSandbox()` on GET/POST/DELETE: `requireUser()` + ownership check (`sandbox.userId === auth.userId`), 404 on mismatch to prevent enumeration.
+- [x] `app/api/checkpoint/route.ts` — strict sessionId allowlist (`/^[A-Za-z0-9_-]+$/`, ≤128) validated in POST and GET before any `path.join`. (Full auth on checkpoint deferred — see note; the terminal/checkpoint flow may call it without a user session, so hard `requireUser` needs live-flow verification before enforcing.)
+- **Verify:** sessionId guard unit-verified (`../../etc` → invalid); sandbox 401/404 paths need a running server to exercise end-to-end.
+
+## Known verification gaps (be honest)
+- **No `tsc` / jest run** — TypeScript and jest are not installed in this checkout, and installing them here risks the native-binding/build-safety rules. The pure guard logic was proven via node, but type-correctness of the route edits and the full test suite must be confirmed on your next `npm install && npm run build`.
+- **Checkpoint auth + bridge containment** intentionally deferred (notes above).
 
 ## Phase 4 — Harden the bridge command channel (C3) (~half day, most design work)
 - [ ] `bridge-cli/src/claude-executor.js:557-610` — stop passing a free-form string to `spawn('/bin/sh',['-c',…])`. Define a structured command spec (executable + validated argv array) and spawn without a shell (`spawn(exe, argv, {shell:false})`).
