@@ -37,6 +37,14 @@ interface CommandRequest {
   sessionId: string;
   commandId: string;
   command: string;
+  /**
+   * Phase 4 (preferred): structured argument list AFTER the `claude` executable,
+   * e.g. ['--print', '--session-id', id, prompt]. When present the bridge spawns
+   * `claude` directly with shell:false — no shell string is ever parsed, which
+   * eliminates the quoting/injection surface. `command` should still be sent
+   * alongside for backward compatibility with older bridge builds that ignore argv.
+   */
+  argv?: string[];
   stdinData?: string;
   context: {
     workingDirectory: string;
@@ -433,6 +441,7 @@ export class BridgeManager extends EventEmitter {
       sessionId: request.sessionId,
       commandId: request.commandId,
       command: request.command,
+      ...(request.argv && { argv: request.argv }),
       context: request.context,
       ...(request.stdinData && { stdinData: request.stdinData })
     });

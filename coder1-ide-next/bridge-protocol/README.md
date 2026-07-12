@@ -108,7 +108,10 @@ sequenceDiagram
   payload: {
     sessionId: string,
     commandId: string,
-    command: string,     // Full command with args
+    command: string,     // Legacy full command string (still sent for back-compat)
+    argv?: string[],     // Preferred: args AFTER `claude`; spawned with shell:false.
+                         // Bridge prefers argv when present and ignores `command`;
+                         // older bridges ignore argv and use `command`.
     context: {
       workingDirectory: string,
       currentFile?: string,

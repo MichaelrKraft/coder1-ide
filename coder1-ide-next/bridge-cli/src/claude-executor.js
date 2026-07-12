@@ -175,13 +175,21 @@ class ClaudeExecutor extends EventEmitter {
    * Check if command needs interactive mode (PTY)
    * Returns true for `claude` alone or `claude chat`
    */
-  needsInteractiveMode(command) {
-    const trimmed = command.trim();
+  needsInteractiveMode(command, options = {}) {
+    // Phase 4: when a structured argv is present, decide from it — no string
+    // parsing. argv is the args AFTER `claude`. One-shot iff it carries --print
+    // or -p (the non-interactive flags); otherwise interactive (bare/chat/help).
+    if (Array.isArray(options.argv)) {
+      const args = options.argv;
+      const oneShot = args.includes('--print') || args.includes('-p');
+      return !oneShot;
+    }
+    const trimmed = (command || '').trim();
     // Interactive mode for: claude, claude chat, claude --help
     // One-shot mode for: claude "prompt", claude -p "...", etc.
     return trimmed === 'claude' ||
            trimmed === 'claude chat' ||
-           trimmed.match(/^claude\s+--?h(elp)?$/);
+           !!trimmed.match(/^claude\s+--?h(elp)?$/);
   }
 
   /**
@@ -219,7 +227,7 @@ class ClaudeExecutor extends EventEmitter {
     // 🔧 FIX (Jan 4, 2026): Check authentication before executing commands
     // Skip auth check for version/help commands (they don't need auth)
     const skipAuthCommands = ['--version', '-v', '--help', '-h', 'auth'];
-    const isInteractive = this.needsInteractiveMode(command);
+    const isInteractive = this.needsInteractiveMode(command, options);
     // Skip auth check for interactive commands (let PTY handle prompts) or version/help commands
     const needsAuthCheck = !isInteractive && !skipAuthCommands.some(cmd => command.includes(cmd));
 
@@ -248,7 +256,7 @@ class ClaudeExecutor extends EventEmitter {
     }
 
     // Check if this needs interactive mode
-    if (this.needsInteractiveMode(command)) {
+    if (this.needsInteractiveMode(command, options)) {
       if (pty) {
         return this.executeInteractive(command, options);
       } else {
@@ -311,9 +319,11 @@ class ClaudeExecutor extends EventEmitter {
       const startTime = Date.now();
       const commandId = options.commandId || `cmd_${Date.now()}`;
 
-      // Parse command into parts
-      const parts = this.parseCommand(command);
-      let args = parts.slice(1); // Skip 'claude'
+      // Phase 4: prefer a structured argv (already the args AFTER `claude`) when
+      // the server provides one; fall back to re-parsing the legacy string.
+      let args = Array.isArray(options.argv)
+        ? [...options.argv]
+        : this.parseCommand(command).slice(1); // Skip 'claude'
 
       // Add model parameter if specified in context
       // SECURITY: Validate model name to prevent command injection
@@ -450,7 +460,7 @@ class ClaudeExecutor extends EventEmitter {
           // For interactive commands (bare 'claude', 'claude chat'), falling back to
           // executeNonInteractive causes Claude CLI to detect no-TTY stdin and output
           // a confusing "--print" error. Instead return a clear actionable message.
-          if (this.needsInteractiveMode(command)) {
+          if (this.needsInteractiveMode(command, options)) {
             resolve({
               exitCode: 1,
               signal: null,
@@ -554,68 +564,110 @@ class ClaudeExecutor extends EventEmitter {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
 
-      // 🔧 FIX (Feb 6, 2026): Pass command directly to /bin/sh instead of re-parsing.
-      // The server already escapes the command for shell execution using single-quote
-      // escaping (e.g., claude 'prompt with '\'' quotes'). Previously, parseCommand()
-      // + quotedArgs + shell:true double-parsed the command, which broke on multi-line
-      // prompts containing personal data (e.g., "- Name: Mike") because /bin/sh
-      // interpreted each line as a separate shell command.
-      let shellCommand = command;
-
-      // Replace 'claude' command name with resolved absolute path
-      if (shellCommand.startsWith('claude ')) {
-        shellCommand = this.claudePath + shellCommand.substring(6);
-      } else if (shellCommand === 'claude') {
-        shellCommand = this.claudePath;
-      }
-
-      // Add model parameter if specified in context and not already present
-      // SECURITY: Validate model name to prevent shell injection
-      if (options.context?.selectedClaudeModel && !shellCommand.includes('--model')) {
-        const model = options.context.selectedClaudeModel;
-        if (!isValidModelName(model)) {
-          this.error(`SECURITY: Invalid model name rejected: ${model}`);
-          throw new Error('Invalid model parameter');
-        }
-        const afterPath = shellCommand.substring(this.claudePath.length);
-        shellCommand = this.claudePath + ' --model ' + model + afterPath;
-      }
-
-      // When MCP permission bypass is active (server opted in via JOHNNY5_BRIDGE_MCP_ENABLED),
-      // inject --add-dir with the bridge's CWD so Claude can access project files.
-      // CWD stays /tmp to prevent CLAUDE.md auto-loading and "Prompt too long" errors.
-      if (shellCommand.includes('--permission-mode')) {
-        const bridgeCwd = process.cwd();
-        if (bridgeCwd && bridgeCwd !== '/tmp' && bridgeCwd !== '/') {
-          // Escape single quotes in path to prevent shell injection
-          const escapedPath = bridgeCwd.replace(/'/g, "'\\''");
-          const addDirFlag = `--add-dir '${escapedPath}'`;
-          shellCommand = shellCommand.replace('--print', `--print ${addDirFlag}`);
-          this.log(`Injecting project access: --add-dir '${bridgeCwd}'`);
-        }
-      }
-
-      this.log(`Executing non-interactive: ${shellCommand.substring(0, 200)}...`);
-
-      // Spawn via /bin/sh -c to pass the command to the shell.
-      // If stdinData is present, pipe stdin so we can deliver the prompt directly
-      // (bypasses shell argument escaping issues with large prompts).
-      // Otherwise, ignore stdin to prevent Claude CLI from hanging on auth prompts.
-      // FIX (Feb 2026): Use /tmp as CWD to prevent Claude CLI from auto-loading
-      // CLAUDE.md files from the user's home directory, which inflates prompt size
-      // and causes "Prompt is too long" errors for one-shot commands.
       const useStdin = !!options.stdinData;
       // eslint-disable-next-line no-unused-vars
       const { CLAUDECODE: _removed, ...inheritedEnv } = process.env;
-      const claudeProcess = spawn('/bin/sh', ['-c', shellCommand], {
+      const spawnEnv = {
+        ...inheritedEnv,
+        CODER1_BRIDGE: 'true',
+        TERM: 'xterm-256color'
+      };
+      const spawnOpts = {
         cwd: '/tmp',
-        env: {
-          ...inheritedEnv,
-          CODER1_BRIDGE: 'true',
-          TERM: 'xterm-256color'
-        },
+        env: spawnEnv,
         stdio: [useStdin ? 'pipe' : 'ignore', 'pipe', 'pipe']
-      });
+      };
+
+      let claudeProcess;
+
+      // Phase 4 (argv path): when the server sends a structured argv array, spawn
+      // `claude` directly with shell:false. No string is ever parsed as shell, so
+      // prompts containing $(), ;, backticks, quotes, or newlines are passed
+      // verbatim as inert argv elements — no quoting/injection surface at all.
+      if (Array.isArray(options.argv)) {
+        const args = [...options.argv];
+
+        // Inject --model as array elements (validated), if requested and absent.
+        if (options.context?.selectedClaudeModel && !args.includes('--model')) {
+          const model = options.context.selectedClaudeModel;
+          if (!isValidModelName(model)) {
+            this.error(`SECURITY: Invalid model name rejected: ${model}`);
+            throw new Error('Invalid model parameter');
+          }
+          args.unshift('--model', model);
+        }
+
+        // Inject --add-dir for MCP permission bypass, as array elements (no shell
+        // escaping needed — the path is a literal argv element).
+        if (args.includes('--permission-mode')) {
+          const bridgeCwd = process.cwd();
+          if (bridgeCwd && bridgeCwd !== '/tmp' && bridgeCwd !== '/') {
+            const printIdx = args.indexOf('--print');
+            if (printIdx !== -1) {
+              args.splice(printIdx + 1, 0, '--add-dir', bridgeCwd);
+            } else {
+              args.unshift('--add-dir', bridgeCwd);
+            }
+            this.log(`Injecting project access: --add-dir ${bridgeCwd}`);
+          }
+        }
+
+        this.log(`Executing non-interactive (argv): claude ${args.join(' ').substring(0, 200)}...`);
+        claudeProcess = spawn(this.claudePath, args, { ...spawnOpts, shell: false });
+      } else {
+        // Legacy string path (kept for older callers until they migrate to argv).
+        // 🔧 FIX (Feb 6, 2026): Pass command directly to /bin/sh instead of re-parsing.
+        // The server already escapes the command for shell execution using single-quote
+        // escaping (e.g., claude 'prompt with '\'' quotes'). Previously, parseCommand()
+        // + quotedArgs + shell:true double-parsed the command, which broke on multi-line
+        // prompts containing personal data (e.g., "- Name: Mike") because /bin/sh
+        // interpreted each line as a separate shell command.
+        let shellCommand = command;
+
+        // Replace 'claude' command name with resolved absolute path
+        if (shellCommand.startsWith('claude ')) {
+          shellCommand = this.claudePath + shellCommand.substring(6);
+        } else if (shellCommand === 'claude') {
+          shellCommand = this.claudePath;
+        }
+
+        // Add model parameter if specified in context and not already present
+        // SECURITY: Validate model name to prevent shell injection
+        if (options.context?.selectedClaudeModel && !shellCommand.includes('--model')) {
+          const model = options.context.selectedClaudeModel;
+          if (!isValidModelName(model)) {
+            this.error(`SECURITY: Invalid model name rejected: ${model}`);
+            throw new Error('Invalid model parameter');
+          }
+          const afterPath = shellCommand.substring(this.claudePath.length);
+          shellCommand = this.claudePath + ' --model ' + model + afterPath;
+        }
+
+        // When MCP permission bypass is active (server opted in via JOHNNY5_BRIDGE_MCP_ENABLED),
+        // inject --add-dir with the bridge's CWD so Claude can access project files.
+        // CWD stays /tmp to prevent CLAUDE.md auto-loading and "Prompt too long" errors.
+        if (shellCommand.includes('--permission-mode')) {
+          const bridgeCwd = process.cwd();
+          if (bridgeCwd && bridgeCwd !== '/tmp' && bridgeCwd !== '/') {
+            // Escape single quotes in path to prevent shell injection
+            const escapedPath = bridgeCwd.replace(/'/g, "'\\''");
+            const addDirFlag = `--add-dir '${escapedPath}'`;
+            shellCommand = shellCommand.replace('--print', `--print ${addDirFlag}`);
+            this.log(`Injecting project access: --add-dir '${bridgeCwd}'`);
+          }
+        }
+
+        this.log(`Executing non-interactive: ${shellCommand.substring(0, 200)}...`);
+
+        // Spawn via /bin/sh -c to pass the command to the shell.
+        // If stdinData is present, pipe stdin so we can deliver the prompt directly
+        // (bypasses shell argument escaping issues with large prompts).
+        // Otherwise, ignore stdin to prevent Claude CLI from hanging on auth prompts.
+        // FIX (Feb 2026): Use /tmp as CWD to prevent Claude CLI from auto-loading
+        // CLAUDE.md files from the user's home directory, which inflates prompt size
+        // and causes "Prompt is too long" errors for one-shot commands.
+        claudeProcess = spawn('/bin/sh', ['-c', shellCommand], spawnOpts);
+      }
 
       // Write prompt via stdin if provided (bypasses shell argument escaping)
       if (useStdin) {

@@ -1312,26 +1312,44 @@ class BridgeClient extends EventEmitter {
   async handleClaudeCommand(data) {
     const { sessionId, commandId, command, context, stdinData } = data;
 
-    // SECURITY (C3): the bridge runs commands from whatever server it is connected
-    // to. It must ONLY ever run the Claude CLI — never an arbitrary shell command.
-    // Reject anything that isn't a `claude ...` invocation before it reaches the
-    // queue/shell, so a compromised/malicious server can't turn the bridge into RCE.
-    if (!isAllowedBridgeCommand(command)) {
-      logger.warn('Rejected non-claude command from server', {
-        commandId,
-        sessionId,
-        preview: typeof command === 'string' ? command.substring(0, 80) : typeof command
-      });
-      this.socket.emit('claude:error', {
-        commandId,
-        sessionId,
-        error: 'Bridge rejected command: only the Claude CLI may be executed.'
-      });
-      return;
+    // Phase 4: prefer a structured argv from the server. argv is the argument list
+    // AFTER `claude` and is executed with shell:false, so it CANNOT shell-inject —
+    // it bypasses the string allowlist entirely. We only validate it's a clean
+    // array of strings.
+    const argv = Array.isArray(data.argv) ? data.argv : null;
+
+    if (argv) {
+      if (!argv.every((a) => typeof a === 'string')) {
+        logger.warn('Rejected argv with non-string elements', { commandId, sessionId });
+        this.socket.emit('claude:error', {
+          commandId,
+          sessionId,
+          error: 'Bridge rejected command: argv must be an array of strings.'
+        });
+        return;
+      }
+    } else {
+      // SECURITY (C3): legacy string path — the bridge runs commands from whatever
+      // server it is connected to. It must ONLY ever run the Claude CLI, never an
+      // arbitrary shell command. Reject anything that isn't a `claude ...`
+      // invocation before it reaches the shell.
+      if (!isAllowedBridgeCommand(command)) {
+        logger.warn('Rejected non-claude command from server', {
+          commandId,
+          sessionId,
+          preview: typeof command === 'string' ? command.substring(0, 80) : typeof command
+        });
+        this.socket.emit('claude:error', {
+          commandId,
+          sessionId,
+          error: 'Bridge rejected command: only the Claude CLI may be executed.'
+        });
+        return;
+      }
     }
 
-    // Check if this will be an interactive session
-    const isInteractive = this.claudeExecutor.needsInteractiveMode(command);
+    // Check if this will be an interactive session (argv-aware).
+    const isInteractive = this.claudeExecutor.needsInteractiveMode(command, { argv });
 
     // Add command to production queue
     this.stats.commandsQueued++;
@@ -1379,6 +1397,7 @@ class BridgeClient extends EventEmitter {
           commandId, // Pass commandId for session tracking
           context,   // Pass full context including selectedClaudeModel
           stdinData, // Prompt data to pipe via stdin (bypasses shell escaping)
+          ...(argv && { argv }), // Phase 4: structured argv (spawned shell:false)
           cols: context?.cols || 120,
           rows: context?.rows || 30,
           onData: (chunk) => {
