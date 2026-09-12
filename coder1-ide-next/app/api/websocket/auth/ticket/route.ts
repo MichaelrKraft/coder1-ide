@@ -1,19 +1,44 @@
 /**
  * WebSocket Authentication Ticket API
- * Generates secure tickets for WebSocket authentication
+ * Generates secure tickets for WebSocket authentication.
+ *
+ * SECURITY FIX (Sep 12, 2026): the ticket's userId is derived from a verified
+ * access token (Authorization header or auth-token cookie). Previously it was a
+ * hash of a client-supplied sessionId, so any anonymous caller could obtain a
+ * ticket carrying terminal + files permissions.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { wsAuthManager } from '../../../../../lib/websocket-auth';
-import crypto from 'crypto';
+import { verifyAccessToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+
+const TIMESTAMP_TOLERANCE_MS = 60000;
+
+function getVerifiedUserId(request: NextRequest): string | null {
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader) {
+    const token = extractTokenFromHeader(authHeader);
+    if (token) {
+      const decoded = verifyAccessToken(token);
+      if (decoded?.userId) return decoded.userId;
+    }
+  }
+
+  const cookieToken = request.cookies.get('auth-token')?.value;
+  if (cookieToken) {
+    const decoded = verifyAccessToken(cookieToken);
+    if (decoded?.userId) return decoded.userId;
+  }
+
+  return null;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { sessionId, bridgeAuth = false, timestamp } = body;
 
-    // Basic validation
-    if (!sessionId) {
+    if (!sessionId || typeof sessionId !== 'string') {
       return NextResponse.json(
         { error: 'Session ID required' },
         { status: 400 }
@@ -22,32 +47,36 @@ export async function POST(request: NextRequest) {
 
     // Verify timestamp is recent (prevent replay attacks)
     const now = Date.now();
-    if (!timestamp || Math.abs(now - timestamp) > 60000) { // 1 minute tolerance
+    if (!timestamp || Math.abs(now - timestamp) > TIMESTAMP_TOLERANCE_MS) {
       return NextResponse.json(
         { error: 'Invalid or expired timestamp' },
         { status: 400 }
       );
     }
 
-    // Generate user ID from session (in production, this would come from session auth)
-    const userId = generateUserId(sessionId);
+    const userId = getVerifiedUserId(request);
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
 
-    // Determine permissions based on authentication type
-    const permissions = bridgeAuth
+    // Permissions are fixed server-side; the client cannot request extra ones.
+    const permissions = bridgeAuth === true
       ? ['terminal', 'files', 'bridge', 'claude-cli']
       : ['terminal', 'files'];
 
-    // Generate authentication ticket
     const ticket = wsAuthManager.generateTicket(
       userId,
       sessionId,
-      bridgeAuth,
+      bridgeAuth === true,
       permissions
     );
 
     console.log('🎫 WebSocket ticket generated for client:', {
-      sessionId,
-      bridgeAuth,
+      userId: userId.substring(0, 8),
+      bridgeAuth: bridgeAuth === true,
       permissions,
       ticketId: ticket.ticketId.substring(0, 8) + '...'
     });
@@ -71,7 +100,7 @@ export async function GET() {
   // Health check and stats endpoint
   try {
     const stats = wsAuthManager.getStats();
-    
+
     return NextResponse.json({
       service: 'WebSocket Authentication',
       status: 'healthy',
@@ -85,18 +114,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
-
-/**
- * Generate user ID from session ID
- * In production, this would use proper session management
- */
-function generateUserId(sessionId: string): string {
-  // For alpha, use a hash of the session ID as user ID
-  // In production, this would look up the actual user from session
-  return crypto
-    .createHash('sha256')
-    .update(sessionId)
-    .digest('hex')
-    .substring(0, 16);
 }

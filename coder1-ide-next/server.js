@@ -110,6 +110,19 @@ try {
 // Environment detection
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
+// SECURITY (Sep 12, 2026): server-side PTYs are opt-in. The Bridge is the security
+// boundary (see CLAUDE.md); a shell on this host must never be reachable by default.
+// Set HOSTED_TERMINALS_ENABLED=true only on a single-user machine (local dev).
+const {
+  isHostedTerminalsEnabled,
+  socketOwnsSession,
+  HOSTED_TERMINALS_DISABLED_MESSAGE
+} = require('./lib/terminal-session-auth');
+const hostedTerminalsEnabled = isHostedTerminalsEnabled();
+if (!hostedTerminalsEnabled) {
+  console.log('🔒 Hosted terminals disabled (HOSTED_TERMINALS_ENABLED != "true"); terminal:create will refuse local PTYs');
+}
+
 // ================================================================================
 // Distributed Tracing Utilities (Server-side)
 // ================================================================================
@@ -3915,6 +3928,25 @@ app.prepare().then(() => {
       try {
         const { id, cols = 80, rows = 30, workingDirectory } = data || {};
 
+        // SECURITY (Sep 12, 2026): authenticated sockets only, and no server-side
+        // PTY unless this deployment explicitly opted in.
+        if (socket.authenticated !== true || !socket.userId) {
+          console.warn(`[TERMINAL-CREATE] Rejected unauthenticated socket ${socket.id}`);
+          socket.emit('terminal:error', { message: 'Authentication required to open a terminal.' });
+          return;
+        }
+        if (!hostedTerminalsEnabled) {
+          console.warn(`[TERMINAL-CREATE] Hosted terminals disabled; refused request from user ${socket.userId}`);
+          socket.emit('terminal:error', { message: HOSTED_TERMINALS_DISABLED_MESSAGE, code: 'HOSTED_TERMINALS_DISABLED' });
+          return;
+        }
+        const existingSession = id ? terminalSessions.get(id) : undefined;
+        if (existingSession && !socketOwnsSession(socket, existingSession)) {
+          console.warn(`[TERMINAL-CREATE] SECURITY: user ${socket.userId} attempted to attach to session owned by ${existingSession.userId}`);
+          socket.emit('terminal:error', { message: 'Access denied to this terminal session' });
+          return;
+        }
+
         // 🔍 DEBUG: Log terminal:create event
         console.log('[TERMINAL-CREATE] Received terminal:create event');
         console.log('[TERMINAL-CREATE] Client provided id:', id || '(none - will auto-generate)');
@@ -3937,7 +3969,7 @@ app.prepare().then(() => {
 
         let session;
         try {
-          session = getOrCreateSession(sessionId, 'default', cols, rows);
+          session = getOrCreateSession(sessionId, socket.userId, cols, rows);
           currentSessionId = sessionId;
           console.log(`[TERMINAL-CREATE] Session created/retrieved (${cols}x${rows}). terminalSessions.size:`, terminalSessions.size);
         } catch (error) {
@@ -4502,15 +4534,12 @@ app.prepare().then(() => {
 
       const session = terminalSessions.get(sessionId);
 
-      // SECURITY FIX (Feb 23, 2026): Verify session ownership
-      // Prevent users from accessing other users' terminal sessions
-      if (session && session.userId !== 'default') {
-        const socketUserId = socket.userId || 'guest';
-        if (socketUserId !== session.userId && socketUserId !== 'guest' && socketUserId !== 'alpha-user') {
-          console.warn(`[Terminal] SECURITY: User ${socketUserId} attempted to access session owned by ${session.userId}`);
-          socket.emit('terminal:error', { message: 'Access denied to this terminal session' });
-          return;
-        }
+      // SECURITY FIX (Sep 12, 2026): strict session ownership. The previous check
+      // exempted 'guest' and 'alpha-user', which made it a no-op for anonymous sockets.
+      if (session && !socketOwnsSession(socket, session)) {
+        console.warn(`[Terminal] SECURITY: User ${socket.userId || 'unauthenticated'} attempted to access session owned by ${session.userId}`);
+        socket.emit('terminal:error', { message: 'Access denied to this terminal session' });
+        return;
       }
 
       // 🎭 INTERACTIVE CLAUDE SESSION CHECK (Dec 10, 2025)
@@ -5227,9 +5256,9 @@ app.prepare().then(() => {
         }
       }
 
-      // Also resize local session (if exists)
+      // Also resize local session (if exists and owned by this socket)
       const session = terminalSessions.get(sessionId);
-      if (session) {
+      if (session && socketOwnsSession(socket, session)) {
         session.resize(validCols, validRows);
         // REMOVED: // REMOVED: // REMOVED: console.log(`[Terminal] Resized session ${id} to ${cols}x${rows}`);
 
@@ -5248,6 +5277,11 @@ app.prepare().then(() => {
     socket.on('terminal:destroy', ({ id }) => {
       const sessionId = id || currentSessionId;
       const session = terminalSessions.get(sessionId);
+      if (session && !socketOwnsSession(socket, session)) {
+        console.warn(`[Terminal] SECURITY: User ${socket.userId || 'unauthenticated'} attempted to destroy session owned by ${session.userId}`);
+        socket.emit('terminal:error', { message: 'Access denied to this terminal session' });
+        return;
+      }
       if (session) {
         session.destroy();
         terminalSessions.delete(sessionId);

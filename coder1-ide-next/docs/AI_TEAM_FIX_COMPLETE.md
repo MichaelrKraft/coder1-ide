@@ -131,7 +131,7 @@ const { bridgeManager: manager } = require('./services/bridge-manager.ts');
 
 ```bash
 # OAuth token for Claude CLI (not API key!)
-CLAUDE_CODE_OAUTH_TOKEN=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
+CLAUDE_CODE_OAUTH_TOKEN=<redacted — token revoked 2026-09-12>
 
 # Parent directory containing .git repository
 PROJECT_ROOT=/Users/michaelkraft/autonomous_vibe_interface
