@@ -149,17 +149,20 @@ const wsAuthManager = new WebSocketAuthManager();
  */
 function createSocketAuthMiddleware() {
   return (socket, next) => {
+    // Bridge namespace has its own JWT-based auth middleware — skip ticket check.
+    // Socket.IO 4.6+ runs io.use() for ALL namespaces, so /bridge must be exempted here.
+    if (socket.nsp?.name === '/bridge') {
+      return next();
+    }
+
     const ticketId = socket.handshake.auth?.ticketId;
 
     if (!ticketId) {
-      console.warn('⚠️ WebSocket connection without authentication ticket (backwards compatibility)');
-      // Allow connection for backwards compatibility but mark as unauthenticated
-      socket.authenticated = false;
-      socket.userId = 'guest';
-      socket.sessionId = `guest_${Date.now()}`;
-      socket.bridgeAuth = false;
-      socket.permissions = ['terminal'];
-      return next();
+      // SECURITY FIX (Sep 12, 2026): no guest fallback. A socket without a ticket
+      // used to be admitted with terminal permission, which let anonymous clients
+      // open a PTY on the server. Fail closed.
+      console.warn('❌ WebSocket connection rejected: no authentication ticket');
+      return next(new Error('Authentication required'));
     }
 
     const authResult = wsAuthManager.consumeTicket(ticketId);

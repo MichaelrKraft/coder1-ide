@@ -248,7 +248,7 @@ sqlite3 ~/.coder1/johnny5.db "SELECT source_type, substr(content, 1, 100) FROM m
 ```env
 # In /coder1-ide-next/.env.local
 J5_ENABLED=false                    # Bypass J5, use Gemini
-GEMINI_API_KEY=AIzaSyC9H2FDdY24...       # For embeddings
+GEMINI_API_KEY=<redacted>       # For embeddings
 CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-... # For API calls (not being used currently)
 ```
 

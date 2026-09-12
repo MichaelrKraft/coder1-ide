@@ -215,12 +215,10 @@ export class ClientWebSocketAuth {
 /**
  * Enhanced Socket.IO authentication middleware for server
  *
- * SECURITY FIX (Feb 23, 2026): Reject unauthenticated connections in production.
- * Guest access is only allowed in development mode for backwards compatibility.
+ * SECURITY FIX (Sep 12, 2026): Reject every connection without a ticket.
+ * The former guest fallback admitted anonymous sockets and let them open PTYs.
  */
 export function createSocketAuthMiddleware() {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
   return (socket: any, next: any) => {
     // Bridge namespace has its own JWT-based auth middleware — skip ticket check
     // Socket.IO 4.6+ runs io.use() for ALL namespaces, so we must exempt /bridge here
@@ -231,14 +229,8 @@ export function createSocketAuthMiddleware() {
     const ticketId = socket.handshake.auth?.ticketId;
 
     if (!ticketId) {
-      // Guest fallback — safety net for alpha (server-side ticket endpoint at /api/websocket/auth/ticket is the primary auth path)
-      console.warn('⚠️ WebSocket connection without authentication ticket — allowing as guest');
-      socket.authenticated = false;
-      socket.userId = 'guest';
-      socket.sessionId = `guest_${Date.now()}`;
-      socket.bridgeAuth = false;
-      socket.permissions = [];
-      return next();
+      console.warn('❌ WebSocket connection rejected: no authentication ticket');
+      return next(new Error('Authentication required'));
     }
 
     const authResult = wsAuthManager.consumeTicket(ticketId);
@@ -249,6 +241,7 @@ export function createSocketAuthMiddleware() {
     }
 
     // Attach authentication info to socket
+    socket.authenticated = true;
     socket.userId = authResult.ticket!.userId;
     socket.sessionId = authResult.ticket!.sessionId;
     socket.bridgeAuth = authResult.ticket!.bridgeAuth;
